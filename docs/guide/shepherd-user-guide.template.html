@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <!--
-  TEMPLATE. Edit this file, not togo-user-guide.html.
+  TEMPLATE. Edit this file, not shepherd-user-guide.html.
   `{{shot:<name>}}` markers become base64 JPEG data URIs when docs/guide/build-user-guide.mjs runs:
-    node docs/guide/build-user-guide.mjs            # reads studio/test/screenshots/observatory-v20-<name>.png
+    node docs/guide/build-user-guide.mjs            # reads studio/test/screenshots/observatory-v30-<name>.png
     SHOT_PREFIX=observatory-v13 node docs/guide/build-user-guide.mjs
 -->
 <html lang="en">
@@ -10,33 +10,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Using the SDLC Studio desktop app — a user guide</title>
+<title>Using the Shepherd desktop app — a user guide</title>
 <style>
 :root{
-  --accent-50:#EDFAFA;--accent-100:#D3F3F3;--accent-200:#A7E6E7;--accent-300:#6FD1D4;--accent-400:#3AB5BC;
-  --accent-500:#1A99A3;--accent-600:#0E7C86;--accent-700:#0B6470;--accent-800:#0B505A;--accent-900:#0A3F47;
-  --fill:#0E7C86;--accent-text:#0E7C86;--focus:#0E7C86;--tint:#EDFAFA;
-  --ink-1:#0B1120;--ink-2:#334155;--ink-3:#64748B;--ink-4:#94A3B8;
-  --surface-0:#F8FAFC;--surface-1:#FFFFFF;--surface-2:#F1F5F9;--surface-3:#E8EDF4;
+  --accent-50:#F3F7F0;--accent-100:#E3EDDD;--accent-200:#C7E0BC;--accent-300:#9DC58E;--accent-400:#6FA55F;
+  --accent-500:#4F8545;--accent-600:#3F6B35;--accent-700:#2F5229;--accent-800:#243F20;--accent-900:#192D17;
+  --fill:#3F6B35;--accent-text:#3F6B35;--focus:#3F6B35;--tint:#F3F7F0;
+  --umber:#5E452A;--lake:#2F5D7C;--wheat:#D9C7A3;
+  --ink-1:#1C1915;--ink-2:#3D3630;--ink-3:#6B625A;--ink-4:#A69D94;
+  --surface-0:#F5EFE4;--surface-1:#FFFFFF;--surface-2:#EFEAE1;--surface-3:#E9E3D9;
   --signed:#16A34A;--warn:#D97706;--error:#DC2626;--running:#0EA5E9;
-  --line:rgba(11,17,32,.14);
+  --line:rgba(28,25,21,.14);
   --font-ui:"Inter Variable",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --font-mono:"JetBrains Mono Variable","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --accent-text:#6FD1D4;--focus:#6FD1D4;--tint:#0C363B;
-  --ink-1:#F1F5F9;--ink-2:#CBD5E1;--ink-3:#94A3B8;--ink-4:#64748B;
-  --surface-0:#0B1120;--surface-1:#111A2B;--surface-2:#172236;--surface-3:#1E2A42;
-  --line:rgba(241,245,249,.14);
+  --accent-text:#9DC58E;--focus:#9DC58E;--tint:#243F20;
+  --ink-1:#F5EFE4;--ink-2:#D9D1C4;--ink-3:#A69D94;--ink-4:#6B625A;
+  --surface-0:#14120F;--surface-1:#1C1915;--surface-2:#25211C;--surface-3:#2E2923;
+  --line:rgba(245,239,228,.14);
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
     color-scheme:dark;
-    --accent-text:#6FD1D4;--focus:#6FD1D4;--tint:#0C363B;
-    --ink-1:#F1F5F9;--ink-2:#CBD5E1;--ink-3:#94A3B8;--ink-4:#64748B;
-    --surface-0:#0B1120;--surface-1:#111A2B;--surface-2:#172236;--surface-3:#1E2A42;
-    --line:rgba(241,245,249,.14);
+    --accent-text:#9DC58E;--focus:#9DC58E;--tint:#243F20;
+    --ink-1:#F5EFE4;--ink-2:#D9D1C4;--ink-3:#A69D94;--ink-4:#6B625A;
+    --surface-0:#14120F;--surface-1:#1C1915;--surface-2:#25211C;--surface-3:#2E2923;
+    --line:rgba(245,239,228,.14);
   }
 }
 *{box-sizing:border-box}
@@ -62,7 +63,7 @@ pre code{background:none;padding:0}
 pre .c{color:var(--ink-3)}
 header{position:relative;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--line)}
 header .lockup{width:320px;max-width:100%;height:auto;flex:0 0 auto}
-header .lockup text{fill:var(--ink-1)}
+header .lockup .wordmark{fill:var(--ink-1)}
 header>div{min-width:0;flex:1 1 320px;padding-right:200px}
 .meta{color:var(--ink-3);font-size:12px;line-height:16px;margin-top:8px}
 .eyebrow{font-size:10.5px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink-3)}
@@ -129,15 +130,28 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 <main>
 
 <header>
-  <svg class="lockup" viewBox="0 0 320 64" role="img" aria-label="SDLC Studio" xmlns="http://www.w3.org/2000/svg">
-    <rect x="17" y="9" width="30" height="7" rx="3.5" fill="#0E7C86"/>
-    <circle cx="32" cy="38.5" r="17.5" fill="#0E7C86"/>
-    <text x="80" y="42" font-family="Inter Variable, Inter, ui-sans-serif, system-ui, sans-serif" font-weight="650" font-size="30" letter-spacing="-0.6">SDLC Studio</text>
+  <svg class="lockup" viewBox="0 0 320 64" role="img" aria-label="Shepherd" xmlns="http://www.w3.org/2000/svg">
+    <!-- The Shepherd mark (docs/brand/shepherd/mark-a-gate-s.svg): the two-tone frame — moss top and right with the tab, umber left and bottom — and the two-tone S resting on the tab. -->
+    <path fill="#3F6B35" d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+    <path fill="#5E452A" d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+    <path fill="#3F6B35" d="M21.03 27.33 A8.75 8.75 0 0 1 28.57 23.00 L36.53 23.00 A2.57 2.57 0 0 1 39.11 25.57 L39.11 28.47 A3.99 3.99 0 0 1 35.89 32.38 A34.59 34.59 0 0 0 27.04 30.09 A20.79 20.79 0 0 1 23.18 29.25 A3.57 3.57 0 0 1 21.03 27.33 Z"/>
+    <path fill="#5E452A" d="M20.49 28.76 A6.34 6.34 0 0 0 24.22 32.45 A31.17 31.17 0 0 0 31.50 34.18 A16.51 16.51 0 0 1 36.65 35.64 A4.18 4.18 0 0 1 38.74 40.99 A5.54 5.54 0 0 1 33.58 44.50 L21.94 44.50 A1.75 1.75 0 0 1 20.20 42.75 L20.14 41.16 A3.08 3.08 0 0 1 20.67 39.39 A3.85 3.85 0 0 1 23.83 37.74 L25.64 37.74 A6.81 6.81 0 0 1 20.49 28.76 Z"/>
+    <!-- the wordmark: "shepherd" in Saira Variable 600, lowercase, −0.01em, outlined (no live text) — docs/brand/shepherd/lockup.svg, verbatim; the fill follows the theme through .wordmark -->
+    <g class="wordmark" fill="#1C1915" data-wordmark="shepherd" data-face="Saira Variable 600" data-tracking="-0.01em">
+      <path data-glyph="s" d="M90.26 46.38Q88.79 46.38 87.07 46.29Q85.36 46.19 83.72 46.05Q82.08 45.9 80.77 45.71V40.89Q81.47 40.94 82.47 41.03Q83.47 41.13 84.61 41.17Q85.74 41.22 86.85 41.27Q87.95 41.31 88.9 41.31Q91.13 41.31 92.11 41.1Q93.09 40.88 93.37 40.33Q93.65 39.77 93.65 38.87Q93.65 37.87 93.47 37.43Q93.29 36.99 92.75 36.83Q92.21 36.67 91.05 36.53L85.34 35.81Q83.06 35.53 81.92 34.62Q80.78 33.71 80.39 32.17Q80 30.64 80 28.51Q80 26.04 80.74 24.57Q81.47 23.1 82.79 22.35Q84.11 21.61 85.95 21.37Q87.79 21.14 89.96 21.14Q91.4 21.14 92.95 21.23Q94.5 21.33 95.91 21.49Q97.33 21.66 98.3 21.89V26.67Q97.16 26.53 95.82 26.44Q94.49 26.35 93.19 26.28Q91.89 26.21 90.87 26.21Q89.05 26.21 87.98 26.34Q86.92 26.47 86.48 26.95Q86.03 27.44 86.03 28.54Q86.03 29.41 86.17 29.86Q86.31 30.3 86.8 30.48Q87.3 30.66 88.35 30.8L94.53 31.55Q96.23 31.74 97.37 32.32Q98.51 32.89 99.07 34.35Q99.64 35.8 99.64 38.72Q99.64 41.23 99 42.76Q98.35 44.29 97.1 45.08Q95.85 45.87 94.13 46.13Q92.41 46.38 90.26 46.38Z"/>
+      <path data-glyph="h" d="M104.75 46V10.34H111.11V24.42H111.46Q112.12 23.25 113.12 22.54Q114.11 21.82 115.5 21.5Q116.88 21.18 118.67 21.18Q121.19 21.18 122.73 21.78Q124.26 22.38 125.06 23.59Q125.86 24.79 126.14 26.57Q126.42 28.34 126.42 30.69V46H120.06V33.05Q120.06 30.81 119.93 29.51Q119.8 28.22 119.37 27.61Q118.93 27 118.07 26.82Q117.21 26.65 115.76 26.65Q114.22 26.65 113.27 27.01Q112.33 27.37 111.87 28.17Q111.41 28.97 111.26 30.24Q111.11 31.52 111.11 33.34V46Z"/>
+      <path data-glyph="e" d="M143.63 46.38Q140.38 46.38 138.22 45.95Q136.06 45.51 134.78 44.58Q133.49 43.64 132.86 42.17Q132.23 40.71 132.05 38.62Q131.86 36.54 131.86 33.81Q131.86 30.52 132.21 28.12Q132.56 25.72 133.64 24.17Q134.73 22.62 136.99 21.88Q139.25 21.14 143.07 21.14Q146.12 21.14 148.05 21.61Q149.98 22.08 151.1 23.05Q152.22 24.02 152.73 25.53Q153.24 27.03 153.38 29.1Q153.52 31.18 153.52 33.81V35.68H138.22Q138.22 37.52 138.39 38.63Q138.55 39.75 139.2 40.33Q139.86 40.91 141.26 41.11Q142.66 41.31 145.12 41.31Q146.14 41.31 147.42 41.26Q148.7 41.21 150.06 41.1Q151.43 40.99 152.56 40.89V45.63Q151.52 45.84 150 46.01Q148.48 46.19 146.82 46.28Q145.16 46.38 143.63 46.38ZM147.47 32.49V31.77Q147.47 29.87 147.26 28.74Q147.05 27.61 146.54 27.04Q146.03 26.47 145.16 26.3Q144.29 26.12 142.99 26.12Q141.4 26.12 140.47 26.34Q139.54 26.56 139.06 27.17Q138.57 27.78 138.4 28.89Q138.22 29.99 138.22 31.77H148.33Z"/>
+      <path data-glyph="p" d="M158.99 55.55V21.52H164.93L165.12 24.59H165.48Q166.24 23.17 167.4 22.41Q168.55 21.66 169.94 21.4Q171.33 21.14 172.75 21.14Q175 21.14 176.6 21.73Q178.2 22.32 179.2 23.76Q180.19 25.19 180.67 27.62Q181.14 30.04 181.14 33.71Q181.14 37.37 180.69 39.81Q180.23 42.26 179.26 43.7Q178.28 45.14 176.72 45.76Q175.15 46.38 172.9 46.38Q171.33 46.38 169.97 46.12Q168.61 45.87 167.55 45.21Q166.48 44.54 165.7 43.3H165.35V55.55ZM170.02 40.88Q171.63 40.88 172.58 40.66Q173.52 40.44 173.98 39.74Q174.44 39.03 174.6 37.61Q174.75 36.2 174.75 33.76Q174.75 31.32 174.6 29.88Q174.44 28.45 173.98 27.74Q173.52 27.04 172.58 26.82Q171.63 26.6 170.02 26.6Q168.33 26.6 167.4 27.06Q166.47 27.52 165.99 28.46Q165.56 29.33 165.46 30.67Q165.35 32.01 165.35 33.76Q165.35 35.56 165.46 36.84Q165.56 38.12 165.94 39.01Q166.43 40 167.38 40.44Q168.33 40.88 170.02 40.88Z"/>
+      <path data-glyph="h" d="M186.59 46V10.34H192.95V24.42H193.3Q193.96 23.25 194.96 22.54Q195.95 21.82 197.34 21.5Q198.72 21.18 200.51 21.18Q203.03 21.18 204.57 21.78Q206.1 22.38 206.9 23.59Q207.7 24.79 207.98 26.57Q208.26 28.34 208.26 30.69V46H201.9V33.05Q201.9 30.81 201.77 29.51Q201.64 28.22 201.21 27.61Q200.77 27 199.91 26.82Q199.05 26.65 197.6 26.65Q196.06 26.65 195.11 27.01Q194.17 27.37 193.71 28.17Q193.25 28.97 193.1 30.24Q192.95 31.52 192.95 33.34V46Z"/>
+      <path data-glyph="e" d="M225.47 46.38Q222.22 46.38 220.06 45.95Q217.9 45.51 216.62 44.58Q215.33 43.64 214.7 42.17Q214.07 40.71 213.89 38.62Q213.7 36.54 213.7 33.81Q213.7 30.52 214.05 28.12Q214.4 25.72 215.48 24.17Q216.57 22.62 218.83 21.88Q221.09 21.14 224.91 21.14Q227.96 21.14 229.89 21.61Q231.82 22.08 232.94 23.05Q234.06 24.02 234.57 25.53Q235.08 27.03 235.22 29.1Q235.36 31.18 235.36 33.81V35.68H220.06Q220.06 37.52 220.23 38.63Q220.39 39.75 221.04 40.33Q221.7 40.91 223.1 41.11Q224.5 41.31 226.96 41.31Q227.98 41.31 229.26 41.26Q230.54 41.21 231.9 41.1Q233.27 40.99 234.4 40.89V45.63Q233.36 45.84 231.84 46.01Q230.32 46.19 228.66 46.28Q227 46.38 225.47 46.38ZM229.31 32.49V31.77Q229.31 29.87 229.1 28.74Q228.89 27.61 228.38 27.04Q227.87 26.47 227 26.3Q226.13 26.12 224.83 26.12Q223.24 26.12 222.31 26.34Q221.38 26.56 220.9 27.17Q220.41 27.78 220.24 28.89Q220.06 29.99 220.06 31.77H230.17Z"/>
+      <path data-glyph="r" d="M240.83 46V21.52H246.77L246.96 25.77H247.36Q247.99 23.91 249.08 22.91Q250.16 21.91 251.7 21.52Q253.24 21.14 255.2 21.14V27.19Q252.08 27.19 250.33 28.06Q248.59 28.92 247.89 30.89Q247.19 32.86 247.19 36.21V46Z"/>
+      <path data-glyph="d" d="M266.58 46.38Q264.33 46.38 262.73 45.79Q261.13 45.2 260.13 43.76Q259.14 42.33 258.67 39.9Q258.19 37.48 258.19 33.81Q258.19 30.15 258.65 27.7Q259.1 25.25 260.08 23.81Q261.05 22.38 262.62 21.76Q264.18 21.14 266.44 21.14Q268.01 21.14 269.37 21.4Q270.72 21.65 271.81 22.31Q272.9 22.97 273.63 24.22H273.98V10.34H280.34V46H274.4L274.21 42.97H273.85Q273.13 44.39 271.95 45.13Q270.78 45.86 269.39 46.12Q268.01 46.38 266.58 46.38ZM269.31 40.92Q271.06 40.92 272.01 40.46Q272.95 40 273.38 38.97Q273.77 38.04 273.88 36.75Q273.98 35.45 273.98 33.76Q273.98 32.03 273.88 30.78Q273.78 29.53 273.39 28.66Q272.96 27.57 272.01 27.11Q271.06 26.64 269.31 26.64Q267.71 26.64 266.76 26.86Q265.81 27.08 265.35 27.78Q264.89 28.49 264.74 29.91Q264.58 31.32 264.58 33.76Q264.58 36.2 264.74 37.64Q264.89 39.07 265.35 39.78Q265.81 40.48 266.76 40.7Q267.71 40.92 269.31 40.92Z"/>
+    </g>
   </svg>
   <div>
     <div class="eyebrow">User guide</div>
-    <h1>Using the SDLC Studio desktop app — a user guide</h1>
-    <p class="meta">SDLC Studio — plugin 1.7.0 (the command center: sprint home, planning, spec card, close, steering; sprint layer, Observatory, code-host providers). For anyone who opens a project in the desktop app: what each screen shows, what each control does, and what the app will refuse to pretend. Companion to <i>Stand up SDLC Studio</i>, which covers installation and the command line. Every label below was read from the app's source on 2026-10-06.</p>
+    <h1>Using the Shepherd desktop app — a user guide</h1>
+    <p class="meta">Shepherd — plugin 2.0.0 (the command center: sprint home, planning, spec card, close, steering; sprint layer, Observatory, code-host providers). For anyone who opens a project in the desktop app: what each screen shows, what each control does, and what the app will refuse to pretend. Companion to <i>Stand up Shepherd</i>, which covers installation and the command line. Every label below was read from the app's source on 2026-10-06.</p>
   </div>
   <div class="theme" role="group" aria-label="Theme for this page">
     <button type="button" data-theme-choice="system" aria-pressed="true">System</button>
@@ -172,12 +186,12 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 
 <!-- 1 ------------------------------------------------------------------ -->
 <h2 id="welcome">1. Welcome and opening a project</h2>
-<p>SDLC Studio is the desktop front end for the <code>claude-code-sdlc</code> plugin. It never reimplements plugin logic: everything it shows is read through the plugin's own scripts, and everything it changes goes through them too. This guide is about the window. The plugin and the slash commands are covered by the setup guide beside this one.</p>
+<p>Shepherd is the desktop front end for the <code>shepherd</code> plugin. It never reimplements plugin logic: everything it shows is read through the plugin's own scripts, and everything it changes goes through them too. This guide is about the window. The plugin and the slash commands are covered by the setup guide beside this one.</p>
 
 <p>On launch the window reads <i>Loading…</i> while it probes the tools it depends on. If a required one is missing it stops at the tooling screen described in <a href="#trouble">§15</a>; otherwise it opens on Welcome. The code-host CLIs are never required to open a project.</p>
 
 <figure class="shot">
-  <img src="{{shot:welcome}}" width="1200" height="750" loading="lazy" alt="The Welcome screen: the SDLC Studio mark and name on the left with the tagline “The delivery instrument”, two buttons New project… and Open folder…, a ⌘K hint, and a Recent list on the right holding one project. A System / Light / Dark pill sits in the top-right corner.">
+  <img src="{{shot:welcome}}" width="1200" height="750" loading="lazy" alt="The Welcome screen: the Shepherd mark and name on the left with the tagline “The delivery instrument”, two buttons New project… and Open folder…, a ⌘K hint, and a Recent list on the right holding one project. A System / Light / Dark pill sits in the top-right corner.">
   <figcaption>Welcome. The mark and the name appear together here once. The Recent card lists up to six projects; hovering a row shows its full path and when it was last opened.</figcaption>
 </figure>
 
@@ -265,7 +279,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 <h3>Keyboard and the omnibar</h3>
 <p>The cockpit is built to be driven without the mouse. <kbd>⌘</kbd><kbd>K</kbd> opens the omnibar over whatever is showing (<a href="#omnibar">§4</a>): a spec id opens its card, a verb — <code>verdict 0002 accepted</code>, <code>hand 0006 to Sam</code> — previews the exact <code>sprint.py</code> line and opens its dialog, a place name jumps there. Inside the lanes <kbd>j</kbd> / <kbd>k</kbd> / <kbd>↵</kbd> / <kbd>h</kbd> / <kbd>v</kbd> do the work; <kbd>g</kbd> <kbd>p</kbd> goes to planning and <kbd>g</kbd> <kbd>s</kbd> back; <kbd>g</kbd> <kbd>t</kbd> is steering mode; <kbd>⌘</kbd><kbd>\</kbd> unfolds the chat and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> unfolds it and puts the cursor in the composer. <kbd>Esc</kbd> always closes the innermost thing first — a menu, a hover card, a dialog, the palette — and after a verb has run, focus returns to the card you acted on only once the refreshed read has arrived, so what you see under the cursor is the plugin's answer, not a guess. The full table is in <a href="#keys">§11</a>.</p>
 <figure class="shot">
-  <img src="{{shot:sprint-home-dark}}" width="1200" height="750" loading="lazy" alt="The same sprint home in the dark theme: deep blue-black ground, the four lane wells slightly lighter, cards lit by a rim, the one teal accent on the needs-you items and the viewed station.">
+  <img src="{{shot:sprint-home-dark}}" width="1200" height="750" loading="lazy" alt="The same sprint home in the dark theme: deep bark ground, the four lane wells slightly lighter, cards lit by a rim, the one moss accent on the needs-you items and the viewed station.">
   <figcaption>The same screen in dark. One accent means "where you are / what is yours" and nothing else; a chip is tinted only by a plugin field.</figcaption>
 </figure>
 
@@ -371,7 +385,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 
 <h3>Signing off a stage</h3>
 <p>The sign-off step shows <i>Questions for whoever signs this off</i>: a checkbox per question and, beside it, a pre-check of what the app could see — <i>Looks done</i>, <i>Not yet</i>, or <i>Needs your judgement</i>. A pre-check never ticks a box. Only a signed-in, named person can tick one, and each confirmation is recorded as <i>Confirmed by &lt;name&gt; · &lt;time&gt;</i>; the count reads <i>n of m confirmed</i>.</p>
-<p>The sign-off card itself appears only when all three hold: this is the project's current stage, every required document is complete, and every question is confirmed. It is titled <i>Sign off &lt;stage&gt;</i>, carries a <i>Signed by</i> field prefilled with your name, and an optional list of discipline sign-offs (Discipline / Section / Signed by, the same triple <code>/sdlc-next</code> offers). <i>Sign off and advance</i> does what <code>/sdlc-next</code> does: checks the seven gates, drafts and validates the phase summary, snapshots the artifact record, and advances.</p>
+<p>The sign-off card itself appears only when all three hold: this is the project's current stage, every required document is complete, and every question is confirmed. It is titled <i>Sign off &lt;stage&gt;</i>, carries a <i>Signed by</i> field prefilled with your name, and an optional list of discipline sign-offs (Discipline / Section / Signed by, the same triple <code>/sprd-next</code> offers). <i>Sign off and advance</i> does what <code>/sprd-next</code> does: checks the seven gates, drafts and validates the phase summary, snapshots the artifact record, and advances.</p>
 <ul>
   <li><b>It fails closed.</b> A refusal is shown in the plugin's own words, whole, naming the gate or step it stopped at; the button becomes <i>Try again</i>. Nothing is advanced until the plugin says yes.</li>
   <li><b>On success</b> the card reads <i>Signed off — moved from Phase X to Phase Y</i>, a toast and a live-region announcement record <i>Phase X signed off · by &lt;name&gt;</i>, and the Lifecycle rail plays a short ceremony to the stage just signed. The end state equals a cold reload.</li>
@@ -426,7 +440,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 
 <h3>Steering mode</h3>
 <figure class="shot">
-  <img src="{{shot:steering}}" width="1200" height="750" loading="lazy" alt="Steering mode in the dark theme: a near-black ground, the SDLC Studio mark in its Depth gradient beside the word Steering and the sprint id, a Leave steering button, then large tiles — Accepted as-is, Rework or revert, Sent back, Review wait, Security review wait, Deployments and the rest — each with a 56-pixel number or the words no data and its scorecard field named beneath.">
+  <img src="{{shot:steering}}" width="1200" height="750" loading="lazy" alt="Steering mode in the dark theme: a near-black bark ground, the Shepherd mark in its Depth gradient beside the word Steering and the sprint id, a Leave steering button, then large tiles — Accepted as-is, Rework or revert, Sent back, Review wait, Security review wait, Deployments and the rest — each with a 56-pixel number or the words no data and its scorecard field named beneath.">
   <figcaption>The committee's room: the standard's numbers at reading-from-across-the-room size, every one naming its field. No chat, no console, nothing to click that writes.</figcaption>
 </figure>
 <p><kbd>g</kbd> <kbd>t</kbd>, or <i>Steering mode</i> in the band's <i>…</i> menu, is the read-only view of "How it is going" for a steering committee: the chat and the console are hidden, the omnibar's verbs withdrawn, and the screen holds no control that writes. Each tile is one field of <code>scorecard.py report --window-days 14 --json</code>, named beneath its number; <i>no data</i> never animates or tints; the window is a label only. <i>Open the review page</i> opens the active sprint's review; each <code>.narrative.md</code> companion the plugin reports present opens read-only. <kbd>Esc</kbd> leaves, back to the screen you came from.</p>
@@ -446,7 +460,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
   <li><b>Worth a look.</b> Advisory findings, chiefly the vague-line lint on acceptance checks. "These do not stop a hand-off. A flagged acceptance check is a hint that two people could build different things from it — whether that is true is a judgement, not a pattern match."</li>
   <li><b>N checks already passing</b>, behind a disclosure.</li>
   <li><b>The pull request</b>, read from the code host (<i>Reading the pull request on GitHub…</i> or <i>… on Azure DevOps…</i>). No pull request yet reads "No pull request yet. This spec has not been handed to anyone." with the branch name. With one: <i>Open</i>, <i>Merged</i> or <i>Closed without merging</i>, its number, <i>Open on the code host</i> (the only link out, because the checking happens there), and the plugin's waiting-on sentence. Then one card: <i>Checks</i> with a dot and chip per check (running, success, or the host's conclusion; a completed check with no conclusion is <i>unknown</i>, never red); <i>The grader</i> with its per-check verdicts and the line "The grader advises. It never blocks a change on its own." (a grader that ran but could not be read is said plainly, in amber, and is not a pass); <i>Security review</i> when the tier requires one; <i>Approvals</i> by name and date. When the host cannot be reached the notice reads <i>Could not reach the code host.</i> and <i>The spec file itself says &lt;status&gt;.</i> — a claim about the app, never "not started", which would be a claim about the work.</li>
-  <li><b>Sprint decisions.</b> <i>Verdict</i>, <i>Pass next action</i>, <i>Acknowledge</i>, <i>Mark ready</i> are drawn disabled with the reason: these arrive with the plugin's sprint write verbs. Until then they are recorded with <code>/sdlc-sprint</code> and <code>/sdlc-refine</code>.</li>
+  <li><b>Sprint decisions.</b> <i>Verdict</i>, <i>Pass next action</i>, <i>Acknowledge</i>, <i>Mark ready</i> are drawn disabled with the reason: these arrive with the plugin's sprint write verbs. Until then they are recorded with <code>/sprd-sprint</code> and <code>/sprd-refine</code>.</li>
 </ol>
 
 <h3>The hand-off dialog</h3>
@@ -454,7 +468,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 
 <!-- 10 ------------------------------------------------------------------ -->
 <h2 id="host">10. Working with the code host</h2>
-<p>The repository chooses its host by its <code>origin</code> remote: a GitHub remote means the GitHub CLI (<code>gh</code>); a <code>dev.azure.com</code>, <code>*.visualstudio.com</code> or <code>ssh.dev.azure.com</code> remote means the Azure CLI (<code>az</code>) with its <code>azure-devops</code> extension. A pin in <code>.sdlc/code-host.yaml</code> or the <code>SDLC_CODE_HOST</code> environment variable overrides the remote; an unrecognised remote is host <i>none</i>, where pull-request features are off and <code>gh</code> is tried as before. The app probes the CLI's state once per poll interval; it never guesses "not signed in" when a probe did not run.</p>
+<p>The repository chooses its host by its <code>origin</code> remote: a GitHub remote means the GitHub CLI (<code>gh</code>); a <code>dev.azure.com</code>, <code>*.visualstudio.com</code> or <code>ssh.dev.azure.com</code> remote means the Azure CLI (<code>az</code>) with its <code>azure-devops</code> extension. A pin in <code>.sdlc/code-host.yaml</code> or the <code>SHEPHERD_CODE_HOST</code> environment variable (or <code>SDLC_CODE_HOST</code>, the pre-2.0 name, still read) overrides the remote; an unrecognised remote is host <i>none</i>, where pull-request features are off and <code>gh</code> is tried as before. The app probes the CLI's state once per poll interval; it never guesses "not signed in" when a probe did not run.</p>
 <p>Settings › Repository shows what was detected: a <i>Code host</i> row, <i>GitHub</i> or <i>Azure DevOps</i> with where that came from (the origin remote, the pin file, or the environment variable); a <i>CLI</i> row that reads <i>az — signed in as sam@corp.com (roster: @sam-k)</i>, <i>gh — typed for this session: Sam K</i>, <i>gh — sign-in not checked yet</i>, or the reason it cannot say; and the other CLI as <i>not needed for this repository</i>. In edit mode, <i>Pin the code host</i> (GitHub / Azure DevOps / none) writes <code>.sdlc/code-host.yaml</code> through the plugin's own <code>set_setting.py code-host</code>; the file travels with the clone and is read ahead of the remote.</p>
 <table>
   <tr><th style="width:50%">Works without a signed-in CLI</th><th>Needs the host, and says why when it is off</th></tr>
@@ -524,7 +538,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 </figure>
 
 <h3>Appearance</h3>
-<p>Four preferences of this machine, kept by SDLC Studio rather than in the project. They do not travel with the repository and change nothing about the work. The first three also sit under the band's <i>Appearance</i> button, and each takes effect without a reload.</p>
+<p>Four preferences of this machine, kept by Shepherd rather than in the project. They do not travel with the repository and change nothing about the work. The first three also sit under the band's <i>Appearance</i> button, and each takes effect without a reload.</p>
 <table>
   <tr><th style="width:120px">Preference</th><th style="width:220px">Options</th><th>Notes</th></tr>
   <tr><td>Theme</td><td>System / Light / Dark</td><td>System follows the operating system. Dark remaps every colour ramp at once. Also <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd>.</td></tr>
@@ -535,13 +549,13 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 
 <h3>About the mark</h3>
 <figure class="shot">
-  <img src="{{shot:welcome-dark}}" width="1200" height="750" loading="lazy" alt="The Welcome screen in the dark theme: the SDLC Studio mark at hero size in its teal Depth gradient beside the name, the tagline, the two buttons, and the Recent card on the right over a faint field of dots gathered behind the title.">
+  <img src="{{shot:welcome-dark}}" width="1200" height="750" loading="lazy" alt="The Welcome screen in the dark theme: the Shepherd mark at hero size in its moss Depth gradient beside the name, the tagline, the two buttons, and the Recent card on the right over a faint field of dots gathered behind the title.">
   <figcaption>Welcome in dark. The hero mark is the one place on this screen the gradient appears; the dock icon is the same tile, and the small mark in the band stays solid.</figcaption>
 </figure>
-<p>SDLC Studio's mark is the solid teal macron over a disc: in the band, on the small lockup of the pre-project screens, and in every list it is a flat colour. Four places show its <i>Depth</i> treatment — the same shape filled from one light-to-dark teal gradient: the Welcome hero (56 px), the card that covers the window while a project opens (48 px), the app icon in the dock, taskbar and Finder (from 64 px; at 16 and 32 px the icon is the flat tile), and the steering-mode title lockup (48 px). The gradient follows the theme — darker on light, luminous on dark — and never carries meaning: it is not a status, not a state, and never appears on a control, a chip, a data row or behind text. There is no About dialog yet; the version and the plugin driving the session are under Settings › <i>Tooling on this machine</i>. The brand guide itself is <code>docs/brand/togo/brandbook.html</code>.</p>
+<p>Shepherd's mark is the gate: a chamfered two-tone frame — the moss half on top and the right, with a tab that reaches in; the umber half on the left and the bottom — and a two-tone S nested inside it, its baseline resting on the tab. The two colours never change between themes. Below 48 px the S would be noise, so in the band, on the small lockup of the pre-project screens and in every list the mark is the frame alone, flat, at 24 px. Four places show its <i>Depth</i> treatment — the same mark with one light-to-dark moss gradient laid over its silhouette at 30 % opacity: the Welcome hero (56 px), the card that covers the window while a project opens (48 px), the app icon in the dock, taskbar and Finder (from 64 px; at 16 and 32 px the icon is the flat tile, the frame alone on sand), and the steering-mode title lockup (48 px). The gradient follows the theme — darker on light, luminous on dark — and never carries meaning: it is not a status, not a state, and never appears on a control, a chip, a data row or behind text. There is no About dialog yet; the version and the plugin driving the session are under Settings › <i>Tooling on this machine</i>. The brand guide itself is <code>docs/brand/shepherd/brandbook.html</code>.</p>
 
 <h3>Settings</h3>
-<p>"Every setting here is stored in the project itself, not in SDLC Studio — so it travels with the repository and changes like any other file." Each section names the file it lives in. A section whose file does not exist says "This project has not set this up. Nothing is wrong — the file simply does not exist yet."; a file that exists but could not be read cleanly is a different answer, shown as a warning with the lines that failed. Nothing changes until <i>Edit</i> is on, and the controls are absent rather than greyed outside it. A change is written by the plugin, which validates before it writes, so a refusal means the file is untouched; the changed files are then listed under <i>Changed here, not yet in the repository</i> with a required <i>Why did this change?</i> that becomes the commit message, and <i>Save to the repository</i> commits them under your name.</p>
+<p>"Every setting here is stored in the project itself, not in Shepherd — so it travels with the repository and changes like any other file." Each section names the file it lives in. A section whose file does not exist says "This project has not set this up. Nothing is wrong — the file simply does not exist yet."; a file that exists but could not be read cleanly is a different answer, shown as a warning with the lines that failed. Nothing changes until <i>Edit</i> is on, and the controls are absent rather than greyed outside it. A change is written by the plugin, which validates before it writes, so a refusal means the file is untouched; the changed files are then listed under <i>Changed here, not yet in the repository</i> with a required <i>Why did this change?</i> that becomes the commit message, and <i>Save to the repository</i> commits them under your name.</p>
 <table>
   <tr><th style="width:190px">Section</th><th>Lives</th><th>Shows</th></tr>
   <tr><td>Repository</td><td>the project folder; the pin in <code>.sdlc/code-host.yaml</code></td><td>The repository the origin points at (or "no remote configured"), the branch, <i>Signed in as</i> (with the typed-name form when the host cannot identify you), <i>Default branch protected</i> as yes / no / could not tell — a best guess from the host's settings; what decides is whether a direct push is refused — then <i>Code host</i>, <i>CLI</i> and the other CLI's <i>not needed for this repository</i> (<a href="#host">§10</a>). In edit mode, <i>Pin the code host</i>. The app reads and writes the project's documents and specs and never writes your code.</td></tr>
@@ -585,7 +599,7 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 <h2 id="trouble">15. Troubleshooting</h2>
 <table>
   <tr><th style="width:240px">Symptom</th><th>What it means</th><th>Do</th></tr>
-  <tr><td>A screen headed "Before SDLC Studio can open a project" with amber rows, "&lt;tool&gt; wasn't found."</td><td>At first open the app probes four required tools — Claude Code, uv (the script runner), the <code>claude-code-sdlc</code> plugin's <code>scripts/</code> folder, and git — and one is missing from PATH. Under <i>Required</i>, each missing one is a row. Under <i>Code-host CLIs</i>, the GitHub CLI (gh) and the Azure CLI (az) are listed as found or not found with the line "Optional — needed when a project's repository is on GitHub / Azure DevOps. You can open a project without it." Neither ever blocks.</td><td>Each row has the probe's own error, an <i>Install instructions</i> link, and a path field with <i>Use this</i> to point the app at a copy it did not find (<i>Path to the binary</i>, or <i>Path to the plugin's scripts/ folder</i>). Nothing is installed by the app.</td></tr>
+  <tr><td>A screen headed "Before Shepherd can open a project" with amber rows, "&lt;tool&gt; wasn't found."</td><td>At first open the app probes four required tools — Claude Code, uv (the script runner), the <code>shepherd</code> plugin's <code>scripts/</code> folder, and git — and one is missing from PATH. Under <i>Required</i>, each missing one is a row. Under <i>Code-host CLIs</i>, the GitHub CLI (gh) and the Azure CLI (az) are listed as found or not found with the line "Optional — needed when a project's repository is on GitHub / Azure DevOps. You can open a project without it." Neither ever blocks.</td><td>Each row has the probe's own error, an <i>Install instructions</i> link, and a path field with <i>Use this</i> to point the app at a copy it did not find (<i>Path to the binary</i>, or <i>Path to the plugin's scripts/ folder</i>). Nothing is installed by the app.</td></tr>
   <tr><td>An amber banner across the top of the project, "This project's repository is on …"</td><td>The project opened, but the CLI its host needs is missing, lacks its extension, or is signed out (<a href="#host">§10</a>). Everything local works; the pull-request features are off, each saying why.</td><td>Install or sign in to that CLI, then <i>Refresh</i>; or <i>Dismiss</i> the banner for this session. If the origin is not GitHub or Azure DevOps and should be, pin the host in Settings › Repository (edit mode).</td></tr>
   <tr><td>Which plugin is the app running?</td><td>Unpackaged, it prefers the <code>scripts/</code> folder beside the app when it carries <code>capabilities.py</code>, then the newest marketplace-cached plugin under <code>~/.claude/plugins/cache/</code>, then a path set in the app.</td><td>Settings › <i>Tooling on this machine</i> shows the path, the version and the origin.</td></tr>
   <tr><td>"Claude Code &lt;version&gt; lacks &lt;flags&gt; — update with <code>claude update</code>"</td><td>The installed CLI predates a flag the app emits. The project stays readable; only the model controls — chat, drafts, sign-off — are off, each with this sentence as its reason.</td><td><code>claude update</code>, then reopen the project.</td></tr>
@@ -604,14 +618,14 @@ footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:v
 </div>
 
 <footer>
-  <p>SDLC Studio — plugin 1.6.2 (Unreleased: sprint layer, Observatory, code-host providers).</p>
-  <p>Labels, sentences and behaviour were read from <code>studio/src</code>, <code>studio/shared</code> and <code>studio/electron/main</code> on 2026-10-06; screenshots are the <code>observatory-v8</code> captures in <code>studio/test/screenshots</code>, taken against a sample project with the code host unreachable. Your project's names, counts and dates will differ.</p>
+  <p>Shepherd — plugin 2.0.0 (the command center: sprint home, planning, spec card, close, steering; sprint layer, Observatory, code-host providers).</p>
+  <p>Labels, sentences and behaviour were read from <code>studio/src</code>, <code>studio/shared</code> and <code>studio/electron/main</code> on 2026-10-06; screenshots are the <code>observatory-v30</code> captures in <code>studio/test/screenshots</code>, taken against a sample project with the code host unreachable. Your project's names, counts and dates will differ.</p>
 </footer>
 
 </main>
 <script>
 (function () {
-  var KEY = 'togo-guide.theme';
+  var KEY = 'shepherd-guide.theme';
   var root = document.documentElement;
   var buttons = document.querySelectorAll('[data-theme-choice]');
   function apply(choice) {
