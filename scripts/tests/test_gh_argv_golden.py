@@ -179,6 +179,7 @@ def capture_all(tmp_path: Path, monkeypatch) -> tuple[dict, dict]:
 def captured(tmp_path, monkeypatch):
     for sub in ("ss", "cr", "ga", "pp"):
         (tmp_path / sub).mkdir()
+    monkeypatch.delenv("SHEPHERD_CODE_HOST", raising=False)
     monkeypatch.delenv("SDLC_CODE_HOST", raising=False)
     return capture_all(tmp_path, monkeypatch)
 

@@ -1,6 +1,6 @@
-# claude-code-sdlc
+# Shepherd
 
-SDLC orchestration plugin for Claude Code. Drives projects through a structured software development lifecycle — gated opening and closing phases around a continuous Build loop — with company-configurable profiles, compliance gates, and quality enforcement.
+Shepherd is an SDLC orchestration plugin for Claude Code. It drives projects through a structured software development lifecycle — gated opening and closing phases around a continuous Build loop — with company-configurable profiles, compliance gates, and quality enforcement.
 
 ## Why This Exists
 
@@ -24,7 +24,7 @@ No existing tool combines specification-driven development + quality enforcement
 - **Artifact checksums + dirty tracking** — SHA-256 hashes detect changed artifacts; gate checks skip unchanged files for faster validation
 - **Smart repair** — Gate failures on structural issues (missing templates, placeholders) are auto-fixed before escalating to human
 - **Dependency graph enforcement** — Section dependency DAG validated in the Build loop; circular dependencies detected; implementation order enforced
-- **Multi-perspective review** — `/sdlc-review` with adversarial, edge-case, and council modes for thorough artifact review
+- **Multi-perspective review** — `/sprd-review` with adversarial, edge-case, and council modes for thorough artifact review
 - **Brainstorming techniques** — SCAMPER, reverse brainstorming, constraint removal, and 3 more structured ideation methods with anti-bias protocol
 - **Brownfield detection** — Auto-detects existing codebases and generates workspace analysis before Discovery begins
 - **Structured error specs** — P0/P1 requirements must define Accepts/Returns/Errors explicitly
@@ -39,8 +39,8 @@ No existing tool combines specification-driven development + quality enforcement
 - **Single-change guardrail** — Explicit constraint preventing simultaneous work on multiple specs in the Build loop unless explicitly parallelizable
 - **Phase-scoped evaluation criteria** — Quality rubrics that apply to non-code artifacts (requirements, design, foundation) in addition to code
 - **Empirical metrics logging** — JSONL instrumentation in gates, frozen layer validation, and section evaluation for evidence-based harness optimization
-- **Discipline seats** — Conditional, interview-driven drafting seats that stop at a human confirmation: `/sdlc-feature` (epic → channel-aware feature brief, one channel per spec), `/sdlc-rules` (business rules as a BR-NN decision table with a named approver, plus golden scenarios), `/sdlc-data` (PII-classified data contract that drives the risk tier, readiness, lineage), `/sdlc-experience` (journey, surface layout, per-channel interaction contract), `/sdlc-channel` (binds a spec to its channel and injects the acceptance dimensions). Sign-offs recorded at the phase advance.
-- **Sprint team layer** — Additive, advisory sprints over the spec backlog: `/sdlc-sprint` slates a *count* of specs by risk-tier mix into a two-week commitment window (`.sdlc/sprints/SNN.md`), readies the sprint only when every slated spec clears the Definition of Ready **and** its independent Engineering and Data verdicts, shows the advisory build order and next-up, and closes with kept / carried / dropped — each carry or drop with a named human and a reason. `/sdlc-refine` renders the refinement agenda (NOT READY specs and why, verdicts pending with business-day age, unacknowledged handoffs, overdue `DL-NN` decisions) and refines one spec or the whole slate. Self-contained planning and review pages (`sprint-SNN-planning.html` / `-review.html`), an `[SDLC-SPRINT]` session-start line, carry-over recurrence in `/sdlc-retro`. Never a gate, never gated, never writes `state.yaml`; velocity, story points, estimates, effort and hours are refused (exit 2); no per-person aggregation exists.
+- **Discipline seats** — Conditional, interview-driven drafting seats that stop at a human confirmation: `/sprd-feature` (epic → channel-aware feature brief, one channel per spec), `/sprd-rules` (business rules as a BR-NN decision table with a named approver, plus golden scenarios), `/sprd-data` (PII-classified data contract that drives the risk tier, readiness, lineage), `/sprd-experience` (journey, surface layout, per-channel interaction contract), `/sprd-channel` (binds a spec to its channel and injects the acceptance dimensions). Sign-offs recorded at the phase advance.
+- **Sprint team layer** — Additive, advisory sprints over the spec backlog: `/sprd-sprint` slates a *count* of specs by risk-tier mix into a two-week commitment window (`.sdlc/sprints/SNN.md`), readies the sprint only when every slated spec clears the Definition of Ready **and** its independent Engineering and Data verdicts, shows the advisory build order and next-up, and closes with kept / carried / dropped — each carry or drop with a named human and a reason. `/sprd-refine` renders the refinement agenda (NOT READY specs and why, verdicts pending with business-day age, unacknowledged handoffs, overdue `DL-NN` decisions) and refines one spec or the whole slate. Self-contained planning and review pages (`sprint-SNN-planning.html` / `-review.html`), an `[SHEPHERD-SPRINT]` session-start line, carry-over recurrence in `/sprd-retro`. Never a gate, never gated, never writes `state.yaml`; velocity, story points, estimates, effort and hours are refused (exit 2); no per-person aggregation exists.
 - **Document intake** — Opt-in Phase 0 corpus analysis for external reference materials (RFPs, API specs, vendor docs, compliance handbooks) with per-document summaries, DOC-NNN traceability IDs, token-budgeted session-start index (Tier 1.5), and Phase 1 requirement-to-source linking
 
 ## Installation
@@ -50,29 +50,29 @@ No existing tool combines specification-driven development + quality enforcement
 One marketplace add, one install — brings the orchestration commands **and** the delivery harness:
 
 ```
-/plugin marketplace add MCKRUZ/claude-code-sdlc
-/plugin install claude-code-sdlc@mckruz
+/plugin marketplace add MCKRUZ/shepherd-sdlc
+/plugin install shepherd@mckruz
 ```
 
-Then, per project: `/sdlc-setup` initializes `.sdlc/` **and installs the full delivery harness**
+Then, per project: `/sprd-setup` initializes `.sdlc/` **and installs the full delivery harness**
 (governance `CLAUDE.md`, `.claude/{settings,hooks,agents,skills}`, 7 CI workflows in
 `.github/workflows/` — 5 rail gates plus 2 eval workflows — of which five checks (build-and-test,
 spec-gate, grader, correctness-review, security-review) block at merge via the
 branch-protection ruleset, and `infra/` starters). To add or refresh just the
-harness in an existing repo, use `/sdlc-harness`. Requires Claude Code v2.1.196+ (`source: "."`).
+harness in an existing repo, use `/sprd-harness`. Requires Claude Code v2.1.196+ (`source: "."`).
 
 ### As a Claude Code Skill (local dev)
 
 ```bash
 # Clone the repo
-git clone https://github.com/MCKRUZ/claude-code-sdlc.git
+git clone https://github.com/MCKRUZ/shepherd-sdlc.git
 
 # Symlink to your Claude Code skills directory
 # Windows
-mklink /D "%USERPROFILE%\.claude\skills\claude-code-sdlc" "path\to\claude-code-sdlc"
+mklink /D "%USERPROFILE%\.claude\skills\shepherd" "path\to\shepherd-sdlc"
 
 # macOS/Linux
-ln -s /path/to/claude-code-sdlc ~/.claude/skills/claude-code-sdlc
+ln -s /path/to/shepherd-sdlc ~/.claude/skills/shepherd
 ```
 
 ### Dependencies
@@ -86,7 +86,7 @@ pip install uv
 brew install uv
 
 # Install script dependencies
-cd claude-code-sdlc/scripts
+cd shepherd-sdlc/scripts
 uv sync
 ```
 
@@ -103,10 +103,10 @@ pull requests, and each of those says which CLI it is missing instead of failing
 
 | Feature | GitHub | Azure DevOps |
 |---|---|---|
-| `/sdlc-spec-status`, `/sdlc-handoff` (the draft PR and reviewer request), `connection_report.py`, `pipeline_proof.py`'s PR reads, `gate_auth.py status` | `gh`, signed in | `az` + `azure-devops` extension, signed in |
+| `/sprd-spec-status`, `/sprd-handoff` (the draft PR and reviewer request), `connection_report.py`, `pipeline_proof.py`'s PR reads, `gate_auth.py status` | `gh`, signed in | `az` + `azure-devops` extension, signed in |
 | Scorecard import | `scorecard.py import` or `import_outcomes.py` | `import_outcomes.py` |
 | `gate_auth.py set` / `clear` | `gh` | prints the manual `az` command (variable groups are not written from here) |
-| Pipelines, secrets, `/sdlc-doctor` | follow the **installed CI pack** (`.claude/harness-manifest.json`), not the remote — a GitHub repository on Azure Pipelines is a legitimate mix and is reported, never resolved silently |
+| Pipelines, secrets, `/sprd-doctor` | follow the **installed CI pack** (`.claude/harness-manifest.json`), not the remote — a GitHub repository on Azure Pipelines is a legitimate mix and is reported, never resolved silently |
 
 Setting up `az`: `az extension add --name azure-devops`, then sign in. The CLI's **default account
 decides the token**, so a guest or contractor identity in the organisation's tenant must sign in
@@ -123,18 +123,19 @@ remote cannot be recognised (GitHub Enterprise Server, an unusual proxy), `.sdlc
 pins the host for that clone — written with
 `uv run scripts/set_setting.py --repo <path> code-host --host azure-devops` (plus
 `--organization`, `--project`, `--repository` when the remote cannot be parsed at all). A one-off
-override is `--host` on any host-touching script, or the `SDLC_CODE_HOST` environment variable.
+override is `--host` on any host-touching script, or the `SHEPHERD_CODE_HOST` environment
+variable (`SDLC_CODE_HOST` is still read, so existing shells and CI keep working).
 Full rules: `references/code-host-providers.md`.
 
 ## Quick Start
 
 ```
-1. /sdlc-setup          → Select profile, initialize .sdlc/ AND install the delivery harness
-2. /sdlc                → See Phase 0: Discovery guidance
+1. /sprd-setup          → Select profile, initialize .sdlc/ AND install the delivery harness
+2. /sprd                → See Phase 0: Discovery guidance
 3. Create artifacts     → Write problem-statement.md in .sdlc/artifacts/00-discovery/
-4. /sdlc-gate           → Check if exit criteria are met
-5. /sdlc-next           → Advance to Phase 1: Requirements
-6. /sdlc-status         → View progress dashboard
+4. /sprd-gate           → Check if exit criteria are met
+5. /sprd-next           → Advance to Phase 1: Requirements
+6. /sprd-status         → View progress dashboard
 ```
 
 ## Documentation
@@ -159,27 +160,27 @@ For in-depth technical documentation, see the guides in [`docs/`](docs/):
 
 | Command | Purpose |
 |---------|---------|
-| `/sdlc-setup` | Interactive setup wizard — select profile, initialize project |
-| `/sdlc` | Show current phase guidance, next action, required artifacts |
-| `/sdlc-status` | Progress dashboard with phase table and completion % |
-| `/sdlc-gate` | Run 7-gate exit criteria check (does not advance) |
-| `/sdlc-next` | Advance to next phase if all MUST gates pass |
-| `/sdlc-enhance` | Generate narrative companions for stakeholder review (optional) |
-| `/sdlc-coach` | Interactive coaching mode — adaptive dialogue for current phase |
-| `/sdlc-intake` | Catalog and summarize an external document corpus (Phase 0, opt-in) |
-| `/sdlc-brief` | Prep a stakeholder workshop brief from the document corpus |
-| `/sdlc-spec` | Author a ready Build-loop spec (`specs/NNNN-name.md`) and enforce the Definition of Ready |
-| `/sdlc-sprint` | Sprint board — slate N specs by risk-tier mix, ready the sprint (DoR + Eng/Data verdicts), close with kept / carried / dropped; advisory, never a gate |
-| `/sdlc-refine` | Refinement agenda for the sprint's specs — DoR gaps, pending verdicts, overdue decisions; refine one spec or the slate; record Eng/Data verdicts |
-| `/sdlc-phase-report` | Generate phase HTML report with artifact inventory |
-| `/sdlc-review` | Multi-perspective artifact review (council, adversarial, or edge-case modes) |
-| `/sdlc-audit` | Analyze gate effectiveness across completed phases |
-| `/sdlc-feature` | Decompose an epic into channel-aware features and specs (`feature-brief.md`) |
-| `/sdlc-experience` | Author per-channel journeys, surface layout, and the channel interaction spec |
-| `/sdlc-data` | Author the data contract, data-readiness, and lineage/audit (Data) |
-| `/sdlc-rules` | Capture business rules (BR-NN) and golden scenarios (SCEN-NN) (Bizreq) |
-| `/sdlc-channel` | Bind a spec's `channel:` and inject that channel's acceptance dimensions |
-| `/sdlc-evals` | Author a versioned golden set next to a spec (wraps the harness eval-builder) |
+| `/sprd-setup` | Interactive setup wizard — select profile, initialize project |
+| `/sprd` | Show current phase guidance, next action, required artifacts |
+| `/sprd-status` | Progress dashboard with phase table and completion % |
+| `/sprd-gate` | Run 7-gate exit criteria check (does not advance) |
+| `/sprd-next` | Advance to next phase if all MUST gates pass |
+| `/sprd-enhance` | Generate narrative companions for stakeholder review (optional) |
+| `/sprd-coach` | Interactive coaching mode — adaptive dialogue for current phase |
+| `/sprd-intake` | Catalog and summarize an external document corpus (Phase 0, opt-in) |
+| `/sprd-brief` | Prep a stakeholder workshop brief from the document corpus |
+| `/sprd-spec` | Author a ready Build-loop spec (`specs/NNNN-name.md`) and enforce the Definition of Ready |
+| `/sprd-sprint` | Sprint board — slate N specs by risk-tier mix, ready the sprint (DoR + Eng/Data verdicts), close with kept / carried / dropped; advisory, never a gate |
+| `/sprd-refine` | Refinement agenda for the sprint's specs — DoR gaps, pending verdicts, overdue decisions; refine one spec or the slate; record Eng/Data verdicts |
+| `/sprd-phase-report` | Generate phase HTML report with artifact inventory |
+| `/sprd-review` | Multi-perspective artifact review (council, adversarial, or edge-case modes) |
+| `/sprd-audit` | Analyze gate effectiveness across completed phases |
+| `/sprd-feature` | Decompose an epic into channel-aware features and specs (`feature-brief.md`) |
+| `/sprd-experience` | Author per-channel journeys, surface layout, and the channel interaction spec |
+| `/sprd-data` | Author the data contract, data-readiness, and lineage/audit (Data) |
+| `/sprd-rules` | Capture business rules (BR-NN) and golden scenarios (SCEN-NN) (Bizreq) |
+| `/sprd-channel` | Bind a spec's `channel:` and inject that channel's acceptance dimensions |
+| `/sprd-evals` | Author a versioned golden set next to a spec (wraps the harness eval-builder) |
 
 ## Profiles
 
@@ -202,12 +203,12 @@ microsoft-enterprise's stack, hosted on Azure DevOps:
   repo — no `workflows/`, rulesets, or `CODEOWNERS`. Rubrics and the other rail-governance
   content land in `.azuredevops/rails/` instead of `.github/`, matching what the Azure
   Pipelines pack actually reads.
-- **`/sdlc-doctor` is pack-aware:** it checks an ADO install with `az` (variable groups,
+- **`/sprd-doctor` is pack-aware:** it checks an ADO install with `az` (variable groups,
   branch policies) and never asks it to authenticate `gh`. PR-flow rails (the review-gate
   hook, `pr-writer`) recognize `az repos pr create` the same way they recognize `gh pr
   create`.
-- **The code host is read through `az` too:** `/sdlc-spec-status` (checks, grader verdict,
-  approvals, who it is waiting on), `/sdlc-handoff`'s draft PR with the checker as a required
+- **The code host is read through `az` too:** `/sprd-spec-status` (checks, grader verdict,
+  approvals, who it is waiting on), `/sprd-handoff`'s draft PR with the checker as a required
   reviewer, the connection report, branch policies, pipeline evidence and the scorecard import
   (`import_outcomes.py`) all read and write Azure Repos pull requests. The repository's
   `origin` remote decides the host; see **Code hosts** under Installation.
@@ -216,7 +217,7 @@ microsoft-enterprise's stack, hosted on Azure DevOps:
 ado-enterprise's Python sibling — same rails, FastAPI + React stack:
 - **Stack:** Python 3.13 / FastAPI / SQLAlchemy 2.0 / pytest (uv-managed); TypeScript / React / Redux Toolkit / Playwright
 - **Repos & CI/CD:** Azure Repos + Azure Pipelines (identical rails to ado-enterprise); Azure Container Apps
-- **Database:** setup-time choice — Azure Database for PostgreSQL (default) or Azure SQL, Alembic migrations either way; `/sdlc-setup` asks and edits the frozen profile
+- **Database:** setup-time choice — Azure Database for PostgreSQL (default) or Azure SQL, Alembic migrations either way; `/sprd-setup` asks and edits the frozen profile
 - **Quality / Compliance / Conventions:** same bar as ado-enterprise (80% coverage, TDD, SOC 2 gates verbatim), with the python pack's 400-line file cap
 - **Health check:** `uv run --frozen --no-sync python -m compileall -q src` at session start (Build loop)
 - **Evaluation criteria:** same phase-scoped rubrics for requirements/design/foundation; Build-loop code criteria are Python/React — Pydantic boundary validation and immutable Redux Toolkit state (fail), typed public signatures, domain exceptions, API contract docs (warn)
@@ -293,10 +294,10 @@ Gates have severity levels:
 ## Project Structure
 
 ```
-claude-code-sdlc/
+shepherd-sdlc/
 ├── plugin.json              # Plugin manifest
 ├── SKILL.md                 # Main skill entry point
-├── commands/                # 32 slash commands (/sdlc, /sdlc-setup, /sdlc-status, /sdlc-next, /sdlc-gate, /sdlc-enhance, /sdlc-coach, /sdlc-review, /sdlc-intake, /sdlc-brief, /sdlc-spec, /sdlc-spike, /sdlc-sprint, /sdlc-refine, /sdlc-handoff, /sdlc-spec-status, /sdlc-audit, /sdlc-audit-artifacts, /sdlc-channel, /sdlc-data, /sdlc-doctor, /sdlc-evals, /sdlc-experience, /sdlc-feature, /sdlc-harness, /sdlc-phase-report, /sdlc-refresh, /sdlc-retro, /sdlc-revise, /sdlc-rules, /sdlc-upgrade, /sdlc-version)
+├── commands/                # 32 slash commands (/sprd, /sprd-setup, /sprd-status, /sprd-next, /sprd-gate, /sprd-enhance, /sprd-coach, /sprd-review, /sprd-intake, /sprd-brief, /sprd-spec, /sprd-spike, /sprd-sprint, /sprd-refine, /sprd-handoff, /sprd-spec-status, /sprd-audit, /sprd-audit-artifacts, /sprd-channel, /sprd-data, /sprd-doctor, /sprd-evals, /sprd-experience, /sprd-feature, /sprd-harness, /sprd-phase-report, /sprd-refresh, /sprd-retro, /sprd-revise, /sprd-rules, /sprd-upgrade, /sprd-version)
 ├── agents/                  # 14 agents (orchestrator, requirements-analyst, compliance-checker, section-evaluator, narrative-enhancer, gate-repair, multi-reviewer, discovery-analyst, document-summarizer, feature-architect, visual-designer, conversation-designer, data-analyst, bizreq-analyst)
 ├── profiles/                # Company/stack YAML profiles
 ├── channels/                # Channel descriptor library (ag-ui, voice, chat) + schema
@@ -309,10 +310,10 @@ claude-code-sdlc/
 
 ## Architecture
 
-This plugin follows **ADR-001: claude-code-sdlc is a Claude Code plugin that executes AI-SDLC methodology.**
+This plugin follows **ADR-001: Shepherd is a Claude Code plugin that executes AI-SDLC methodology.**
 
 - **AI-SDLC** = the methodology (phases, validation, templates)
-- **claude-code-sdlc** = the execution engine (commands, hooks, profiles, scripts)
+- **Shepherd** = the execution engine (commands, hooks, profiles, scripts)
 - The plugin references AI-SDLC patterns but adapts them for Claude Code's command/hook/agent system
 
 ## Contributing

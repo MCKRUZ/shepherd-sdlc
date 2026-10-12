@@ -53,7 +53,7 @@ ALLOWLIST: dict[str, list[tuple[str, str]]] = {
     # `ux-reviewer` is a code-review sub-agent the *harness installer* writes into
     # the target repo (composed from stack packs), not a plugin agents/*.md file —
     # so it correctly has no agents/ux-reviewer.md. Referenced only in setup prose.
-    "sdlc-setup.md": [
+    "sprd-setup.md": [
         ("references agent `ux-reviewer`", "harness-installed target-repo reviewer, not a plugin agent"),
     ],
 }
@@ -425,13 +425,13 @@ def test_selftest_two_level_subcommand_vs_positional():
 
 def test_selftest_allowlist_suppresses_only_matching_message():
     """_allowlisted must suppress exactly its substring, for its doc only — nothing broader."""
-    doc = "sdlc-setup.md"
+    doc = "sprd-setup.md"
     assert _allowlisted(
-        doc, "sdlc-setup.md: references agent `ux-reviewer` — no agents/ux-reviewer.md"
+        doc, "sprd-setup.md: references agent `ux-reviewer` — no agents/ux-reviewer.md"
     )
     # a different agent under the same doc is NOT suppressed
     assert not _allowlisted(
-        doc, "sdlc-setup.md: references agent `other-agent` — no agents/other-agent.md"
+        doc, "sprd-setup.md: references agent `other-agent` — no agents/other-agent.md"
     )
     # the same substring under a different doc is NOT suppressed
     assert not _allowlisted("other.md", "references agent `ux-reviewer`")

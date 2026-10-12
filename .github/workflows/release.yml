@@ -1,4 +1,4 @@
-# SDLC Studio — build the desktop installers and attach them to a GitHub Release.
+# Shepherd — build the desktop installers and attach them to a GitHub Release.
 #
 # Trigger: a version tag (`v1.7.0`) pushed to the repository, or Run workflow by hand.
 # The .dmg (+ .zip) is built on a macOS runner and the .exe installer on a Windows runner by
@@ -62,7 +62,7 @@ jobs:
           if [ "$TAG" != "v$VERSION" ]; then
             echo "::error::tag $TAG does not match plugin.json version $VERSION"; exit 1
           fi
-          echo "building SDLC Studio $VERSION"
+          echo "building Shepherd $VERSION"
       - name: Build (macOS)
         if: runner.os == 'macOS'
         shell: bash
@@ -94,7 +94,7 @@ jobs:
         run: ls -la release/*/
       - uses: actions/upload-artifact@v4
         with:
-          name: togo-${{ runner.os }}
+          name: shepherd-${{ runner.os }}
           path: |
             studio/release/*/*.dmg
             studio/release/*/*.zip
@@ -116,18 +116,18 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           {
-            echo "SDLC Studio $TAG — desktop installers."
+            echo "Shepherd $TAG — desktop installers."
             echo
             echo "- macOS: the .dmg (or .zip). Unsigned builds: right-click → Open the first time."
             echo "- Windows: the .exe installer (choose the folder; settings survive uninstall). Unsigned builds: SmartScreen → More info → Run anyway."
             echo
             echo "The app needs Claude Code, uv and git on the machine, and the plugin installed in Claude Code:"
-            echo '`/plugin marketplace add MCKRUZ/claude-code-sdlc` then `/plugin install claude-code-sdlc@mckruz`.'
-            echo "gh or az are optional (pull-request features only). See docs/guide/togo-setup-guide.html."
+            echo '`/plugin marketplace add MCKRUZ/shepherd-sdlc` then `/plugin install shepherd@mckruz`.'
+            echo "gh or az are optional (pull-request features only). See docs/guide/shepherd-setup-guide.html."
           } > notes.md
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: SDLC Studio ${{ github.event.inputs.tag || github.ref_name }}
+          name: Shepherd ${{ github.event.inputs.tag || github.ref_name }}
           body_path: notes.md
           files: artifacts/*

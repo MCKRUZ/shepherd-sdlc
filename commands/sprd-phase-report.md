@@ -1,14 +1,14 @@
-# /sdlc-phase-report — Generate Phase HTML Report
+# /sprd-phase-report — Generate Phase HTML Report
 
 Render all artifacts for the current (or specified) phase into a self-contained HTML report for stakeholder review.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first.
 
 2. **Determine target phase:**
    - No argument → use `current_phase` from state file
-   - Phase-id argument (e.g., `/sdlc-phase-report 2`) → use that phase id
+   - Phase-id argument (e.g., `/sprd-phase-report 2`) → use that phase id
    - Validate the id against the registry (`0`, `1`, `2`, `3`, `build`, `7`, `8`, `9`, `close`)
 
 3. **Run report generator:**

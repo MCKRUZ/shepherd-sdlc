@@ -1,10 +1,10 @@
-# /sdlc-next — Advance to Next Phase
+# /sprd-next — Advance to Next Phase
 
 Run exit gate checks for the current phase and advance to the next phase if all gates pass.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first.
 
 2. **Read state:** Load `.sdlc/state.yaml` to determine the current phase.
 
@@ -88,20 +88,20 @@ Run exit gate checks for the current phase and advance to the next phase if all 
 
    - **First, snapshot the artifact ledger (advisory, exit 0):** capture any direct edits to this
      phase's artifacts before they freeze, so the change history and staleness stay current even for
-     edits made outside `/sdlc-revise`:
+     edits made outside `/sprd-revise`:
      ```bash
      uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/audit_artifacts.py record --scan --state .sdlc/state.yaml
      ```
      This appends only to `.sdlc/metrics/artifact-log.jsonl` (the audit trail) and captures each
      changed artifact's **content** lockstep into the local version store (`.sdlc/versions/`), so the
-     edit is diffable and roll-back-able via `/sdlc-version`. Content capture is best-effort — a store
+     edit is diffable and roll-back-able via `/sprd-version`. Content capture is best-effort — a store
      fault leaves the ledger append and this command byte-identical. It never modifies artifacts or
      `state.yaml`, and never blocks the advance. If the script is absent, skip it.
 
    - **Then, optionally surface merged-spec drift (advisory, exit 0):** if any specs reached
      `status: merged` during the loop just completed, offer to back-propagate what they shipped into
      the pre-Build artifacts. Run the read-only scan and, for any spec with drifted upstreams, suggest
-     the human run `/sdlc-refresh detect --spec <path>`:
+     the human run `/sprd-refresh detect --spec <path>`:
      ```bash
      uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/audit_artifacts.py refresh scan --state .sdlc/state.yaml
      ```

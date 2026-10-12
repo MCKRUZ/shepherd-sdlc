@@ -180,7 +180,7 @@ def _print_next_actions(groups: dict[str, list[str]]) -> None:
     print("\nNEXT ACTIONS:")
     print("  - Merge each <file>.harness-new into its file by hand, then DELETE the "
           ".harness-new sibling.")
-    print("  - CLAUDE.md carries the SDLC section /sdlc-setup appended, so it typically "
+    print("  - CLAUDE.md carries the SDLC section /sprd-setup appended, so it typically "
           "reports ADAPTED or")
     print("    CONFLICT: merge its stack-standards section deliberately; never wholesale-"
           "replace the file.")

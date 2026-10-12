@@ -102,7 +102,7 @@ Final state of the project:
 | Metric | Value |
 |--------|-------|
 | Total phases completed | 10 (0–9) |
-| Sprint commitment outcomes | kept / carried / dropped per sprint, with reasons (from /sdlc-sprint close) |
+| Sprint commitment outcomes | kept / carried / dropped per sprint, with reasons (from /sprd-sprint close) |
 | Total P0 stories delivered | [N/N] |
 | Test coverage at release | [X]% |
 | Defects found in testing | [N] |

@@ -1,6 +1,6 @@
 # SDLC Phase Lifecycle Reference
 
-Comprehensive reference for all 9 phases of the claude-code-sdlc plugin lifecycle. This document covers phase definitions, entry/exit gates, workflow steps, artifacts, agent orchestration, HITL gates, handoff protocols, project type adaptations, and visual report generation.
+Comprehensive reference for all 9 phases of the Shepherd plugin lifecycle. This document covers phase definitions, entry/exit gates, workflow steps, artifacts, agent orchestration, HITL gates, handoff protocols, project type adaptations, and visual report generation.
 
 ---
 
@@ -27,7 +27,7 @@ Comprehensive reference for all 9 phases of the claude-code-sdlc plugin lifecycl
 
 ## Overview
 
-The claude-code-sdlc plugin orchestrates a full Software Development Lifecycle across 9 phases, ordered but non-sequential (ids `0, 1, 2, 3, build, 7, 8, 9, close`). Each phase has a clearly defined purpose, required artifacts, entry/exit gates, and a handoff document that feeds the next phase.
+The Shepherd plugin orchestrates a full Software Development Lifecycle across 9 phases, ordered but non-sequential (ids `0, 1, 2, 3, build, 7, 8, 9, close`). Each phase has a clearly defined purpose, required artifacts, entry/exit gates, and a handoff document that feeds the next phase.
 
 The lifecycle enforces discipline through:
 
@@ -115,7 +115,7 @@ The `check_gates.py` script reads this registry and validates exit conditions ag
 - **SHOULD** -- produces a warning but does not block advancement. The warning is surfaced to the human.
 - **MAY** -- informational only. Logged but does not affect advancement.
 
-**Approval:** Advancement is **always manual**. Every phase carries `approval: manual` -- even if all checks pass, the human must explicitly confirm advancement. The `/sdlc-next` command presents a summary and asks for human confirmation before advancing. There is no auto-advancing phase; the old `approval: automatic` mode has been removed entirely.
+**Approval:** Advancement is **always manual**. Every phase carries `approval: manual` -- even if all checks pass, the human must explicitly confirm advancement. The `/sprd-next` command presents a summary and asks for human confirmation before advancing. There is no auto-advancing phase; the old `approval: automatic` mode has been removed entirely.
 
 ---
 
@@ -129,7 +129,7 @@ Understand the problem space, quantify impact, map stakeholders, and define scop
 
 | Condition | Type |
 |-----------|------|
-| Project initiated via `/sdlc-setup` | MUST |
+| Project initiated via `/sprd-setup` | MUST |
 
 ### Workflow Steps
 
@@ -224,8 +224,8 @@ Decompose the problem into functional and non-functional requirements with user 
 | 1 | Functional Requirements | Document functional requirements with user stories, acceptance criteria, and priority levels. |
 | 2 | Non-Functional Requirements | Define NFRs across performance, security, scalability, availability, observability, and maintainability dimensions. |
 | 3 | Epics | Group requirements into epics with clear boundaries and dependencies. |
-| 3a | Feature Decomposition (conditional) | `/sdlc-feature` -- when an epic spans surfaces or personas: the `feature-architect` drafts `feature-brief.md` (features and specs with channel + persona per row, one channel per spec); a named human confirms rows and tiers. |
-| 3b | Business Rules and Golden Scenarios (conditional) | `/sdlc-rules` -- when the feature encodes policy: the `bizreq-analyst` drafts `business-rules.md` (BR-NN: condition, outcome, source, approver) and `golden-scenarios.md` (SCEN-NN); each approver signs their rules; undecided outcomes become DL-NN items. |
+| 3a | Feature Decomposition (conditional) | `/sprd-feature` -- when an epic spans surfaces or personas: the `feature-architect` drafts `feature-brief.md` (features and specs with channel + persona per row, one channel per spec); a named human confirms rows and tiers. |
+| 3b | Business Rules and Golden Scenarios (conditional) | `/sprd-rules` -- when the feature encodes policy: the `bizreq-analyst` drafts `business-rules.md` (BR-NN: condition, outcome, source, approver) and `golden-scenarios.md` (SCEN-NN); each approver signs their rules; undecided outcomes become DL-NN items. |
 | 4 | Stakeholder Review | Present requirements to the human for validation and gap analysis. |
 | 5 | Phase Handoff | Package into `phase2-handoff.md`. |
 | 6 | Generate Visual Report | Generate `.sdlc/reports/01-requirements-visual.html`. |
@@ -248,9 +248,9 @@ Decompose the problem into functional and non-functional requirements with user 
 
 - `glossary.md` -- domain terminology definitions
 - `01-requirements-report.html` -- self-contained HTML phase report
-- `feature-brief.md` -- (conditional) epic decomposed into channel-aware features and specs, from `/sdlc-feature`
-- `business-rules.md` -- (conditional) the BR-NN decision table with a named approver per rule, from `/sdlc-rules`
-- `golden-scenarios.md` -- (conditional) SCEN-NN input → expected behaviour; seeds acceptance checks and the golden set, from `/sdlc-rules`
+- `feature-brief.md` -- (conditional) epic decomposed into channel-aware features and specs, from `/sprd-feature`
+- `business-rules.md` -- (conditional) the BR-NN decision table with a named approver per rule, from `/sprd-rules`
+- `golden-scenarios.md` -- (conditional) SCEN-NN input → expected behaviour; seeds acceptance checks and the golden set, from `/sprd-rules`
 
 ### Primary Skills
 
@@ -259,7 +259,7 @@ Decompose the problem into functional and non-functional requirements with user 
 
 ### Agents
 
-Requirements are authored directly by Claude with human review at Step 4. Two discipline agents are spawned only when their trigger applies: `feature-architect` (Product, via `/sdlc-feature`) and `bizreq-analyst` (Business requirements, via `/sdlc-rules`). Both propose; a named human decides, and the sign-offs are recorded at the advance.
+Requirements are authored directly by Claude with human review at Step 4. Two discipline agents are spawned only when their trigger applies: `feature-architect` (Product, via `/sprd-feature`) and `bizreq-analyst` (Business requirements, via `/sprd-rules`). Both propose; a named human decides, and the sign-offs are recorded at the advance.
 
 ### Exit Gate
 
@@ -312,9 +312,9 @@ Create software architecture, API contracts, data models, and Architecture Decis
 | 4 | Architecture Decision Records | Write ADRs encoding the human's architectural decisions from Step 0. Each ADR documents context, decision, alternatives considered, and consequences. |
 | 5 | Complete Design Artifacts | Fill in any remaining design artifact sections not covered by /deep-plan output. |
 | 6 | Data Model | Define data models, schema, and entity relationships. |
-| 6a | Data Contract, Readiness, Lineage (conditional) | `/sdlc-data` -- when the feature touches customer or personal data: the `data-analyst` drafts `data/data-contract.md` (PII column), `data/data-readiness.md` (advisory) and `data/lineage-audit.md`; a named human confirms the PII classification, which drives the risk tier. |
+| 6a | Data Contract, Readiness, Lineage (conditional) | `/sprd-data` -- when the feature touches customer or personal data: the `data-analyst` drafts `data/data-contract.md` (PII column), `data/data-readiness.md` (advisory) and `data/lineage-audit.md`; a named human confirms the PII classification, which drives the risk tier. |
 | 7 | Generate Architecture Diagrams | Produce `architecture-diagrams.html` with required diagram types using Mermaid.js. |
-| 7a | Experience (conditional) | `/sdlc-experience` -- when the feature has a customer surface: the `visual-designer` (screen) or `conversation-designer` (voice / chat) drafts `experience/user-journey.md`, `experience/surface-layout.md` and `experience/channel-interaction-spec.md`; a named human signs the journey and the contract. |
+| 7a | Experience (conditional) | `/sprd-experience` -- when the feature has a customer surface: the `visual-designer` (screen) or `conversation-designer` (voice / chat) drafts `experience/user-journey.md`, `experience/surface-layout.md` and `experience/channel-interaction-spec.md`; a named human signs the journey and the contract. |
 | 8 | Phase Handoff | Package into `phase3-handoff.md`, including the walking-skeleton definition for Foundation. |
 | 9 | Generate Phase Report | Run `generate_phase_report.py`. |
 
@@ -346,8 +346,8 @@ Create software architecture, API contracts, data models, and Architecture Decis
 - `external-reviews/` -- multi-LLM review outputs
 - `deep-plan-checkpoint.yaml` -- session state for Foundation resumption
 - `architecture-diagrams.html` -- interactive Mermaid diagrams (recommended)
-- `data/data-contract.md`, `data/data-readiness.md`, `data/lineage-audit.md` -- (conditional) the Data seat, from `/sdlc-data`
-- `experience/user-journey.md`, `experience/surface-layout.md`, `experience/channel-interaction-spec.md` -- (conditional) the Design seat, from `/sdlc-experience`
+- `data/data-contract.md`, `data/data-readiness.md`, `data/lineage-audit.md` -- (conditional) the Data seat, from `/sprd-data`
+- `experience/user-journey.md`, `experience/surface-layout.md`, `experience/channel-interaction-spec.md` -- (conditional) the Design seat, from `/sprd-experience`
 
 ### Primary Skills
 
@@ -356,7 +356,7 @@ Create software architecture, API contracts, data models, and Architecture Decis
 
 ### Agents
 
-The orchestrator drives the /deep-plan skill integration directly. Three discipline agents are spawned only when their trigger applies: `data-analyst` (via `/sdlc-data`), and `visual-designer` or `conversation-designer` (via `/sdlc-experience`, routed by channel). Each proposes; a named human decides, and the sign-offs are recorded at the advance.
+The orchestrator drives the /deep-plan skill integration directly. Three discipline agents are spawned only when their trigger applies: `data-analyst` (via `/sprd-data`), and `visual-designer` or `conversation-designer` (via `/sprd-experience`, routed by channel). Each proposes; a named human decides, and the sign-offs are recorded at the advance.
 
 ### Exit Gate
 
@@ -414,7 +414,7 @@ Build the factory and prove it on real software. Install and adapt the harness, 
 | 7 | The Cadence Plan and the Build Tripwires | Produce `cadence-plan.md`: schedule the Build cadences (daily flow check, weekly intent triage, retro+, setup review) and agree two numbers -- the **WIP cap** and the **review-wait tripwire**. |
 | 8 | Phase Handoff | Draft `build-handoff.md` and `foundation-report.md`: the ordered spec backlog, the risk-tier map, the cadence calendar, and open questions. The exit demo runs in the client's own dev environment through the real pipeline. |
 | 9 | Generate Visual Report | Generate `.sdlc/reports/03-foundation-visual.html`. |
-| 10 | Generate Phase Report | Run `/sdlc-gate` to validate and produce `.sdlc/reports/03-foundation-report.html`. |
+| 10 | Generate Phase Report | Run `/sprd-gate` to validate and produce `.sdlc/reports/03-foundation-report.html`. |
 
 ### HITL Gates
 
@@ -508,7 +508,7 @@ The visible gap where Implementation / Quality / Testing used to sit is intentio
 
 **Beat 1 -- Intent: decide and write.** Nothing enters the loop as a conversation. A story becomes buildable only by clearing the **Definition of Ready** at weekly intent triage: every acceptance criterion passes the **vague-line test** ("Could two people build different things from this line?"), scope-in and scope-out are both stated, the silent product decisions are surfaced with a named owner, a risk tier is assigned by the Pod Lead, and the harness pattern to reuse is named. Then write the spec -- one file in the repo (`specs/NNNN-name.md`) durable across sessions, with Goal / Why / Scope in-out / Acceptance checks / Risk tier / Delegation plan / Checking plan. A stale spec is a lie; the spec changes in the same PR as the behavior.
 
-**Channel binding (conditional).** A spec with a customer surface is bound to exactly one channel before it is Ready: `/sdlc-channel` sets `channel:`, injects the channel's acceptance dimensions as concrete acceptance checks, seeds the harness context if empty, and applies a risk floor that may only raise the tier. An advisory check flags a bound spec that is missing a dimension. Checks that implement a signed `BR-NN` cite it; a spec touching PII-marked fields takes its tier from the data contract.
+**Channel binding (conditional).** A spec with a customer surface is bound to exactly one channel before it is Ready: `/sprd-channel` sets `channel:`, injects the channel's acceptance dimensions as concrete acceptance checks, seeds the harness context if empty, and applies a risk floor that may only raise the tier. An advisory check flags a bound spec that is missing a dimension. Checks that implement a signed `BR-NN` cite it; a spec touching PII-marked fields takes its tier from the data contract.
 
 **Beat 2 -- Delegate: bound and build.** Delegating is drawing the box and approving the plan before the build starts. **Plan mode first, always** -- the agent reads the repo and spec and proposes an approach before writing anything; the Orchestrator corrects or approves. **Three bounds, set per spec:** *Scope* (the file patterns it may touch), *Context* (the one canonical pattern to reuse, named), *Permissions* (what the agent may do without asking -- safe commands auto-allowed, the rest gated). Freedom scales by risk within one change. Fan out only to *explore*; single-thread to *build* shared code. **TDD when the profile or spec requires it** -- and always for a bug fix (write the failing regression test first). The **Stop hook** refuses to let the agent finish on a failing build or red tests.
 
@@ -527,7 +527,7 @@ Four short meetings replace the ceremony calendar. None asks "what did you do ye
 | Meeting | Length | Replaces | What it does |
 |---------|--------|----------|--------------|
 | **Flow check** (daily) | 10-15 min | standup | The queue number first: how many changes wait for checking, how long the oldest has waited. Every waiting change gets a Checker; vague specs flagged back to triage; the WIP cap enforced. |
-| **Intent triage** (weekly) | 60 min | refinement | Stories become ready specs: vague lines sharpened, silent decisions surfaced, risk tiers assigned, the backlog ordered. Run it with `/sdlc-refine` (the agenda, then one spec at a time); the sprint slate it feeds is `/sdlc-sprint`. |
+| **Intent triage** (weekly) | 60 min | refinement | Stories become ready specs: vague lines sharpened, silent decisions surfaced, risk tiers assigned, the backlog ordered. Run it with `/sprd-refine` (the agenda, then one spec at a time); the sprint slate it feeds is `/sprd-sprint`. |
 | **Retro+** (weekly) | 60 min | retro | Every escaped bug gets the same question -- "which check should have caught it?" -- and the answer becomes a harness improvement. |
 | **Setup review** (weekly) | 30-60 min | (new) | The week's harness changes merge: `CLAUDE.md` updates, skill/hook improvements, permission tuning -- versioned, PR'd, deputy-reviewed. |
 
@@ -569,7 +569,7 @@ The Build loop runs the harness's standing agents inside the beats: the **grader
 
 ### Exit
 
-The Build loop has **no artifact exit gate**. It is left by a human **feature-complete declaration** -- every committed story has ridden the loop and merged -- which produces `phase7-handoff.md`. `/sdlc-gate` for this entry verifies only that `phase7-handoff.md` exists and is complete; it does not batch-check the build, because checking already happened per change. Leaving is always a manual human declaration; there is no auto-advance.
+The Build loop has **no artifact exit gate**. It is left by a human **feature-complete declaration** -- every committed story has ridden the loop and merged -- which produces `phase7-handoff.md`. `/sprd-gate` for this entry verifies only that `phase7-handoff.md` exists and is complete; it does not batch-check the build, because checking already happened per change. Leaving is always a manual human declaration; there is no auto-advance.
 
 ### Project Type Adaptations
 
@@ -865,7 +865,7 @@ Prove the client can run all of it without the pod -- the system, the harness, t
 | 4 | Hand Over the Record | Deliver the complete engagement record into the client's tooling: `final-handoff-report.md`, every phase report (0-9), the outcomes dashboard re-pointed to client ownership with its quarter-read date, and the debt log with owners and dates. |
 | 5 | Revoke Access, Audited | Remove every pod seat, token, repo permission, environment role, and vault access on a checklist, confirmed against the client's audit trail by their security. Rotate any production secrets the pod touched. |
 | 6 | The Harvest PR -- Feed the Standard | Open the mandatory improvements PR against the firm's `delivery-standard` repo -- generalized skills, corrected templates, repeatable patterns, with client specifics stripped. Write the retro file into the standard's `retros/`. |
-| 7 | Generate Reports | Generate `.sdlc/reports/close-visual.html` and run `/sdlc-gate` to produce `.sdlc/reports/close-report.html`. |
+| 7 | Generate Reports | Generate `.sdlc/reports/close-visual.html` and run `/sprd-gate` to produce `.sdlc/reports/close-report.html`. |
 
 ### HITL Gates
 
@@ -922,7 +922,7 @@ The close gate requires a real client team and real backlog specs and cannot be 
 
 ## Phase Transition Protocol
 
-Phase transitions are managed by the `/sdlc-next` command, which orchestrates the following sequence:
+Phase transitions are managed by the `/sprd-next` command, which orchestrates the following sequence:
 
 ### 1. Gate Check Execution
 
@@ -963,7 +963,7 @@ The `advance_phase.py` script updates `state.yaml`:
 
 ### 5. Open Questions Protocol (BLOCKING)
 
-This is the most critical step. After advancing, `/sdlc-next` executes a **mandatory, blocking HITL gate**:
+This is the most critical step. After advancing, `/sprd-next` executes a **mandatory, blocking HITL gate**:
 
 1. Read the handoff document that was just produced (e.g., `phase2-handoff.md` when entering Phase 2, `build-handoff.md` when entering the Build loop).
 2. Extract ALL Q-NN or AQ-NN items listed under "Open Questions", "What X Must Address", or any similar heading.
@@ -1105,7 +1105,7 @@ Every handoff document follows a consistent structure:
 1. **Summary** -- key findings or outputs from the phase (5-10 bullets)
 2. **Decisions Made** -- what was decided and the rationale
 3. **Implications for Next Phase** -- what the next phase needs to know about what was produced
-4. **Open Questions** -- specific questions the next phase must resolve (Q-NN or AQ-NN format). These are BLOCKING -- the open questions protocol in `/sdlc-next` forces resolution before any new-phase work begins.
+4. **Open Questions** -- specific questions the next phase must resolve (Q-NN or AQ-NN format). These are BLOCKING -- the open questions protocol in `/sprd-next` forces resolution before any new-phase work begins.
 5. **Risks** -- risks to carry forward with probability/impact ratings
 6. **Recommended Starting Point** -- where the next phase should begin and what to tackle first
 
@@ -1118,4 +1118,4 @@ Every open question must include: the question text, who or what needs the answe
 
 ---
 
-*This document reflects the claude-code-sdlc plugin phase-registry.yaml v2.0 and the phase definition files `phases/00-discovery.md`, `01-requirements.md`, `02-design.md`, `03-foundation.md`, `build-loop.md`, `07-documentation.md`, `08-deployment.md`, `09-monitoring.md`, and `close.md`.*
+*This document reflects the Shepherd plugin phase-registry.yaml v2.0 and the phase definition files `phases/00-discovery.md`, `01-requirements.md`, `02-design.md`, `03-foundation.md`, `build-loop.md`, `07-documentation.md`, `08-deployment.md`, `09-monitoring.md`, and `close.md`.*

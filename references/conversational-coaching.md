@@ -6,14 +6,14 @@ Coaching mode is an alternative interaction style where the orchestrator acts as
 
 - User is unfamiliar with the SDLC process
 - User asks "what should I do?" or "help me with this phase"
-- User explicitly requests coaching via `/sdlc-coach`
+- User explicitly requests coaching via `/sprd-coach`
 - User seems uncertain or overwhelmed by the step list
 
 ## When NOT to Use
 
 - User knows the process and wants to move fast
 - User gives specific instructions ("create the requirements doc")
-- User is running `/sdlc-next` or `/sdlc-gate` (these are execution commands)
+- User is running `/sprd-next` or `/sprd-gate` (these are execution commands)
 
 ## State Assessment Framework
 

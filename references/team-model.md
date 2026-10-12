@@ -7,7 +7,7 @@ who is Responsible / Accountable / Consulted / Informed as the work moves throug
 
 It is a **Tier-3 reference**: loaded on demand, read by nothing at runtime except the commands that
 choose to surface it. It has **zero coupling** — no script imports it, no gate depends on it. It
-**degrades gracefully if absent**: `commands/sdlc.md` looks up the current phase's row to render a
+**degrades gracefully if absent**: `commands/sprd.md` looks up the current phase's row to render a
 "Team & RACI (this phase)" block, and simply skips that block when this file is missing. The model is
 deliberately **product-agnostic** — the disciplines and cadences here fit any engagement; product
 specifics live in the engagement's own docs, never in the model.
@@ -22,23 +22,23 @@ the agent drafts and interrogates; a **named human decides**).
 ### Product
 
 Owns the **problem, the outcome, and the decomposition** — Outcome → Epic → **Feature** → Spec. Runs
-`/sdlc-feature` (drives the `feature-architect` agent) to do channel-aware epic → feature → spec
-decomposition, and `/sdlc-channel` to bind a spec to its channel. Owns the phase-spanning
+`/sprd-feature` (drives the `feature-architect` agent) to do channel-aware epic → feature → spec
+decomposition, and `/sprd-channel` to bind a spec to its channel. Owns the phase-spanning
 **decision-log** (named owner + a 2-business-day clock per open decision). Confirms every risk tier a
 discipline agent *proposes*. Signs the feature brief's **Feature** section at the Phase-1 gate.
 
 ### Data
 
 Owns the **data contract, data readiness, lineage/PII classification**, and the eval **golden data**.
-Runs `/sdlc-data` (drives the `data-analyst` agent) to author `data-contract.md` (PII-classified),
+Runs `/sprd-data` (drives the `data-analyst` agent) to author `data-contract.md` (PII-classified),
 `data-readiness.md`, and `lineage-audit.md`. PII on a data-bearing spec is a **risk-tier driver**. In
-`/sdlc-evals`, **Data owns the data** in the golden set (Bizreq owns the scenarios). Signs the
+`/sprd-evals`, **Data owns the data** in the golden set (Bizreq owns the scenarios). Signs the
 data-contract section at the Phase-1/2 gate.
 
 ### Design
 
 Owns the **experience across channels** — journeys, surface layouts, and the channel interaction
-contract. Runs `/sdlc-experience`, which routes by channel to the `visual-designer` (web) or the
+contract. Runs `/sprd-experience`, which routes by channel to the `visual-designer` (web) or the
 `conversation-designer` (voice / chat) agent, producing `user-journey.md`, `surface-layout.md`
 (channel-adaptive: screens for visual, turn-script for voice, message-flow for chat), and
 `channel-interaction-spec.md` (the descriptor-dimension → contract → acceptance-check mapping). Persona
@@ -48,7 +48,7 @@ the Phase-2 gate.
 ### Engineering
 
 Owns **architecture and ADRs, the shared "brains," the build, and the harness rails** — the
-code-artifact core. Runs the unchanged `/sdlc-spec` (the Build-loop Intent beat) and drives the Build
+code-artifact core. Runs the unchanged `/sprd-spec` (the Build-loop Intent beat) and drives the Build
 loop (Intent → Delegate → Discern). Architecture in Phase 2 fixes how thin **surfaces** connect to the
 shared **brains** so a new channel reuses a brain instead of re-implementing it. Signs ADRs at the
 Phase-2 gate and the non-author checks (security pass, named sign-off) in the Build loop.
@@ -56,13 +56,13 @@ Phase-2 gate and the non-author checks (security pass, named sign-off) in the Bu
 ### Bizreq
 
 Owns the **business rules and the outcome intent** — `business-rules.md` (BR-NN decision table) and
-`golden-scenarios.md` (SCEN-NN). Runs `/sdlc-intake` (corpus cataloguing) in Discovery and `/sdlc-rules`
+`golden-scenarios.md` (SCEN-NN). Runs `/sprd-intake` (corpus cataloguing) in Discovery and `/sprd-rules`
 (drives the `bizreq-analyst` agent) in Requirements. Each BR-NN maps to an acceptance check (advisory /
-soft traceability); each SCEN-NN feeds the golden set. In `/sdlc-evals`, **Bizreq owns the scenarios**.
+soft traceability); each SCEN-NN feeds the golden set. In `/sprd-evals`, **Bizreq owns the scenarios**.
 Accepts business-intent at the Build-loop merge (captured in state). Signs the Outcome section at the
 Phase-1 gate.
 
-All five are also **review lenses**: `/sdlc-review` gains Design / Data / Bizreq viewpoints inside the
+All five are also **review lenses**: `/sprd-review` gains Design / Data / Bizreq viewpoints inside the
 `multi-reviewer` council (4 → 7 viewpoints), advisory and never-blocking.
 
 ---
@@ -93,9 +93,9 @@ Design is accountable for interaction / experience. Data is Responsible for the 
 and Bizreq are Consulted. This is the one phase where accountability is intentionally shared, because the
 architecture and the interaction contract are authored in parallel and signed separately.
 
-**Reading the table.** `commands/sdlc.md` resolves the current phase id from `.sdlc/state.yaml`, looks
+**Reading the table.** `commands/sprd.md` resolves the current phase id from `.sdlc/state.yaml`, looks
 up the matching row, and renders a "Team & RACI (this phase)" block naming who is active and in what
-role. If this file is absent, that block is skipped and `/sdlc` renders exactly as before.
+role. If this file is absent, that block is skipped and `/sprd` renders exactly as before.
 
 ---
 
@@ -139,11 +139,11 @@ detected from `origin` and can be pinned with `set_setting.py code-host --host �
 ## Cadences and sign-off
 
 - **Discipline sign-off is captured in state.** Each discipline signs its section at the phase gate;
-  `/sdlc-next` records this as optional additive fields on the existing sign-off record in
+  `/sprd-next` records this as optional additive fields on the existing sign-off record in
   `state.yaml`, and the gate/phase report renders them automatically. This is the named-human checkpoint
   each discipline now has — captured, not ceremonial.
 - **The decision-log carries the clock.** Cross-cutting product decisions live in a phase-spanning
-  `decision-log.md` with a named owner and a 2-business-day clock; `/sdlc-status` surfaces open and
+  `decision-log.md` with a named owner and a 2-business-day clock; `/sprd-status` surfaces open and
   overdue items. Silent decisions *inside a single spec* stay in that spec's Decision List — the two
   records don't overlap (phase-scoped vs spec-scoped).
 - **Nothing here blocks.** Unfilled discipline sections are advisory flags; formal acceptance happens at

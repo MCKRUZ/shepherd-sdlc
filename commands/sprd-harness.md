@@ -1,7 +1,7 @@
-# /sdlc-harness — Install or update the delivery harness
+# /sprd-harness — Install or update the delivery harness
 
 Install (or refresh) the standard-aligned delivery harness in the current repo, independent of a
-full `/sdlc-setup`. Use this to add the harness to a repo that already has `.sdlc/`, or to pull the
+full `/sprd-setup`. Use this to add the harness to a repo that already has `.sdlc/`, or to pull the
 latest harness after a plugin update (the harvest loop).
 
 ## Instructions

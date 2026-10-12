@@ -1,10 +1,10 @@
-# SDLC Configuration (auto-injected by /sdlc-setup)
+# SDLC Configuration (auto-injected by /sprd-setup)
 
 ## SDLC Plugin Active
-This project uses the claude-code-sdlc plugin for lifecycle management.
+This project uses the Shepherd plugin for lifecycle management.
 - State: `.sdlc/state.yaml`
 - Profile: `creative-tooling`
-- Commands: `/sdlc`, `/sdlc-setup`, `/sdlc-status`, `/sdlc-next`, `/sdlc-gate`
+- Commands: `/sprd`, `/sprd-setup`, `/sprd-status`, `/sprd-next`, `/sprd-gate`
 
 ## Stack: Creative Tooling
 - **Language:** Python (uv-run scripts)
@@ -36,7 +36,7 @@ This project uses the claude-code-sdlc plugin for lifecycle management.
 - No compliance frameworks, but the audit trail in `.sdlc/state.yaml` is maintained
 
 ## Phase Awareness
-Before making changes, check the current SDLC phase with `/sdlc`:
+Before making changes, check the current SDLC phase with `/sprd`:
 - Opening phases (0 Discovery – 3 Foundation): produce and gate the documents; no feature code before Foundation
 - Build loop: one spec at a time — Intent → Delegate → Discern; TDD required, checking happens per change, the author never approves their own work
 - Closing phases (7 Documentation – 9 Monitoring, then Close & Transfer): prove docs by cold use, deploy through the existing pipeline, alerts from measured baselines

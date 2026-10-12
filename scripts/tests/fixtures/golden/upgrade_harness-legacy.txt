@@ -48,6 +48,6 @@ Totals: 28 path(s): 1 NEW, 26 ADOPT, 1 CONFLICT-UNTRACKED
 
 NEXT ACTIONS:
   - Merge each <file>.harness-new into its file by hand, then DELETE the .harness-new sibling.
-  - CLAUDE.md carries the SDLC section /sdlc-setup appended, so it typically reports ADAPTED or
+  - CLAUDE.md carries the SDLC section /sprd-setup appended, so it typically reports ADAPTED or
     CONFLICT: merge its stack-standards section deliberately; never wholesale-replace the file.
 --- stderr ---

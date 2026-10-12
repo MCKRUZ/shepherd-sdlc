@@ -1,10 +1,10 @@
-# /sdlc-status — SDLC Progress Dashboard
+# /sprd-status — SDLC Progress Dashboard
 
 Display the current SDLC progress for this project.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first.
 
 2. **Read state:** Load `.sdlc/state.yaml` to get current phase, phase statuses, and history.
 
@@ -46,7 +46,7 @@ Display the current SDLC progress for this project.
      If `has_history` is true, render one line — `Artifacts: N stale (X acknowledged, Y open)` —
      using `stale`, `acknowledged`, and `open` from the JSON. If `has_history` is false (no ledger
      yet) or the script is absent, skip silently — no baseline has been recorded. Advisory only
-     (exit 0) — never blocks. See `/sdlc-audit-artifacts` for the full dashboard.
+     (exit 0) — never blocks. See `/sprd-audit-artifacts` for the full dashboard.
 
    - **Merged-spec drift nudge** — surface pre-Build artifacts a merged spec implies an edit to
      (reverse propagation), so the drift is visible without anyone remembering to look:
@@ -55,9 +55,9 @@ Display the current SDLC progress for this project.
      ```
      If `drifted_total` is 0 (every merged spec is faithful) or there are no merged specs, skip
      silently. Otherwise, for each `results[]` entry with `drifted > 0`, render one nudge line —
-     `↩ {drifted} upstream artifact(s) may have drifted from merged spec {spec} — /sdlc-refresh detect --spec {spec_node}`.
+     `↩ {drifted} upstream artifact(s) may have drifted from merged spec {spec} — /sprd-refresh detect --spec {spec_node}`.
      Entries whose upstreams are all trace-only (`drifted == 0`) produce no line. If the script is
-     absent, skip silently. Advisory only (exit 0) — never blocks. See `/sdlc-refresh` for the
+     absent, skip silently. Advisory only (exit 0) — never blocks. See `/sprd-refresh` for the
      draft+confirm path.
 
    - **Active sprint** — one additive read of the sprint team layer:
@@ -68,11 +68,11 @@ Display the current SDLC progress for this project.
      render one line from the JSON — `Sprint S07 (ends 2026-10-09): 6 slated · 4 ready · 1 verdict
      pending · 2 handoffs unacknowledged` — using `sprint.id`, `sprint.end`, `readiness.total`,
      `readiness.ready`, `len(verdicts_pending)`, and `len(handoffs_open)`. Read-only (exit 0) and
-     advisory — a sprint never gates a phase. See `/sdlc-sprint` for the full board.
+     advisory — a sprint never gates a phase. See `/sprd-sprint` for the full board.
 
 6. **Suggest next action:** Based on current phase status:
-   - If phase is `active`: suggest running `/sdlc` for phase guidance
-   - If all gates would pass: suggest running `/sdlc-next` to advance
+   - If phase is `active`: suggest running `/sprd` for phase guidance
+   - If all gates would pass: suggest running `/sprd-next` to advance
    - If artifacts are missing: list what's needed
 
 ## Output Format

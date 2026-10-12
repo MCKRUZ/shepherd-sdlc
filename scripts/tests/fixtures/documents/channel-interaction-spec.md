@@ -4,7 +4,7 @@
 > The contract that turns a channel's **acceptance dimensions** into the spec's **acceptance checks**.
 > The traceability chain is **`<channel>` descriptor dimension → interaction-spec contract → acceptance
 > check on the spec**: each `acceptance_dimension` in `channels/<channel>.yaml` drives one contract row,
-> and `/sdlc-channel` injects that row into the spec's existing `## Acceptance Checks` (graded by the
+> and `/sprd-channel` injects that row into the spec's existing `## Acceptance Checks` (graded by the
 > unchanged core). For an `ag-ui` channel, this table **is** the AG-UI event contract — Design
 > co-authors it with Engineering. Owned by Design.
 
@@ -51,7 +51,7 @@ event contract — the descriptor made concrete.*
 
 ## Notes
 
-- Each contract row becomes an ordinary **Acceptance Check** once `/sdlc-channel` injects it — nothing
+- Each contract row becomes an ordinary **Acceptance Check** once `/sprd-channel` injects it — nothing
   downstream knows it came from a channel.
 - Write each check to pass the existing **vague-line** lint (concrete, observable, testable).
 - Measurable dimensions (latency, load) cite the matching **NFR** in `non-functional-requirements.md`.

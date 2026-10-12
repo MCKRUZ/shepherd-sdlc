@@ -25,14 +25,14 @@
 "0":
   - id: intake
     label: "Catalogue the reference documents"
-    command: sdlc-intake
+    command: sprd-intake
     kind: run
     requires: {profile: documentation.intake_path}
     done_when: {json: {file: .sdlc/context/intake/catalog.json, key: locked, equals: true}}
 
   - id: brief
     label: "Prepare the workshop brief"
-    command: sdlc-brief
+    command: sprd-brief
     kind: create
     creates: [.sdlc/artifacts/00-discovery/workshop-brief.md]
     after: [intake]
@@ -41,37 +41,37 @@
 
   - id: review
     label: "Review this stage's documents"
-    command: sdlc-review
+    command: sprd-review
     kind: draft
     creates: [.sdlc/artifacts/00-discovery/review-report.md]
     done_when: {exists: .sdlc/artifacts/00-discovery/review-report.md}
 
   - id: enhance
     label: "Write plain-language summaries for stakeholders"
-    command: sdlc-enhance
+    command: sprd-enhance
     kind: draft
 
   - id: phase-report
     label: "Export this stage's report"
-    command: sdlc-phase-report
+    command: sprd-phase-report
     kind: run
 
   - id: coach
     label: "Talk it through"
-    command: sdlc-coach
+    command: sprd-coach
     kind: talk
 
 "1":
   - id: feature-brief
     label: "Break an epic into features and specs"
-    command: sdlc-feature
+    command: sprd-feature
     kind: create
     creates: [.sdlc/artifacts/01-requirements/feature-brief.md]
     done_when: {exists: .sdlc/artifacts/01-requirements/feature-brief.md}
 
   - id: rules
     label: "Write the business rules and golden scenarios"
-    command: sdlc-rules
+    command: sprd-rules
     kind: create
     creates:
       - .sdlc/artifacts/01-requirements/business-rules.md
@@ -83,37 +83,37 @@
 
   - id: rules-check
     label: "Check the rules against the scenarios"
-    command: sdlc-rules
+    command: sprd-rules
     kind: check
     after: [rules]
     requires: {file: .sdlc/artifacts/01-requirements/business-rules.md}
 
   - id: review
     label: "Review this stage's documents"
-    command: sdlc-review
+    command: sprd-review
     kind: draft
     creates: [.sdlc/artifacts/01-requirements/review-report.md]
     done_when: {exists: .sdlc/artifacts/01-requirements/review-report.md}
 
   - id: enhance
     label: "Write plain-language summaries for stakeholders"
-    command: sdlc-enhance
+    command: sprd-enhance
     kind: draft
 
   - id: phase-report
     label: "Export this stage's report"
-    command: sdlc-phase-report
+    command: sprd-phase-report
     kind: run
 
   - id: coach
     label: "Talk it through"
-    command: sdlc-coach
+    command: sprd-coach
     kind: talk
 
 "2":
   - id: data
     label: "Describe the data: contract, readiness and lineage"
-    command: sdlc-data
+    command: sprd-data
     kind: create
     creates:
       - .sdlc/artifacts/02-design/data/data-contract.md
@@ -127,14 +127,14 @@
 
   - id: data-check
     label: "Check which fields hold personal data"
-    command: sdlc-data
+    command: sprd-data
     kind: check
     after: [data]
     requires: {file: .sdlc/artifacts/02-design/data/data-contract.md}
 
   - id: experience
     label: "Design the experience for a surface"
-    command: sdlc-experience
+    command: sprd-experience
     kind: create
     creates:
       - .sdlc/artifacts/02-design/experience/user-journey.md
@@ -149,24 +149,24 @@
 
   - id: review
     label: "Review this stage's documents"
-    command: sdlc-review
+    command: sprd-review
     kind: draft
     creates: [.sdlc/artifacts/02-design/review-report.md]
     done_when: {exists: .sdlc/artifacts/02-design/review-report.md}
 
   - id: enhance
     label: "Write plain-language summaries for stakeholders"
-    command: sdlc-enhance
+    command: sprd-enhance
     kind: draft
 
   - id: phase-report
     label: "Export this stage's report"
-    command: sdlc-phase-report
+    command: sprd-phase-report
     kind: run
 
   - id: coach
     label: "Talk it through"
-    command: sdlc-coach
+    command: sprd-coach
     kind: talk
 
 "3":
@@ -179,48 +179,48 @@
 
   - id: review
     label: "Review this stage's documents"
-    command: sdlc-review
+    command: sprd-review
     kind: draft
     creates: [.sdlc/artifacts/03-foundation/review-report.md]
     done_when: {exists: .sdlc/artifacts/03-foundation/review-report.md}
 
   - id: enhance
     label: "Write plain-language summaries for stakeholders"
-    command: sdlc-enhance
+    command: sprd-enhance
     kind: draft
 
   - id: phase-report
     label: "Export this stage's report"
-    command: sdlc-phase-report
+    command: sprd-phase-report
     kind: run
 
   - id: coach
     label: "Talk it through"
-    command: sdlc-coach
+    command: sprd-coach
     kind: talk
 
   - id: refine
     label: "Refine the next sprint's specs"
-    command: sdlc-refine
+    command: sprd-refine
     kind: talk
 
 "build":
   - id: sprint
     label: "Plan, ready and close the sprint"
-    command: sdlc-sprint
+    command: sprd-sprint
     kind: run
 
   - id: refine
     label: "Refine the next sprint's specs"
-    command: sdlc-refine
+    command: sprd-refine
     kind: talk
 
   - id: phase-report
     label: "Export this stage's report"
-    command: sdlc-phase-report
+    command: sprd-phase-report
     kind: run
 
   - id: coach
     label: "Talk it through"
-    command: sdlc-coach
+    command: sprd-coach
     kind: talk

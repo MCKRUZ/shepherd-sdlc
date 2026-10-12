@@ -1,6 +1,6 @@
 """The document registry and the session-start index, built from the catalogue and the summaries.
 
-`intake_documents.py --registry` calls `build()`. Step 6 of /sdlc-intake is bookkeeping once the
+`intake_documents.py --registry` calls `build()`. Step 6 of /sprd-intake is bookkeeping once the
 catalogue and the summaries exist: which documents there are, how big, what each is about, and a
 condensed index that fits a token budget. This does that and nothing else. Topic clusters and the
 cross-reference map are judgment and are left exactly as the template (or a person) has them.

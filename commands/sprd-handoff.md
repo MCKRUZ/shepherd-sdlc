@@ -1,4 +1,4 @@
-# /sdlc-handoff — Hand a Ready Spec to a Developer
+# /sprd-handoff — Hand a Ready Spec to a Developer
 
 Turn hand-off into one step: create the spec's branch, set its `status`/`developer`
 frontmatter, assign the developer on the code host (and request a review from the spec's
@@ -68,13 +68,14 @@ This is the Delegate beat's tool — the moment the loop's roles change hands.
 - `--over-limit "<reason>"`: only on the user's explicit instruction (see step 3).
 - `--open`: start Claude Code on the branch immediately after a successful hand-off.
 - `--host github|azure-devops|none`: override code-host detection for this run only (the
-  default follows `origin`, then `SDLC_CODE_HOST`, then `.sdlc/code-host.yaml`).
+  default follows `origin`, then `SHEPHERD_CODE_HOST` (or the older `SDLC_CODE_HOST`), then
+  `.sdlc/code-host.yaml`).
 - `--json`: the outcome — including a refusal and its `kind`, and any `assignment_error` — as
   one JSON document carrying the top-level `host` block.
 
 ## Important
 
-- The user runs `/sdlc-handoff` — never `handoff.py` by hand.
+- The user runs `/sprd-handoff` — never `handoff.py` by hand.
 - Every refusal leaves the repository untouched — a half-done hand-off (branch created,
   frontmatter not committed, or vice versa) is worse than none. Never retry a refused
   hand-off by fixing only the symptom the script prints without addressing why the

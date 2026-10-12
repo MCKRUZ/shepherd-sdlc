@@ -1,4 +1,4 @@
-"""Summarise a data contract's PII classification (the read-only check behind /sdlc-data).
+"""Summarise a data contract's PII classification (the read-only check behind /sprd-data).
 
 `summary` reads the Fields table of `data-contract.md` and reports how many fields it declares, which
 of them are PII, and which have not been classified yet. PII is a risk-tier driver, so when at least

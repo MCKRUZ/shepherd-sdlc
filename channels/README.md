@@ -29,7 +29,7 @@ Each `channels/<id>.yaml` declares: `id`, `name`, `surface`, `llm_powered`, an a
 a list of `acceptance_dimensions` (each with an `id`, an `intent`, and a concrete `example_check`),
 `discipline_touchpoints`, `observability_signals`, and — for `llm_powered` channels — `eval_hooks`.
 
-The **`acceptance_dimensions`** are load-bearing: `/sdlc-channel` injects them into a spec's existing
+The **`acceptance_dimensions`** are load-bearing: `/sprd-channel` injects them into a spec's existing
 `## Acceptance Checks`, and `check_channel.py` advises (never blocks) when a channel-bound spec is
 missing one.
 

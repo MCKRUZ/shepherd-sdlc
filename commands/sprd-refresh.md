@@ -1,17 +1,17 @@
-# /sdlc-refresh — Back-Propagate a Built Spec into Its Upstream Artifacts
+# /sprd-refresh — Back-Propagate a Built Spec into Its Upstream Artifacts
 
 Traceability normally flows forward (requirement → spec → code). This command runs it **backward**:
 when a spec merges, it surfaces the pre-Build artifacts that spec implies an edit to —
 `requirements.md`, `epics.md`, `feature-brief.md`, `business-rules.md` — so they stop silently
-drifting from what actually shipped. It reads as `/sdlc-revise` **inverted**: instead of you changing
+drifting from what actually shipped. It reads as `/sprd-revise` **inverted**: instead of you changing
 one artifact and rippling forward, a merged spec proposes the upstream edits and a **named human**
 confirms them.
 
 ```
-/sdlc-refresh detect --spec specs/0001-duplicate-claim-409.md
-/sdlc-refresh draft  --spec specs/0001-duplicate-claim-409.md --draft
-/sdlc-refresh apply  --spec specs/0001-duplicate-claim-409.md requirements --actor me
-/sdlc-refresh status --spec specs/0001-duplicate-claim-409.md
+/sprd-refresh detect --spec specs/0001-duplicate-claim-409.md
+/sprd-refresh draft  --spec specs/0001-duplicate-claim-409.md --draft
+/sprd-refresh apply  --spec specs/0001-duplicate-claim-409.md requirements --actor me
+/sprd-refresh status --spec specs/0001-duplicate-claim-409.md
 ```
 
 The **One Rule** holds throughout: the discipline agent **drafts** the change into a `.proposed`
@@ -21,7 +21,7 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
 
 1. **Resolve mode and repo root:**
    - **Workflow mode** (default): look for `.sdlc/state.yaml`; pass `--state .sdlc/state.yaml`. If not
-     found, tell the user to run `/sdlc-setup` first.
+     found, tell the user to run `/sprd-setup` first.
    - **Standalone mode** (`--repo <path>`, or no `.sdlc/`): operate on the given repo.
 
 2. **Detect — review first, draft only on a signal (the divergence-aware default).** List the
@@ -40,7 +40,7 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
    - Pass `--draft` to mark all declared upstreams draft-eligible even without a drift signal;
      `--transitive` / `--include-coarse` widen the set (coarse still never drafts).
 
-   To see this across **all** merged specs at once (this is what backs the `/sdlc-status` drift
+   To see this across **all** merged specs at once (this is what backs the `/sprd-status` drift
    nudge), use `refresh scan` instead of `detect --spec`.
 
 3. **Draft — spawn the owning discipline agent to edit the `.proposed` (never the real file).**
@@ -87,7 +87,7 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
       - **Sign-off gate:** a signed-off / completed-phase upstream refuses without `--ack-signoff`
         (exit 0, no write); `--repo` with no sign-off data stays conservative and still asks for it.
       - On confirm it records a `refreshed` change (attributed to this spec) and captures a snapshot,
-        so the refresh is **rollback-able** via `/sdlc-version rollback`. That snapshot is a local,
+        so the refresh is **rollback-able** via `/sprd-version rollback`. That snapshot is a local,
         gitignored safety net — on another machine it may read *"content not captured"* (honest, not a
         bug); see *"Working across machines"* in `references/artifact-versioning.md`.
 
@@ -103,7 +103,7 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
    - Allocate the next `DL-NN` in `.sdlc/decision-log.md` (create from
      `${CLAUDE_PLUGIN_ROOT}/templates/phases/01-requirements/decision-log.md` if missing), owner =
      the actor, 2-business-day clock, id matching `--decision-ref`.
-   - Run `/sdlc-gate` for the refreshed artifact's phase and report PASS/FAIL. Re-gating is a real,
+   - Run `/sprd-gate` for the refreshed artifact's phase and report PASS/FAIL. Re-gating is a real,
      human-visible gate run — this command writes **nothing** to `state.yaml`.
 
 7. **Status & report.** Show the per-spec disposition of each upstream (honest counting; reads "no
@@ -113,7 +113,7 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
    ```
    ```
    Refresh <spec>: <N> upstreams — <k> refreshed, <m> not-affected, <j> open
-   Applied: <stem> in <path>  (actor: <name>, DL-NN)  → rollback via /sdlc-version
+   Applied: <stem> in <path>  (actor: <name>, DL-NN)  → rollback via /sprd-version
    Re-gate: PASS | FAIL (<blockers>)
    ```
 
@@ -132,16 +132,16 @@ copy; a **named human decides** whether to apply it. No agent ever edits the rea
 
 ## Important
 
-- The user runs `/sdlc-refresh` — never `audit_artifacts.py` by hand. The command owns mode
+- The user runs `/sprd-refresh` — never `audit_artifacts.py` by hand. The command owns mode
   resolution, agent routing, the preview→confirm handshake, and the decision-log + re-gate
   follow-through.
 - **Agent drafts, human decides.** The discipline agent edits only the `.proposed`; a named human
-  echoes the diffhash and owns the decision-log item. Same One Rule as `/sdlc-revise` and
-  `/sdlc-spec`'s risk tier.
+  echoes the diffhash and owns the decision-log item. Same One Rule as `/sprd-revise` and
+  `/sprd-spec`'s risk tier.
 - **Review-first, never a rubber stamp.** Detection lists trace-only candidates and drafts only on a
   drift signal or explicit `--draft`. A faithful spec produces a review, not an edit.
 - **Additive and advisory.** `refresh` writes only to the change-ledger, the object store, and the
   transient `.sdlc/refresh/` drafts. It never touches `state.yaml`, and `audit_artifacts.py` exits 0
   on every path — including every refuse/abort. See `references/artifact-versioning.md`.
-- When a refresh lands, the artifact now matches what shipped — and the next `/sdlc-status` scan will
+- When a refresh lands, the artifact now matches what shipped — and the next `/sprd-status` scan will
   flag any frozen layer downstream of it, closing the loop forward again.

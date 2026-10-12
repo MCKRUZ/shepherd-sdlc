@@ -8,7 +8,8 @@ name: CI
 #   test-windows — the same suite on windows-latest. The plugin is authored on Windows and
 #                 ships PowerShell hooks, so Linux-only CI cannot see console-encoding or
 #                 line-ending faults. BLOCKS.
-#   sync-check  — harness/ is GENERATED from delivery-standard/kit and must never drift.
+#   sync-check  — harness/ is GENERATED from delivery-standard/kit, renamed for Shepherd by
+#                 sync_kit.py's RENAMES pass (harness == rename(kit)), and must never drift.
 #                 BLOCKS. A red here means the kit's main moved without a plugin sync.
 #   actionlint  — lints the workflows the harness EMITS, composed and token-stubbed the
 #                 way a real repo would run them. BLOCKS (verified clean at adoption).
@@ -59,8 +60,11 @@ jobs:
           ref: main
           path: kit-source
       - uses: astral-sh/setup-uv@v8.3.2
-      # harness/ is generated — never hand-edited. If this is red, the kit's main branch
-      # moved without a plugin sync. Fix locally:
+      # harness/ is generated — never hand-edited. The invariant is harness == rename(kit):
+      # sync_kit.py copies the kit, then rewrites its brand strings in place (the pre-2.0 sdlc-*
+      # command names -> /sprd-*, the plugin id, the repo URL), so a brand change belongs in
+      # sync_kit.RENAMES, never in harness/. If this is red, the kit's main branch moved without a
+      # plugin sync (or RENAMES changed without a re-run). Fix locally:
       #   uv run --project scripts scripts/sync_kit.py --kit <delivery-standard>/kit
       # then commit the regenerated payload (chore: sync harness payload ...).
       - run: uv run --project scripts scripts/sync_kit.py --kit kit-source/kit --check

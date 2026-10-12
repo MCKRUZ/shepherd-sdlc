@@ -1,14 +1,14 @@
-# /sdlc-version — Content History of One Artifact (diff & roll back)
+# /sprd-version — Content History of One Artifact (diff & roll back)
 
 See what a pre-Build artifact **used to say**, diff any two of its versions, and — when a change went
-wrong — roll it back. This is the content complement to `/sdlc-audit-artifacts`: that command tracks
+wrong — roll it back. This is the content complement to `/sprd-audit-artifacts`: that command tracks
 *that* an artifact changed (the metadata trail); this one recovers *what it said* at each version and
 restores it if needed.
 
 ```
-/sdlc-version list requirements.md
-/sdlc-version diff FR-012 prev latest
-/sdlc-version rollback requirements.md prev
+/sprd-version list requirements.md
+/sprd-version diff FR-012 prev latest
+/sprd-version rollback requirements.md prev
 ```
 
 Versions are derived from the change-ledger's SHA-256 hashes — the object store is just those hashes
@@ -20,7 +20,7 @@ captured"* at exit 0, never a crash.
 
 1. **Resolve mode and repo root:**
    - **Workflow mode** (default): look for `.sdlc/state.yaml`; pass `--state .sdlc/state.yaml`. If not
-     found, tell the user to run `/sdlc-setup` first.
+     found, tell the user to run `/sprd-setup` first.
    - **Standalone mode** (`--repo <path>`, or no `.sdlc/`): operate on the given repo. History is only
      as deep as that repo's ledger and object store.
 
@@ -46,7 +46,7 @@ captured"* at exit 0, never a crash.
      ```
 
 3. **Roll back — preview first, then a named human confirms** (the One Rule; identical handshake to
-   `/sdlc-revise` and `refresh apply`):
+   `/sprd-revise` and `refresh apply`):
 
    a. **Preview** (default — writes nothing to the artifact). It prints the diff you'd apply and a
       `diffhash` to echo back:
@@ -73,9 +73,9 @@ captured"* at exit 0, never a crash.
 4. **Open a linked decision-log item and re-gate** (a confirmed rollback *is* a change):
    - Read `.sdlc/decision-log.md`, allocate the next `DL-NN`, append one row (id matching the
      `--decision-ref` you passed), owner = the actor, with the 2-business-day clock — exactly as
-     `/sdlc-revise` does. If the file is missing, create it from
+     `/sprd-revise` does. If the file is missing, create it from
      `${CLAUDE_PLUGIN_ROOT}/templates/phases/01-requirements/decision-log.md`.
-   - Run `/sdlc-gate` for the artifact's phase and report PASS/FAIL. Re-gating stays a real,
+   - Run `/sprd-gate` for the artifact's phase and report PASS/FAIL. Re-gating stays a real,
      human-visible gate run — this command writes **nothing** to `state.yaml`.
 
 5. **Maintenance — `gc` (optional, preview by default).** Prune old snapshots, keeping the newest N
@@ -100,13 +100,13 @@ captured"* at exit 0, never a crash.
 
 ## Important
 
-- The user runs `/sdlc-version` — never `audit_artifacts.py` by hand. The command owns mode
+- The user runs `/sprd-version` — never `audit_artifacts.py` by hand. The command owns mode
   resolution, the preview→confirm handshake, and the decision-log + re-gate follow-through.
 - **Additive and advisory.** `version` writes only to the object store (`.sdlc/versions/`) and, on a
   confirmed rollback, appends one `revised` entry to the change-ledger. It never touches
   `state.yaml`'s gate results or sign-off records, and `audit_artifacts.py` exits 0 on every path.
 - **Versions are scan-time snapshots, not keystroke history.** Content is captured only at the
-  layer's capture points (`/sdlc-revise`, `/sdlc-next`'s and `/sdlc-audit-artifacts`'s `record --scan`,
+  layer's capture points (`/sprd-revise`, `/sprd-next`'s and `/sprd-audit-artifacts`'s `record --scan`,
   `refresh apply`, `rollback`) — there are no write-path hooks, so several edits between captures
   collapse into one version. See *"What a version is (and isn't)"* in
   `references/artifact-versioning.md`.

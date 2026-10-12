@@ -1,4 +1,4 @@
-# /sdlc-brief — Generate the Discovery Workshop Brief
+# /sprd-brief — Generate the Discovery Workshop Brief
 
 Run cross-document analysis on the intake corpus and draft the one-page workshop brief, with
 the human curating what makes the page. Works inside an SDLC project or standalone against any
@@ -61,5 +61,5 @@ folder of documents.
   question, rewrite it as the question.
 - `Q-NN` and `CON-NN` IDs are stable once the brief is published — they persist into the
   workshop's answer log and `phase1-handoff.md`.
-- These artifacts are optional for gate purposes: `/sdlc-gate` does not require them, but a
+- These artifacts are optional for gate purposes: `/sprd-gate` does not require them, but a
   multi-stakeholder engagement that skips them is flying blind into its workshop.

@@ -32,7 +32,7 @@ The absence of an agent from a row below is not a gap.
 
 **Notes:** Phase 0 is primarily human-driven. Agent use is minimal — mostly exploratory reads.
 The `discovery-analyst` produces `contradiction-list.md` and `question-list.md` for the
-workshop brief (`/sdlc-brief`); its outputs are questions for humans, never answers.
+workshop brief (`/sprd-brief`); its outputs are questions for humans, never answers.
 
 ---
 
@@ -41,11 +41,11 @@ workshop brief (`/sdlc-brief`); its outputs are questions for humans, never answ
 | Role | Agent | Condition | Parallel Group | Background |
 |------|-------|-----------|----------------|------------|
 | Codebase exploration | `Explore` | Existing codebase to understand | — | No |
-| Feature decomposition (Product) | `feature-architect` | Featuring a channel-bound feature (epic→feature→spec, via `/sdlc-feature`) | — | No |
-| Business rules + scenarios (Bizreq) | `bizreq-analyst` | Business rules (BR-NN) or golden scenarios (SCEN-NN) to capture (via `/sdlc-rules`) | — | No |
+| Feature decomposition (Product) | `feature-architect` | Featuring a channel-bound feature (epic→feature→spec, via `/sprd-feature`) | — | No |
+| Business rules + scenarios (Bizreq) | `bizreq-analyst` | Business rules (BR-NN) or golden scenarios (SCEN-NN) to capture (via `/sprd-rules`) | — | No |
 | Requirements drafting | `requirements-analyst` | Decomposing the problem into FR/NFR with acceptance criteria | — | No |
 
-**Note:** `feature-architect` and `bizreq-analyst` also double as `/sdlc-review` council lenses
+**Note:** `feature-architect` and `bizreq-analyst` also double as `/sprd-review` council lenses
 (Product / Bizreq viewpoints). They draft and interrogate; a named human decides (the One Rule).
 
 ---
@@ -56,21 +56,21 @@ workshop brief (`/sdlc-brief`); its outputs are questions for humans, never answ
 |------|-------|-----------|----------------|------------|
 | Architecture design | `architect` | Always | — | No |
 | Security model review | `security-reviewer` | Auth, payments, or sensitive data in scope | — | No |
-| Multi-perspective review | `multi-reviewer` | Suggested before `/sdlc-gate`; use `--council` mode | — | No |
-| Experience design — web | `visual-designer` | A `channel: ag-ui`/web surface is in scope (via `/sdlc-experience`) | design-B | No |
-| Experience design — voice/chat | `conversation-designer` | A `channel: voice`/`chat` surface is in scope (via `/sdlc-experience`) | design-B | No |
-| Data contract + readiness | `data-analyst` | Feature touches data or PII (via `/sdlc-data`) | — | No |
+| Multi-perspective review | `multi-reviewer` | Suggested before `/sprd-gate`; use `--council` mode | — | No |
+| Experience design — web | `visual-designer` | A `channel: ag-ui`/web surface is in scope (via `/sprd-experience`) | design-B | No |
+| Experience design — voice/chat | `conversation-designer` | A `channel: voice`/`chat` surface is in scope (via `/sprd-experience`) | design-B | No |
+| Data contract + readiness | `data-analyst` | Feature touches data or PII (via `/sprd-data`) | — | No |
 | Regulatory review | `compliance-checker` | The domain carries regulatory obligations | — | No |
 | Codebase exploration | `Explore` | Existing codebase being extended | — | No |
 
-**Parallel group `design-B`:** When a feature spans a web surface and a voice/chat surface, spawn `visual-designer` and `conversation-designer` in the same message — they author different interaction specs and do not conflict. `/sdlc-experience` routes to the right one by the spec's `channel:`.
+**Parallel group `design-B`:** When a feature spans a web surface and a voice/chat surface, spawn `visual-designer` and `conversation-designer` in the same message — they author different interaction specs and do not conflict. `/sprd-experience` routes to the right one by the spec's `channel:`.
 
 **Backend and frontend design are not separately delegated.** `architect` covers the design of the
 system as a whole; splitting it by tier produced two agents arguing about the boundary between
-them. Where a tier needs deep specialist attention, that is a spike (`/sdlc-spike`), not a
+them. Where a tier needs deep specialist attention, that is a spike (`/sprd-spike`), not a
 permanent agent.
 
-**Note:** `visual-designer`, `conversation-designer`, and `data-analyst` also double as `/sdlc-review` council lenses (Design / Data viewpoints). They propose and draft; a named human decides.
+**Note:** `visual-designer`, `conversation-designer`, and `data-analyst` also double as `/sprd-review` council lenses (Design / Data viewpoints). They propose and draft; a named human decides.
 
 **`/deep-plan` orchestration (steps 1–15):** When `/deep-plan` is invoked in this phase, it manages its own subagents internally (Explore for codebase research, web-search-researcher for web research, opus-plan-reviewer or external LLMs for review). These do not need to be spawned separately — `/deep-plan` handles the orchestration. The agents listed above (`architect`, domain agents, `security-reviewer`) operate alongside `/deep-plan` for SDLC-native work like ADR generation and security review.
 

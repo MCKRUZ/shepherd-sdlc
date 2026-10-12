@@ -515,7 +515,7 @@ def main() -> None:
             print("Next: Claude will generate per-document summaries during Phase 0 Step 0c.")
         else:
             print("Provisional catalog: nothing was written and the DOC-NNN ids are not stable.")
-            print("Run /sdlc-setup, then intake again, to get a project catalog.")
+            print("Run /sprd-setup, then intake again, to get a project catalog.")
     print_changes(args, catalog, lock_changed)
 
 

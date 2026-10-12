@@ -658,6 +658,7 @@ class TestOnAzureDevOps:
         from tests.ado_fixtures import ADO_REMOTE, FakeAz, load
         ado_import.clear_caches()
         monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+        monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
         monkeypatch.setattr(code_host, "origin_url", lambda root: ADO_REMOTE)
         monkeypatch.setattr(ss, "gh_json", lambda *a, **k: pytest.fail("gh was called on an Azure DevOps repository"))
         monkeypatch.setattr(ss, "run_git", lambda *a, **k: pytest.fail("bulk mode ran git"))

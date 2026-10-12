@@ -1,7 +1,7 @@
-# Feature Parity Analysis: AI-SDLC → claude-code-sdlc
+# Feature Parity Analysis: AI-SDLC → shepherd
 
 **Date:** 2026-03-26
-**Purpose:** Identify features in the AI-SDLC methodology repo that haven't been fully incorporated into the claude-code-sdlc Claude Code plugin.
+**Purpose:** Identify features in the AI-SDLC methodology repo that haven't been fully incorporated into the shepherd Claude Code plugin.
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Status | Meaning |
 |--------|---------|
-| ✅ At Parity | Feature fully implemented in claude-code-sdlc |
+| ✅ At Parity | Feature fully implemented in shepherd |
 | ⚠️ Partial | Referenced or partially implemented |
-| ❌ Missing | Not present in claude-code-sdlc |
-| 🔀 Diverged | claude-code-sdlc took a different (valid) approach |
+| ❌ Missing | Not present in shepherd |
+| 🔀 Diverged | shepherd took a different (valid) approach |
 | N/A | Not applicable to the plugin format |
 
 ---
@@ -36,18 +36,18 @@
 
 ### 1. Phase Structure
 
-| Feature | AI-SDLC | claude-code-sdlc | Status |
+| Feature | AI-SDLC | shepherd | Status |
 |---------|---------|------------------|--------|
 | Phase definitions with exit criteria | 4 phases (Discovery → Specification → Planning → Implementation) | 9 phases (Discovery → Close & Transfer), non-sequential — opening (0 Discovery, 1 Requirements, 2 Design, 3 Foundation), the continuous Build Loop, then 7 Documentation, 8 Deployment, 9 Monitoring, and Close & Transfer | 🔀 Diverged |
 | Phase activities & artifacts | Per-phase agent with 5-7 skills each | Per-phase markdown with activities + artifact lists | ✅ At Parity |
 
-**Notes:** claude-code-sdlc has *more* granular phases (9 vs 4), covering the full lifecycle through deployment and monitoring. AI-SDLC packs more detail into fewer phases via discrete skill definitions. The middle is a continuous Build Loop (per-change Intent/Delegate/Discern beats) rather than batch Implementation/Quality/Testing phases, and a terminal Close & Transfer phase ends the engagement by handing the system to the client. Both approaches are valid — the 9-phase model is arguably better for a plugin guiding users through a complete lifecycle.
+**Notes:** shepherd has *more* granular phases (9 vs 4), covering the full lifecycle through deployment and monitoring. AI-SDLC packs more detail into fewer phases via discrete skill definitions. The middle is a continuous Build Loop (per-change Intent/Delegate/Discern beats) rather than batch Implementation/Quality/Testing phases, and a terminal Close & Transfer phase ends the engagement by handing the system to the client. Both approaches are valid — the 9-phase model is arguably better for a plugin guiding users through a complete lifecycle.
 
 ---
 
 ### 2. Context System (TOKEN EFFICIENCY)
 
-| Feature | AI-SDLC | claude-code-sdlc | Status | Priority |
+| Feature | AI-SDLC | shepherd | Status | Priority |
 |---------|---------|------------------|--------|----------|
 | **Frozen Layers** — condense 10K+ tokens to ~2K handoff between phases | Full implementation via `phase-completion` skill; outputs `context/layers/phaseN-name.md` | Referenced in docs but no generation mechanism in scripts or agents | ⚠️ Partial | **HIGH** |
 | **3-Tier Context Architecture** — Foundation (~500 tok), Frozen Layers (~2K), Reference (on-demand) | Formal `context-operations` skill with read/update/validate operations | Not implemented; state.yaml tracks phase but no tiered context loading | ❌ Missing | **HIGH** |
@@ -61,7 +61,7 @@
 
 ### 3. Quality Gates
 
-| Feature | AI-SDLC | claude-code-sdlc | Status | Priority |
+| Feature | AI-SDLC | shepherd | Status | Priority |
 |---------|---------|------------------|--------|----------|
 | 6-gate validation system | Gates 0-4 (Integrity, Completeness, Arithmetic, Compliance, Quality) | Gates 1-6 (Integrity, Completeness, Metrics, Compliance, Cross-Phase Consistency, Quality) | ✅ At Parity |  |
 | **Cross-phase locked metrics** — certain values (budget, timeline, scope) can't change without decision log entry | Formal rules in `cross-phase-consistency.reference.md` with change protocol | Implemented as Gate 5 (Cross-Phase Consistency) — flags drift in locked metrics across phase transitions; references/cross-phase-consistency.md defines the change protocol. | ✅ At Parity |  |
@@ -72,20 +72,20 @@
 
 ### 4. Output System
 
-| Feature | AI-SDLC | claude-code-sdlc | Status | Priority |
+| Feature | AI-SDLC | shepherd | Status | Priority |
 |---------|---------|------------------|--------|----------|
 | **Narrative Enhancement (Dual Output)** — every artifact has standard (.md) + narrative (.narrative.md) for stakeholders | Full `narrative-enhancer` meta-skill; mandatory after every creation skill; `/enhance-artifact` command | Not present | ❌ Missing | **HIGH** |
 | **DOCX Export** — professional Word documents for executives/boards | `docx-artifact-generator` meta-skill; 6 document types | Not present (though the `/docx` skill exists in Claude Code globally) | ❌ Missing | **LOW** |
 
 **Why this matters:** The narrative enhancement is a key differentiator for stakeholder communication. A requirements spec is great for engineers, but executives need a prose version. This makes the SDLC output accessible to non-technical stakeholders.
 
-**Recommendation:** Create an `agents/narrative-enhancer.md` agent or a `/sdlc-enhance` command that takes any artifact and produces a `.narrative.md` companion. Leverage the existing `visual-explainer` and `humanizer` skills as building blocks.
+**Recommendation:** Create an `agents/narrative-enhancer.md` agent or a `/sprd-enhance` command that takes any artifact and produces a `.narrative.md` companion. Leverage the existing `visual-explainer` and `humanizer` skills as building blocks.
 
 ---
 
 ### 5. Agent/Skill Model
 
-| Feature | AI-SDLC | claude-code-sdlc | Status | Priority |
+| Feature | AI-SDLC | shepherd | Status | Priority |
 |---------|---------|------------------|--------|----------|
 | **Core Primitives Framework** — formal definitions for Agent, Skill, Artifact, Context as composable patterns | `core/primitives/` with design patterns (handoff, context layers, human gates, parallel execution, skill chaining) | Not present; agents defined but no formal primitive/pattern library | ❌ Missing | **LOW** |
 | **Formal Skill Context Contracts** — each skill declares consumed/produced context | Per-skill SKILL.md with `consumes:` and `produces:` declarations | Agents exist but skills don't have formal context contracts | ❌ Missing | **MEDIUM** |
@@ -99,30 +99,30 @@
 
 ### 6. Compliance & Governance
 
-| Feature | AI-SDLC | claude-code-sdlc | Status |
+| Feature | AI-SDLC | shepherd | Status |
 |---------|---------|------------------|--------|
 | SOC2 compliance gates | Defined in methodology | 10 gates mapped across the phases (1, 2, Build Loop, 7, 8, 9) in profile YAML | ✅ At Parity |
 | HIPAA/GDPR/PCI-DSS frameworks | Referenced | Referenced in `references/compliance-frameworks.md` | ✅ At Parity |
-| Compliance audit command | Via validation skills | `/sdlc-audit` command + `audit_gates.py` script | ✅ At Parity |
+| Compliance audit command | Via validation skills | `/sprd-audit` command + `audit_gates.py` script | ✅ At Parity |
 
-**Notes:** claude-code-sdlc actually has *better* compliance integration with the profile-driven gate system and dedicated audit command.
+**Notes:** shepherd actually has *better* compliance integration with the profile-driven gate system and dedicated audit command.
 
 ---
 
 ### 7. Tooling & Automation
 
-| Feature | AI-SDLC | claude-code-sdlc | Status |
+| Feature | AI-SDLC | shepherd | Status |
 |---------|---------|------------------|--------|
 | Report generation | `html-report-generator` meta-skill (multi-page interactive dashboards) | `generate_phase_report.py` (Markdown + basic HTML) | ⚠️ Partial |
 | Profile/config system | Company profiles in YAML | 3 profiles + schema validation | ✅ At Parity |
 | State management | Context manifest + frozen layers | `state.yaml` + `advance_phase.py` | ✅ At Parity |
-| Session hooks | Not present (tool-agnostic) | PowerShell hooks for Claude Code integration | ✅ claude-code-sdlc ahead |
+| Session hooks | Not present (tool-agnostic) | PowerShell hooks for Claude Code integration | ✅ shepherd ahead |
 
 **Recommendation:** The `generate_phase_report.py` could be enhanced to produce the multi-level interactive HTML dashboards that AI-SDLC's `html-report-generator` creates (Level 1: overview, Level 2: phase detail, Level 3: artifact drill-down).
 
 ---
 
-### 8. Features claude-code-sdlc Has That AI-SDLC Doesn't
+### 8. Features shepherd Has That AI-SDLC Doesn't
 
 These are areas where the plugin has gone *beyond* the methodology repo:
 
@@ -134,7 +134,7 @@ These are areas where the plugin has gone *beyond* the methodology repo:
 | **Section evaluator agent** | Grades implementation against rubric |
 | **Profile schema validation** | `_schema.yaml` with jsonschema validation |
 | **Deep-plan integration** | Maps `/deep-plan` artifacts into SDLC phases 2-3 |
-| **Phase report generation** | `/sdlc-phase-report` command with artifact inventory |
+| **Phase report generation** | `/sprd-phase-report` command with artifact inventory |
 | **Creative-tooling profile** | Specialized profile for plugin/tool development |
 
 ---
@@ -146,7 +146,7 @@ These are areas where the plugin has gone *beyond* the methodology repo:
 | # | Feature | Effort | Impact | Approach |
 |---|---------|--------|--------|----------|
 | 1 | **Frozen Layer Generation** | Medium | Very High | New script `generate_frozen_layer.py`; integrate into `advance_phase.py`; add `context/layers/` to `.sdlc/` structure |
-| 2 | **Narrative Enhancement** | Medium | High | New agent `narrative-enhancer.md` or `/sdlc-enhance` command; dual output for all artifacts |
+| 2 | **Narrative Enhancement** | Medium | High | New agent `narrative-enhancer.md` or `/sprd-enhance` command; dual output for all artifacts |
 | 3 | **3-Tier Context Loading** | Medium | High | Update hooks to implement tiered context injection; foundation always loaded, frozen layers per-phase, references on-demand |
 
 ### Tier 2 — Medium Value, Nice to Have

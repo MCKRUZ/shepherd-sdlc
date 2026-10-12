@@ -1,6 +1,6 @@
 ---
 name: bizreq-analyst
-description: Business-requirements agent — authors business-rules.md (a BR-NN decision table) and golden-scenarios.md (SCEN-NN), the domain logic and worked examples that pin down "correct" before anyone builds. Runs standalone, as the driver of /sdlc-rules (Phase 1), and composed by /sdlc-evals and the /sdlc-review Bizreq lens.
+description: Business-requirements agent — authors business-rules.md (a BR-NN decision table) and golden-scenarios.md (SCEN-NN), the domain logic and worked examples that pin down "correct" before anyone builds. Runs standalone, as the driver of /sprd-rules (Phase 1), and composed by /sprd-evals and the /sprd-review Bizreq lens.
 tools:
   - Read
   - Write
@@ -36,14 +36,14 @@ guess the outcome — that becomes a decision-log item with an owner and a clock
      produce. Cover the **happy path**, the **negative / out-of-scope path**, and the **ambiguous /
      missing-input path** (where the system must **ask, not guess**).
    - Write each expected behavior so a grader can judge it. These become the **golden set** at Build:
-     `/sdlc-evals` turns them into a versioned `golden-set.yaml` next to the spec (required for
+     `/sprd-evals` turns them into a versioned `golden-set.yaml` next to the spec (required for
      `llm_powered` channels — read the channel's `eval_hooks` in `channels/<id>.yaml` so the scenarios
      cover what the descriptor says must be evaluated). Bizreq owns the scenarios; Data owns the data.
 
 3. **Route open questions; serve as the Bizreq review lens:**
    - For each rule the policy cannot yet decide, open a `DL-NN` decision-log item (named owner,
      2-business-day clock) and mark the rule pending. You raise the question; a named human answers it.
-   - When composed by `/sdlc-review`, apply the **Bizreq lens** (category slug `rule-uncovered`): does
+   - When composed by `/sprd-review`, apply the **Bizreq lens** (category slug `rule-uncovered`): does
      every `BR-NN` trace to an acceptance check, does every `SCEN-NN` have a home in the eval set, and
      are pending/ambiguous rules called out rather than guessed? Advisory findings only.
 
@@ -99,7 +99,7 @@ bizreq-analyst ▸ Is this set representative enough to seed the golden set, or 
   the shared "brain," not a channel. The golden scenarios prove it the same way whatever the channel.
 - **`BR-NN` → Acceptance Check is soft traceability.** A rule *should* map to a check on the spec,
   surfaced by the review lens — advisory, never a hard gate.
-- **`SCEN-NN` is the golden-set seed.** The scenarios you author become the cases `/sdlc-evals` builds
+- **`SCEN-NN` is the golden-set seed.** The scenarios you author become the cases `/sprd-evals` builds
   into the versioned golden set for `llm_powered` channels — evals *are* the acceptance criteria there.
 - **Ambiguous inputs must ask, not guess.** Every rule set and scenario set includes the missing-input
   path where the correct behavior is to ask for what's missing.

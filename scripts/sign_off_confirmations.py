@@ -3,7 +3,7 @@
 Every phase's exit gate carries plain-language questions for the person who signs it ("Scope
 boundaries are unambiguous"). The plugin's own sign-off records one name for the whole phase.
 This is the finer record: each question ticked by a named person at a known time, so "was this
-actually looked at" has an answer, and `/sdlc-next` can refuse to ask for sign-off while one is
+actually looked at" has an answer, and `/sprd-next` can refuse to ask for sign-off while one is
 still unconfirmed.
 
 The ledger is its own file, `.sdlc/metrics/confirmation-log.jsonl` — append-only like the

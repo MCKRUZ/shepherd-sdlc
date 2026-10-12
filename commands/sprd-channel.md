@@ -1,11 +1,11 @@
-# /sdlc-channel — Bind a Spec to Its Channel and Inject the Acceptance Dimensions
+# /sprd-channel — Bind a Spec to Its Channel and Inject the Acceptance Dimensions
 
 Bind one spec to its delivery **channel** and overlay that channel's acceptance dimensions onto the
-spec's *existing* `## Acceptance Checks`. This is the *bind* beat after `/sdlc-feature` (decompose) and
-`/sdlc-experience` (author): decompose → author → **bind**. It reads the channel descriptor and the
+spec's *existing* `## Acceptance Checks`. This is the *bind* beat after `/sprd-feature` (decompose) and
+`/sprd-experience` (author): decompose → author → **bind**. It reads the channel descriptor and the
 Phase-2 interaction spec, injects concrete checks, seeds `harness_context`, sets the `channel:` field,
 then runs the **advisory** `check_channel.py` *beside* the byte-for-byte-unchanged `check_spec.py`.
-Interview-driven like `/sdlc-coach` at the confirmation step: the command proposes the overlay; a named
+Interview-driven like `/sprd-coach` at the confirmation step: the command proposes the overlay; a named
 human decides.
 Command-only — it orchestrates the descriptors and the experience artifacts; it spawns no discipline
 agent of its own (though it may compose the `visual-designer`/`conversation-designer` if the interaction
@@ -30,7 +30,7 @@ spec is missing). Works inside an SDLC project or standalone.
    `risk_floor`. Read the Phase-2 `channel-interaction-spec.md` if present — its dimension → contract →
    acceptance-check rows are the concrete, feature-specific checks to inject. If neither the descriptor
    nor the interaction spec exists, tell the human to add the descriptor (`channels/_template.yaml` →
-   `validate_channel.py`) or run `/sdlc-experience` first.
+   `validate_channel.py`) or run `/sprd-experience` first.
 
 4. **Set the `channel:` field and seed `harness_context`:** Set the spec's optional `channel:`
    frontmatter to `<channel>`. If the spec's `harness_context` is empty, seed it from the descriptor's
@@ -51,7 +51,7 @@ spec is missing). Works inside an SDLC project or standalone.
 > (1) Confirm the injected `## Acceptance Checks` set (edit any line that could be built two ways).
 > (2) Confirm the channel's `risk_floor` implication — it may only **raise** the tier, never lower it
 >     (`llm_powered` channels floor at HIGH); the Pod Lead owns the final tier. If the floor raises the
->     tier, re-confirm it at `/sdlc-spec`.
+>     tier, re-confirm it at `/sprd-spec`.
 
 7. **Run the advisory channel check beside the unchanged spec check** (the command owns `check_channel.py`):
    ```bash
@@ -75,7 +75,7 @@ spec is missing). Works inside an SDLC project or standalone.
    Risk floor: <HIGH/MEDIUM/LOW> — tier <raised to …> | unchanged (Pod Lead owns final tier)
    check_channel: all dimensions covered | ADVISE: <uncovered> (exit 0)
    check_spec:  READY | NOT READY (unchanged core)
-   Next: /sdlc-evals for the golden set (llm_powered channel); then the Delegate beat.
+   Next: /sprd-evals for the golden set (llm_powered channel); then the Delegate beat.
    ```
 
 ## Arguments
@@ -87,11 +87,11 @@ spec is missing). Works inside an SDLC project or standalone.
 
 ## Important
 
-- **`check_spec.py` is byte-for-byte unmodified.** `/sdlc-channel` never edits it or its verdict; it runs
+- **`check_spec.py` is byte-for-byte unmodified.** `/sprd-channel` never edits it or its verdict; it runs
   `check_channel.py` *beside* it. `check_channel.py` is advisory (exit 0), SHOULD-only, and can never
   flip ready/not-ready.
 - **The injected checks are ordinary acceptance checks.** They ride the spec's *existing* section and
   are graded by the existing grader; nothing downstream treats them specially.
 - **One channel per spec.** Do not bind a second channel to a spec — decompose into per-surface specs.
 - `risk_floor` may only **raise** the tier, never lower it; a named human still owns the final tier at
-  `/sdlc-spec`. The command changes no protected core.
+  `/sprd-spec`. The command changes no protected core.

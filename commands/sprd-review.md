@@ -1,4 +1,4 @@
-# /sdlc-review — Multi-Perspective Artifact Review
+# /sprd-review — Multi-Perspective Artifact Review
 
 Run a structured review of the current phase's artifacts from multiple perspectives.
 
@@ -50,7 +50,7 @@ Run a structured review of the current phase's artifacts from multiple perspecti
    Show the **open HIGH+ debt count** and any **FIXED_CLAIM_MISMATCH** (a finding marked fixed whose
    file never changed) in your summary to the user.
 
-7. **If CRITICAL or HIGH findings exist:** Recommend addressing them before running `/sdlc-gate`. These are likely to surface as gate failures.
+7. **If CRITICAL or HIGH findings exist:** Recommend addressing them before running `/sprd-gate`. These are likely to surface as gate failures.
 
 ## Arguments
 
@@ -59,14 +59,14 @@ Run a structured review of the current phase's artifacts from multiple perspecti
 - `--edge-cases`: edge case hunting mode
 - `--council`: multi-perspective council mode (default)
 - `--all`: run all 3 modes, combined report
-- `<phase-number>`: review a specific phase (e.g., `/sdlc-review --adversarial 2`)
+- `<phase-number>`: review a specific phase (e.g., `/sprd-review --adversarial 2`)
 
 ## When to Use
 
 - **Phase 2 (Design):** `--council` to validate architecture from multiple angles
 - **Phase 3 (Foundation):** `--edge-cases` to find gaps in the walking-skeleton spec and the risk-tier map
 - **Build loop:** `--adversarial` + `--edge-cases` on a spec or hardening pass — there is no separate Quality phase; checking happens per change inside the loop
-- **Any phase:** before running `/sdlc-gate` to catch issues early
+- **Any phase:** before running `/sprd-gate` to catch issues early
 
 ## Important
 
@@ -80,4 +80,4 @@ Run a structured review of the current phase's artifacts from multiple perspecti
   is overwritten — that ledger is what later makes a recurring finding promotable into a permanent
   check (Phase C: "findings become new checks").
 - The review report is written as an artifact that stakeholders can review
-- Running `/sdlc-review --all` before `/sdlc-next` is recommended for design-heavy phases
+- Running `/sprd-review --all` before `/sprd-next` is recommended for design-heavy phases

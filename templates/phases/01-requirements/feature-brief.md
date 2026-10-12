@@ -33,14 +33,14 @@ decomposition table below. Shared "brain" logic that no surface owns is channel-
 
 [Per channel, the shape of the experience at a glance — the turn or flow, the confirmation, the
 fallback. The detailed craft (journeys, layout, interaction spec) is authored in Phase 2 via
-`/sdlc-experience`.]
+`/sprd-experience`.]
 
 - <channel>/[persona]: [entry → … → confirm → fallback, at a glance]
 
 ## Data touchpoints — owner: Data · signs at gate
 
 [The records, sources, and reads/writes this feature depends on. Call out any **PII** — it is a
-risk-tier driver. Detailed contracts are authored in Phase 2 via `/sdlc-data`.]
+risk-tier driver. Detailed contracts are authored in Phase 2 via `/sprd-data`.]
 
 ## Spec decomposition — owner: Product · one channel per spec
 

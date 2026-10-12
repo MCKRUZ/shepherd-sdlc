@@ -49,8 +49,9 @@ CODE_HOSTS = ("github", "azure-devops", "none")
 CODE_HOST_FIELDS = ("host", "organization", "project", "repository")
 CODE_HOST_HEADER = (
     "# Code host for this repository, pinned by hand — written by `set_setting.py code-host`.\n"
-    "# Read ahead of the `origin` remote; a `--host` flag on a command or SDLC_CODE_HOST in the\n"
-    "# environment still wins. Delete this file to go back to detecting the host from `origin`.\n")
+    "# Read ahead of the `origin` remote; a `--host` flag on a command or SHEPHERD_CODE_HOST in the\n"
+    "# environment (or SDLC_CODE_HOST, the older name — still honoured) still wins. Delete this file\n"
+    "# to go back to detecting the host from `origin`.\n")
 
 
 class SettingError(Exception):
@@ -447,8 +448,9 @@ def set_code_host(repo_root: Path, host: str, organization: str | None = None,
     path.write_text(proposed, encoding="utf-8")
     return {"ok": True, "changed": proposed != original, "file": ".sdlc/code-host.yaml",
             "message": f"This repository's code host is pinned to {host}.",
-            "note": "Overrides what the `origin` remote says; a `--host` flag or SDLC_CODE_HOST "
-                    "still wins over this file. Delete it to detect the host from the remote again."}
+            "note": "Overrides what the `origin` remote says; a `--host` flag or SHEPHERD_CODE_HOST "
+                    "(or the older SDLC_CODE_HOST, still honoured) still wins over this file. Delete it "
+                    "to detect the host from the remote again."}
 
 
 def resolve_repo_root(args) -> Path:

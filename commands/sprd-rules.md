@@ -1,9 +1,9 @@
-# /sdlc-rules — Author Business Rules and Golden Scenarios
+# /sprd-rules — Author Business Rules and Golden Scenarios
 
 Give Bizreq a first-class drafting seat: the **business rules** (a `BR-NN` decision table) and the
 **golden scenarios** (`SCEN-NN`) that pin down what "correct" means before anyone builds. Each `BR-NN`
 becomes an Acceptance Check on the spec (advisory / soft traceability); each `SCEN-NN` seeds the golden
-set at `/sdlc-evals`. Interview-driven like `/sdlc-coach`: the `bizreq-analyst` agent assesses what's
+set at `/sprd-evals`. Interview-driven like `/sprd-coach`: the `bizreq-analyst` agent assesses what's
 there, asks focused questions, and drafts as answers arrive. It **proposes**; a named human
 **decides** (the One Rule). Works inside an SDLC project or standalone.
 
@@ -49,7 +49,7 @@ there, asks focused questions, and drafts as answers arrive. It **proposes**; a 
    ==========================================
    Rules:     N BR-NN (X pending on the decision-log; owners: …)
    Scenarios: M SCEN-NN ready to seed the golden set
-   Next: BR-NN → Acceptance Checks at /sdlc-spec (soft traceability); SCEN-NN → /sdlc-evals golden set.
+   Next: BR-NN → Acceptance Checks at /sprd-spec (soft traceability); SCEN-NN → /sprd-evals golden set.
    ```
 
 ## Arguments
@@ -65,7 +65,7 @@ there, asks focused questions, and drafts as answers arrive. It **proposes**; a 
   where the policy is silent — that becomes a decision-log item with an owner and a clock.
 - **`BR-NN` → Acceptance Check is soft traceability** (advisory): a rule *should* map to a check on the
   spec, surfaced by the review lens, never a hard gate.
-- **`SCEN-NN` is the golden-set seed.** The scenarios authored here become the cases `/sdlc-evals` builds
+- **`SCEN-NN` is the golden-set seed.** The scenarios authored here become the cases `/sprd-evals` builds
   into the versioned golden set for `llm_powered` channels.
 - Both files are **optional** for gate purposes; an unfilled/pending rule is an advisory flag. Bizreq
   proposes; a named human signs at the phase gate. The command changes no protected core.

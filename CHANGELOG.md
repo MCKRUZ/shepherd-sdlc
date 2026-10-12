@@ -1,5 +1,68 @@
 # Changelog
 
+## 2.0.0 — 2026-10-12
+
+### Shepherd — the brand update
+
+The plugin and its desktop app are now **Shepherd** — one name for both; "SDLC Studio" and the
+Tōgō working brand retire (`docs/proposals/shepherd-brand-update.md`). Brand is a surface, not a
+schema: everything a person *reads* changes, everything a project *stores* does not, and no
+existing project migrates its data.
+
+- **Plugin id `shepherd`.** Install with `/plugin marketplace add MCKRUZ/shepherd-sdlc` then
+  `/plugin install shepherd@mckruz`; the marketplace is still `mckruz` and the repository is
+  `MCKRUZ/shepherd-sdlc` (GitHub redirects the old URL). Claude Code derives the agent namespace
+  from the plugin's `name`, so agents are `shepherd:<agent>`. The `sdlc-orchestrator` agent keeps
+  its name — it orchestrates the SDLC.
+- **Commands `/sdlc-*` → `/sprd-*`** (`/sdlc` → `/sprd`; all 32). No aliases — 64 commands is
+  worse than one rename. The session-start banner lists the new names every session.
+- **Hook files and markers.** `hooks/sdlc-session-start.{sh,ps1}` → `hooks/shepherd-session-start.*`;
+  `[SDLC]`, `[SDLC-PHASE]`, `[SDLC-SPRINT]`, `[SDLC-CONVENTION]`, `[SDLC-HEALTH]` and
+  `[SDLC-CONTEXT:…]`/`[/SDLC-CONTEXT:…]` → `[SHEPHERD…]`/`[/SHEPHERD…]`. Only the model reads
+  them; no script or screen parses a marker.
+- **`SHEPHERD_CODE_HOST` is read first; `SDLC_CODE_HOST` is still read.** A shell or pipeline
+  that already sets the old name needs no change.
+- **The desktop app is Shepherd** (`appId` `com.splashthree.shepherd`). Its userData folder is
+  unchanged, so settings, recent projects, synced objects and local preferences stay where they
+  are — no migration code. macOS asks Gatekeeper's first-run and folder-access questions once
+  more for the new bundle id; on Windows the new installer sits beside the old app (both share
+  the data folder, so one runs at a time) and the old one uninstalls normally.
+- **Harness payload generated through `sync_kit.py`'s rename map.** `harness/` is still copied
+  from the kit; its brand strings are rewritten in place as bytes, and `sync_kit.py --check` is
+  the invariant (`harness == rename(kit)`). Repositories installed before the rename see
+  `ONBOARDING.md`, `docs/harness.md` and `.github/RAILS.md` as UPDATE on their first
+  `/sprd-upgrade`; adapted copies become CONFLICT and are shown, never overwritten.
+- **Generated HTML reports re-themed.** The phase, index and sprint pages use the Shepherd
+  palette (parchment by default, bark when the system prefers dark) and their footers read
+  "Shepherd — …". Stdout, exit codes and `--json` shapes are unchanged.
+- **Unchanged, deliberately:** the `.sdlc/` directory, `specs/`, every metrics ledger, gate ids,
+  exit-gate wording (hashed into confirmation ids), and "SDLC" wherever it names the lifecycle
+  rather than the brand. Already-written artifacts keep `/sdlc-*` in their prose — owner content
+  is never rewritten.
+
+---
+
+## Migration — Shepherd
+
+**Nothing in `.sdlc/` migrates.** State, specs, ledgers, sign-offs and confirmation ids are
+byte-for-byte what they were. The steps below are about what is installed, not what is stored.
+
+1. **Reinstall the plugin under its new id.** In Claude Code:
+   `/plugin marketplace add MCKRUZ/shepherd-sdlc`, then `/plugin install shepherd@mckruz`. Then
+   uninstall `claude-code-sdlc@mckruz`, so the old commands and session-start hook do not sit
+   beside the new ones.
+2. **Run `/sprd-upgrade` in each project.** It re-installs the renamed harness payload and
+   rewrites the `(auto-injected by /sdlc-setup)` section of the project's `CLAUDE.md` to the
+   `/sprd-*` names. A hand-adapted harness file is shown as CONFLICT, not overwritten.
+3. **Rename your habits, not your data.** `/sdlc-status` is `/sprd-status`, `/sdlc-next` is
+   `/sprd-next`, and so on — the prefix is the only change. `SDLC_CODE_HOST` keeps working;
+   `SHEPHERD_CODE_HOST` wins when both are set.
+4. **Desktop app:** install Shepherd 2.0.0 and open the same projects — nothing to re-add.
+   Upgrade the app before the plugin if you run both: a 1.x app cannot find a 2.0 plugin, while
+   the 2.0 app finds either.
+
+---
+
 ## 1.7.0 — 2026-10-06
 
 ### SDLC Studio — the command center

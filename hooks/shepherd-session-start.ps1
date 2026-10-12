@@ -1,11 +1,11 @@
-# sdlc-session-start.ps1
+# shepherd-session-start.ps1
 # Hook: Runs at session start to load SDLC context
 # Reads .sdlc/state.yaml and outputs current phase context
 
 param()
 
 # Claude Code reads this output as UTF-8. On Windows the console default is an OEM code page, which turns the
-# em dash and arrow in the [SDLC-SPRINT] line into "-" and a control character; say what the output is.
+# em dash and arrow in the [SHEPHERD-SPRINT] line into "-" and a control character; say what the output is.
 try { [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false) } catch { }
 
 $sdlcDir = Join-Path $PWD ".sdlc"
@@ -58,8 +58,8 @@ if ($phaseMatch.Success) {
     }
 
     # Output context for Claude
-    Write-Output "[SDLC] Project: $projectName | Profile: $profileId | Phase $phaseId`: $displayName | Artifacts: $artifactCount"
-    Write-Output "[SDLC] Commands: /sdlc (guidance) | /sdlc-status (dashboard) | /sdlc-gate (check) | /sdlc-next (advance) | /sdlc-coach (coaching)"
+    Write-Output "[SHEPHERD] Project: $projectName | Profile: $profileId | Phase $phaseId`: $displayName | Artifacts: $artifactCount"
+    Write-Output "[SHEPHERD] Commands: /sprd (guidance) | /sprd-status (dashboard) | /sprd-gate (check) | /sprd-next (advance) | /sprd-coach (coaching)"
 
     # Phase-specific behavioral reminder (folded in from the retired PreToolUse phase-inject hook,
     # which could not inject context — PreToolUse stdout is not shown to Claude. SessionStart is.)
@@ -68,14 +68,14 @@ if ($phaseMatch.Success) {
         "1"     = "Ensure changes trace back to documented requirements."
         "2"     = "Document architectural decisions as ADRs."
         "3"     = "Build the factory (harness, rails, dev infra) and a thin walking skeleton."
-        "build" = "One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sdlc-refine; the board is /sdlc-sprint."
+        "build" = "One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sprd-refine; the board is /sprd-sprint."
         "7"     = "Prove docs by cold use. Finalize ADRs."
         "8"     = "Promote the proven artifact. Document the rollback plan."
         "9"     = "Configure alerts from measured baselines. Run the drill."
         "close" = "Prove the client can run it without us. Audit the harness, revoke access, harvest."
     }
     $phaseReminder = $phaseReminders[$phaseId]
-    if ($phaseReminder) { Write-Output "[SDLC-PHASE] $phaseReminder" }
+    if ($phaseReminder) { Write-Output "[SHEPHERD-PHASE] $phaseReminder" }
 
     # --- Active sprints (Sprint Team Layer): one line per .sdlc/sprints/*.md whose state is not closed ---
     # Regex only — no date arithmetic, no JSON. Silent when the directory is absent. Wrapped in try/catch
@@ -104,7 +104,7 @@ if ($phaseMatch.Success) {
                     $sprintGoal = Get-SprintField $sprintText "goal"
                     $sprintStart = Get-SprintField $sprintText "start"
                     $sprintEnd = Get-SprintField $sprintText "end"
-                    Write-Output "[SDLC-SPRINT] $sprintId ($sprintState) — `"$sprintGoal`" — $sprintStart → $sprintEnd"
+                    Write-Output "[SHEPHERD-SPRINT] $sprintId ($sprintState) — `"$sprintGoal`" — $sprintStart → $sprintEnd"
                 } catch { }
             }
         } catch { }
@@ -118,7 +118,7 @@ if ($phaseMatch.Success) {
             # Extract mission/principles (first ~375 words for ~500 token budget)
             $words = ($constitutionContent -split '\s+') | Select-Object -First 375
             $foundation = ($words -join ' ')
-            Write-Output "[SDLC-CONTEXT:FOUNDATION] $foundation"
+            Write-Output "[SHEPHERD-CONTEXT:FOUNDATION] $foundation"
         }
     }
 
@@ -131,13 +131,13 @@ if ($phaseMatch.Success) {
         if ($layers) {
             # Reverse to load oldest first (chronological order)
             [array]::Reverse($layers)
-            Write-Output "[SDLC-CONTEXT:LAYERS] Loading $($layers.Count) frozen layer(s)"
+            Write-Output "[SHEPHERD-CONTEXT:LAYERS] Loading $($layers.Count) frozen layer(s)"
             foreach ($layer in $layers) {
                 $layerContent = Get-Content $layer.FullName -Raw -ErrorAction SilentlyContinue
                 if ($layerContent) {
-                    Write-Output "[SDLC-CONTEXT:LAYER:$($layer.BaseName)]"
+                    Write-Output "[SHEPHERD-CONTEXT:LAYER:$($layer.BaseName)]"
                     Write-Output $layerContent
-                    Write-Output "[/SDLC-CONTEXT:LAYER]"
+                    Write-Output "[/SHEPHERD-CONTEXT:LAYER]"
                 }
             }
         }
@@ -154,10 +154,10 @@ if ($phaseMatch.Success) {
                 $intakeContent = ($intakeWords | Select-Object -First 3750) -join ' '
                 $intakeContent += "`n[TRUNCATED — full index at .sdlc/context/intake/index.md]"
             }
-            Write-Output "[SDLC-CONTEXT:INTAKE] Document intake index loaded ($($intakeWords.Count) words)"
-            Write-Output "[SDLC-CONTEXT:INTAKE-INDEX]"
+            Write-Output "[SHEPHERD-CONTEXT:INTAKE] Document intake index loaded ($($intakeWords.Count) words)"
+            Write-Output "[SHEPHERD-CONTEXT:INTAKE-INDEX]"
             Write-Output $intakeContent
-            Write-Output "[/SDLC-CONTEXT:INTAKE-INDEX]"
+            Write-Output "[/SHEPHERD-CONTEXT:INTAKE-INDEX]"
         }
     }
 
@@ -172,10 +172,10 @@ if ($phaseMatch.Success) {
 
         # Convention reminders (folded in from the retired phase-inject hook)
         if ($profileContent -match 'immutability:\s*true') {
-            Write-Output "[SDLC-CONVENTION] Use immutable patterns (records, with-expressions, spread operators)."
+            Write-Output "[SHEPHERD-CONVENTION] Use immutable patterns (records, with-expressions, spread operators)."
         }
         if ($profileContent -match 'no_console_log:\s*true') {
-            Write-Output "[SDLC-CONVENTION] No console.log in production code."
+            Write-Output "[SHEPHERD-CONVENTION] No console.log in production code."
         }
 
         $healthEnabled = [regex]::Match($profileContent, 'session_health_check:[\s\S]*?enabled:\s*(true|false)')
@@ -187,7 +187,7 @@ if ($phaseMatch.Success) {
         $minOrder = if ($phaseOrder.ContainsKey($minPhaseId)) { $phaseOrder[$minPhaseId] } else { 4 }
 
         if ($isEnabled -and $curOrder -ge $minOrder) {
-            Write-Output "[SDLC-HEALTH] Health check is enabled. Run the configured smoke test before starting new work (Build loop pre-flight check)."
+            Write-Output "[SHEPHERD-HEALTH] Health check is enabled. Run the configured smoke test before starting new work (Build loop pre-flight check)."
         }
     }
 }

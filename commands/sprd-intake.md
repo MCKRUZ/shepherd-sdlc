@@ -1,4 +1,4 @@
-# /sdlc-intake — Catalog and Summarize the Document Corpus
+# /sprd-intake — Catalog and Summarize the Document Corpus
 
 Process external reference documents (RFPs, API specs, vendor docs, decks) into a cataloged,
 token-budgeted set of summaries for use across the engagement. This is the Phase 0 Step 0c
@@ -7,7 +7,7 @@ workflow wrapped as one command, so no one runs the cataloger script by hand.
 ## Instructions
 
 1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not
-   found, tell the user to run `/sdlc-setup` first.
+   found, tell the user to run `/sprd-setup` first.
 
 2. **Resolve the intake source:**
    - Workflow mode (default): read the `documentation.intake_path` from `.sdlc/profile.yaml`.
@@ -21,7 +21,7 @@ workflow wrapped as one command, so no one runs the cataloger script by hand.
    ```
    This produces `.sdlc/context/intake/catalog.json` with document metadata (DOC-NNN IDs,
    types, token estimates, checksums). Pass `--rescan` through when the user runs
-   `/sdlc-intake --rescan`.
+   `/sprd-intake --rescan`.
 
 4. **Review the catalog with the human:**
 
@@ -32,7 +32,7 @@ workflow wrapped as one command, so no one runs the cataloger script by hand.
 
 5. **Generate per-document summaries:** For each document (respecting `max_documents`), ordered
    by human-indicated priority, spawn the `document-summarizer` agent (subagent type
-   `claude-code-sdlc:document-summarizer`) with the document's path and `DOC-NNN` id. It writes the
+   `shepherd:document-summarizer`) with the document's path and `DOC-NNN` id. It writes the
    summary following the `document-summary.md` template to `.sdlc/context/intake/DOC-NNN-{slug}.md`,
    targeting `summary_budget_tokens`, and flags a partial extraction for any document over ~100K
    tokens. Relay its result; do not rewrite its summaries.
@@ -65,7 +65,7 @@ workflow wrapped as one command, so no one runs the cataloger script by hand.
    Cataloged: N documents (DOC-001 … DOC-0NN)
    Summaries: N written to .sdlc/context/intake/
    Registry:  .sdlc/artifacts/00-discovery/document-registry.md
-   Catalog locked. Next: /sdlc-brief to prep a stakeholder workshop from this corpus.
+   Catalog locked. Next: /sprd-brief to prep a stakeholder workshop from this corpus.
    ```
 
 ## Arguments
@@ -77,7 +77,7 @@ workflow wrapped as one command, so no one runs the cataloger script by hand.
 
 ## Important
 
-- The user runs `/sdlc-intake` — never `intake_documents.py` by hand. The command owns the
+- The user runs `/sprd-intake` — never `intake_documents.py` by hand. The command owns the
   script invocation, the HITL gate, summarization, and locking.
-- Intake is the prerequisite for `/sdlc-brief` (the workshop brief is built on the summaries).
+- Intake is the prerequisite for `/sprd-brief` (the workshop brief is built on the summaries).
 - If the project has no external documents, skip intake entirely — it is opt-in.

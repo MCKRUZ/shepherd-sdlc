@@ -130,7 +130,7 @@ Provisioning (once, by whoever owns the Azure side):
    to the CLI as `ANTHROPIC_FOUNDRY_AUTH_TOKEN` (marked secret, never logged).
 5. **The variable group**: the claude gates no longer need `ANTHROPIC_API_KEY` — you may drop the
    `- group:` reference from those three pipelines (keep it wherever `EVAL_LLM_API_KEY` is used;
-   the eval gates are out of scope for foundry mode). `/sdlc-doctor` reads what the pipelines
+   the eval gates are out of scope for foundry mode). `/sprd-doctor` reads what the pipelines
    reference, so a dropped group is simply no longer demanded — by design.
 6. **Verify** with one drill PR: the gate's log shows `Mint Foundry token (…)` followed by a
    normal review; fail-closed semantics are unchanged (a gated change whose review cannot run

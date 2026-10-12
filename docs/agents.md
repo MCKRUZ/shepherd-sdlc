@@ -1,6 +1,6 @@
 # Agent Orchestration
 
-Authoritative reference for how the claude-code-sdlc plugin spawns, coordinates, and manages agents across the SDLC lifecycle.
+Authoritative reference for how the Shepherd plugin spawns, coordinates, and manages agents across the SDLC lifecycle.
 
 ---
 
@@ -20,7 +20,7 @@ Authoritative reference for how the claude-code-sdlc plugin spawns, coordinates,
 
 ## 1. Agent Architecture Overview
 
-Agents in the claude-code-sdlc plugin are invoked through Claude Code's `Agent()` tool, not inline within the main conversation context. This is a deliberate architectural choice with several consequences:
+Agents in the Shepherd plugin are invoked through Claude Code's `Agent()` tool, not inline within the main conversation context. This is a deliberate architectural choice with several consequences:
 
 - **Context isolation.** Each agent receives only the task-specific context it needs (state file, profile, phase artifacts) and returns a structured result. The main context window is protected from the full volume of agent reasoning and intermediate output.
 - **Composability.** The sdlc-orchestrator agent can spawn other agents, creating multi-level orchestration without polluting the user-facing conversation.
@@ -34,7 +34,7 @@ There are three categories of agents:
 | Harness agents | `harness/agents/*.md`, installed into the target repo | 6 | architect, build-error-resolver, debugger, grader, planner, security-reviewer |
 | Claude Code built-ins | Claude Code runtime | 2 used here | `Explore`, `Plan` |
 
-SDLC agents carry SDLC-specific system prompts, tool permissions, and output format contracts and live in the plugin. Harness agents are installed into the client repo by `/sdlc-harness`, so they are available to any session in that repo, not only to `/sdlc` commands.
+SDLC agents carry SDLC-specific system prompts, tool permissions, and output format contracts and live in the plugin. Harness agents are installed into the client repo by `/sprd-harness`, so they are available to any session in that repo, not only to `/sprd` commands.
 
 > **The runtime supplies almost nothing.** An earlier version of this table claimed thirteen-plus
 > "built-in Claude Code subagents" including `backend-architect` and `code-reviewer`. Those do not
@@ -67,7 +67,7 @@ The orchestrator is the central coordination agent for the entire SDLC lifecycle
 4. **State management** -- Updates `state.yaml` with gate results, phase transitions, timestamps, and session metadata.
 5. **Profile awareness** -- Reads `.sdlc/profile.yaml` to determine the project's stack, quality thresholds, compliance requirements, and conventions. All downstream decisions respect profile configuration.
 
-**When spawned:** Complex phase transitions, multi-step workflows, `/sdlc-next` command execution, and any scenario requiring cross-phase state awareness.
+**When spawned:** Complex phase transitions, multi-step workflows, `/sprd-next` command execution, and any scenario requiring cross-phase state awareness.
 
 **Key files accessed:**
 - `.sdlc/state.yaml` (read/write)
@@ -123,7 +123,7 @@ Result: BLOCKED -- 1 failure requires remediation
 
 **Key principle:** Compliance gates at MUST severity are non-negotiable. The agent will never suggest workarounds that bypass compliance requirements. It helps the user satisfy the requirement properly.
 
-**When spawned:** Phase transitions in projects with compliance profiles, explicit compliance audit requests via `/sdlc-audit`.
+**When spawned:** Phase transitions in projects with compliance profiles, explicit compliance audit requests via `/sprd-audit`.
 
 ---
 
@@ -206,7 +206,7 @@ The section evaluator is the "discriminator" in a generator-evaluator loop. It a
 
 ### 2.5 gate-repair
 
-Fixes simple, structural gate failures automatically before escalating to the human. Spawned by the orchestrator after `/sdlc-gate` or `/sdlc-next` finds failures.
+Fixes simple, structural gate failures automatically before escalating to the human. Spawned by the orchestrator after `/sprd-gate` or `/sprd-next` finds failures.
 
 **Repairable (will fix):** missing artifacts that have a template (copies and fills obvious fields), missing required H2 sections (adds header with a structured TODO), missing frontmatter fields (infers from state/profile), unambiguous `${VARIABLE}` placeholders, empty required files (scaffolds from template).
 
@@ -220,7 +220,7 @@ Fixes simple, structural gate failures automatically before escalating to the hu
 
 ### 2.6 multi-reviewer
 
-Reviews phase artifacts from multiple perspectives. Spawned by `/sdlc-review` with one of three modes:
+Reviews phase artifacts from multiple perspectives. Spawned by `/sprd-review` with one of three modes:
 
 | Mode | Stance | Focus |
 |------|--------|-------|
@@ -230,25 +230,25 @@ Reviews phase artifacts from multiple perspectives. Spawned by `/sdlc-review` wi
 
 Writes `review-report.md` into the phase's artifact directory with findings rated CRITICAL/HIGH/MEDIUM/LOW, each with a specific artifact reference and an actionable recommendation. Findings are advisory — they do not block gates, but CRITICAL/HIGH findings usually predict gate failures.
 
-**When spawned:** `/sdlc-review`, recommended before gates on phases 2 and 3, and per-change in the Build Loop.
+**When spawned:** `/sprd-review`, recommended before gates on phases 2 and 3, and per-change in the Build Loop.
 
 ---
 
 ### 2.7 narrative-enhancer
 
-Transforms technical artifacts into prose-rich `.narrative.md` companions for non-technical stakeholders (PMs, executives, business analysts). Spawned in parallel by `/sdlc-enhance` — one agent per artifact.
+Transforms technical artifacts into prose-rich `.narrative.md` companions for non-technical stakeholders (PMs, executives, business analysts). Spawned in parallel by `/sprd-enhance` — one agent per artifact.
 
 Output structure (per `references/narrative-patterns.md`): executive summary, 500-1000 word detailed narrative (tables become contextualized prose, metrics get interpreted, technical terms get business language), key decisions in business terms, impact assessment.
 
 **Principles:** the technical artifact remains the source of truth; no information invention — every claim traces to the source; simplify vocabulary, never meaning. Narratives are optional for gates but recommended before stakeholder reviews.
 
-**When spawned:** `/sdlc-enhance`, typically before phase transitions and steering reviews.
+**When spawned:** `/sprd-enhance`, typically before phase transitions and steering reviews.
 
 ---
 
 ### 2.8 discovery-analyst
 
-Cross-document analysis for discovery: finds where the intake corpus disagrees with itself and what no document answers. Spawned in Phase 0 Step 0d (workshop prep) or standalone via `/sdlc-brief --docs <path>`.
+Cross-document analysis for discovery: finds where the intake corpus disagrees with itself and what no document answers. Spawned in Phase 0 Step 0d (workshop prep) or standalone via `/sprd-brief --docs <path>`.
 
 **Produces** (templates in `templates/phases/00-discovery/`):
 - `contradiction-list.md` — CON-NN entries, each with two verbatim citations (`DOC-NNN:section`), a type (fact / scope / assumption / terminology), a severity (blocks-outcome / shapes-design / minor), and the question that resolves it
@@ -262,7 +262,7 @@ Cross-document analysis for discovery: finds where the intake corpus disagrees w
 
 ### 2.9 document-summarizer
 
-Writes the summary of ONE document in the intake corpus, to `templates/phases/00-discovery/document-summary.md` and the catalog's `summary_budget_tokens`. Spawned once per document by `/sdlc-intake` (Phase 0 Step 0c), in priority order, and by SDLC Studio (the desktop app)'s *Summarise the documents* button.
+Writes the summary of ONE document in the intake corpus, to `templates/phases/00-discovery/document-summary.md` and the catalog's `summary_budget_tokens`. Spawned once per document by `/sprd-intake` (Phase 0 Step 0c), in priority order, and by Shepherd (the desktop app)'s *Summarise the documents* button.
 
 **Produces:** `.sdlc/context/intake/DOC-NNN-<slug>.md` — overview, purpose / audience / scope, extractable requirements, key terms, relevance. A document over ~100K tokens is read by its opening, closing and headings and the summary says "Partial extraction".
 
@@ -274,7 +274,7 @@ Writes the summary of ONE document in the intake corpus, to `templates/phases/00
 
 ## 3. Harness and Built-in Subagents Used by SDLC
 
-Agents referenced by name in phase workflows that are not defined in `agents/`. The harness agents are installed into the target repo by `/sdlc-harness`; the two built-ins come from the Claude Code runtime.
+Agents referenced by name in phase workflows that are not defined in `agents/`. The harness agents are installed into the target repo by `/sprd-harness`; the two built-ins come from the Claude Code runtime.
 
 | Agent | Source | Primary Phases | Purpose |
 |-------|--------|---------------|---------|
@@ -304,7 +304,7 @@ is now a step in the phase definition:
 | Writing tests | the `test-writer` skill |
 | API contract work | the `api-pattern` skill |
 | Failure investigation | the `diagnose` skill, or the `debugger` agent |
-| Spikes and prototypes | `/sdlc-spike` |
+| Spikes and prototypes | `/sprd-spike` |
 
 A skill runs in the main context with the surrounding work in view, which is what authoring needs.
 An agent starts cold, which is what reviewing needs. That distinction — not a persona name — is
@@ -333,8 +333,8 @@ Phase 0 is primarily human-driven. `discovery-analyst` produces questions for hu
 |-------|------|-----------|
 | `Explore` | Foreground | Existing codebase to understand |
 | `requirements-analyst` | Foreground | Decomposing the problem into FR/NFR with acceptance criteria |
-| `feature-architect` | Foreground | Featuring a channel-bound feature (via `/sdlc-feature`) |
-| `bizreq-analyst` | Foreground | Business rules or golden scenarios to capture (via `/sdlc-rules`) |
+| `feature-architect` | Foreground | Featuring a channel-bound feature (via `/sprd-feature`) |
+| `bizreq-analyst` | Foreground | Business rules or golden scenarios to capture (via `/sprd-rules`) |
 
 ### Phase 2: Design
 
@@ -343,15 +343,15 @@ Phase 0 is primarily human-driven. `discovery-analyst` produces questions for hu
 | `architect` | Foreground | Always | -- |
 | `security-reviewer` | Foreground | Auth, payments, or sensitive data in scope | -- |
 | `compliance-checker` | Foreground | The domain carries regulatory obligations | -- |
-| `data-analyst` | Foreground | Feature touches data or PII (via `/sdlc-data`) | -- |
+| `data-analyst` | Foreground | Feature touches data or PII (via `/sprd-data`) | -- |
 | `visual-designer` | Foreground | A web/`ag-ui` surface is in scope | design-B |
 | `conversation-designer` | Foreground | A voice/chat surface is in scope | design-B |
-| `multi-reviewer` | Foreground | Suggested before `/sdlc-gate`; `--council` mode | -- |
+| `multi-reviewer` | Foreground | Suggested before `/sprd-gate`; `--council` mode | -- |
 | `Explore` | Foreground | Existing codebase being extended | -- |
 
 **Parallel group `design-B`:** When a feature spans a web surface and a voice/chat surface, spawn `visual-designer` and `conversation-designer` in a single message. They author different interaction specs and do not conflict.
 
-Design is not split by tier. `architect` covers the system as a whole; a tier needing deep specialist attention is a spike (`/sdlc-spike`), not a permanent agent.
+Design is not split by tier. `architect` covers the system as a whole; a tier needing deep specialist attention is a spike (`/sprd-spike`), not a permanent agent.
 
 ### Phase 3: Foundation
 
@@ -361,7 +361,7 @@ Design is not split by tier. `architect` covers the system as a whole; a tier ne
 | `Plan` or `planner` | Foreground | Complex feature decomposition | -- |
 | `Explore` | Foreground | Need to understand existing code structure | -- |
 
-Foundation completes the section-planning that began in `/deep-plan` AND stands up the factory: install/adapt the harness, bring up CI/CD rails + gates + dev infra, and run a walking skeleton end-to-end through the Build loop. The agents above cover the section-planning work; the rails, harness and dev-infra setup is HITL plus scripted automation (`/sdlc-harness`, `scripts/rails/*`, `/sdlc-doctor`), not an agent.
+Foundation completes the section-planning that began in `/deep-plan` AND stands up the factory: install/adapt the harness, bring up CI/CD rails + gates + dev infra, and run a walking skeleton end-to-end through the Build loop. The agents above cover the section-planning work; the rails, harness and dev-infra setup is HITL plus scripted automation (`/sprd-harness`, `scripts/rails/*`, `/sprd-doctor`), not an agent.
 
 ### Build Loop
 

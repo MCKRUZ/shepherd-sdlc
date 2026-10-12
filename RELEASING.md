@@ -8,6 +8,9 @@ checks listed here, so a red anywhere means stop.
    uv run --project scripts scripts/sync_kit.py --kit <delivery-standard>/kit
    uv run --project scripts scripts/sync_kit.py --kit <delivery-standard>/kit --check
    ```
+   `harness/` is `rename(kit)` — `sync_kit.py` rewrites the kit's pre-2.0 `sdlc-*` command names, plugin id and
+   repo URL in place (`RENAMES` in `scripts/sync_kit.py`); a brand change goes there, never into
+   `harness/`.
 2. **Run the suite** — everything, including the golden-repo compose test and the
    payload completeness tripwire:
    ```bash
@@ -34,4 +37,4 @@ checks listed here, so a red anywhere means stop.
    ```
    Tags exist from `v0.4.0` onward; every release gets one — it is how an engagement can say
    which harness version it runs (see also `.claude/harness-manifest.json` in installed repos,
-   which records the version at install time, and `/sdlc-upgrade` to move repos forward).
+   which records the version at install time, and `/sprd-upgrade` to move repos forward).

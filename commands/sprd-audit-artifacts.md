@@ -1,9 +1,9 @@
-# /sdlc-audit-artifacts — Artifact Freshness, Impact & History
+# /sprd-audit-artifacts — Artifact Freshness, Impact & History
 
 Audit the **content** of your pre-Build artifacts: which ones have gone stale relative to the things
 they depend on, what a change would put at risk, and the full change trail of any one artifact.
 
-This is a **sibling** to `/sdlc-audit`, not a replacement. `/sdlc-audit` audits *gate effectiveness*
+This is a **sibling** to `/sprd-audit`, not a replacement. `/sprd-audit` audits *gate effectiveness*
 (are the gates well-calibrated). This command audits *artifact staleness and change history*. They
 answer different questions and never overlap.
 
@@ -14,7 +14,7 @@ gate, changes a verdict, or edits your artifacts, specs, or `state.yaml`.
 
 1. **Resolve mode and repo root:**
    - **Workflow mode** (default): look for `.sdlc/state.yaml`. Pass `--state .sdlc/state.yaml` to the
-     script. If not found, tell the user to run `/sdlc-setup` first.
+     script. If not found, tell the user to run `/sprd-setup` first.
    - **Standalone mode** (`--repo <path>`, or no `.sdlc/` found): run against any repo containing a
      `.sdlc/` directory. History and staleness are only as deep as the ledger in that repo.
 
@@ -49,7 +49,7 @@ gate, changes a verdict, or edits your artifacts, specs, or `state.yaml`.
      ```
      `--history` shows the change **metadata** (when/who/why). To see what the artifact actually
      **said** at each version — or to diff two versions — point the user at the read-only
-     `/sdlc-version list|show|diff <id|file>` command (the content complement). Rolling one back lives
+     `/sprd-version list|show|diff <id|file>` command (the content complement). Rolling one back lives
      there too, behind its own named-human confirm; this command never mutates.
 
 4. **Display results** with the honest confidence labels intact:
@@ -82,13 +82,13 @@ gate, changes a verdict, or edits your artifacts, specs, or `state.yaml`.
 
 ## Important
 
-- The user runs `/sdlc-audit-artifacts` — never `audit_artifacts.py` by hand. The command owns the
+- The user runs `/sprd-audit-artifacts` — never `audit_artifacts.py` by hand. The command owns the
   scan, the lens selection, and the disposition recording.
 - **Read-only with respect to your project.** The only authoritative thing this command writes is the
   change-ledger (`.sdlc/metrics/artifact-log.jsonl`) — the audit trail itself; the `record --scan` in
   step 2 also best-effort captures each changed artifact's content into the gitignored, non-
   authoritative version store (`.sdlc/versions/`), which a store fault silently skips without changing
   this command's output. It never edits an artifact, a spec, or `state.yaml`. To *change* an artifact,
-  use `/sdlc-revise`; to *roll one back*, `/sdlc-version`.
+  use `/sprd-revise`; to *roll one back*, `/sprd-version`.
 - **Advisory by construction** — `audit_artifacts.py` exits 0 always. Staleness is never a gate; a
   candidate is a prompt for a human's judgement, not a verdict.

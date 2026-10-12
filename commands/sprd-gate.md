@@ -1,10 +1,10 @@
-# /sdlc-gate — Run Exit Criteria Check
+# /sprd-gate — Run Exit Criteria Check
 
 Run the 7-gate validation system for the current (or specified) SDLC phase without advancing.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first.
 
 2. **Read state:** Load `.sdlc/state.yaml` to determine the current phase.
 
@@ -51,9 +51,9 @@ Run the 7-gate validation system for the current (or specified) SDLC phase witho
    - Count of passed / failed / manual checks
    - If any MUST gates failed: **BLOCKED** — list specific blockers with remediation suggestions
    - If only manual checks remain: **REVIEW NEEDED** — list what needs human verification. Remind the user to share the HTML report for stakeholder sign-off.
-   - If all pass: **READY** — suggest running `/sdlc-next` to advance
+   - If all pass: **READY** — suggest running `/sprd-next` to advance
 
-10. **Update state:** Record gate results in `.sdlc/state.yaml` under the current phase's `gate_results` field. Do NOT advance the phase — that's `/sdlc-next`'s job.
+10. **Update state:** Record gate results in `.sdlc/state.yaml` under the current phase's `gate_results` field. Do NOT advance the phase — that's `/sprd-next`'s job.
 
 ## Dirty Tracking
 
@@ -67,8 +67,8 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/tra
 
 ## Arguments
 - No arguments: check current phase
-- `<phase-number>`: check a specific phase (e.g., `/sdlc-gate 2`)
+- `<phase-number>`: check a specific phase (e.g., `/sprd-gate 2`)
 
 ## Important
 - This command is **read-only with respect to phase transitions** — it records gate results but never changes `current_phase`.
-- Use `/sdlc-next` to actually advance after gates pass.
+- Use `/sprd-next` to actually advance after gates pass.

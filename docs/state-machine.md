@@ -60,8 +60,8 @@ Below is the complete structure with every field documented. Fields use ISO 8601
 
 ```yaml
 version: "1.0"                      # Schema version for forward compatibility
-profile_id: "microsoft-enterprise"   # ID of the profile selected during /sdlc-setup
-project_name: "My Project"           # Human-readable project name, set during /sdlc-setup
+profile_id: "microsoft-enterprise"   # ID of the profile selected during /sprd-setup
+project_name: "My Project"           # Human-readable project name, set during /sprd-setup
 created_at: "2026-03-20T10:00:00Z"   # ISO 8601 timestamp when state was initialized
 project_type: "service"              # Set during Phase 0 discovery; one of: service | app | library | skill | cli
                                      # Starts as null, populated when project type is determined
@@ -107,7 +107,7 @@ phases:                              # Map of phase_id to phase tracking data (k
     status: active                   # Currently active phase (the Build loop)
     entered_at: "2026-03-25T10:00:00Z"
     completed_at: null               # null because phase is not yet complete
-    gate_results: {}                 # Empty until /sdlc-gate is run
+    gate_results: {}                 # Empty until /sprd-gate is run
     artifacts: []                    # Populated as artifacts are created
   7:
     name: documentation
@@ -161,7 +161,7 @@ history:                             # Append-only transition log (see Section 8
 
 ## 3. State Initialization
 
-State initialization occurs when a user runs `/sdlc-setup`, which calls `init_project.py`.
+State initialization occurs when a user runs `/sprd-setup`, which calls `init_project.py`.
 
 ### Process
 
@@ -306,7 +306,7 @@ The `advance_phase.py` script implements the complete transition logic. It accep
 
 ## 7. Gate System Integration
 
-Gate checks are performed by `check_gates.py` and are invoked both by `/sdlc-gate` (standalone check) and by `advance_phase.py` (as part of transition).
+Gate checks are performed by `check_gates.py` and are invoked both by `/sprd-gate` (standalone check) and by `advance_phase.py` (as part of transition).
 
 ### Gate Types
 
@@ -390,7 +390,7 @@ The audit report is used for process improvement and is typically run after seve
 
 Located at: `.sdlc/artifacts/build/session-handoff.json`
 
-The Build loop often spans multiple Claude Code sessions. The spec is the durable source of truth across them (see section 10); an engagement *may* additionally keep this machine-readable handoff file for its own notes. **Nothing in the plugin reads it any more** — the session-start hook's Build-loop summary of it was retired in 1.6.0 (it was a section-plan progress model competing with the spec backlog). The retired `current_sprint` field is gone: the active sprint lives in `.sdlc/sprints/SNN.md` (section 10) and the hook prints it as `[SDLC-SPRINT]`.
+The Build loop often spans multiple Claude Code sessions. The spec is the durable source of truth across them (see section 10); an engagement *may* additionally keep this machine-readable handoff file for its own notes. **Nothing in the plugin reads it any more** — the session-start hook's Build-loop summary of it was retired in 1.6.0 (it was a section-plan progress model competing with the spec backlog). The retired `current_sprint` field is gone: the active sprint lives in `.sdlc/sprints/SNN.md` (section 10) and the hook prints it as `[SHEPHERD-SPRINT]`.
 
 ### Complete Schema
 
@@ -476,10 +476,10 @@ The Build loop often spans multiple Claude Code sessions. The spec is the durabl
 
 ### Hook Integration
 
-Neither session-start hook twin (`sdlc-session-start.sh` / `.ps1`) reads this file. Since 1.6.0 the Build-loop continuity line comes from the sprint layer instead: for every record under `.sdlc/sprints/*.md` whose `state:` is not `closed`, the hook prints
+Neither session-start hook twin (`shepherd-session-start.sh` / `.ps1`) reads this file. Since 1.6.0 the Build-loop continuity line comes from the sprint layer instead: for every record under `.sdlc/sprints/*.md` whose `state:` is not `closed`, the hook prints
 
 ```
-[SDLC-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09
+[SHEPHERD-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09
 ```
 
 read with grep/sed only (no Python, no JSON, no date arithmetic), silent when the directory is absent. See [hooks.md](hooks.md).
@@ -546,10 +546,10 @@ A sprint is a *commitment window over the backlog order* -- never a second backl
 | Key | Values | Written by | Read by |
 |-----|--------|------------|---------|
 | `sprint` | `""` or `SNN` | `slate`, `unslate`, `close --carry-to` | `track_specs --sprint` / `by_sprint`, `sprint.py` (the hook reads `.sdlc/sprints/SNN.md`, not this key) |
-| `next_owner` | a name | `handoff`; cleared by `ack` | `status`, the `/sdlc-refine` agenda |
+| `next_owner` | a name | `handoff`; cleared by `ack` | `status`, the `/sprd-refine` agenda |
 | `eng_review` | `pending \| accepted \| returned \| n-a` | `verdict --lane eng` | the ready rule |
 | `data_review` | `pending \| accepted \| returned \| n-a` | `verdict --lane data` (`n-a` needs `--reason`) | the ready rule |
-| `depends_on` | `""` or comma-separated spec ids | `/sdlc-refine` proposes, a human confirms | build order, next-up, `slate` warning, ready gap |
+| `depends_on` | `""` or comma-separated spec ids | `/sprd-refine` proposes, a human confirms | build order, next-up, `slate` warning, ready gap |
 
 **Ledger -- `.sdlc/metrics/sprint-log.jsonl`** (append-only; events `sprint_new`, `slated`, `unslated`, `handoff`, `ack`, `verdict`, `ready`, `closed`, `carried`, `dropped`; `ts` is full ISO UTC). Writers write frontmatter first, then the ledger line; if the append fails the script prints `DRIFT` and exits 1. A spec without the keys behaves exactly as before; a spec with `sprint: ""` and `status: merged` is bucketed `pre-sprint` by `track_specs.py`. See `references/sprint-model.md`.
 
@@ -608,7 +608,7 @@ The Build Loop has no batch exit gate -- checking happens per-change inside the 
 ### Transition Decision Tree
 
 ```
-/sdlc-next invoked
+/sprd-next invoked
   |
   +-> Read state.yaml (current_phase)
   |
@@ -657,9 +657,9 @@ The Build Loop has no batch exit gate -- checking happens per-change inside the 
 | Profile validation | `scripts/validate_profile.py` | Validates profile YAML against schema |
 | State template | `templates/state-init.yaml` | Template with placeholders for initialization |
 | Phase registry | `phases/phase-registry.yaml` | Phase definitions, gates, artifacts, skills |
-| /sdlc-next command | `commands/sdlc-next.md` | User-facing command that invokes advance_phase.py |
-| /sdlc-gate command | `commands/sdlc-gate.md` | User-facing command that runs gate checks |
-| Session hook | `hooks/sdlc-session-start.ps1` (+ `.sh` twin) | Reads state, frozen layers, and active sprint records at session start |
+| /sprd-next command | `commands/sprd-next.md` | User-facing command that invokes advance_phase.py |
+| /sprd-gate command | `commands/sprd-gate.md` | User-facing command that runs gate checks |
+| Session hook | `hooks/shepherd-session-start.ps1` (+ `.sh` twin) | Reads state, frozen layers, and active sprint records at session start |
 | Sprint CLI | `scripts/sprint.py` | Sprint records, spec sprint keys, and the sprint ledger (never writes `state.yaml`) |
 | Sprint template | `templates/phases/build/sprint.md` | Shape of `.sdlc/sprints/SNN.md` |
 | State machine ref | `references/state-machine.md` | Concise reference (progressive disclosure) |

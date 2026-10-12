@@ -1,6 +1,6 @@
 # Acceptance Criteria
 
-Quality benchmarks for the claude-code-sdlc plugin, following Microsoft Skills conventions.
+Quality benchmarks for the Shepherd plugin, following Microsoft Skills conventions.
 
 ## Plugin Installation
 - Plugin installs via symlink to `~/.claude/skills/`
@@ -33,11 +33,11 @@ Quality benchmarks for the claude-code-sdlc plugin, following Microsoft Skills c
 - Override protocol requires documented justification
 
 ## Commands
-- `/sdlc-setup`: Creates `.sdlc/`, updates CLAUDE.md, validates profile
-- `/sdlc`: Reads state, loads phase definition, shows actionable guidance
-- `/sdlc-status`: Generates markdown dashboard with progress bar
-- `/sdlc-gate`: Runs gate checks, records results, does NOT advance
-- `/sdlc-next`: Runs gates AND advances if all MUST gates pass
+- `/sprd-setup`: Creates `.sdlc/`, updates CLAUDE.md, validates profile
+- `/sprd`: Reads state, loads phase definition, shows actionable guidance
+- `/sprd-status`: Generates markdown dashboard with progress bar
+- `/sprd-gate`: Runs gate checks, records results, does NOT advance
+- `/sprd-next`: Runs gates AND advances if all MUST gates pass
 
 ## Microsoft Enterprise Profile
 - Stack: C#/.NET 8, Angular 17, Azure, SQL Server

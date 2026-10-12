@@ -1,6 +1,6 @@
 # 7-Gate Validation System
 
-Comprehensive reference for the gate validation system used by the claude-code-sdlc plugin. Every phase transition in the 9-phase SDLC lifecycle is guarded by seven sequential validation gates. Six check artifact quality, completeness, consistency, and compliance before work advances. The seventh renders the phase's own prose exit criteria for the human who signs.
+Comprehensive reference for the gate validation system used by the Shepherd plugin. Every phase transition in the 9-phase SDLC lifecycle is guarded by seven sequential validation gates. Six check artifact quality, completeness, consistency, and compliance before work advances. The seventh renders the phase's own prose exit criteria for the human who signs.
 
 ---
 
@@ -25,7 +25,7 @@ Comprehensive reference for the gate validation system used by the claude-code-s
 
 ## 1. Gate System Overview
 
-When a user invokes `/sdlc-gate` or `/sdlc-next`, the system runs every artifact produced during the current phase through six ordered validation gates. The gates are evaluated by `scripts/check_gates.py`, which reads the phase definition from `phases/phase-registry.yaml`, loads the active profile, and iterates through each gate in sequence.
+When a user invokes `/sprd-gate` or `/sprd-next`, the system runs every artifact produced during the current phase through six ordered validation gates. The gates are evaluated by `scripts/check_gates.py`, which reads the phase definition from `phases/phase-registry.yaml`, loads the active profile, and iterates through each gate in sequence.
 
 Phase ids are strings (`0`–`9`, plus `build` and `close`), and phases are ordered but non-sequential — the system resolves "next phase" by the registry `order` field, never by incrementing the id. Advancement is always manual; no phase auto-advances.
 
@@ -40,7 +40,7 @@ Phase ids are strings (`0`–`9`, plus `build` and `close`), and phases are orde
 **Execution flow:**
 
 ```
-/sdlc-gate (or /sdlc-next)
+/sprd-gate (or /sprd-next)
   |
   v
 check_gates.py --state .sdlc/state.yaml [--phase ID]
@@ -650,8 +650,8 @@ If fewer than 3 phases have been completed, the audit prints a warning that resu
 | Topic | Document | Description |
 |-------|----------|-------------|
 | Profile configuration | `docs/profiles.md` | How compliance frameworks and quality thresholds are configured in profile YAML |
-| `/sdlc-gate` command | `commands/sdlc-gate.md` | Slash command that triggers gate evaluation |
-| `/sdlc-next` command | `commands/sdlc-next.md` | Slash command that runs gates and advances if all pass |
+| `/sprd-gate` command | `commands/sprd-gate.md` | Slash command that triggers gate evaluation |
+| `/sprd-next` command | `commands/sprd-next.md` | Slash command that runs gates and advances if all pass |
 | `check_gates.py` | `scripts/check_gates.py` | Gate evaluation implementation |
 | `audit_gates.py` | `scripts/audit_gates.py` | Gate effectiveness analysis implementation |
 | Phase registry | `phases/phase-registry.yaml` | Phase definitions including required/optional artifacts and exit gate conditions |

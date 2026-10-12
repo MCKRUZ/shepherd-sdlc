@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# sdlc-session-start.sh
-# Hook: Runs at session start to load SDLC context (bash twin of sdlc-session-start.ps1 —
+# shepherd-session-start.sh
+# Hook: Runs at session start to load SDLC context (bash twin of shepherd-session-start.ps1 —
 # same output contract; used as the fallback on hosts without PowerShell 7).
 # Reads .sdlc/state.yaml and outputs current phase context.
 
@@ -64,8 +64,8 @@ if [ -d "$artifact_dir" ]; then
 fi
 
 # Output context for Claude
-echo "[SDLC] Project: $project_name | Profile: $profile_id | Phase $phase_id: $display_name | Artifacts: $artifact_count"
-echo "[SDLC] Commands: /sdlc (guidance) | /sdlc-status (dashboard) | /sdlc-gate (check) | /sdlc-next (advance) | /sdlc-coach (coaching)"
+echo "[SHEPHERD] Project: $project_name | Profile: $profile_id | Phase $phase_id: $display_name | Artifacts: $artifact_count"
+echo "[SHEPHERD] Commands: /sprd (guidance) | /sprd-status (dashboard) | /sprd-gate (check) | /sprd-next (advance) | /sprd-coach (coaching)"
 
 # Phase-specific behavioral reminder
 phase_reminder=""
@@ -74,13 +74,13 @@ case "$phase_id" in
     1) phase_reminder="Ensure changes trace back to documented requirements." ;;
     2) phase_reminder="Document architectural decisions as ADRs." ;;
     3) phase_reminder="Build the factory (harness, rails, dev infra) and a thin walking skeleton." ;;
-    build) phase_reminder="One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sdlc-refine; the board is /sdlc-sprint." ;;
+    build) phase_reminder="One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sprd-refine; the board is /sprd-sprint." ;;
     7) phase_reminder="Prove docs by cold use. Finalize ADRs." ;;
     8) phase_reminder="Promote the proven artifact. Document the rollback plan." ;;
     9) phase_reminder="Configure alerts from measured baselines. Run the drill." ;;
     close) phase_reminder="Prove the client can run it without us. Audit the harness, revoke access, harvest." ;;
 esac
-[ -n "$phase_reminder" ] && echo "[SDLC-PHASE] $phase_reminder"
+[ -n "$phase_reminder" ] && echo "[SHEPHERD-PHASE] $phase_reminder"
 
 # --- Active sprints (Sprint Team Layer): one line per .sdlc/sprints/*.md whose state is not closed ---
 # grep/sed only — no date arithmetic, no JSON, no uv. Silent when the directory is absent.
@@ -100,7 +100,7 @@ if [ -d "$sprints_dir" ]; then
         sprint_goal=$(sprint_field "$f" "goal")
         sprint_start=$(sprint_field "$f" "start")
         sprint_end=$(sprint_field "$f" "end")
-        echo "[SDLC-SPRINT] $sprint_id ($sprint_state) — \"$sprint_goal\" — $sprint_start → $sprint_end"
+        echo "[SHEPHERD-SPRINT] $sprint_id ($sprint_state) — \"$sprint_goal\" — $sprint_start → $sprint_end"
     done
 fi
 
@@ -114,7 +114,7 @@ constitution_path="$sdlc_dir/constitution.md"
 if [ -f "$constitution_path" ]; then
     foundation=$(first_words 375 < "$constitution_path")
     if [ -n "$foundation" ]; then
-        echo "[SDLC-CONTEXT:FOUNDATION] $foundation"
+        echo "[SHEPHERD-CONTEXT:FOUNDATION] $foundation"
     fi
 fi
 
@@ -134,13 +134,13 @@ if [ -d "$layers_dir" ]; then
     if [ -n "$layer_list" ]; then
         selected=$(printf '%s' "$layer_list" | sort -t'|' -k1,1n | tail -n 3 | cut -d'|' -f2-)
         count=$(printf '%s\n' "$selected" | grep -c .)
-        echo "[SDLC-CONTEXT:LAYERS] Loading $count frozen layer(s)"
+        echo "[SHEPHERD-CONTEXT:LAYERS] Loading $count frozen layer(s)"
         printf '%s\n' "$selected" | while IFS= read -r layer; do
             [ -f "$layer" ] || continue
-            echo "[SDLC-CONTEXT:LAYER:$(basename "$layer" .md)]"
+            echo "[SHEPHERD-CONTEXT:LAYER:$(basename "$layer" .md)]"
             cat "$layer"
             echo ""
-            echo "[/SDLC-CONTEXT:LAYER]"
+            echo "[/SHEPHERD-CONTEXT:LAYER]"
         done
     fi
 fi
@@ -150,8 +150,8 @@ intake_index="$sdlc_dir/context/intake/index.md"
 if [ -f "$intake_index" ]; then
     intake_words=$(wc -w < "$intake_index" | tr -d '[:space:]')
     if [ "$intake_words" -gt 0 ]; then
-        echo "[SDLC-CONTEXT:INTAKE] Document intake index loaded ($intake_words words)"
-        echo "[SDLC-CONTEXT:INTAKE-INDEX]"
+        echo "[SHEPHERD-CONTEXT:INTAKE] Document intake index loaded ($intake_words words)"
+        echo "[SHEPHERD-CONTEXT:INTAKE-INDEX]"
         if [ "$intake_words" -gt 3750 ]; then
             # Respect token budget — truncate at ~3750 words (~5000 tokens)
             first_words 3750 < "$intake_index"
@@ -160,7 +160,7 @@ if [ -f "$intake_index" ]; then
             cat "$intake_index"
             echo ""
         fi
-        echo "[/SDLC-CONTEXT:INTAKE-INDEX]"
+        echo "[/SHEPHERD-CONTEXT:INTAKE-INDEX]"
     fi
 fi
 
@@ -168,10 +168,10 @@ fi
 profile_file="$sdlc_dir/profile.yaml"
 if [ -f "$profile_file" ]; then
     if grep -qE 'immutability:[[:space:]]*true' "$profile_file"; then
-        echo "[SDLC-CONVENTION] Use immutable patterns (records, with-expressions, spread operators)."
+        echo "[SHEPHERD-CONVENTION] Use immutable patterns (records, with-expressions, spread operators)."
     fi
     if grep -qE 'no_console_log:[[:space:]]*true' "$profile_file"; then
-        echo "[SDLC-CONVENTION] No console.log in production code."
+        echo "[SHEPHERD-CONVENTION] No console.log in production code."
     fi
 
     health_enabled=$(awk '/session_health_check:/{f=1} f && /enabled:/{gsub(/[" ]/,"",$2); print $2; exit}' "$profile_file")
@@ -183,7 +183,7 @@ if [ -f "$profile_file" ]; then
     [ "$min_order" -lt 0 ] && min_order=4
 
     if [ "$health_enabled" = "true" ] && [ "$cur_order" -ge "$min_order" ]; then
-        echo "[SDLC-HEALTH] Health check is enabled. Run the configured smoke test before starting new work (Build loop pre-flight check)."
+        echo "[SHEPHERD-HEALTH] Health check is enabled. Run the configured smoke test before starting new work (Build loop pre-flight check)."
     fi
 fi
 

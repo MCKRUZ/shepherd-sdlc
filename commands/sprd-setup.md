@@ -1,4 +1,4 @@
-# /sdlc-setup — Interactive Setup Wizard
+# /sprd-setup — Interactive Setup Wizard
 
 Initialize SDLC lifecycle management for a project.
 
@@ -6,7 +6,7 @@ Initialize SDLC lifecycle management for a project.
 
 ### Step 1: Check Existing Setup
 Look for `.sdlc/state.yaml` in the current directory.
-- If exists: warn the user that SDLC is already initialized. Ask if they want to view status (`/sdlc-status`) or re-initialize (destructive — requires confirmation).
+- If exists: warn the user that SDLC is already initialized. Ask if they want to view status (`/sprd-status`) or re-initialize (destructive — requires confirmation).
 - If exists but missing `.sdlc/context/` directory: offer to upgrade the project structure by creating the missing `context/layers/` directory. This is non-destructive — it only adds new directories, doesn't modify existing state or artifacts. Run: `mkdir -p .sdlc/context/layers`
 - If not exists: proceed with setup.
 
@@ -90,7 +90,7 @@ rails, different realization. Idempotent — existing files are left in place an
 `--force` only when you intend to overwrite). One exception: the JSON merge targets (`.mcp.json`
 and `.claude/settings.json`) are re-merged on every run by design — the installer deep-merges the
 payload's entries into them rather than skipping, so pack additions always land. The install
-finishes by writing `.claude/harness-manifest.json` — the install receipt (`/sdlc-upgrade` reads
+finishes by writing `.claude/harness-manifest.json` — the install receipt (`/sprd-upgrade` reads
 it later to upgrade the repo without clobbering its adaptations). Commit it with the rest.
 
 Pass `--profile .sdlc/profile.yaml` so the installer **composes the stack + CI/CD packs the profile
@@ -129,16 +129,16 @@ this generic SDLC section instead (fill in the selected profile id) — never st
 missing template:
 
 ```markdown
-# SDLC Configuration (auto-injected by /sdlc-setup)
+# SDLC Configuration (auto-injected by /sprd-setup)
 
 ## SDLC Plugin Active
-This project uses the claude-code-sdlc plugin for lifecycle management.
+This project uses the Shepherd plugin for lifecycle management.
 - State: `.sdlc/state.yaml`
 - Profile: `<selected-profile>`
-- Commands: `/sdlc`, `/sdlc-setup`, `/sdlc-status`, `/sdlc-next`, `/sdlc-gate`
+- Commands: `/sprd`, `/sprd-setup`, `/sprd-status`, `/sprd-next`, `/sprd-gate`
 
 ## Phase Awareness
-Before making changes, check the current SDLC phase with `/sdlc`. Gated opening phases
+Before making changes, check the current SDLC phase with `/sprd`. Gated opening phases
 (0 Discovery – 3 Foundation) produce documents; the continuous Build loop builds one spec at a
 time (Intent → Delegate → Discern — checking happens per change, and the author never approves
 their own work); gated closing phases (7 Documentation – 9 Monitoring, then Close & Transfer)
@@ -169,8 +169,8 @@ bash scripts/rails/configure-branch-policies.sh
 Two Azure DevOps follow-ups, both optional:
 - Azure DevOps names people by sign-in identity (UPN), not by handle, so when the roster
   (`.sdlc/team.yaml`) is written, ask each person for the email they sign in to Azure DevOps
-  with and record it as `email:` — it is the only way `/sdlc-handoff` can make the checker a
-  required reviewer and `/sdlc-spec-status` can show a reviewer as an `@handle`. Nothing guesses
+  with and record it as `email:` — it is the only way `/sprd-handoff` can make the checker a
+  required reviewer and `/sprd-spec-status` can show a reviewer as an `@handle`. Nothing guesses
   it from a name. Add it later with
   `uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/set_setting.py --repo . person @handle --email <upn>`.
 - Only when `code_host.py` reports `host: none` for a remote that really is Azure DevOps (an
@@ -196,8 +196,8 @@ Next steps:
    on Azure DevOps, also replace ADO_ORGANIZATION_NOT_SET in .mcp.json
    (docs/harness.md explains every installed piece — point the team there)
 2. PROVE THE RAILS before trusting them — run the shakedown drills in .github/RAILS.md
-3. Run /sdlc to start the Phase 0 discovery interview
-4. Run /sdlc-gate when ready to check exit criteria; /sdlc-next to advance
+3. Run /sprd to start the Phase 0 discovery interview
+4. Run /sprd-gate when ready to check exit criteria; /sprd-next to advance
 ```
 
 On `platform: azure-devops` profiles, render the `Harness:` line with the ADO layout instead:
@@ -215,7 +215,7 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/val
 - If uv is not installed: tell the user to install it (`pip install uv` or `brew install uv`)
 - If profile validation fails: show errors and suggest fixes
 - If directory permissions prevent creation: report the error clearly
-- If the harness install reports SKIPPED files you wanted replaced: prefer `/sdlc-upgrade` (manifest-aware,
+- If the harness install reports SKIPPED files you wanted replaced: prefer `/sprd-upgrade` (manifest-aware,
   never clobbers adaptations). `--force` is the blunt fallback:
   **`--force` rewrites `CLAUDE.md` from the pristine template** — the appended SDLC section (Step 6) and any
   local edits to it are lost and must be re-applied. Prefer deleting just the specific files you want

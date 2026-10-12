@@ -1,7 +1,7 @@
-# /sdlc-spike — Run a Bounded Spike When the Answer Isn't Known Yet
+# /sprd-spike — Run a Bounded Spike When the Answer Isn't Known Yet
 
 Open a **spike** (`spikes/NNNN-name.md`) for a question the pod cannot yet answer. This is the
-escape hatch for the one situation `/sdlc-spec` cannot serve: a story that fails the Definition of
+escape hatch for the one situation `/sprd-spec` cannot serve: a story that fails the Definition of
 Ready not because it is badly written, but because **nobody knows the answer**.
 
 Writing a confident spec about an unknown is the expensive mistake. It reads as ready, the grader
@@ -26,7 +26,7 @@ just feels large, that is a spec (possibly several).
 ## Steps
 
 1. **Confirm it is genuinely an unknown, not a vague line.** Ask which acceptance check cannot be
-   written, and why. If the answer is "we know, it just needs wording," stop and run `/sdlc-spec`
+   written, and why. If the answer is "we know, it just needs wording," stop and run `/sprd-spec`
    instead. Say so plainly rather than opening a spike to avoid the harder conversation.
 
 2. **Get the box and the opener from a human.** Both are required, and neither is yours to decide.
@@ -65,7 +65,7 @@ just feels large, that is a spec (possibly several).
 
    **Do not open a PR from the spike branch.** The `spike-guard` CI check fails any PR whose head
    branch matches `spike/`, and there is no label escape. If the work turns out to be worth
-   shipping, it gets a spec via `/sdlc-spec` and is rebuilt under the loop.
+   shipping, it gets a spec via `/sprd-spec` and is rebuilt under the loop.
 
 8. **Close the loop.** Report to the human which decision-list item the finding answers, which spec
    is now writable, and whether any ADR needs revising. An ADR revision is a HIGH-risk spec —
@@ -78,7 +78,7 @@ just feels large, that is a spec (possibly several).
 
 ## Important
 
-- The user runs `/sdlc-spike` — never `new_spike.py` by hand.
+- The user runs `/sprd-spike` — never `new_spike.py` by hand.
 - **Claude never decides to spike, never sets the box, and never runs past it without asking.**
   Both the box and the opener are named-human inputs; the script refuses an empty value for either.
 - **Spike code never merges.** This is enforced by `spike-guard` in CI, not by good intentions.

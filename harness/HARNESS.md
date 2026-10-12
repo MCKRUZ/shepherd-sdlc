@@ -180,7 +180,7 @@ never seen catch anything is decoration.
 
 The harness was installed once from a plugin and then adapted to this repo. There's no live
 connection back: nothing upstream can change this repo behind your back. Updating is a
-deliberate act — update the plugin, run `/sdlc-upgrade` — and the manifest above is what
+deliberate act — update the plugin, run `/sprd-upgrade` — and the manifest above is what
 keeps it safe: files you never touched are brought forward; files this repo adapted are left
 alone; a file that changed on *both* sides is reported side-by-side for a person (or the AI,
 with a person watching) to merge deliberately. Nothing is ever silently overwritten.

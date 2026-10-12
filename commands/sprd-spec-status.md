@@ -1,4 +1,4 @@
-# /sdlc-spec-status — Where a Spec Actually Is
+# /sprd-spec-status — Where a Spec Actually Is
 
 Report a spec's status read from its pull request — checks, whether the grader ran and its
 verdict, whether a security review was required and its result, approvals, and whether it
@@ -19,7 +19,8 @@ the repository's `origin` remote is on; it never sets a status by hand and never
    ```
    In workflow mode pass `--state .sdlc/state.yaml` instead of `--repo`.
 
-   The host is detected from `origin` (then `SDLC_CODE_HOST`, then `.sdlc/code-host.yaml`).
+   The host is detected from `origin` (then `SHEPHERD_CODE_HOST` — or the older `SDLC_CODE_HOST` —
+   then `.sdlc/code-host.yaml`).
    Pass `--host github|azure-devops|none` only when the user asks to override it for this run;
    `none` tries `gh`, as every repository did before the Azure DevOps provider existed.
 
@@ -63,9 +64,9 @@ the repository's `origin` remote is on; it never sets a status by hand and never
 
 ## Important
 
-- The user runs `/sdlc-spec-status` — never `spec_status.py` by hand.
+- The user runs `/sprd-spec-status` — never `spec_status.py` by hand.
 - This command **reads and, once, writes `status: merged`** — it never changes what a
   gate decided, never approves, never merges. If a change is genuinely blocked, the fix is
   in the PR (a fix, a re-request, an override with a name on it), not in this report.
-- A "no pull request found" result is not a prompt to create one — that's `/sdlc-handoff`'s
+- A "no pull request found" result is not a prompt to create one — that's `/sprd-handoff`'s
   job, and only after the spec passes its Definition of Ready.

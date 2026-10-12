@@ -1,10 +1,10 @@
-# /sdlc-experience — Author the Channel-Shaped Experience for a Surface
+# /sprd-experience — Author the Channel-Shaped Experience for a Surface
 
 Author the **craft** of a surface — the user journey, the surface layout, and the channel interaction
-spec — for one channel-bound spec. This is the *author* beat between `/sdlc-feature` (which
-*decomposes*) and `/sdlc-channel` (which *binds*): decompose → **author** → bind. It routes by the
+spec — for one channel-bound spec. This is the *author* beat between `/sprd-feature` (which
+*decomposes*) and `/sprd-channel` (which *binds*): decompose → **author** → bind. It routes by the
 feature's channel to the right designer — `ag-ui` to the `visual-designer`, `voice`/`chat` to the
-`conversation-designer` — and is interview-driven like `/sdlc-coach`: the designer assesses what's
+`conversation-designer` — and is interview-driven like `/sprd-coach`: the designer assesses what's
 there, asks focused questions, and drafts as answers arrive. Design **proposes**; a named human
 **decides**. Works inside an SDLC project or standalone.
 
@@ -40,7 +40,7 @@ there, asks focused questions, and drafts as answers arrive. Design **proposes**
      chat (markdown in-repo, plus a hi-fi/Figma link where relevant).
    - `channel-interaction-spec.md` — the descriptor-dimension → contract → acceptance-check table. Each
      row traces a `channels/<channel>.yaml` Acceptance Dimension to a concrete contract to the
-     acceptance check it becomes on the spec. This is the artifact `/sdlc-channel` reads to inject the
+     acceptance check it becomes on the spec. This is the artifact `/sprd-channel` reads to inject the
      channel's dimensions into the spec's `## Acceptance Checks`.
 
 5. **Confirm the contract and route dead-ends with the human:**
@@ -60,7 +60,7 @@ there, asks focused questions, and drafts as answers arrive. Design **proposes**
    Artifacts: user-journey.md, surface-layout.md, channel-interaction-spec.md
    Contract:  N dimension→check rows ready to inject
    Decisions: M opened on the decision-log (owners: …) | none
-   Next: /sdlc-channel to bind this spec's channel: and inject these rows as Acceptance Checks.
+   Next: /sprd-channel to bind this spec's channel: and inject these rows as Acceptance Checks.
    ```
 
 ## Arguments
@@ -76,7 +76,7 @@ there, asks focused questions, and drafts as answers arrive. Design **proposes**
 - **Routing is by channel, not by preference.** `ag-ui` → `visual-designer`; `voice`/`chat` →
   `conversation-designer`. The one `channel-interaction-spec.md` is channel-shaped: an event contract
   for `ag-ui`, a turn/barge-in/readback contract for `voice`, a threading/escalation contract for `chat`.
-- **This command feeds `/sdlc-channel`.** It authors the interaction spec; `/sdlc-channel` reads it to
+- **This command feeds `/sprd-channel`.** It authors the interaction spec; `/sprd-channel` reads it to
   inject the channel's acceptance dimensions into the spec. Author, then bind.
 - **Persona stays in the experience layer** — journeys and notes are (channel × persona)-aware, but
   persona is never a spec field; only `channel:` lands on the spec.

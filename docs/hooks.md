@@ -14,7 +14,7 @@ session. It reads project state and never modifies it.
 ## Table of Contents
 
 1. [Hook System Overview](#1-hook-system-overview)
-2. [sdlc-session-start — Session Initialization Hook](#2-sdlc-session-start--session-initialization-hook)
+2. [shepherd-session-start — Session Initialization Hook](#2-shepherd-session-start--session-initialization-hook)
 3. [Hook Registration in hooks/hooks.json](#3-hook-registration-in-hookshooksjson)
 4. [Hook Design Principles](#4-hook-design-principles)
 5. [Cross-References](#5-cross-references)
@@ -33,15 +33,15 @@ Key properties:
 - **Stdout-driven.** Every output line becomes a context reminder.
 - **Gracefully degrading.** If `.sdlc/state.yaml` does not exist (SDLC not initialized),
   the hook exits silently with code 0.
-- **Two implementations, one contract.** `sdlc-session-start.ps1` (PowerShell) and
-  `sdlc-session-start.sh` (bash) produce the same output; registration tries `pwsh` first
+- **Two implementations, one contract.** `shepherd-session-start.ps1` (PowerShell) and
+  `shepherd-session-start.sh` (bash) produce the same output; registration tries `pwsh` first
   and falls back to `bash`, so hosts with either runtime work out of the box.
 
 ---
 
-## 2. sdlc-session-start — Session Initialization Hook
+## 2. shepherd-session-start — Session Initialization Hook
 
-**Source:** `hooks/sdlc-session-start.ps1` and `hooks/sdlc-session-start.sh` (twins).
+**Source:** `hooks/shepherd-session-start.ps1` and `hooks/shepherd-session-start.sh` (twins).
 
 ### Trigger
 
@@ -57,7 +57,7 @@ no output, no error.
 | `.sdlc/artifacts/<slug>/` | Counts all files recursively to report artifact progress (dir is the phase slug; `build` and `close` are non-numeric) |
 | `.sdlc/profile.yaml` | Convention reminders (`immutability`, `no_console_log`) and the opt-in `session_health_check` |
 | `.sdlc/constitution.md`, `.sdlc/context/layers/`, `.sdlc/context/intake/index.md` | The 3-tier context: Foundation, the three most recent frozen layers, the document-intake index |
-| `.sdlc/sprints/*.md` | Sprint Team Layer — one `[SDLC-SPRINT]` line per sprint record whose `state:` is not `closed` (any phase; silent when the directory is absent) |
+| `.sdlc/sprints/*.md` | Sprint Team Layer — one `[SHEPHERD-SPRINT]` line per sprint record whose `state:` is not `closed` (any phase; silent when the directory is absent) |
 
 ### State Parsing
 
@@ -84,9 +84,9 @@ how much work product exists for the current phase.
 The hook emits two mandatory lines for every initialized project, then one phase reminder:
 
 ```
-[SDLC] Project: My API Service | Profile: microsoft-enterprise | Phase build: Build Loop | Artifacts: 12
-[SDLC] Commands: /sdlc (guidance) | /sdlc-status (dashboard) | /sdlc-gate (check) | /sdlc-next (advance) | /sdlc-coach (coaching)
-[SDLC-PHASE] One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sdlc-refine; the board is /sdlc-sprint.
+[SHEPHERD] Project: My API Service | Profile: microsoft-enterprise | Phase build: Build Loop | Artifacts: 12
+[SHEPHERD] Commands: /sprd (guidance) | /sprd-status (dashboard) | /sprd-gate (check) | /sprd-next (advance) | /sprd-coach (coaching)
+[SHEPHERD-PHASE] One spec at a time: Intent -> Delegate -> Discern. Check per change, never in a batch. The author never approves their own work. Refinement for the next sprint runs alongside — /sprd-refine; the board is /sprd-sprint.
 ```
 
 The first line gives Claude situational awareness. The second reminds it which slash
@@ -96,13 +96,13 @@ refining the *next* sprint's specs rather than building the current one.
 
 ### Active Sprint Line (Sprint Team Layer)
 
-Directly after the `[SDLC-PHASE]` reminder, the hook lists every sprint record under
-`.sdlc/sprints/*.md` (the `templates/phases/build/sprint.md` shape written by `/sdlc-sprint`)
+Directly after the `[SHEPHERD-PHASE]` reminder, the hook lists every sprint record under
+`.sdlc/sprints/*.md` (the `templates/phases/build/sprint.md` shape written by `/sprd-sprint`)
 whose `state:` is not `closed`. It emits **one additional line per active sprint**, in
 filename order:
 
 ```
-[SDLC-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09
+[SHEPHERD-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09
 ```
 
 The fields are the record's `sprint`, `state`, `goal`, `start` and `end` frontmatter values,
@@ -132,11 +132,11 @@ sprint file therefore produces no line, no warning and no error.
 ### Retired: the section-plan handoff summary
 
 Earlier revisions of the Build Loop hook parsed `.sdlc/artifacts/build/session-handoff.json`
-and printed a `[SDLC] Session Handoff: 3/8 sections complete …` summary (plus `Context`,
+and printed a `[SHEPHERD] Session Handoff: 3/8 sections complete …` summary (plus `Context`,
 `Next action` and `active blocker(s)` lines). That block has been **removed from both twins**.
 The SECTION model it summarised was retired from the Build loop when specs became the Build
 unit (`track_specs.py` derives backlog progress from spec frontmatter); left in place, the
-old summary would have sat next to `[SDLC-SPRINT]` as a competing progress model. A legacy
+old summary would have sat next to `[SHEPHERD-SPRINT]` as a competing progress model. A legacy
 `session-handoff.json` may still exist in older projects — the hook ignores it. The bash
 twin no longer needs `jq` or Python; both twins are plain regex/grep tooling end to end.
 
@@ -155,7 +155,7 @@ file by convention):
         "hooks": [
           {
             "type": "command",
-            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/sdlc-session-start.ps1\" || bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sdlc-session-start.sh\"",
+            "command": "pwsh -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}/hooks/shepherd-session-start.ps1\" || bash \"${CLAUDE_PLUGIN_ROOT}/hooks/shepherd-session-start.sh\"",
             "timeout": 10000
           }
         ]
@@ -185,8 +185,8 @@ neither (rare) gets a hook error that Claude Code logs and continues past.
 ### Read-Only
 
 The hook MUST NOT modify `.sdlc/state.yaml`, artifact files, or any project files. It is
-an observer, not an actor. State transitions happen exclusively through the `/sdlc-next`
-and `/sdlc-gate` commands via the Python scripts.
+an observer, not an actor. State transitions happen exclusively through the `/sprd-next`
+and `/sprd-gate` commands via the Python scripts.
 
 ### Lightweight
 
@@ -221,4 +221,4 @@ side effects, no counters incremented, no files touched.
 - **[Architecture](architecture.md)** — How the hook fits into the plugin anatomy alongside commands, agents, and scripts.
 - **[Profiles](profiles.md)** — The profile the session banner reports.
 - **[Gate System](gate-system.md)** — The gate checks that control phase transitions (the hook reports state, gates enforce it).
-- **[Commands](commands.md)** — The slash commands (`/sdlc`, `/sdlc-gate`, `/sdlc-next`) referenced in the session-start banner.
+- **[Commands](commands.md)** — The slash commands (`/sprd`, `/sprd-gate`, `/sprd-next`) referenced in the session-start banner.

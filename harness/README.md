@@ -15,16 +15,16 @@ first install.
 
 ## Install (recommended: via the plugin)
 
-This kit is the canonical source, but the easy path for a team is the **`claude-code-sdlc`
+This kit is the canonical source, but the easy path for a team is the **`shepherd`
 plugin**, which bundles a synced copy and lays it down for you:
 
 ```
-/plugin marketplace add MCKRUZ/claude-code-sdlc
-/plugin install claude-code-sdlc@mckruz
+/plugin marketplace add MCKRUZ/shepherd-sdlc
+/plugin install shepherd@mckruz
 # then, per repo:
-/sdlc-setup        # initializes .sdlc/ AND installs this harness
+/sprd-setup        # initializes .sdlc/ AND installs this harness
 # or, to (re)install just the harness:
-/sdlc-harness
+/sprd-harness
 ```
 
 The install map below is what the plugin's installer applies (and what you'd copy by hand if
@@ -65,7 +65,7 @@ keeps its path on both platforms — the ADO pack overlays its own realization t
 | `settings.json` | `./.claude/settings.json` | Shared, committed. Leans on `deny` (see below). |
 | `mcp.json` | `./.mcp.json` | Team MCP servers (context7, sequential-thinking, playwright); packs merge additions (dotnet → microsoft-learn, github → github, azure-devops → azure-devops). npx-launched servers are version-pinned; the HTTP-hosted ones (context7, microsoft-learn, github) run server-side and cannot be pinned. No secrets — auth is always per-developer. Each developer approves the set once on first open. |
 | `HARNESS.md` | `./docs/harness.md` | The developer-facing tour: what each installed piece does and why, per layer. Point new team members here first. |
-| `ONBOARDING.md` | `./ONBOARDING.md` | The day-1 checklist: tools, auth, MCP approval, executable bits, repo secrets, unfilled setup tokens. Repo root, because that is where a new developer looks. `/sdlc-doctor` checks everything on it and prints the fix. |
+| `ONBOARDING.md` | `./ONBOARDING.md` | The day-1 checklist: tools, auth, MCP approval, executable bits, repo secrets, unfilled setup tokens. Repo root, because that is where a new developer looks. `/sprd-doctor` checks everything on it and prints the fix. |
 | `hooks/*` | `./.claude/hooks/` | `stop-gate`, `review-gate`, `save-review-receipt` (`.ps1` + `.sh`), plus `sensitive-edit-nudge` — an advisory (non-blocking) example, installed but not registered. |
 | `agents/*` | `./.claude/agents/` | `planner`, `architect`, `grader`, `security-reviewer`, `build-error-resolver`, `debugger` — model-tiered; see `agents/README.md`. |
 | `skills/*` | `./.claude/skills/` | `spec-writer`, `test-writer`, `api-pattern`, `pr-writer`, `eval-builder`, `diagnose`. |
@@ -83,7 +83,7 @@ keeps its path on both platforms — the ADO pack overlays its own realization t
 | `profile/rulesets/branch-protection.json` | `./.github/rulesets/` | Copied on install; `scripts/rails/apply-branch-protection.sh` reads it from there and applies it to GitHub. ADO: skipped — `.azuredevops/rails/branch-policies.json`, applied by `scripts/rails/configure-branch-policies.sh`, is the twin. |
 | `eval-datasets/*` | `./eval-datasets/` | Golden-set template + how-to (§11 work only). |
 | `prompts/*` | `./prompts/` | Versioned judge prompts (§11 work only). |
-| *(generated)* | `./.claude/harness-manifest.json` | Not a kit file — the installer writes it: plugin version + sha256 of every file as installed. `/sdlc-upgrade` reads it to tell factory-original files (safe to update) from repo-adapted ones (left alone). Commit it. |
+| *(generated)* | `./.claude/harness-manifest.json` | Not a kit file — the installer writes it: plugin version + sha256 of every file as installed. `/sprd-upgrade` reads it to tell factory-original files (safe to update) from repo-adapted ones (left alone). Commit it. |
 | `infra/*` | `./infra/` | Bicep dev-env **starter** — adapt to the client landing zone. |
 
 **Add to `.gitignore`:**
@@ -161,8 +161,8 @@ Search-and-replace targets across the kit:
   benchmark). Keep only what you wire; delete the rest to avoid confusion.
 - **Eval thresholds** (~±3% trip-wire, etc.) are practitioner starting points — calibrate to your
   measured variance before marking the eval gate a required check. See `eval-datasets/README.md`.
-- **Plugin packaging is done (2026-07-01):** the kit installs via the `claude-code-sdlc` plugin's
-  `/sdlc-setup` (see "Install" above). Manual copy per the install map still works.
+- **Plugin packaging is done (2026-07-01):** the kit installs via the `shepherd` plugin's
+  `/sprd-setup` (see "Install" above). Manual copy per the install map still works.
 
 ## Drift this kit corrects in the standard's prose (for the harvest deputy)
 GOLD-STANDARD §6/§10's trees previously listed **four** workflows and omitted `correctness.yml`;

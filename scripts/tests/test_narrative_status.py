@@ -1,4 +1,4 @@
-"""narrative_status.py — the read-only coverage check behind /sdlc-enhance (spec 0022).
+"""narrative_status.py — the read-only coverage check behind /sprd-enhance (spec 0022).
 
 What these protect:
   * STALENESS COMES FROM GIT COMMIT TIME, NOT FILE TIME. A checkout resets mtimes, so the tests

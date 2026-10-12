@@ -355,8 +355,8 @@ def transform_section_to_sdlc(
     n = f"{section_number:03d}"
     doc = f"""# Section {section_number}: {title}
 
-**Owner:** [Assign at /sdlc-sprint commit]
-**Sprint(s):** [Assign at /sdlc-sprint commit]
+**Owner:** [Assign at /sprd-sprint commit]
+**Sprint(s):** [Assign at /sprd-sprint commit]
 **Estimated effort:** [S / M / L / XL]
 **Status:** Not Started
 

@@ -1,4 +1,4 @@
-# /sdlc-sprint — Slate, Ready, and Close a Sprint
+# /sprd-sprint — Slate, Ready, and Close a Sprint
 
 Run a two-week sprint as a **commitment window over the backlog order**: create the sprint record,
 slate a *count* of specs by risk-tier mix, watch the slate's readiness every day, mark the sprint
@@ -13,15 +13,15 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
 
 ## When it runs
 
-`/sdlc-sprint` is not one moment. Different verbs belong to different points in the two-week rhythm:
+`/sprd-sprint` is not one moment. Different verbs belong to different points in the two-week rhythm:
 
 | Moment | Verbs | Who | Companion |
 |---|---|---|---|
-| **Setting up the next sprint** — the current sprint's last week, at the Mon/Wed/Fri review | `new`, `slate`, `unslate` | Product proposes and confirms the slate | `/sdlc-refine --sprint` drives the slated specs to READY and records the Eng/Data verdicts |
+| **Setting up the next sprint** — the current sprint's last week, at the Mon/Wed/Fri review | `new`, `slate`, `unslate` | Product proposes and confirms the slate | `/sprd-refine --sprint` drives the slated specs to READY and records the Eng/Data verdicts |
 | **Sprint planning meeting** — day 0 | `ready` (writes the planning page); `plan` re-renders it on demand | a named human readies it; the team walks the page | the page is the meeting's agenda and record |
-| **Every day** — the flow check | `status` *(default)* | anyone | `/sdlc-refine` (no arguments) for the refinement agenda |
+| **Every day** — the flow check | `status` *(default)* | anyone | `/sprd-refine` (no arguments) for the refinement agenda |
 | **Whenever work changes hands** | `handoff`, `ack` | the recorder and the recipient | — |
-| **Last day** — sprint review and Retro+ | `close` (writes the review page) | a named human confirms every carry and drop | `/sdlc-retro` for the cross-sprint patterns |
+| **Last day** — sprint review and Retro+ | `close` (writes the review page) | a named human confirms every carry and drop | `/sprd-retro` for the cross-sprint patterns |
 
 ## Instructions
 
@@ -132,7 +132,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    business-day age, so a spec never sits between Product, Engineering, and Data unowned.
 
 7. **`verdict` — the independent Engineering and Data checks.** The front door is
-   `/sdlc-refine validate --lane eng|data`, which runs this write; it is listed here because
+   `/sprd-refine validate --lane eng|data`, which runs this write; it is listed here because
    readiness depends on it.
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py verdict \
@@ -152,7 +152,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
      --state .sdlc/state.yaml --sprint S07 --by "<name>"
    ```
    On a gap: exit 1 and every gap listed per spec (`0009: eng_review is pending, needs accepted`);
-   nothing is written. Hand the list to `/sdlc-refine --sprint S07`. On success: `state: ready`,
+   nothing is written. Hand the list to `/sprd-refine --sprint S07`. On success: `state: ready`,
    `readied_by`, a `ready` ledger event, and the **sprint-planning page**
    `.sdlc/reports/sprint-S07-planning.html` (linked from `.sdlc/reports/index.html` when that exists).
    Open the page for the meeting (`open` on macOS, `start` on Windows, `xdg-open` on Linux). A page
@@ -185,7 +185,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    `.sdlc/sprints/S07.md`, sets `state: closed` and `closed_by`, appends `carried` / `dropped` /
    `closed` events, and renders the **sprint-review page** `.sdlc/reports/sprint-S07-review.html`
    (outcomes, the ledger's carry/drop reasons, carry-over recurrence per spec). `close` **never**
-   suggests advancing a phase — leaving Build stays a human declaration in `/sdlc-next`.
+   suggests advancing a phase — leaving Build stays a human declaration in `/sprd-next`.
 
 10. **Report** (after any write verb; after `status` show the script's own output):
     ```
@@ -196,7 +196,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
     Mix:       HIGH 1/1 · MEDIUM 2/2 · LOW 3/3        WIP: 1 in-flight · cap 2
     Next up:   0007 — READY, dependencies merged
     Page:      .sdlc/reports/sprint-S07-planning.html | not yet rendered
-    Next: /sdlc-refine --sprint S07 to close the gaps | ready --by <name> when the readiness line reads 6 of 6
+    Next: /sprd-refine --sprint S07 to close the gaps | ready --by <name> when the readiness line reads 6 of 6
     ```
     Every empty section reads `no data` — never a 0 that was not measured.
 
@@ -215,7 +215,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
 
 ## Important
 
-- The user runs `/sdlc-sprint` — never `sprint.py` by hand. The command owns mode resolution, the
+- The user runs `/sprd-sprint` — never `sprint.py` by hand. The command owns mode resolution, the
   proposal → confirm dialogue, and the per-spec carry/drop interview at close.
 - **Agent proposes, named human decides.** The agent drafts the slate, the build order, and the
   carry/drop split; a human confirms each, and every write carries `--by <name>`. A `--by` that reads

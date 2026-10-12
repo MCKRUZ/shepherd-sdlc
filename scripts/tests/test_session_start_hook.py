@@ -1,19 +1,19 @@
-"""The session-start hook twins: the `[SDLC-SPRINT]` line and the retired section-plan block.
+"""The session-start hook twins: the `[SHEPHERD-SPRINT]` line and the retired section-plan block.
 
 The first test of the hook itself. It runs the real scripts via subprocess with cwd = a tmp
 project that holds `.sdlc/state.yaml` (+ `profile.yaml`) from conftest's `state_yaml` fixture,
 exactly the way Claude Code invokes them. The bash twin always runs; the PowerShell twin runs
-only when `pwsh` is on PATH (skipped otherwise) and must print identical `[SDLC-SPRINT]` and
-`[SDLC-PHASE]` lines after `\\r\\n` normalisation — the two scripts share one output contract.
+only when `pwsh` is on PATH (skipped otherwise) and must print identical `[SHEPHERD-SPRINT]` and
+`[SHEPHERD-PHASE]` lines after `\\r\\n` normalisation — the two scripts share one output contract.
 
 What the sprint layer asked of the hook (proposal §3 R5):
 
-- `[SDLC-SPRINT] S07 (ready) — "<goal>" — <start> → <end>` appears iff an active (not closed)
+- `[SHEPHERD-SPRINT] S07 (ready) — "<goal>" — <start> → <end>` appears iff an active (not closed)
   sprint record exists under `.sdlc/sprints/`; prior lines are byte-identical either way;
 - a malformed sprint file is silent — exit 0, no line, no stderr — because a thrown error in
   the pwsh twin would fall through `pwsh … || bash …` and double-print the banner;
 - the Build reminder carries the refinement clause;
-- the retired `[SDLC] Session Handoff:` section-plan summary is gone even when a legacy
+- the retired `[SHEPHERD] Session Handoff:` section-plan summary is gone even when a legacy
   `session-handoff.json` is still present.
 """
 
@@ -26,8 +26,8 @@ import pytest
 import yaml
 
 HOOKS_DIR = Path(__file__).resolve().parents[2] / "hooks"
-BASH_HOOK = HOOKS_DIR / "sdlc-session-start.sh"
-PS1_HOOK = HOOKS_DIR / "sdlc-session-start.ps1"
+BASH_HOOK = HOOKS_DIR / "shepherd-session-start.sh"
+PS1_HOOK = HOOKS_DIR / "shepherd-session-start.ps1"
 PWSH = shutil.which("pwsh")
 
 
@@ -56,13 +56,13 @@ def _bash() -> str | None:
 
 BASH = _bash()
 pytestmark = pytest.mark.skipif(
-    BASH is None, reason="sdlc-session-start.sh needs bash (Git Bash on Windows)"
+    BASH is None, reason="shepherd-session-start.sh needs bash (Git Bash on Windows)"
 )
 
-SPRINT_TAG = "[SDLC-SPRINT]"
-PHASE_TAG = "[SDLC-PHASE]"
-REFINE_CLAUSE = "Refinement for the next sprint runs alongside — /sdlc-refine; the board is /sdlc-sprint."
-RETIRED_MARKERS = ("Session Handoff", "[SDLC] Context:", "[SDLC] Next action:", "active blocker")
+SPRINT_TAG = "[SHEPHERD-SPRINT]"
+PHASE_TAG = "[SHEPHERD-PHASE]"
+REFINE_CLAUSE = "Refinement for the next sprint runs alongside — /sprd-refine; the board is /sprd-sprint."
+RETIRED_MARKERS = ("Session Handoff", "[SHEPHERD] Context:", "[SHEPHERD] Next action:", "active blocker")
 
 # The templates/phases/build/sprint.md shape: quoted values, and unquoted `state:` with a trailing comment.
 READY_SPRINT = """---
@@ -89,7 +89,7 @@ Ship the duplicate-claim rail.
 ## Close
 <!-- Written by `sprint.py close` -->
 """
-READY_LINE = '[SDLC-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09'
+READY_LINE = '[SHEPHERD-SPRINT] S07 (ready) — "Ship the duplicate-claim rail" — 2026-09-28 → 2026-10-09'
 
 CLOSED_SPRINT = READY_SPRINT.replace('"S07"', '"S06"').replace("state: ready ", "state: closed").replace(
     'closed_by: ""', 'closed_by: "Priya"'
@@ -170,7 +170,7 @@ def test_no_sprints_dir_prints_no_sprint_line(project):
 
     assert proc.returncode == 0
     assert proc.stderr == ""
-    assert lines(proc.stdout)[0].startswith("[SDLC] Project: test-project")  # the hook actually ran
+    assert lines(proc.stdout)[0].startswith("[SHEPHERD] Project: test-project")  # the hook actually ran
     assert sprint_lines(proc.stdout) == []
     assert not (project / ".sdlc" / "sprints").exists()  # the hook is read-only: it created nothing
 
@@ -202,14 +202,14 @@ def test_one_ready_one_closed_prints_exactly_one_line_and_leaves_prior_lines_unc
 def test_sprint_line_sits_directly_after_the_phase_reminder(project):
     # Anchor on the Build phase: conftest's yaml.dump single-quotes the '0' phase id, which the
     # hook's (deliberately unchanged) double-quote-only state regex does not unwrap, so Phase 0
-    # prints no [SDLC-PHASE] reminder in this fixture. `build` is written bare and always does.
+    # prints no [SHEPHERD-PHASE] reminder in this fixture. `build` is written bare and always does.
     set_phase(project / ".sdlc" / "state.yaml", "build", "build")
     write_sprint(project, "S07.md", READY_SPRINT)
     out = lines(run_bash(project).stdout)
 
     idx = out.index(READY_LINE)
     assert out[idx - 1].startswith(PHASE_TAG)
-    assert out[idx - 2].startswith("[SDLC] Commands:")
+    assert out[idx - 2].startswith("[SHEPHERD] Commands:")
 
 
 def test_planning_sprints_show_too_in_filename_order_and_the_line_is_not_phase_gated(project):
@@ -232,7 +232,7 @@ def test_crlf_authored_record_and_unquoted_values_read_the_same(project):
 
     got = sprint_lines(run_bash(project).stdout)
 
-    assert got == ['[SDLC-SPRINT] S10 (planning) — "CRLF authored" — 2026-10-12 → 2026-10-23']
+    assert got == ['[SHEPHERD-SPRINT] S10 (planning) — "CRLF authored" — 2026-10-12 → 2026-10-23']
 
 
 def test_missing_sprint_id_falls_back_to_the_filename(project):
@@ -240,7 +240,7 @@ def test_missing_sprint_id_falls_back_to_the_filename(project):
 
     got = sprint_lines(run_bash(project).stdout)
 
-    assert got == ['[SDLC-SPRINT] S11 (planning) — "" —  → ']
+    assert got == ['[SHEPHERD-SPRINT] S11 (planning) — "" —  → ']
 
 
 @pytest.mark.parametrize(
@@ -270,7 +270,7 @@ def test_build_reminder_carries_the_refinement_clause(project):
     out = run_bash(project).stdout
 
     assert phase_line(out).endswith(REFINE_CLAUSE)
-    assert phase_line(out).startswith("[SDLC-PHASE] One spec at a time: Intent -> Delegate -> Discern.")
+    assert phase_line(out).startswith("[SHEPHERD-PHASE] One spec at a time: Intent -> Delegate -> Discern.")
 
 
 def test_other_phase_reminders_do_not_carry_the_clause(project):
@@ -322,7 +322,13 @@ def test_hook_sources_are_lf_only_and_free_of_json_readers():
         assert needle not in ps1, needle
     assert REFINE_CLAUSE.encode("utf-8") in sh
     assert REFINE_CLAUSE.encode("utf-8") in ps1
-    assert b"[SDLC-SPRINT]" in sh and b"[SDLC-SPRINT]" in ps1
+    assert b"[SHEPHERD-SPRINT]" in sh and b"[SHEPHERD-SPRINT]" in ps1
+    # The closing context tags moved with their openers in the Shepherd rename, and no old
+    # marker may creep back into either twin when `scripts/dev/rename_brand.py` is replayed.
+    for closer in (b"[/SHEPHERD-CONTEXT:LAYER]", b"[/SHEPHERD-CONTEXT:INTAKE-INDEX]"):
+        assert closer in sh and closer in ps1, closer
+    for stale in (b"[SDLC", b"[/SDLC"):
+        assert stale not in sh and stale not in ps1, stale
 
 
 def test_ps1_sprint_block_never_throws():

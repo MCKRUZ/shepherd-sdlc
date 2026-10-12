@@ -96,10 +96,10 @@ This creates a `.venv/` inside `scripts/` and installs all dependencies declared
 
 ### How Commands Invoke Scripts
 
-Slash commands (e.g., `/sdlc-gate`, `/sdlc-next`) invoke scripts with the `--project` flag pointing to the scripts directory. This tells uv which `pyproject.toml` governs the environment:
+Slash commands (e.g., `/sprd-gate`, `/sprd-next`) invoke scripts with the `--project` flag pointing to the scripts directory. This tells uv which `pyproject.toml` governs the environment:
 
 ```bash
-uv run --project /path/to/claude-code-sdlc/scripts /path/to/claude-code-sdlc/scripts/check_gates.py --state .sdlc/state.yaml --phase 0
+uv run --project /path/to/shepherd/scripts /path/to/shepherd/scripts/check_gates.py --state .sdlc/state.yaml --phase 0
 ```
 
 The `--project` flag is critical -- without it, uv would look for a `pyproject.toml` in the caller's working directory instead of the plugin's scripts directory.
@@ -486,7 +486,7 @@ Optional artifacts:
 Artifact directory: .sdlc/artifacts/phase01/
 Phase definition:   phases/01-requirements.md
 
-Run /sdlc to see full phase guidance.
+Run /sprd to see full phase guidance.
 ```
 
 (Artifact directories use the phase `slug` from the registry -- e.g. `03-foundation/`, `build/`, `close/` -- never a zero-padded id.)
@@ -1045,7 +1045,7 @@ uv run scripts/generate_handoff_report.py --state .sdlc/state.yaml --output hand
 
 ### sprint.py
 
-**Purpose:** The I/O CLI of the sprint team layer (`/sdlc-sprint`, `/sdlc-refine`; users never call it by hand). A sprint is a *commitment window over the backlog order* — never a second backlog, a reordering, or a gate. A named human types a sprint id (`S07`), slates a *count* of specs by a mix of risk tiers, readies the sprint once every slated spec clears the Definition of Ready and its Engineering and Data verdicts, and closes it with kept / carried / dropped, each with a name and a reason. Every rule lives in the pure `sprint_model.py` (mirrors `findings_model.py`: sprint states, `parse_mix`, `propose_slate`, `ready_gaps`, `build_order` / `next_up` reusing `check_dependencies.detect_cycles` / `topological_sort`, `outcomes`, `set_frontmatter`, `FORBIDDEN_FIELDS`, the business-day adapters over `track_decisions`); this file only reads and writes files.
+**Purpose:** The I/O CLI of the sprint team layer (`/sprd-sprint`, `/sprd-refine`; users never call it by hand). A sprint is a *commitment window over the backlog order* — never a second backlog, a reordering, or a gate. A named human types a sprint id (`S07`), slates a *count* of specs by a mix of risk tiers, readies the sprint once every slated spec clears the Definition of Ready and its Engineering and Data verdicts, and closes it with kept / carried / dropped, each with a name and a reason. Every rule lives in the pure `sprint_model.py` (mirrors `findings_model.py`: sprint states, `parse_mix`, `propose_slate`, `ready_gaps`, `build_order` / `next_up` reusing `check_dependencies.detect_cycles` / `topological_sort`, `outcomes`, `set_frontmatter`, `FORBIDDEN_FIELDS`, the business-day adapters over `track_decisions`); this file only reads and writes files.
 
 **CLI:**
 
@@ -1058,7 +1058,7 @@ uv run scripts/sprint.py slate --state .sdlc/state.yaml --sprint S07 [--json]
 uv run scripts/sprint.py slate --state .sdlc/state.yaml --sprint S07 --by "Pod Lead" --spec 0007 --spec 0009 [--override --reason R]
 uv run scripts/sprint.py unslate --state .sdlc/state.yaml --sprint S07 --spec 0009 --by "Pod Lead" --reason "pulled into S08"
 
-# The daily view (text, or the JSON /sdlc-status and /sdlc-refine read)
+# The daily view (text, or the JSON /sprd-status and /sprd-refine read)
 uv run scripts/sprint.py status --state .sdlc/state.yaml [--sprint S07] [--wip-cap N] [--json]
 
 # Handoffs and verdicts
@@ -1103,7 +1103,7 @@ uv run scripts/sprint.py close --state .sdlc/state.yaml --sprint S07 --by "Pod L
 | `.sdlc/reports/sprint-SNN-planning.html` / `-review.html` | Written via a **lazy** import of `generate_sprint_report` inside `ready` / `plan` / `close` (that module imports `sprint.build_view` at top level) |
 | `.sdlc/state.yaml` | **Never written** — tested byte-for-byte across the whole lifecycle in `--state` mode |
 
-**`status --json` / `build_view(repo_root, sprint_id, today=None, wip_cap=None)`** — the exact JSON `/sdlc-status` and `/sdlc-refine` read: `sprint` (`null` when none; else id, goal, start, end, state, target, mix, board_ref, readied_by, closed_by, created, path, `days: {total, elapsed, remaining}` in business days), `slate` (rows: id, name, risk, type, channel, status, sprint, next_owner, eng_review, data_review, `depends_on: []`, `dor`, `dor_blocking: []`, path), `readiness {ready, total, gaps}`, `verdicts_pending` / `handoffs_open` (with `since_business_days` or `null`), `mix`, `mix_warnings`, `wip {in_flight, cap}`, `build_order`, `next_up`, `dependency_gaps`, `decisions`, `carried_in`, `has_data`. Ages come from the ledger (verdict: since the spec's latest `slated` event; handoff: since the latest `handoff`) — a spec slated by hand with no ledger line reads "no data", never 0. **No per-person aggregation key exists.**
+**`status --json` / `build_view(repo_root, sprint_id, today=None, wip_cap=None)`** — the exact JSON `/sprd-status` and `/sprd-refine` read: `sprint` (`null` when none; else id, goal, start, end, state, target, mix, board_ref, readied_by, closed_by, created, path, `days: {total, elapsed, remaining}` in business days), `slate` (rows: id, name, risk, type, channel, status, sprint, next_owner, eng_review, data_review, `depends_on: []`, `dor`, `dor_blocking: []`, path), `readiness {ready, total, gaps}`, `verdicts_pending` / `handoffs_open` (with `since_business_days` or `null`), `mix`, `mix_warnings`, `wip {in_flight, cap}`, `build_order`, `next_up`, `dependency_gaps`, `decisions`, `carried_in`, `has_data`. Ages come from the ledger (verdict: since the spec's latest `slated` event; handoff: since the latest `handoff`) — a spec slated by hand with no ledger line reads "no data", never 0. **No per-person aggregation key exists.**
 
 **Refused by design (exit 2, same wording as `scorecard.py`):** any `--field` whose key is in `sprint_model.FORBIDDEN_FIELDS` (`scorecard.FORBIDDEN_TYPES` ∪ `points`, `estimate`, `effort`, `hours`, `capacity`; case-insensitive, `-`/space → `_`) — "Refused: '<key>' is an activity metric the standard never tracks (velocity, story points, PR count, lines of code). Steering is on outcomes."; a `--by` / `--to` that `findings_model.is_ai_actor` flags (the message says this is labelling, not enforcement); a malformed frontmatter value.
 
@@ -1166,7 +1166,7 @@ uv run scripts/generate_sprint_report.py --state .sdlc/state.yaml --sprint S07 [
 
 ### retro_report.py
 
-**Purpose:** The read-only cross-ledger retro roll-up behind `/sdlc-retro` — what keeps happening, not what is open right now. Four legacy sections read the findings and artifact ledgers (recurring findings as permanent-check candidates, repeat-stale artifacts, the refresh funnel, the combined disposition-debt rollup); two more read `.sdlc/metrics/sprint-log.jsonl` when it exists. Advisory: writes nothing, exit 0 on every path.
+**Purpose:** The read-only cross-ledger retro roll-up behind `/sprd-retro` — what keeps happening, not what is open right now. Four legacy sections read the findings and artifact ledgers (recurring findings as permanent-check candidates, repeat-stale artifacts, the refresh funnel, the combined disposition-debt rollup); two more read `.sdlc/metrics/sprint-log.jsonl` when it exists. Advisory: writes nothing, exit 0 on every path.
 
 **CLI:**
 
@@ -1201,7 +1201,7 @@ Both sections appear in the text report only when the sprint ledger holds at lea
 
 ### doctor.py
 
-**Purpose:** Backs `/sdlc-doctor` — a day-1 check that the installed harness will actually run in a repo, not just that it was copied into one. Checks the things that fail quietly: a hook registered with a missing interpreter, a rails script installed without its executable bit, a repo secret the gates need that nobody set.
+**Purpose:** Backs `/sprd-doctor` — a day-1 check that the installed harness will actually run in a repo, not just that it was copied into one. Checks the things that fail quietly: a hook registered with a missing interpreter, a rails script installed without its executable bit, a repo secret the gates need that nobody set.
 
 **CLI:**
 
@@ -1258,7 +1258,7 @@ uv run scripts/code_host.py --repo <path> --host azure-devops --json   # overrid
 | `--json` | No | Exactly one JSON document |
 | `--no-probe` | No | Skip the local CLI probes (`gh auth status` / `az account show`); `cli_state` reads `unknown` |
 
-**Override precedence** (`detect_host()` reports which one won as `source`): `--host` flag → `SDLC_CODE_HOST` env → `.sdlc/code-host.yaml` (written by `set_setting.py code-host --host …`; travels with the clone) → the parsed `origin` remote (`code_host_remote.parse_remote`, shared fixture `scripts/tests/fixtures/code_host/remote-urls.json`) → the harness manifest's CI pack as a tie-breaker only when there is no usable remote → `none`. `none` falls through to `gh` (`cli_for("none") == "gh"`), so every repository that existed before this layer behaves exactly as it did.
+**Override precedence** (`detect_host()` reports which one won as `source`): `--host` flag → `SHEPHERD_CODE_HOST` env (or `SDLC_CODE_HOST`, the pre-2.0 name — still read; the new name wins when both are set) → `.sdlc/code-host.yaml` (written by `set_setting.py code-host --host …`; travels with the clone) → the parsed `origin` remote (`code_host_remote.parse_remote`, shared fixture `scripts/tests/fixtures/code_host/remote-urls.json`) → the harness manifest's CI pack as a tie-breaker only when there is no usable remote → `none`. `none` falls through to `gh` (`cli_for("none") == "gh"`), so every repository that existed before this layer behaves exactly as it did.
 
 **Two axes, never merged:** `detect_host()` owns the code host (PRs, identity, policies); `installed_ci_platform()` owns the CI platform (pipeline dirs, runs, secrets) — a ten-line twin of `doctor.installed_platform()` pinned to agree with it, so `doctor.py` is never imported. A GitHub repository on Azure Pipelines is legitimate; nothing resolves the mismatch silently.
 
@@ -1268,7 +1268,7 @@ uv run scripts/code_host.py --repo <path> --host azure-devops --json   # overrid
 
 **Exit codes:** `0` always; `2` on a usage error.
 
-**Consumers:** `spec_status.py`, `handoff.py`, `connection_report.py`, `gate_auth.py`, `pipeline_proof.py` (PR reads), `gate_inventory.py` (CI axis), `import_outcomes.py`, and SDLC Studio (the desktop app), which reads the block before enabling a PR feature and shows the `detail` as the reason a control is off.
+**Consumers:** `spec_status.py`, `handoff.py`, `connection_report.py`, `gate_auth.py`, `pipeline_proof.py` (PR reads), `gate_inventory.py` (CI axis), `import_outcomes.py`, and Shepherd (the desktop app), which reads the block before enabling a PR feature and shows the `detail` as the reason a control is off.
 
 ---
 
@@ -1315,9 +1315,9 @@ Defined in `scripts/pyproject.toml`:
 
 ```toml
 [project]
-name = "claude-code-sdlc-scripts"
+name = "shepherd-scripts"
 version = "0.1.0"
-description = "Automation scripts for claude-code-sdlc plugin"
+description = "Automation scripts for the Shepherd plugin"
 requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0",

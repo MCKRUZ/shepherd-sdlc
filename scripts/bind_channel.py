@@ -1,4 +1,4 @@
-"""Bind a spec to its delivery channel — the mechanical half of /sdlc-channel (spec 0021).
+"""Bind a spec to its delivery channel — the mechanical half of /sprd-channel (spec 0021).
 
 The command's steps 4 and 5 are a merge of two tables, and nothing in them needs a model:
 

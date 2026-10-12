@@ -1,16 +1,16 @@
 {
   "name": "mckruz",
-  "description": "MCKRUZ delivery tooling — SDLC orchestration plus the one-command delivery harness, and the SDLC Studio desktop app.",
+  "description": "MCKRUZ delivery tooling — Shepherd: SDLC orchestration plus the one-command delivery harness, and the Shepherd desktop app.",
   "owner": {
     "name": "MCKRUZ",
     "url": "https://github.com/MCKRUZ"
   },
   "plugins": [
     {
-      "name": "claude-code-sdlc",
+      "name": "shepherd",
       "source": ".",
-      "version": "1.7.0",
-      "description": "SDLC orchestration + one-command install of the full delivery harness (governance CLAUDE.md, CI rail gates + eval workflows, Stop/review hooks, build-loop agents & skills, IaC starters) — GitHub or Azure DevOps, with an optional desktop app.",
+      "version": "2.0.0",
+      "description": "Shepherd: SDLC orchestration + one-command install of the full delivery harness (governance CLAUDE.md, CI rail gates + eval workflows, Stop/review hooks, build-loop agents & skills, IaC starters) — GitHub or Azure DevOps, with the optional Shepherd desktop app.",
       "category": "sdlc",
       "keywords": [
         "sdlc",

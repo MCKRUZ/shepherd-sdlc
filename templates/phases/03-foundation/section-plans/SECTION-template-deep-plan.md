@@ -2,7 +2,7 @@
 <!-- Converged template: SDLC structured fields + /deep-plan implementation prose -->
 
 **Owner:** [Name/role responsible for implementation]
-**Sprint window:** [SNN] (set at /sdlc-sprint slate; blank until slated)
+**Sprint window:** [SNN] (set at /sprd-sprint slate; blank until slated)
 **Estimated effort:** [S / M / L / XL — S=1-2 days, M=3-5 days, L=1-2 weeks, XL=2+ weeks]
 **Status:** Not Started | In Progress | Complete
 

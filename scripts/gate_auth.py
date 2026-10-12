@@ -45,7 +45,8 @@ NOT implemented for Azure DevOps (D-OWNER-6): they refuse with `kind: unsupporte
 the exact `az pipelines variable-group variable …` command to run by hand — WITHOUT a value on
 it, because az prompts for a secret's value on standard input when `--value` is omitted, which
 is the same "never on a command line" rule this script keeps for `gh`. Chosen by the origin
-remote; `--host` / `SDLC_CODE_HOST` / `.sdlc/code-host.yaml` override it.
+remote; `--host` / `SHEPHERD_CODE_HOST` (the pre-2.0 `SDLC_CODE_HOST` is still read) /
+`.sdlc/code-host.yaml` override it.
 """
 
 import argparse
@@ -134,14 +135,14 @@ def detect_host(repo_root: Path, override: str | None = None) -> code_host.Detec
             raise ValueError(f"--host must be one of {', '.join(code_host.HOSTS)} (got {override!r})")
         return code_host.Detection(override, "flag", code_host.parse_remote(_origin_url(repo_root)),
                                    f"--host {override}")
-    env_value = os.environ.get(code_host.ENV_VAR)
+    env_name, env_value = code_host.code_host_env()
     url = _origin_url(repo_root)
     remote = code_host.parse_remote(url)
     notes: list[str] = []
     if env_value:
         if env_value in code_host.HOSTS:
-            return code_host.Detection(env_value, "env", remote, f"{code_host.ENV_VAR}={env_value}")
-        notes.append(f"{code_host.ENV_VAR}={env_value!r} ignored: not one of {', '.join(code_host.HOSTS)}")
+            return code_host.Detection(env_value, "env", remote, f"{env_name}={env_value}")
+        notes.append(f"{env_name}={env_value!r} ignored: not one of {', '.join(code_host.HOSTS)}")
     settings, file_error = code_host.read_code_host_file(repo_root)
     if settings:
         return code_host.Detection(settings["host"], "file", remote or code_host._remote_from_file(settings),

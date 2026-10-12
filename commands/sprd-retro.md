@@ -1,4 +1,4 @@
-# /sdlc-retro — Cross-Ledger Retro Roll-up
+# /sprd-retro — Cross-Ledger Retro Roll-up
 
 Read across the three advisory ledgers at once and surface **what keeps happening** — the retro
 question the per-round commands can't answer on their own. It reports four patterns:
@@ -12,7 +12,7 @@ question the per-round commands can't answer on their own. It reports four patte
 4. **Disposition debt rollup** — combined honest-counting debt across all three ledgers, each line
    naming its source.
 
-When the sprint team layer's ledger (`.sdlc/metrics/sprint-log.jsonl`, written by `/sdlc-sprint`)
+When the sprint team layer's ledger (`.sdlc/metrics/sprint-log.jsonl`, written by `/sprd-sprint`)
 holds at least one event, two more sections appear after the debt block — keyed by spec, lane, and
 reason, never by person:
 
@@ -23,7 +23,7 @@ reason, never by person:
 6. **Bounce causes** — `returned` verdicts grouped by lane (eng, then data) and reason category, with
    the specs each cause touched; rendered only when at least one return exists.
 
-This is a **sibling** to `/sdlc-audit-artifacts` (freshness *now*) and `/sdlc-audit` (gate
+This is a **sibling** to `/sprd-audit-artifacts` (freshness *now*) and `/sprd-audit` (gate
 effectiveness). This command reads the accumulated *history* and reports the recurring shape of it.
 It reads the ledgers, computes nothing about people, and never blocks.
 
@@ -31,7 +31,7 @@ It reads the ledgers, computes nothing about people, and never blocks.
 
 1. **Resolve mode and repo root:**
    - **Workflow mode** (default): look for `.sdlc/state.yaml`. Pass `--state .sdlc/state.yaml`. If
-     not found, tell the user to run `/sdlc-setup` first.
+     not found, tell the user to run `/sprd-setup` first.
    - **Standalone mode** (`--repo <path>`, or no `.sdlc/` found): run against any repo with a
      `.sdlc/` directory. The roll-up is only as deep as the ledgers in that repo — with a thin or
      missing ledger, each section degrades to **"no data"** (never a fabricated zero), and the
@@ -67,7 +67,7 @@ It reads the ledgers, computes nothing about people, and never blocks.
    - A **recurring finding** across rounds is the promotion signal: consider turning it into a
      permanent check (a spec DoR rule, a gate, a lint) so it stops recurring.
    - A **repeat-stale artifact** flagged again and again is a lineage or ownership smell — the
-     upstream keeps moving under it. Disposition it in `/sdlc-audit-artifacts`, or fix the source.
+     upstream keeps moving under it. Disposition it in `/sprd-audit-artifacts`, or fix the source.
    - The **refresh funnel** tunes the divergence heuristic (see below).
 
 ## How to read the refresh funnel
@@ -94,12 +94,12 @@ It is a signal to *tune the heuristic*, not a verdict on anyone's work.
 
 ## Important
 
-- The user runs `/sdlc-retro` — never `retro_report.py` by hand. The command owns mode resolution and
+- The user runs `/sprd-retro` — never `retro_report.py` by hand. The command owns mode resolution and
   the windowing.
 - **Read-only. Writes nothing** — no ledger appends, no `state.yaml`, no artifacts, no files. It is a
   pure read across `findings-log.jsonl`, `artifact-log.jsonl`, and — when present — `sprint-log.jsonl`.
-  Re-gating and dispositioning stay where they live (`/sdlc-gate`, `/sdlc-revise`,
-  `/sdlc-audit-artifacts`); carrying and dropping stay in `/sdlc-sprint close`.
+  Re-gating and dispositioning stay where they live (`/sprd-gate`, `/sprd-revise`,
+  `/sprd-audit-artifacts`); carrying and dropping stay in `/sprd-sprint close`.
 - **Patterns, not people.** Every pattern is keyed by category, artifact, upstream stem, spec, lane,
   or reason — **never by actor** (the sprint ledger's `by` field is never read). There is deliberately **no flag to rank by person**, in the same spirit as the steering
   scorecard's forbidden metrics: this command never reports velocity, story points, PR count, or

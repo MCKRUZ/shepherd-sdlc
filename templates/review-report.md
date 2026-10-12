@@ -1,5 +1,5 @@
 # Review Report — Phase [N]: [Name]
-<!-- Written by the multi-reviewer agent (/sdlc-review) to .sdlc/artifacts/{NN}-{phase}/review-report.md -->
+<!-- Written by the multi-reviewer agent (/sprd-review) to .sdlc/artifacts/{NN}-{phase}/review-report.md -->
 
 **Mode:** [adversarial | edge-cases | council]
 **Date:** [ISO timestamp]

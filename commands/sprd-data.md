@@ -1,9 +1,9 @@
-# /sdlc-data — Author the Data Contract, Readiness, and Lineage for a Feature
+# /sprd-data — Author the Data Contract, Readiness, and Lineage for a Feature
 
 Give Data a first-class drafting seat: the **data contract** (PII-classified), the **data-readiness**
 assessment, and the **lineage / audit** design for a feature or spec. It sharpens Scope, surfaces the
 PII that drives risk tier, and turns readiness gaps into tracked decisions. Interview-driven like
-`/sdlc-coach`: the `data-analyst` agent assesses what's there, asks focused questions, and drafts as
+`/sprd-coach`: the `data-analyst` agent assesses what's there, asks focused questions, and drafts as
 answers arrive. It **proposes**; a named human **decides** (the One Rule). Works inside an SDLC project
 or standalone.
 
@@ -41,7 +41,7 @@ or standalone.
 5. **Open decision-log items:** For each readiness gap the human routed, append an entry to the
    decision-log (`templates/phases/01-requirements/decision-log.md` shape) with owner + clock — workflow
    writes `.sdlc/decision-log.md`, standalone writes `<repo>/decision-log.md`. These surface in
-   `/sdlc-status` and `track_decisions.py`.
+   `/sprd-status` and `track_decisions.py`.
 
 6. **Report:**
    ```
@@ -50,7 +50,7 @@ or standalone.
    Artifacts: data-contract.md, data-readiness.md, lineage-audit.md
    PII:       N fields classified PII (risk-tier driver: <specs pushed HIGH> | none)
    Readiness: X gaps flagged (advisory) → M decision-log items (owners: …) | ready
-   Next: feed PII into the spec's risk tier at /sdlc-spec; readiness gaps ride the decision-log.
+   Next: feed PII into the spec's risk tier at /sprd-spec; readiness gaps ride the decision-log.
    ```
 
 ## Arguments
@@ -64,7 +64,7 @@ or standalone.
 
 - **PII classification is a risk-tier driver, not a label.** Confirmed PII pushes dependent specs toward
   HIGH; the analyst proposes the classification, a named human confirms it, and the tier is owned at
-  `/sdlc-spec` time.
+  `/sprd-spec` time.
 - **Data readiness is advisory** — a gap is a flagged decision, never a block. It becomes a decision-log
   item with an owner and a clock, not a gate failure.
 - Product-specific data compliance (e.g. SOC 2 call-recording, retention law) is configured **at build

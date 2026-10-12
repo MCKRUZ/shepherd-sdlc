@@ -1,6 +1,6 @@
-name: Studio
+name: Shepherd desktop
 
-# SDLC Studio's own rail. Studio is the optional Electron desktop front end in studio/ — a
+# The Shepherd desktop app's own rail. It is the optional Electron front end in studio/ — a
 # Node/TypeScript application inside a Python plugin repository — and until it was folded in
 # here its 233 tests ran on exactly one laptop and nowhere else.
 #
@@ -16,13 +16,13 @@ name: Studio
 # — see spec 0008's acceptance-check notes.
 #
 # ── NO PATH FILTER, DELIBERATELY ─────────────────────────────────────────────
-# The obvious optimisation is `paths: [studio/**]` so this only runs when Studio changes.
+# The obvious optimisation is `paths: [studio/**]` so this only runs when the desktop app changes.
 # Do not. A required check that a path filter skips never reports at all, and GitHub waits
 # for it forever — so the saving is paid for with pull requests that can never merge. The
 # job is a couple of minutes; it runs on everything and always reports.
 #
 # ── WHY IT INSTALLS PYTHON ───────────────────────────────────────────────────
-# Studio's most valuable tests drive the plugin's own scripts as real subprocesses, which
+# The desktop app's most valuable tests drive the plugin's own scripts as real subprocesses, which
 # needs the plugin's Python environment. Those tests FAIL rather than skip when it is
 # missing (studio/test/pluginRoot.ts), because a run where they quietly skipped once
 # reported "2 passed" while 31 tests had not executed. Building the environment here is
@@ -78,7 +78,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v8.3.2
 
-      # Studio locates the plugin as its PARENT directory, so this builds the environment
+      # The desktop app locates the plugin as its PARENT directory, so this builds the environment
       # exactly where studio/test/pluginRoot.ts looks for it.
       - name: Build the plugin's Python environment
         working-directory: .
@@ -88,14 +88,14 @@ jobs:
         working-directory: .
         # Cheap, and it turns the most likely failure into a named one. Without this the
         # first symptom is nine test files throwing at import time, which reads like a
-        # Studio fault rather than a missing interpreter. Two candidate paths because uv lays
+        # desktop-app fault rather than a missing interpreter. Two candidate paths because uv lays
         # the venv out differently on Windows (Scripts/python.exe) than on macOS/Linux
         # (bin/python) — the same split test/pluginRoot.ts's own venvPython() already makes.
         run: |
           PYTHON=scripts/.venv/bin/python
           [ -x "$PYTHON" ] || PYTHON=scripts/.venv/Scripts/python.exe
           test -x "$PYTHON" \
-            || { echo "::error::scripts/.venv's python is missing, so Studio's integration tests cannot run. uv sync did not put the environment where studio/test/pluginRoot.ts looks."; exit 1; }
+            || { echo "::error::scripts/.venv's python is missing, so the desktop app's integration tests cannot run. uv sync did not put the environment where studio/test/pluginRoot.ts looks."; exit 1; }
           "$PYTHON" --version
 
       - run: npm ci
@@ -143,16 +143,16 @@ jobs:
 
       - run: npm ci
 
-      # Studio REFUSES to open a project when Claude Code is not on the machine — spec 0008,
-      # and the first CI run proved it by showing "Before Studio can open a project" instead
+      # The desktop app REFUSES to open a project when Claude Code is not on the machine — spec 0008,
+      # and the first CI run proved it by showing "Before Shepherd can open a project" instead
       # of the welcome screen. The application was right and the tests had an undeclared
       # dependency. Installing it keeps the tests driving the real path rather than teaching
       # them to tolerate a half-configured machine.
       #
-      # It is never signed in here, and does not need to be: what Studio checks at startup is
+      # It is never signed in here, and does not need to be: what the desktop app checks at startup is
       # that the binary exists and answers `--version`. The one test that needs a real model
       # call declines separately, below.
-      - name: Install Claude Code, which Studio requires before it will open anything
+      - name: Install Claude Code, which the desktop app requires before it will open anything
         run: npm install -g @anthropic-ai/claude-code
 
       # Electron is a browser, and a browser on a headless Linux runner needs the system
@@ -181,7 +181,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: studio-window-failure
+          name: shepherd-window-failure
           path: |
             studio/test-results/
             studio/test/screenshots/

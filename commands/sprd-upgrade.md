@@ -1,4 +1,4 @@
-# /sdlc-upgrade — Bring an installed harness forward safely
+# /sprd-upgrade — Bring an installed harness forward safely
 
 Upgrade a repo's installed delivery harness to the plugin's current version using the install
 receipt (`.claude/harness-manifest.json`). Unlike `install_harness.py --force`, this never
@@ -9,7 +9,7 @@ are left alone, and files changed on both sides are surfaced for a deliberate me
 
 ### Step 1: Dry-run the upgrade
 Always dry-run first. Pass the same profile that was used at install (`.sdlc/profile.yaml` for
-repos set up via `/sdlc-setup`; omit `--profile` only for core-only installs) — a different
+repos set up via `/sprd-setup`; omit `--profile` only for core-only installs) — a different
 profile makes that profile's pack files misreport as RETIRED.
 ```bash
 uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/upgrade_harness.py \
@@ -50,6 +50,15 @@ unfinished upgrade.
 so it typically reports ADAPTED or CONFLICT. Merge only the stack-standards section from the new
 version; never replace the whole file.
 
+**The 2.0.0 rename is a CLAUDE.md edit too.** A project set up before Shepherd 2.0.0 carries an
+`# SDLC Configuration (auto-injected by …)` section whose heading and `Commands:` line use the
+pre-2.0 command prefix `sdlc-` (and the bare `sdlc` command). Inside that section only — never
+elsewhere in the file, which is the owner's — rewrite the prefix to `sprd-` (`sprd` for the bare
+command) so the heading reads `(auto-injected by /sprd-setup)` and the commands match the names
+the session-start banner lists; show the diff before writing. `upgrade_harness.py` does not do
+this (it is string-only) — it is this step's job, and a repo already on `/sprd-*` has nothing to
+change.
+
 ### Step 5: Verify and commit
 - Re-run the dry-run: it should now report only IDENTICAL/ADAPTED, no conflicts.
 - If hooks or workflows changed, remind the user to re-prove them (shakedown drills in
@@ -78,11 +87,11 @@ The runbook:
    `CODEOWNERS`; their ADO analogues arrive as `NEW` (`.azuredevops/pipelines/`, branch policies
    via `scripts/rails/configure-branch-policies.sh`, a required-reviewer policy in place of
    CODEOWNERS).
-5. Re-run `/sdlc-doctor` — it follows the installed pack (`az` checks on ADO, `gh` on GitHub) —
+5. Re-run `/sprd-doctor` — it follows the installed pack (`az` checks on ADO, `gh` on GitHub) —
    and re-prove the rails with the shakedown drills in `.github/RAILS.md` (the rails guide keeps
    that path on both platforms; the ADO pack deliberately overlays it).
 6. The CI platform is the only thing this switch changes. The **code host** the PR-facing
-   commands speak to (`/sdlc-spec-status`, `/sdlc-handoff`, the connection report) follows the
+   commands speak to (`/sprd-spec-status`, `/sprd-handoff`, the connection report) follows the
    repository's `origin` remote — `gh` for GitHub, `az` for Azure DevOps — not the pack, so a
    repository that stays on GitHub while its pipelines move to Azure keeps using `gh` for its
    pull requests. If the repository itself moved, update `origin`; only a remote the plugin

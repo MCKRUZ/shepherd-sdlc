@@ -9,7 +9,7 @@ Usage:
     uv run advance_phase.py --state .sdlc/state.yaml --confirmed
     uv run advance_phase.py --state .sdlc/state.yaml           # dry-run: checks gates, does not advance
 
-The --confirmed flag represents explicit human sign-off. /sdlc-next must
+The --confirmed flag represents explicit human sign-off. /sprd-next must
 present the gate results to the user and require approval before passing
 --confirmed to this script.
 """
@@ -205,7 +205,7 @@ def advance(
     print(f"Artifact directory: .sdlc/artifacts/{pm.artifact_dirname(next_phase_id)}/")
     print(f"Phase definition:   {next_def['definition']}")
     print()
-    print("Run /sdlc to see full phase guidance.")
+    print("Run /sprd to see full phase guidance.")
 
     return 0
 

@@ -55,8 +55,8 @@ def test_it_treats_the_document_as_data_and_never_invents_or_judges():
 
 
 def test_the_intake_command_delegates_to_it_by_its_real_subagent_name():
-    command = (ROOT / "commands" / "sdlc-intake.md").read_text(encoding="utf-8")
-    assert "claude-code-sdlc:document-summarizer" in command
+    command = (ROOT / "commands" / "sprd-intake.md").read_text(encoding="utf-8")
+    assert "shepherd:document-summarizer" in command
 
 
 def test_the_agent_count_and_lists_agree_everywhere():

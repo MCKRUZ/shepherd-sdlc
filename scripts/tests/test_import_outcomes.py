@@ -32,6 +32,7 @@ ADO_EVENTS = [
 @pytest.fixture(autouse=True)
 def _quiet_cli(monkeypatch):
     monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+    monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
     monkeypatch.setattr(code_host, "cli_state", lambda host, **kw: ("available", "pinned by the test"))
 
 

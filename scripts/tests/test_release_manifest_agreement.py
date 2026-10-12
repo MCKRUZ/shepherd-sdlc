@@ -11,7 +11,7 @@ The two versions are read by different consumers, which is what makes the mismat
 
 * `plugin.json` is what `scripts/harness_manifest.py` stamps into every installed repo's
   `.claude/harness-manifest.json`, so it is the version an engagement reports it runs and the one
-  `/sdlc-upgrade` compares against.
+  `/sprd-upgrade` compares against.
 * `marketplace.json` is what Claude Code reads to decide whether an update exists.
 
 When the marketplace lags, the release is published and no one is offered it. The installed repos
@@ -91,7 +91,7 @@ def test_both_manifests_name_the_same_plugin():
 def test_the_shipped_version_is_semver():
     version = plugin_manifest()["version"]
     assert SEMVER.match(version), (
-        f"'{version}' is not MAJOR.MINOR.PATCH — `/sdlc-upgrade` compares versions to decide "
+        f"'{version}' is not MAJOR.MINOR.PATCH — `/sprd-upgrade` compares versions to decide "
         "whether an installed repo is behind, and cannot order a version it cannot parse"
     )
 

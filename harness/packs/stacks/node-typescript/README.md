@@ -6,7 +6,7 @@ instead of full of `{{TOKENS}}`. Pair it with a CI/CD pack (`packs/cicd/github` 
 *pipeline* that runs them.
 
 Selected by a profile declaring `stack.backend.language: typescript` (e.g.
-`claude-code-sdlc/profiles/starter`).
+`shepherd/profiles/starter`).
 
 ## What it fills
 

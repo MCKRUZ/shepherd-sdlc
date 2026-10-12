@@ -26,7 +26,7 @@ import check_spec
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Both templates a pod can start from: the one the installer copies into `specs/`, and the one
-# `/sdlc-spec` scaffolds from. They are separate files for separate install paths, so nothing
+# `/sprd-spec` scaffolds from. They are separate files for separate install paths, so nothing
 # stops them drifting apart — which is how #17 happened. These tests are that "nothing".
 SHIPPED_TEMPLATES = [
     PLUGIN_ROOT / "harness" / "spec-template.md",

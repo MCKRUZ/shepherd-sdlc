@@ -1,4 +1,4 @@
-# /sdlc-coach — Interactive Phase Coaching
+# /sprd-coach — Interactive Phase Coaching
 
 Start or continue a coaching conversation for the current SDLC phase. Coaching mode uses adaptive dialogue instead of rigid step lists to guide the user through phase requirements.
 
@@ -31,7 +31,7 @@ Start or continue a coaching conversation for the current SDLC phase. Coaching m
    **All required artifacts exist → Ready mode:**
    - Confirm all artifacts are present
    - Ask the "Ready Check" questions to validate confidence
-   - Suggest running `/sdlc-gate` when the user is satisfied
+   - Suggest running `/sprd-gate` when the user is satisfied
 
 5. **Respond adaptively to each user interaction:**
    - User provides information → generate or update the relevant artifact, then ask the next question
@@ -47,4 +47,4 @@ Start or continue a coaching conversation for the current SDLC phase. Coaching m
 - The coach always references the phase definition for what's required
 - Adapt to the user's knowledge level based on their responses
 - Use the coaching patterns in `references/conversational-coaching.md` — don't improvise a different structure
-- If the user explicitly asks for the step list instead, switch to `/sdlc` mode
+- If the user explicitly asks for the step list instead, switch to `/sprd` mode

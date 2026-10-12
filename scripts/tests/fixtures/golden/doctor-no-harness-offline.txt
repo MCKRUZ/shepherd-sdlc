@@ -1,6 +1,6 @@
 exit: 1
 --- stdout ---
-/sdlc-doctor — <REPO>
+/sprd-doctor — <REPO>
 
 Tools
   [PASS] git present - /fake/bin/git
@@ -9,7 +9,7 @@ Tools
 
 Harness
   [FAIL] harness not installed - no .claude/harness-manifest.json in this repo
-         fix: run /sdlc-setup, or install_harness.py, from the repo root
+         fix: run /sprd-setup, or install_harness.py, from the repo root
 
 Hooks
   [WARN] hook wiring not checked - no .claude/settings.json

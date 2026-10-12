@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import code_host  # noqa: E402
 
 SOURCE_PHRASE = {
-    "flag": "from --host", "env": f"from {code_host.ENV_VAR}", "file": f"from {code_host.CODE_HOST_FILE}",
+    "flag": "from --host", "env": f"from {code_host.CODE_HOST_ENV} or {code_host.LEGACY_CODE_HOST_ENV}", "file": f"from {code_host.CODE_HOST_FILE}",
     "remote": "from origin", "manifest": "from the harness manifest", "default": "by default",
 }
 

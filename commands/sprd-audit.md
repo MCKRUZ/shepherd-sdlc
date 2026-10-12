@@ -1,10 +1,10 @@
-# /sdlc-audit — Gate Effectiveness Analysis
+# /sprd-audit — Gate Effectiveness Analysis
 
 Analyze gate results across completed phases in the current project's `state.yaml` to identify which gates are useful and which are candidates for adjustment.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first.
 
 2. **Read state:** Load `.sdlc/state.yaml` and extract `gate_results` from every completed phase.
 

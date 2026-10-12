@@ -15,7 +15,7 @@ They never were. That false belief is the likeliest reason nobody built them.
 What may be named:
 
 * `agents/*.md` — the SDLC agents that ship in this plugin
-* `harness/agents/*.md` — installed into the client repo by `/sdlc-harness`
+* `harness/agents/*.md` — installed into the client repo by `/sprd-harness`
 * a small allowlist of Claude Code built-ins and sibling-plugin agents, listed explicitly below so
   that adding to it is a deliberate act rather than a typo that silently passes
 """

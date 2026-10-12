@@ -861,7 +861,7 @@ class TestExitZero:
 
 class TestInvariants:
     """The plan's non-negotiables, asserted mechanically: artifact_model unchanged (the source_spec
-    rider is caller-added), /sdlc-audit output byte-identical with/without a version store, the layer
+    rider is caller-added), /sprd-audit output byte-identical with/without a version store, the layer
     writes no state.yaml, the ledger stays its own JSONL with no gate_results rows, and the store +
     refresh drafts are gitignored."""
 
@@ -872,7 +872,7 @@ class TestInvariants:
         assert "source_spec" not in e
 
     def test_report_json_byte_identical_without_version_store(self, tmp_path, capsys):
-        """`report` (the /sdlc-audit-artifacts engine) must never read the object store — deleting the
+        """`report` (the /sprd-audit-artifacts engine) must never read the object store — deleting the
         whole store leaves its JSON byte-for-byte identical (the store is derived, non-authoritative)."""
         _two_versions(tmp_path, capsys)                                  # ledger + a populated store
         _, with_store = run_cli(["report", "--repo", str(tmp_path), "--json"], capsys)
@@ -916,7 +916,7 @@ class TestInvariants:
 
     def test_ledger_stays_its_own_jsonl_with_no_gate_results_rows(self, tmp_path, capsys):
         """The change-ledger is the only *.jsonl the layer writes, and no entry carries a gate_results
-        key — so /sdlc-audit's gate history can never absorb a phantom row from this layer."""
+        key — so /sprd-audit's gate history can never absorb a phantom row from this layer."""
         _two_versions(tmp_path, capsys)
         dh = _diffhash(run_cli(
             ["version", "rollback", "requirements.md", "v1", "--repo", str(tmp_path)], capsys)[1])

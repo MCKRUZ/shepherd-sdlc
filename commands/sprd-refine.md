@@ -1,4 +1,4 @@
-# /sdlc-refine — Refine the Sprint's Specs to Ready
+# /sprd-refine — Refine the Sprint's Specs to Ready
 
 Refine the specs slated into a sprint (or one spec) until each clears the Definition of Ready and its
 independent Engineering and Data verdicts — the weekly Intent-triage ceremony made executable. With
@@ -42,7 +42,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
      --state .sdlc/state.yaml --json
    ```
    (The third is skipped silently when its JSON has `has_history: false` — no artifact ledger yet.)
-   If the status JSON's `sprint` is `null`, say "no sprint — `/sdlc-sprint new` to open one" and
+   If the status JSON's `sprint` is `null`, say "no sprint — `/sprd-sprint new` to open one" and
    render only the decisions block. Otherwise compose, in this order:
    - **NOT READY specs** — from `readiness.gaps`: per spec, its gap lines against the ready rule (DoR
      blocking findings, `status is draft`, `eng_review is pending`, `data_review is not recorded`,
@@ -116,7 +116,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
    > confirmed ids only (spec ids, comma-separated; never a `#`, a quote, or a placeholder — the value
    > is read by `check_spec.parse_frontmatter`). On no, leave it as it is.
 
-   f. **Hand the edit to `/sdlc-spec --spec specs/NNNN-name.md`** — it owns the authoring pass and
+   f. **Hand the edit to `/sprd-spec --spec specs/NNNN-name.md`** — it owns the authoring pass and
    the DoR re-run until the spec reads `READY`. When it does, and only then:
 
    > **HITL GATE:** `AskUserQuestion`: "specs/NNNN-name.md is READY. Flip `status: ready`?" The
@@ -211,7 +211,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
       ```
       Add `--decision-ref DL-NN` only when the change *is* a product decision someone else owns (open
       the row as in step 4c) or when it touches Phase 0. A clarification needs no decision row.
-      Changes raised *outside* refinement still use `/sdlc-revise`, which adds the impact preview and
+      Changes raised *outside* refinement still use `/sprd-revise`, which adds the impact preview and
       the discipline interview; this path is the light one for gaps refinement itself found.
    3. **Re-gate that phase — as information, never as a block:**
       ```bash
@@ -226,7 +226,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
       artifacts that just changed, so regenerate it now rather than let it drift: rename the current
       file to `phase{N}-{name}.md.superseded-<YYYYMMDD>` (the session hook's `phase*.md` glob ignores
       it), re-condense from the current artifacts with `${CLAUDE_PLUGIN_ROOT}/templates/frozen-layer.md`
-      exactly as `/sdlc-next` step 5 does, validate:
+      exactly as `/sprd-next` step 5 does, validate:
       ```bash
       uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/validate_frozen_layer.py \
         --state .sdlc/state.yaml --phase 1
@@ -251,15 +251,15 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
      0012      DoR: NOT READY (Scope out missing) · depends_on 0007 proposed (unconfirmed)
    Verdicts:   1 pending (0009 eng) | no data          Handoffs: 1 unacknowledged (0007 → <name>) | no data
    Decisions:  2 open · 1 overdue (DL-04, <owner>, due 2026-09-29)
-   Upstream:   FR-012 revised via /sdlc-revise (DL-05) · Phase 1 re-gate PASS · current_phase unchanged
-   Next: /sdlc-refine --spec 0012 · /sdlc-sprint ready --by <name> when the slate reads 6 of 6
+   Upstream:   FR-012 revised via /sprd-revise (DL-05) · Phase 1 re-gate PASS · current_phase unchanged
+   Next: /sprd-refine --spec 0012 · /sprd-sprint ready --by <name> when the slate reads 6 of 6
    ```
 
 ## Arguments
 
 - No arguments: the refinement agenda for the active sprint (read-only).
 - `--spec <id|path>`: refine one spec (DoR, channel lint, vague lines, decisions, tier, dependencies,
-  then `/sdlc-spec --spec`).
+  then `/sprd-spec --spec`).
 - `--sprint SNN`: batch mode — Phase 0–2 context loaded once, mechanical checks and the
   `multi-reviewer` council lenses over every slated spec, one agenda, fixes one spec at a time.
 - `validate --spec N --lane eng|data --verdict accepted|returned|pending|n-a --by <name> [--reason]`:
@@ -272,7 +272,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
 
 ## Important
 
-- The user runs `/sdlc-refine` — never `sprint.py`, `check_spec.py`, `check_channel.py`, or
+- The user runs `/sprd-refine` — never `sprint.py`, `check_spec.py`, `check_channel.py`, or
   `track_decisions.py` by hand. The command owns the composition and every interview.
 - **Agent proposes, named human decides** — the tier, each `depends_on`, each decision's owner, the
   flip of `status: ready`, and every verdict. The agent never approves anything itself, never assigns
@@ -284,7 +284,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
   with `check_gates.py --phase N` as information, refreshes that phase's layer, and returns to
   refinement — `current_phase` does not move. Changing an earlier phase's artifact during refinement
   is the normal case; the record (ledger + re-gate + refreshed layer) is what keeps it honest, not a
-  lock. Neither this command nor `/sdlc-sprint` reads `current_phase` to decide whether it may run.
+  lock. Neither this command nor `/sprd-sprint` reads `current_phase` to decide whether it may run.
 - **No activity metrics, no per-person numbers.** The agenda shows counts of specs, ages of waits in
   business days, and owners' names on the items they hold — never velocity, points, estimates, effort,
   hours, PR count, or lines of code, and nothing aggregated by person. Empty blocks read `no data`.

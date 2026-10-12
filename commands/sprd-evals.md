@@ -1,10 +1,10 @@
-# /sdlc-evals — Author the Versioned Golden Set for an LLM-Powered Spec
+# /sprd-evals — Author the Versioned Golden Set for an LLM-Powered Spec
 
 Author the **golden set** — the acceptance criteria for probabilistic behavior — for a spec on an
 `llm_powered` channel. Bizreq owns the scenarios, Data owns the data; the two are authored
 collaboratively. This command is a thin **wrapper around the existing `eval-builder` harness skill**:
 it adds **no new script**, authors **no CI YAML**, and writes a versioned `golden-set.yaml` next to the
-spec. Interview-driven like `/sdlc-coach` at the collaboration and calibration steps — it proposes; a
+spec. Interview-driven like `/sprd-coach` at the collaboration and calibration steps — it proposes; a
 named human decides. Works inside an SDLC project or standalone.
 
 ## Instructions

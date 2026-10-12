@@ -41,7 +41,7 @@ ValidationFailure`, FluentValidation auto-discovered via the MediatR `Validation
   the stack pack (`stack.backend.language`) + the CI/CD pack (`stack.ci_cd.platform`): overlay maps
   from each `pack.yaml`, a deep JSON merge for `settings.fragment.json`, and a CLAUDE.md
   stack-section splice. The two axes degrade independently (a stack/platform with no pack installs
-  neutral core + a WARNING; setup never fails for a missing pack). `/sdlc-setup` passes the profile.
+  neutral core + a WARNING; setup never fails for a missing pack). `/sprd-setup` passes the profile.
 
 ## Still to build
 

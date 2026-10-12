@@ -52,10 +52,10 @@ For each P0 and P1 requirement:
 - Acceptance criteria in Given/When/Then (minimum: happy path + one error scenario)
 - Link each epic to its source requirement ID
 
-### Step 3a: Feature Decomposition (conditional — `/sdlc-feature`)
+### Step 3a: Feature Decomposition (conditional — `/sprd-feature`)
 
 **Trigger:** an epic spans more than one customer surface or persona, or needs carving into buildable
-specs before Build. When it applies, run `/sdlc-feature`: the `feature-architect` agent interviews,
+specs before Build. When it applies, run `/sprd-feature`: the `feature-architect` agent interviews,
 then drafts `feature-brief.md` — one epic decomposed into features and specs, each row carrying its
 **channel** and **persona**, with shared logic split out as channel-agnostic specs. **One channel per
 spec.**
@@ -63,14 +63,14 @@ spec.**
 > **HITL GATE:** The agent proposes the decomposition and the risk tiers; a named human confirms or
 > edits every row. Any product choice the brief cannot settle becomes a `DL-NN` decision-log item.
 
-### Step 3b: Business Rules and Golden Scenarios (conditional — `/sdlc-rules`)
+### Step 3b: Business Rules and Golden Scenarios (conditional — `/sprd-rules`)
 
 **Trigger:** the feature encodes policy — eligibility, pricing, coverage, entitlement, anything with a
-rule book. When it applies, run `/sdlc-rules`: the `bizreq-analyst` agent interviews the domain
+rule book. When it applies, run `/sprd-rules`: the `bizreq-analyst` agent interviews the domain
 experts, then drafts `business-rules.md` (a `BR-NN` decision table: condition → outcome → source →
 **approver**) and `golden-scenarios.md` (`SCEN-NN`: input → expected behaviour). Each `BR-NN`
 becomes an acceptance check on the spec that implements it; each `SCEN-NN` seeds the golden set at
-`/sdlc-evals`.
+`/sprd-evals`.
 
 > **HITL GATE:** Each rule's outcome is confirmed by its named approver. A rule whose outcome the
 > policy leaves silent or contradictory is a `DL-NN` decision-log item with an owner and a
@@ -78,7 +78,7 @@ becomes an acceptance check on the spec that implements it; each `SCEN-NN` seeds
 > never guesses an outcome.
 
 Discipline sign-offs are recorded at the phase advance beside the phase's own signature
-(`/sdlc-next` captures them as `Discipline:Section:Name`).
+(`/sprd-next` captures them as `Discipline:Section:Name`).
 
 ### Step 4: Stakeholder Review
 Walk through with stakeholder before advancing:
@@ -103,7 +103,7 @@ Generate an interactive HTML visual report at `.sdlc/reports/01-requirements-vis
 See the Visual Report Protocol in `SKILL.md` for rendering standards and fallback behavior.
 
 ### Step 7: Generate Phase Report
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/01-requirements-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/01-requirements-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
 
 ## Artifact Specifications
 
@@ -179,7 +179,7 @@ person, and aged on the agreed clock (two business days by default).
 
 > **Location:** this file lives at `.sdlc/decision-log.md`, **not** in this phase's artifact
 > directory. It is phase-spanning — a decision opens here in Requirements and closes in a later
-> phase in the same file. `scripts/track_decisions.py` reads it and `/sdlc-status` surfaces
+> phase in the same file. `scripts/track_decisions.py` reads it and `/sprd-status` surfaces
 > anything past its clock. Because it sits outside `.sdlc/artifacts/01-requirements/`, the exit
 > gate cannot check it mechanically, so the approver is asked about it at sign-off instead.
 
@@ -232,7 +232,7 @@ review that found nothing is a finding too, and worth recording as one.
 > does not block on it — but the approver is asked about it at sign-off. Write it when the work
 > happens; a receipt written later from memory is worth less than no receipt at all.
 
-### `feature-brief.md` (OPTIONAL — conditional, `/sdlc-feature`)
+### `feature-brief.md` (OPTIONAL — conditional, `/sprd-feature`)
 
 One epic decomposed into features and specs. Must contain: the channels × personas narrative; a
 decomposition table whose rows carry channel and persona (channel-agnostic rows marked `—`); the
@@ -242,7 +242,7 @@ proposed risk tier per row; and the product choices left open as `DL-NN` referen
 > report says so. The gate does not block on it — the approver is asked at sign-off whether the
 > trigger applied and, if it did, whether the artifact exists and its owner signed.
 
-### `business-rules.md` (OPTIONAL — conditional, `/sdlc-rules`)
+### `business-rules.md` (OPTIONAL — conditional, `/sprd-rules`)
 
 The `BR-NN` decision table. Must contain, per rule: condition, outcome, the source policy it cites,
 and a named approver. An undecided outcome is marked *pending* and references its `DL-NN`.
@@ -251,10 +251,10 @@ and a named approver. An undecided outcome is marked *pending* and references it
 > report says so. The gate does not block on it — the approver is asked at sign-off whether the
 > trigger applied and, if it did, whether the artifact exists and its owner signed.
 
-### `golden-scenarios.md` (OPTIONAL — conditional, `/sdlc-rules`)
+### `golden-scenarios.md` (OPTIONAL — conditional, `/sprd-rules`)
 
 The `SCEN-NN` table: input → expected behaviour, including the tricky and ambiguous cases. Seeds the
-golden set for any LLM-powered spec (`/sdlc-evals`) and the acceptance checks for the rest.
+golden set for any LLM-powered spec (`/sprd-evals`) and the acceptance checks for the rest.
 
 > **Conditional by design.** Required when its trigger applies; absent otherwise, and the phase
 > report says so. The gate does not block on it — the approver is asked at sign-off whether the
@@ -280,9 +280,9 @@ golden set for any LLM-powered spec (`/sdlc-evals`) and the acceptance checks fo
       advance
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/01-requirements-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/01-requirements-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Guidance
 - Requirements describe WHAT, not HOW. "The system SHALL use PostgreSQL" is a design decision, not a requirement.
@@ -292,7 +292,7 @@ To regenerate at any time: `/sdlc-phase-report`
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (no artifacts yet)
 - "Who are the end users? Walk me through a typical day in their life."

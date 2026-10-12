@@ -23,7 +23,7 @@ A channel is **sensed in Discovery** and **formalized in Requirements during fea
   capability will be delivered through — a phone line, a dashboard, an in-app chat. At this stage a
   channel is an observation, not yet a descriptor-bound thing.
 - **Formalized in featuring (Phase 1).** Featuring — the epic → **feature** → spec decomposition run by
-  `/sdlc-feature` — is where you decide *how* the feature is delivered, so it is where a sensed surface
+  `/sprd-feature` — is where you decide *how* the feature is delivered, so it is where a sensed surface
   becomes a descriptor-bound **channel**. The feature brief's decomposition table carries a **channel**
   column, and each channel names a `channels/<id>.yaml` descriptor.
 
@@ -68,7 +68,7 @@ fields:
 | `name` | yes | Human-readable channel name. |
 | `surface` | yes | What the customer touches (e.g. "PSTN/CCaaS voice", "browser SPA via AG-UI events"). |
 | `llm_powered` | yes | True when the deliverable on this channel is model-driven. When true, `eval_hooks` is required and the risk floor is HIGH. |
-| `acceptance_dimensions` | yes | The dimensions a channel-bound spec must satisfy — each an `{id, intent, example_check}`. These are the load-bearing part: `/sdlc-channel` injects them into the spec's `## Acceptance Checks`. |
+| `acceptance_dimensions` | yes | The dimensions a channel-bound spec must satisfy — each an `{id, intent, example_check}`. These are the load-bearing part: `/sprd-channel` injects them into the spec's `## Acceptance Checks`. |
 | `status` | no | `stable` or `experimental` (defaults to experimental). |
 | `risk_floor` | no | Advisory minimum risk tier (`HIGH`/`MEDIUM`/`LOW`). May only **raise**, never lower, the tier `risk_model.py` assigns. |
 | `harness_context_seed` | no | A canonical existing-pattern phrase a first-of-its-kind channel spec can cite to satisfy the spec DoR's `harness_context` requirement. |
@@ -153,7 +153,7 @@ overlay; the mechanical rigor still lands on the spec's `## Acceptance Checks` a
 ## Golden-set path convention
 
 For `llm_powered` channels the acceptance criteria are a **versioned golden set** authored by the
-existing harness eval-builder (wrapped by `/sdlc-evals` — the plugin adds no new eval script). The path
+existing harness eval-builder (wrapped by `/sprd-evals` — the plugin adds no new eval script). The path
 convention is:
 
 ```
@@ -166,7 +166,7 @@ eval-datasets/specs/<feature>/golden-set.yaml
   `eval-regression.yml` rail fires on any prompt/model change and **blocks** on degradation like a
   failing test.
 - **Bizreq owns the scenarios, Data owns the data** — the set is authored collaboratively via
-  `/sdlc-evals`, and neither discipline touches CI YAML (the harness owns the rail).
+  `/sprd-evals`, and neither discipline touches CI YAML (the harness owns the rail).
 
 The path lives in the eval-builder SKILL, not hardcoded by the channel layer; this document records the
 convention so specs and reviews can cite it consistently.

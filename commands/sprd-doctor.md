@@ -1,10 +1,10 @@
-# /sdlc-doctor — Day-1 Environment Check
+# /sprd-doctor — Day-1 Environment Check
 
 Verify that the installed harness will actually run in this repo, and tell the developer exactly what to do about anything that won't.
 
 The harness fails quietly. A hook registered with a missing interpreter, a rails script installed without its executable bit, a secret the gates read that nobody set — each leaves a repo that looks configured and has no working checking ladder. This command finds the failures that are invisible when they happen.
 
-Run it after `/sdlc-setup`, when onboarding a second developer, and any time a gate behaves in a way nobody can explain.
+Run it after `/sprd-setup`, when onboarding a second developer, and any time a gate behaves in a way nobody can explain.
 
 ## Instructions
 
@@ -26,7 +26,7 @@ Run it after `/sdlc-setup`, when onboarding a second developer, and any time a g
 
 5. **Treat `WARN` as information, not a problem.** A warning marks something that could not be determined (Windows cannot see POSIX permission bits; `gh`/`az` may not be authenticated) or setup a later phase is meant to finish (an unfilled `<<TOKEN>>` carries the phase that fills it). Do not push the user to "clear" warnings.
 
-6. **If the harness is not installed at all**, stop and point at `/sdlc-setup`. The rest of the report is meaningless without it.
+6. **If the harness is not installed at all**, stop and point at `/sprd-setup`. The rest of the report is meaningless without it.
 
 ## Arguments
 
@@ -41,7 +41,7 @@ Run it after `/sdlc-setup`, when onboarding a second developer, and any time a g
 
 The doctor is **pack-aware**: it reads the installed CI/CD pack from `.claude/harness-manifest.json` and the platform-facing checks follow it — an Azure DevOps install is checked with `az` (variable groups, branch policies) and is never told to install `gh` for a platform it does not use.
 
-That is the **CI platform** axis. The **code host** — which CLI the PR-facing commands (`/sdlc-spec-status`, `/sdlc-handoff`, `connection_report.py`, `pipeline_proof.py`'s PR reads) speak to — is a separate question answered by the repository's `origin` remote, not by the pack: a GitHub remote means `gh`, an Azure DevOps remote means `az`. The two usually agree, but a GitHub repository running Azure Pipelines is legitimate; `connection_report.py --json` reports both (`host`, `ci_platform`) and notes a mismatch without failing. Neither CLI is needed to open a project or run the gates. `code_host.py --repo <path>` prints which host was detected and why.
+That is the **CI platform** axis. The **code host** — which CLI the PR-facing commands (`/sprd-spec-status`, `/sprd-handoff`, `connection_report.py`, `pipeline_proof.py`'s PR reads) speak to — is a separate question answered by the repository's `origin` remote, not by the pack: a GitHub remote means `gh`, an Azure DevOps remote means `az`. The two usually agree, but a GitHub repository running Azure Pipelines is legitimate; `connection_report.py --json` reports both (`host`, `ci_platform`) and notes a mismatch without failing. Neither CLI is needed to open a project or run the gates. `code_host.py --repo <path>` prints which host was detected and why.
 
 Required secrets (GitHub) / variable-group references (ADO) are read from **this repo's installed workflows/pipelines**, not from a fixed list. A repo that has adapted `ANTHROPIC_API_KEY` to `CLAUDE_CODE_OAUTH_TOKEN`, or deleted the eval workflows, is checked against what it actually runs — the doctor must never tell someone to "fix" a working setup.
 

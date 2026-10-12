@@ -1,6 +1,6 @@
 """record_findings.py — give review findings memory, a disposition, and an honesty check.
 
-The grader (/sdlc-review) overwrites its `review-report.md` every run, so a finding and its
+The grader (/sprd-review) overwrites its `review-report.md` every run, so a finding and its
 history vanish. This tool reads the report's machine-readable `## Gate Results` block and appends
 each finding to an append-only ledger, `.sdlc/metrics/findings-log.jsonl`, so the finding survives
 the next review and its disposition can be tracked across rounds.

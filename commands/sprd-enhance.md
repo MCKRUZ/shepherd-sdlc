@@ -1,4 +1,4 @@
-# /sdlc-enhance — Generate Narrative Enhancement
+# /sprd-enhance — Generate Narrative Enhancement
 
 Generate stakeholder-friendly narrative companions for SDLC artifacts.
 
@@ -36,7 +36,7 @@ Generate stakeholder-friendly narrative companions for SDLC artifacts.
 ## Arguments
 
 - No arguments: enhance all artifacts in the current phase
-- `[path]`: enhance a specific artifact (e.g., `/sdlc-enhance .sdlc/artifacts/01-requirements/requirements.md`)
+- `[path]`: enhance a specific artifact (e.g., `/sprd-enhance .sdlc/artifacts/01-requirements/requirements.md`)
 - `--force`: regenerate narratives even if they already exist
 - `--all-phases`: enhance artifacts across all completed phases (not just current)
 

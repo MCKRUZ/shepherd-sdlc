@@ -1,4 +1,4 @@
-# /sdlc-spec — Author a Ready Spec for the Build Loop
+# /sprd-spec — Author a Ready Spec for the Build Loop
 
 Turn a story into a **ready spec** (`specs/NNNN-name.md`) that clears the Definition of Ready
 before anyone builds it. This is the Intent beat of the Build loop wrapped as one command: scaffold
@@ -76,7 +76,7 @@ session and the grader grades against it.
 
 ## Important
 
-- The user runs `/sdlc-spec` — never `new_spec.py` or `check_spec.py` by hand. The command owns the
+- The user runs `/sprd-spec` — never `new_spec.py` or `check_spec.py` by hand. The command owns the
   scaffold, the authoring, the human risk-tier gate, and the DoR enforcement.
 - **The agent never assigns the risk tier** and never answers a Decision List item — both need a
   named human. Proposing a tier is fine; deciding it is not.

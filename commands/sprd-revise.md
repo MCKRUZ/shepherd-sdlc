@@ -1,13 +1,13 @@
-# /sdlc-revise — Change One Specific Artifact (and record why)
+# /sprd-revise — Change One Specific Artifact (and record why)
 
 Adjust a *thing*, not a whole file. Artifacts already carry ids, so you revise `FR-012` or `BR-04`
 or one section — the command routes the change to the discipline that owns it, records the why with
 an owner and a clock, re-gates, and shows you exactly what the change put at risk.
 
 ```
-/sdlc-revise FR-012
-/sdlc-revise BR-04
-/sdlc-revise requirements.md#non-functional-requirements
+/sprd-revise FR-012
+/sprd-revise BR-04
+/sprd-revise requirements.md#non-functional-requirements
 ```
 
 The **One Rule** holds throughout: the discipline agent **proposes** the change; a **named human
@@ -17,7 +17,7 @@ decides** it. No agent silently rewrites an artifact.
 
 1. **Resolve mode and repo root:**
    - **Workflow mode** (default): look for `.sdlc/state.yaml`; pass `--state .sdlc/state.yaml` to the
-     scripts. If not found, tell the user to run `/sdlc-setup` first.
+     scripts. If not found, tell the user to run `/sprd-setup` first.
    - **Standalone mode** (`--repo <path>`, or no `.sdlc/`): operate on the given repo. Note the
      missing engagement context in the change reason.
 
@@ -44,7 +44,7 @@ decides** it. No agent silently rewrites an artifact.
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/audit_artifacts.py record --scan --state .sdlc/state.yaml
    ```
    Then apply the confirmed edit to the artifact file. (Step 5a's `record --event revised` then
-   captures the post-image, so `/sdlc-version diff`/`rollback` sees both sides of the change.) Content
+   captures the post-image, so `/sprd-version diff`/`rollback` sees both sides of the change.) Content
    capture is best-effort; if the store can't be written the ledger append is byte-identical.
 
    | Target | Owning discipline agent |
@@ -77,12 +77,12 @@ decides** it. No agent silently rewrites an artifact.
       | DL-NN | Revised <target>: <what changed and why> | <owner name> | <today YYYY-MM-DD> | <today + 2 business days> | open |
       ```
 
-      `track_decisions.py` then surfaces it in `/sdlc-status`; close it (`status: decided`) once the
+      `track_decisions.py` then surfaces it in `/sprd-status`; close it (`status: decided`) once the
       downstream ripple is dispositioned.
 
 6. **Re-gate the affected phase** — dirty-tracking re-validates only the changed artifact:
    ```
-   /sdlc-gate
+   /sprd-gate
    ```
    Run the gate for the phase the artifact belongs to and report PASS/FAIL. Fix any MUST failures the
    change introduced before moving on.
@@ -99,7 +99,7 @@ decides** it. No agent silently rewrites an artifact.
      record --disposition <ACKNOWLEDGED|NOT_AFFECTED> \
      --downstream <file> --upstream <path> --owner "<name>" --reason "<why>" --state .sdlc/state.yaml
    ```
-   - **Refreshed?** If you fix the downstream now (or re-run `/sdlc-revise` on it), you do **not**
+   - **Refreshed?** If you fix the downstream now (or re-run `/sprd-revise` on it), you do **not**
      record anything — a later change hash proves it, so the next scan clears the item automatically.
      `REFRESHED` is derived, never typed.
    - `ACKNOWLEDGED` — accept the debt for now; **names an owner** or it still counts as debt.
@@ -120,16 +120,16 @@ decides** it. No agent silently rewrites an artifact.
 
 ## Important
 
-- `/sdlc-revise` writes **only** three things: the artifact, the change-ledger, and the decision-log.
+- `/sprd-revise` writes **only** three things: the artifact, the change-ledger, and the decision-log.
   It **never** touches `state.yaml`'s gate results or sign-off records — advancing and sign-off remain
-  `/sdlc-next`'s job, unchanged.
+  `/sprd-next`'s job, unchanged.
 - **Agent proposes, human decides.** The discipline agent drafts the new wording; a named human
-  confirms it and owns the decision-log item. This is the same One Rule as `/sdlc-spec`'s risk tier.
+  confirms it and owns the decision-log item. This is the same One Rule as `/sprd-spec`'s risk tier.
 - **Staleness is advisory.** A downstream flagged after your change is a *candidate* — it may already
   account for the change. Disposition it; the tool never blocks on it.
 - When behavior changes, the artifact changes here — and if a spec or code already realizes it, that
   change belongs in the **same PR** as the code. A stale artifact lies to the next agent and human.
-- **Undo path.** A revise that went wrong is reversible: `/sdlc-version diff <target> prev latest`
-  shows what changed and `/sdlc-version rollback <target> prev` restores it (preview → named-human
+- **Undo path.** A revise that went wrong is reversible: `/sprd-version diff <target> prev latest`
+  shows what changed and `/sprd-version rollback <target> prev` restores it (preview → named-human
   confirm), provided the pre-image was captured in step 4. The reverse direction — pulling a built
-  spec's shipped reality *up* into these artifacts — is `/sdlc-refresh`.
+  spec's shipped reality *up* into these artifacts — is `/sprd-refresh`.

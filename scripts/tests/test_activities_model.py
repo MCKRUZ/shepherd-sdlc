@@ -51,17 +51,17 @@ class TestTheShippedDeclarationIsTrue:
         assert "creates" not in sprint and "done_when" not in sprint
 
     @pytest.mark.parametrize("phase, activity, command, kind", [
-        ("0", "intake", "sdlc-intake", "run"), ("0", "brief", "sdlc-brief", "create"),
-        ("0", "review", "sdlc-review", "draft"), ("0", "enhance", "sdlc-enhance", "draft"),
-        ("0", "phase-report", "sdlc-phase-report", "run"),
-        ("1", "feature-brief", "sdlc-feature", "create"), ("1", "rules", "sdlc-rules", "create"),
-        ("1", "rules-check", "sdlc-rules", "check"),
-        ("2", "data", "sdlc-data", "create"), ("2", "data-check", "sdlc-data", "check"),
-        ("2", "experience", "sdlc-experience", "create"),
-        ("3", "pipeline-proof", None, "run"), ("1", "coach", "sdlc-coach", "talk"),
-        ("build", "sprint", "sdlc-sprint", "run"), ("build", "refine", "sdlc-refine", "talk"),
-        ("build", "phase-report", "sdlc-phase-report", "run"), ("build", "coach", "sdlc-coach", "talk"),
-        ("3", "refine", "sdlc-refine", "talk"),
+        ("0", "intake", "sprd-intake", "run"), ("0", "brief", "sprd-brief", "create"),
+        ("0", "review", "sprd-review", "draft"), ("0", "enhance", "sprd-enhance", "draft"),
+        ("0", "phase-report", "sprd-phase-report", "run"),
+        ("1", "feature-brief", "sprd-feature", "create"), ("1", "rules", "sprd-rules", "create"),
+        ("1", "rules-check", "sprd-rules", "check"),
+        ("2", "data", "sprd-data", "create"), ("2", "data-check", "sprd-data", "check"),
+        ("2", "experience", "sprd-experience", "create"),
+        ("3", "pipeline-proof", None, "run"), ("1", "coach", "sprd-coach", "talk"),
+        ("build", "sprint", "sprd-sprint", "run"), ("build", "refine", "sprd-refine", "talk"),
+        ("build", "phase-report", "sprd-phase-report", "run"), ("build", "coach", "sprd-coach", "talk"),
+        ("3", "refine", "sprd-refine", "talk"),
     ])
     def test_each_activity_is_mapped_to_its_command_and_kind(self, phase, activity, command, kind):
         entry = next(a for a in am.load()[phase] if a["id"] == activity)
@@ -92,7 +92,7 @@ class TestValidationNamesTheActivityAndTheRule:
         self.check({"0": [act(label="")]}, "label")
 
     def test_a_command_that_has_no_command_file(self):
-        self.check({"0": [act(command="sdlc-nonesuch")]}, "sdlc-nonesuch")
+        self.check({"0": [act(command="sprd-nonesuch")]}, "sprd-nonesuch")
 
     def test_an_after_that_names_no_activity_in_the_phase(self):
         self.check({"0": [act(after=["ghost"])]}, "ghost")
@@ -161,7 +161,7 @@ class TestAMalformedFieldIsReportedNotRaised:
         self.check(act(after=[None]), "after must hold only non-empty strings")
 
     def test_a_command_that_is_not_a_string(self):
-        self.check(act(command=["sdlc-coach"]), "command must be")
+        self.check(act(command=["sprd-coach"]), "command must be")
 
     def test_an_optional_that_is_not_a_bool(self):
         self.check(act(optional="yes"), "optional must be true or false")

@@ -1,4 +1,4 @@
-"""bind_channel.py — the mechanical half of /sdlc-channel (spec 0021).
+"""bind_channel.py — the mechanical half of /sprd-channel (spec 0021).
 
 The command's steps 4 and 5 are a merge of two tables: set the spec's `channel:`, seed
 `harness_context`, and append one acceptance-check line per channel dimension the spec does not

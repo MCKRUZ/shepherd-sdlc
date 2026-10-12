@@ -1,10 +1,10 @@
-# /sdlc — Phase Guidance
+# /sprd — Phase Guidance
 
 Show guidance for the current SDLC phase including what to do, which skills to use, and what artifacts to produce.
 
 ## Instructions
 
-1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sdlc-setup` first and exit.
+1. **Locate state file:** Look for `.sdlc/state.yaml` in the current project directory. If not found, tell the user to run `/sprd-setup` first and exit.
 
 2. **Read state:** Load `.sdlc/state.yaml` to get `current_phase`.
 
@@ -54,9 +54,9 @@ Show guidance for the current SDLC phase including what to do, which skills to u
 
    ### Quick Commands
    ```
-   /sdlc-gate    — Check if exit criteria are met
-   /sdlc-next    — Advance to next phase (runs gate check)
-   /sdlc-status  — View full progress dashboard
+   /sprd-gate    — Check if exit criteria are met
+   /sprd-next    — Advance to next phase (runs gate check)
+   /sprd-status  — View full progress dashboard
    ```
 
 6. **Compliance callout:** If the profile has compliance frameworks, note any compliance-specific requirements for this phase.
@@ -65,4 +65,4 @@ Show guidance for the current SDLC phase including what to do, which skills to u
 
 ## Arguments
 - No arguments: show guidance for current phase
-- `<phase-number>`: show guidance for a specific phase (e.g., `/sdlc 3`)
+- `<phase-number>`: show guidance for a specific phase (e.g., `/sprd 3`)

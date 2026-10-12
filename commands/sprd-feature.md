@@ -1,9 +1,9 @@
-# /sdlc-feature — Decompose an Epic into Channel-Aware Features and Specs
+# /sprd-feature — Decompose an Epic into Channel-Aware Features and Specs
 
 Drive the **epic → feature → spec** decomposition that the plugin lacks today — the "featuring" hop
 where you decide *how* a feature is delivered (which customer channels, which personas) and carve it
 into buildable specs. Output is `feature-brief.md`, authored on every channel-bound feature. This is
-interview-driven like `/sdlc-coach`: the `feature-architect` agent assesses what's there, asks focused
+interview-driven like `/sprd-coach`: the `feature-architect` agent assesses what's there, asks focused
 questions, and drafts the brief as answers arrive — it **proposes**, a named human **decides** (the One
 Rule). Works inside an SDLC project or standalone against any repo.
 
@@ -41,7 +41,7 @@ Rule). Works inside an SDLC project or standalone against any repo.
 > (2) Confirm the **proposed risk tier** on each row (the agent proposes HIGH / MEDIUM / LOW with a
 >     reason — channel-agnostic brains tend HIGH; in-pattern read-only surfaces can be MEDIUM — but a
 >     named human owns the tier; risk escalates **up, never down**, and `llm_powered` channels floor at
->     HIGH). The final tier is re-confirmed per spec at `/sdlc-spec` time.
+>     HIGH). The final tier is re-confirmed per spec at `/sprd-spec` time.
 > (3) Which unmade product choices become **decision-log** items (the agent never answers these).
 
 5. **Open decision-log items:** For each undecided product choice the human named, append an entry to
@@ -54,7 +54,7 @@ Rule). Works inside an SDLC project or standalone against any repo.
      --state .sdlc/state.yaml --json
    ```
    In standalone mode pass `--repo <repo-root>` instead of `--state`. The script is advisory (exit 0);
-   `/sdlc-status` surfaces the same open/overdue list.
+   `/sprd-status` surfaces the same open/overdue list.
 
 6. **Report:**
    ```
@@ -64,8 +64,8 @@ Rule). Works inside an SDLC project or standalone against any repo.
    Epic:         EP-... (feature FE-...)
    Decomposition: N specs (X channel-agnostic brains, Y per-channel surfaces) — risk mix confirmed
    Decisions:    M opened on the decision-log (owners: …) | none
-   Next: /sdlc-experience per surface (authors journeys + interaction spec), then /sdlc-spec +
-         /sdlc-channel to build each row.
+   Next: /sprd-experience per surface (authors journeys + interaction spec), then /sprd-spec +
+         /sprd-channel to build each row.
    ```
 
 ## Arguments
@@ -79,7 +79,7 @@ Rule). Works inside an SDLC project or standalone against any repo.
 
 - **The agent proposes; a named human decides.** The `feature-architect` never assigns a risk tier and
   never answers a decision-log item — both need a named human. Proposing is fine; deciding is not.
-- `feature-brief.md` is an **optional** artifact — `/sdlc-gate` never requires it, so gates never demand
+- `feature-brief.md` is an **optional** artifact — `/sprd-gate` never requires it, so gates never demand
   it. An unfilled discipline section is an advisory flag; formal acceptance happens at the Phase-1 gate
   via the discipline sign-off captured in state.
 - **One channel per spec.** A feature on N surfaces decomposes into per-surface specs plus channel-

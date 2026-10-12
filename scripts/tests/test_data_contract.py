@@ -1,4 +1,4 @@
-"""data_contract.py summary (spec 0022): the PII count behind the /sdlc-data button.
+"""data_contract.py summary (spec 0022): the PII count behind the /sprd-data button.
 
 What these protect:
   * A PII COUNT A PERSON CAN TRUST. PII drives the risk tier, so the count must come from the
