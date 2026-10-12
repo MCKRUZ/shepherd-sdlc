@@ -1,0 +1,7 @@
+# Working files from the brand sessions — regenerable or rejected; the record is state.json,
+# the approval payloads, the review boards (HTML), the owner's references, the official logo
+# exports and the brandbook.
+drafts/
+reviews*/*.png
+logo/candidate-*
+logo-inspect.json

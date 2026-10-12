@@ -1,0 +1,8 @@
+{
+  "approval_summary": "Owner selected Saira (display/wordmark) with Inter (UI/body): '30% saira' — Depth overlay kept at 30%.",
+  "typography": {
+    "display": {"family": "Saira", "source": "google:Saira", "style": "normal", "weight": 600},
+    "body": {"family": "Inter", "source": "google:Inter", "style": "normal", "weight": 400},
+    "font_links": ["https://fonts.google.com/specimen/Saira", "https://fonts.google.com/specimen/Inter"]
+  }
+}

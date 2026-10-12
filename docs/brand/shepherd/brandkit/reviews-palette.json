@@ -1,0 +1,67 @@
+{
+  "reviews": [
+    {
+      "stage": "palette",
+      "name": "Pasture",
+      "premise": "Moss green leads; lake blue and umber brown stay in support. The green is olive and deep, so it never competes with the bright signed-off green the gates already use.",
+      "keywords": ["grounded", "calm", "guiding"],
+      "palette": [
+        {"hex": "#3F6B35", "name": "Moss — primary"},
+        {"hex": "#2F5D7C", "name": "Lake — secondary"},
+        {"hex": "#6B4A2B", "name": "Umber — support"},
+        {"hex": "#9DC58E", "name": "Spring — light accent"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F7F4EE", "name": "Sand — background"}
+      ],
+      "logo_ideas": [
+        "A single-stroke shepherd's crook: a vertical stem rising into a hooked arc, drawn on one grid",
+        "A low fold arc sheltering three small discs",
+        "A hill horizon with one point held above it"
+      ],
+      "background_color": "#F7F4EE",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "palette",
+      "name": "Loam",
+      "premise": "Umber brown leads, which is rare in software tooling and shares no hue with any status colour. Moss and lake read as the living things on brown earth.",
+      "keywords": ["earthen", "steady", "handmade"],
+      "palette": [
+        {"hex": "#6B4A2B", "name": "Umber — primary"},
+        {"hex": "#3F6B35", "name": "Moss — secondary"},
+        {"hex": "#2F5D7C", "name": "Lake — information"},
+        {"hex": "#C9A27A", "name": "Clay — light accent"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F7F4EE", "name": "Sand — background"}
+      ],
+      "logo_ideas": [
+        "A crook cut as negative space out of a solid umber field",
+        "A gate: two posts with one lifted bar",
+        "A cairn of three stacked stones"
+      ],
+      "background_color": "#F7F4EE",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "palette",
+      "name": "Lakeside",
+      "premise": "Slate lake blue leads with moss and umber as the shore. Cooler and more technical; the slate is distinct from the sky blue that means running.",
+      "keywords": ["clear", "quiet", "technical"],
+      "palette": [
+        {"hex": "#2F5D7C", "name": "Lake — primary"},
+        {"hex": "#3F6B35", "name": "Moss — secondary"},
+        {"hex": "#6B4A2B", "name": "Umber — support"},
+        {"hex": "#8FB8D3", "name": "Mist — light accent"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F5F6F3", "name": "Chalk — background"}
+      ],
+      "logo_ideas": [
+        "A crook whose hook holds one lake-blue disc",
+        "A fold arc over three discs in two tones",
+        "A horizon line with a single north point"
+      ],
+      "background_color": "#F5F6F3",
+      "text_color": "#1C1915"
+    }
+  ]
+}

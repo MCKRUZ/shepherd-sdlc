@@ -1,0 +1,100 @@
+{
+  "brandbookElements": [
+    {
+      "approvalSummary": "Owner approved the brandbook as delivered ('alright - update the frontend. lets go', 2026-10-12).",
+      "asset": {
+        "path": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/brandkit/brandbook/shepherd-brand-guidelines-v1.pdf"
+      },
+      "dependencies": {
+        "logoRevision": 1,
+        "paletteRevision": 5,
+        "typographyRevision": 1
+      },
+      "key": "brandbook-v1",
+      "kind": "brandbook",
+      "name": "Shepherd brand guidelines v1 (PPTX + PDF)",
+      "revision": 1
+    }
+  ],
+  "essentialKitApproved": true,
+  "logo": {
+    "approvalSummary": "Owner-supplied official mark: the owner's chamfered two-tone frame (moss top+right with tab, umber left+bottom) with the owner's two-tone S monogram nested inside, S at 21.5 units with its baseline flush with the tab's bottom edge — the owner chose this exact placement ('1 is the one', 2026-10-12).",
+    "asset": {
+      "path": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/mark-a-gate-s.svg"
+    },
+    "geometryFingerprint": "14adc92ca4dfd3ffcd59a9221a10ace4d9900388d0ce1121114aa7aad4849e6d",
+    "name": "Shepherd gate-S mark",
+    "origin": "user_supplied",
+    "revision": 1
+  },
+  "palette": {
+    "approvalSummary": "Owner selected Furrow ('furrow is awesome') and asked for Spring as a second light accent alongside Wheat.",
+    "colors": [
+      {
+        "hex": "#3f6b35",
+        "name": "Moss",
+        "role": "primary"
+      },
+      {
+        "hex": "#5e452a",
+        "name": "Umber",
+        "role": "support"
+      },
+      {
+        "hex": "#2f5d7c",
+        "name": "Lake",
+        "role": "support"
+      },
+      {
+        "hex": "#d9c7a3",
+        "name": "Wheat",
+        "role": "accent"
+      },
+      {
+        "hex": "#9dc58e",
+        "name": "Spring",
+        "role": "accent"
+      },
+      {
+        "hex": "#1c1915",
+        "name": "Bark",
+        "role": "text"
+      },
+      {
+        "hex": "#f5efe4",
+        "name": "Warm sand",
+        "role": "background"
+      }
+    ],
+    "gradients": [],
+    "origin": "brandkit_generated",
+    "revision": 5
+  },
+  "typography": {
+    "approvalSummary": "Owner selected Saira (display/wordmark) with Inter (UI/body): '30% saira' — Depth overlay kept at 30%.",
+    "body": {
+      "family": "Inter",
+      "source": "google:Inter",
+      "style": "normal",
+      "weight": 400
+    },
+    "display": {
+      "family": "Saira",
+      "source": "google:Saira",
+      "style": "normal",
+      "weight": 600
+    },
+    "fontLinks": [
+      "https://fonts.google.com/specimen/Saira",
+      "https://fonts.google.com/specimen/Inter"
+    ],
+    "origin": "brandkit_generated",
+    "revision": 1
+  },
+  "version": 9,
+  "visualAxes": {
+    "familiarExperimental": 40,
+    "geometricOrganic": 30,
+    "restrainedExpressive": 25
+  }
+}

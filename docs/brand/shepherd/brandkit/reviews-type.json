@@ -1,0 +1,85 @@
+{
+  "reviews": [
+    {
+      "stage": "typography",
+      "name": "Outfit + Inter",
+      "premise": "Rounded geometric lowercase \u2014 the register of your S-monogram reference. Round bowls on e, p, d echo the S's lobes; Inter stays as the app's UI face so nothing in the product regresses.",
+      "keywords": [
+        "rounded",
+        "friendly",
+        "geometric"
+      ],
+      "palette": [],
+      "logo_ideas": [],
+      "display_font": {
+        "family": "Outfit",
+        "source": "google:Outfit",
+        "weight": 600
+      },
+      "body_font": {
+        "family": "Inter",
+        "source": "google:Inter",
+        "weight": 400
+      },
+      "logo_svg": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/mark-a-gate-s.svg",
+      "headline": "shepherd",
+      "body": "Specs move through seven gates, one at a time. The fold stays closed behind each one.",
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "typography",
+      "name": "Saira + Inter",
+      "premise": "Squared, slightly extended lowercase \u2014 the register of your frame reference. Flat-sided counters pick up the frame's chamfered bars; Inter for UI.",
+      "keywords": [
+        "squared",
+        "engineered",
+        "steady"
+      ],
+      "palette": [],
+      "logo_ideas": [],
+      "display_font": {
+        "family": "Saira",
+        "source": "google:Saira",
+        "weight": 600
+      },
+      "body_font": {
+        "family": "Inter",
+        "source": "google:Inter",
+        "weight": 400
+      },
+      "logo_svg": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/mark-a-gate-s.svg",
+      "headline": "shepherd",
+      "body": "Specs move through seven gates, one at a time. The fold stays closed behind each one.",
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "typography",
+      "name": "Sora + Inter",
+      "premise": "Geometric with a technical edge \u2014 between the two: circular bowls but tighter, straighter terminals. Reads as a developer tool without going gamer-squared; Inter for UI.",
+      "keywords": [
+        "technical",
+        "clear",
+        "modern"
+      ],
+      "palette": [],
+      "logo_ideas": [],
+      "display_font": {
+        "family": "Sora",
+        "source": "google:Sora",
+        "weight": 600
+      },
+      "body_font": {
+        "family": "Inter",
+        "source": "google:Inter",
+        "weight": 400
+      },
+      "logo_svg": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/mark-a-gate-s.svg",
+      "headline": "shepherd",
+      "body": "Specs move through seven gates, one at a time. The fold stays closed behind each one.",
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    }
+  ]
+}

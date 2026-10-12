@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Shepherd — brand guide</title>
+<style>
+:root{
+  --accent-50:#F3F7F0;--accent-100:#E3EDDD;--accent-200:#C7E0BC;--accent-300:#9DC58E;--accent-400:#6FA55F;
+  --accent-500:#4F8545;--accent-600:#3F6B35;--accent-700:#2F5229;--accent-800:#243F20;--accent-900:#192D17;
+  --umber-600:#7C5A36;--umber-700:#5E452A;--umber-800:#553A21;--wheat:#D9C7A3;
+  --lake-300:#8FB8D3;--lake-500:#3B739A;--lake-600:#2F5D7C;--lake-700:#244B66;
+  --moss:#3F6B35;              /* the mark's green half, both themes */
+  --umber:#5E452A;             /* the mark's brown half, both themes */
+  --accent-text:#3F6B35;       /* links, eyebrows */
+  --focus:#3F6B35;
+  --ink-1:#1C1915;--ink-2:#3D3630;--ink-3:#6B625A;--ink-4:#A69D94;
+  --surface-0:#F5EFE4;--surface-1:#FFFFFF;--surface-2:#EFEAE1;--surface-3:#E9E3D9;
+  --signed:#16A34A;--warn:#D97706;--error:#DC2626;--running:#0EA5E9;
+  --line:rgba(28,25,21,.14);
+  --font-ui:"Inter Variable",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono Variable","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --accent-text:#9DC58E;--focus:#9DC58E;
+    --ink-1:#F5EFE4;--ink-2:#D9D1C4;--ink-3:#A69D94;--ink-4:#6B625A;
+    --surface-0:#14120F;--surface-1:#1C1915;--surface-2:#25211C;--surface-3:#2E2923;
+    --line:rgba(245,239,228,.14);
+  }
+}
+*{box-sizing:border-box}
+html{background:var(--surface-0);color:var(--ink-1);font-family:var(--font-ui);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+body{margin:0;padding:48px 24px 96px}
+main{max-width:880px;margin:0 auto}
+a{color:var(--accent-text);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+h1,h2,h3{font-weight:600;letter-spacing:-0.01em;margin:0}
+h1{font-size:28px;line-height:34px;letter-spacing:-0.02em;font-weight:650}
+h2{font-size:22px;line-height:28px;letter-spacing:-0.015em;margin-top:56px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:15px;line-height:20px;letter-spacing:-0.005em;margin-top:32px}
+p{margin:12px 0;max-width:68ch}
+ul,ol{margin:12px 0;padding-left:22px;max-width:68ch}
+li{margin:4px 0}
+code,kbd,pre{font-family:var(--font-mono);font-size:12px;line-height:16px;font-weight:450}
+code{background:var(--surface-2);padding:1px 5px;border-radius:4px}
+pre{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:12px 0;break-inside:avoid}
+pre code{background:none;padding:0}
+header{display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--line)}
+header .lockup{width:320px;max-width:100%;height:auto;flex:0 0 auto}
+header .lockup .wordmark{fill:var(--ink-1)}
+.meta{color:var(--ink-3);font-size:12px;line-height:16px;margin-top:8px}
+.eyebrow{font-size:10.5px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink-3)}
+nav.toc{margin-top:24px}
+nav.toc ol{columns:2;column-gap:32px;padding-left:20px;max-width:none}
+nav.toc li{break-inside:avoid}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;line-height:18px;break-inside:avoid}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--ink-2);font-size:12px;line-height:16px}
+td code{white-space:nowrap}
+.note{border-left:2px solid var(--accent-600);padding:4px 0 4px 14px;color:var(--ink-2);margin:16px 0;max-width:68ch}
+.grid{display:grid;gap:16px;margin:16px 0}
+.g4{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.g3{grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.g2{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+figure{margin:0;border:1px solid var(--line);border-radius:10px;background:var(--surface-1);padding:14px;break-inside:avoid}
+figure .art{display:flex;align-items:center;justify-content:center;min-height:120px;border-radius:6px;background:var(--surface-2)}
+figure .art.on-moss{background:#3F6B35}
+figure .art.on-umber{background:#5E452A}
+figure .art.on-ink{background:#1C1915}
+figure .art.on-white{background:#FFFFFF}
+figure .art.on-sand{background:#F5EFE4}
+figure svg{display:block}
+figcaption{font-size:12px;line-height:16px;color:var(--ink-3);margin-top:10px}
+figcaption b{color:var(--ink-1);font-weight:600}
+.swatches{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin:12px 0}
+.sw{border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--surface-1)}
+.sw .chip{height:44px}
+.sw .lab{padding:6px 6px 7px;font-size:10.5px;line-height:14px;color:var(--ink-3);font-family:var(--font-mono)}
+.sw .lab b{display:block;color:var(--ink-1);font-weight:600;font-family:var(--font-ui);font-size:11px}
+.ramp3{grid-template-columns:repeat(3,1fr)}
+.ramp4{grid-template-columns:repeat(4,1fr)}
+.semantic{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin:12px 0}
+.semantic .sw .chip{height:36px}
+.scale{list-style:none;padding:0;max-width:none}
+.scale li{display:grid;grid-template-columns:120px 1fr 220px;gap:16px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)}
+.scale .t{font-family:var(--font-mono);font-size:12px;color:var(--ink-3)}
+.scale .u{font-size:12px;line-height:16px;color:var(--ink-3)}
+.dd{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:12px 0}
+.dd figure{padding:10px}
+.dd figure .art{min-height:96px}
+.dd figcaption{color:var(--error);font-weight:600}
+.dd.good figcaption{color:var(--accent-text)}
+.dd figcaption span{color:var(--ink-3);font-weight:400;display:block}
+.sizes{display:flex;gap:40px;align-items:flex-end;flex-wrap:wrap;padding:20px;border:1px solid var(--line);border-radius:10px;background:var(--surface-1)}
+.sizes div{text-align:center;font-size:12px;color:var(--ink-3)}
+.sizes svg{display:block;margin:0 auto 8px}
+.sizes .px{font-family:var(--font-mono)}
+footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12px;line-height:16px}
+@page{margin:16mm}
+@media print{
+  html{background:#fff;color:#000;font-size:12px;line-height:17px}
+  body{padding:0}
+  h2{break-after:avoid;margin-top:36px}
+  figure,table,pre,.sizes{break-inside:avoid}
+  a{color:inherit}
+  nav.toc{display:none}
+}
+</style>
+</head>
+<body>
+<!-- The mark's four paths, stated ONCE (byte for byte from mark-a-gate-s.svg), and the wordmark's
+     eight glyph outlines (byte for byte from wordmark.svg), referenced by every figure below with
+     <use>, so this page cannot drift from the files. Fill is set on the <use>, never here. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <path id="frame-moss" d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+    <path id="frame-umber" d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+    <path id="s-moss" d="M21.03 27.33 A8.75 8.75 0 0 1 28.57 23.00 L36.53 23.00 A2.57 2.57 0 0 1 39.11 25.57 L39.11 28.47 A3.99 3.99 0 0 1 35.89 32.38 A34.59 34.59 0 0 0 27.04 30.09 A20.79 20.79 0 0 1 23.18 29.25 A3.57 3.57 0 0 1 21.03 27.33 Z"/>
+    <path id="s-umber" d="M20.49 28.76 A6.34 6.34 0 0 0 24.22 32.45 A31.17 31.17 0 0 0 31.50 34.18 A16.51 16.51 0 0 1 36.65 35.64 A4.18 4.18 0 0 1 38.74 40.99 A5.54 5.54 0 0 1 33.58 44.50 L21.94 44.50 A1.75 1.75 0 0 1 20.20 42.75 L20.14 41.16 A3.08 3.08 0 0 1 20.67 39.39 A3.85 3.85 0 0 1 23.83 37.74 L25.64 37.74 A6.81 6.81 0 0 1 20.49 28.76 Z"/>
+    <g id="mark"><use href="#frame-moss" fill="#3F6B35"/><use href="#frame-umber" fill="#5E452A"/><use href="#s-moss" fill="#3F6B35"/><use href="#s-umber" fill="#5E452A"/></g>
+    <g id="frame"><use href="#frame-moss" fill="#3F6B35"/><use href="#frame-umber" fill="#5E452A"/></g>
+    <clipPath id="mark-clip"><use href="#frame-moss"/><use href="#frame-umber"/><use href="#s-moss"/><use href="#s-umber"/></clipPath>
+    <linearGradient id="depth-light" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="60" y2="60"><stop offset="0" stop-color="#9DC58E"/><stop offset="1" stop-color="#192D17"/></linearGradient>
+    <linearGradient id="depth-dark" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="60" y2="60"><stop offset="0" stop-color="#9DC58E"/><stop offset="1" stop-color="#3F6B35"/></linearGradient>
+    <g id="mark-depth"><use href="#mark"/><rect width="64" height="64" fill="url(#depth-light)" clip-path="url(#mark-clip)" opacity=".3"/></g>
+    <g id="mark-depth-dark"><use href="#mark"/><rect width="64" height="64" fill="url(#depth-dark)" clip-path="url(#mark-clip)" opacity=".3"/></g>
+    <g id="tile"><rect width="64" height="64" rx="14" fill="#F5EFE4"/><g transform="translate(4 4) scale(0.875)"><use href="#frame"/></g></g>
+    <g id="tile-depth"><rect width="64" height="64" rx="14" fill="#F5EFE4"/><g transform="translate(4 4) scale(0.875)"><use href="#mark-depth"/></g></g>
+    <!-- The wordmark: "shepherd" in Saira Variable 600, lowercase, tracking −0.01em, outlined — font size 48 on the 64-unit grid, baseline y 46, left edge x 0. -->
+    <g id="wordmark" data-wordmark="shepherd" data-face="Saira Variable 600" data-tracking="-0.01em">
+      <path data-glyph="s" d="M10.26 46.38Q8.79 46.38 7.07 46.29Q5.36 46.19 3.72 46.05Q2.08 45.9 0.77 45.71V40.89Q1.47 40.94 2.47 41.03Q3.47 41.13 4.61 41.17Q5.74 41.22 6.85 41.27Q7.95 41.31 8.9 41.31Q11.13 41.31 12.11 41.1Q13.09 40.88 13.37 40.33Q13.65 39.77 13.65 38.87Q13.65 37.87 13.47 37.43Q13.29 36.99 12.75 36.83Q12.21 36.67 11.05 36.53L5.34 35.81Q3.06 35.53 1.92 34.62Q0.78 33.71 0.39 32.17Q0 30.64 0 28.51Q0 26.04 0.74 24.57Q1.47 23.1 2.79 22.35Q4.11 21.61 5.95 21.37Q7.79 21.14 9.96 21.14Q11.4 21.14 12.95 21.23Q14.5 21.33 15.91 21.49Q17.33 21.66 18.3 21.89V26.67Q17.16 26.53 15.82 26.44Q14.49 26.35 13.19 26.28Q11.89 26.21 10.87 26.21Q9.05 26.21 7.98 26.34Q6.92 26.47 6.48 26.95Q6.03 27.44 6.03 28.54Q6.03 29.41 6.17 29.86Q6.31 30.3 6.8 30.48Q7.3 30.66 8.35 30.8L14.53 31.55Q16.23 31.74 17.37 32.32Q18.51 32.89 19.07 34.35Q19.64 35.8 19.64 38.72Q19.64 41.23 19 42.76Q18.35 44.29 17.1 45.08Q15.85 45.87 14.13 46.13Q12.41 46.38 10.26 46.38Z"/>
+      <path data-glyph="h" d="M24.75 46V10.34H31.11V24.42H31.46Q32.12 23.25 33.12 22.54Q34.11 21.82 35.5 21.5Q36.88 21.18 38.67 21.18Q41.19 21.18 42.73 21.78Q44.26 22.38 45.06 23.59Q45.86 24.79 46.14 26.57Q46.42 28.34 46.42 30.69V46H40.06V33.05Q40.06 30.81 39.93 29.51Q39.8 28.22 39.37 27.61Q38.93 27 38.07 26.82Q37.21 26.65 35.76 26.65Q34.22 26.65 33.27 27.01Q32.33 27.37 31.87 28.17Q31.41 28.97 31.26 30.24Q31.11 31.52 31.11 33.34V46Z"/>
+      <path data-glyph="e" d="M63.63 46.38Q60.38 46.38 58.22 45.95Q56.06 45.51 54.78 44.58Q53.49 43.64 52.86 42.17Q52.23 40.71 52.05 38.62Q51.86 36.54 51.86 33.81Q51.86 30.52 52.21 28.12Q52.56 25.72 53.64 24.17Q54.73 22.62 56.99 21.88Q59.25 21.14 63.07 21.14Q66.12 21.14 68.05 21.61Q69.98 22.08 71.1 23.05Q72.22 24.02 72.73 25.53Q73.24 27.03 73.38 29.1Q73.52 31.18 73.52 33.81V35.68H58.22Q58.22 37.52 58.39 38.63Q58.55 39.75 59.2 40.33Q59.86 40.91 61.26 41.11Q62.66 41.31 65.12 41.31Q66.14 41.31 67.42 41.26Q68.7 41.21 70.06 41.1Q71.43 40.99 72.56 40.89V45.63Q71.52 45.84 70 46.01Q68.48 46.19 66.82 46.28Q65.16 46.38 63.63 46.38ZM67.47 32.49V31.77Q67.47 29.87 67.26 28.74Q67.05 27.61 66.54 27.04Q66.03 26.47 65.16 26.3Q64.29 26.12 62.99 26.12Q61.4 26.12 60.47 26.34Q59.54 26.56 59.06 27.17Q58.57 27.78 58.4 28.89Q58.22 29.99 58.22 31.77H68.33Z"/>
+      <path data-glyph="p" d="M78.99 55.55V21.52H84.93L85.12 24.59H85.48Q86.24 23.17 87.4 22.41Q88.55 21.66 89.94 21.4Q91.33 21.14 92.75 21.14Q95 21.14 96.6 21.73Q98.2 22.32 99.2 23.76Q100.19 25.19 100.67 27.62Q101.14 30.04 101.14 33.71Q101.14 37.37 100.69 39.81Q100.23 42.26 99.26 43.7Q98.28 45.14 96.72 45.76Q95.15 46.38 92.9 46.38Q91.33 46.38 89.97 46.12Q88.61 45.87 87.55 45.21Q86.48 44.54 85.7 43.3H85.35V55.55ZM90.02 40.88Q91.63 40.88 92.58 40.66Q93.52 40.44 93.98 39.74Q94.44 39.03 94.6 37.61Q94.75 36.2 94.75 33.76Q94.75 31.32 94.6 29.88Q94.44 28.45 93.98 27.74Q93.52 27.04 92.58 26.82Q91.63 26.6 90.02 26.6Q88.33 26.6 87.4 27.06Q86.47 27.52 85.99 28.46Q85.56 29.33 85.46 30.67Q85.35 32.01 85.35 33.76Q85.35 35.56 85.46 36.84Q85.56 38.12 85.94 39.01Q86.43 40 87.38 40.44Q88.33 40.88 90.02 40.88Z"/>
+      <path data-glyph="h" d="M106.59 46V10.34H112.95V24.42H113.3Q113.96 23.25 114.96 22.54Q115.95 21.82 117.34 21.5Q118.72 21.18 120.51 21.18Q123.03 21.18 124.57 21.78Q126.1 22.38 126.9 23.59Q127.7 24.79 127.98 26.57Q128.26 28.34 128.26 30.69V46H121.9V33.05Q121.9 30.81 121.77 29.51Q121.64 28.22 121.21 27.61Q120.77 27 119.91 26.82Q119.05 26.65 117.6 26.65Q116.06 26.65 115.11 27.01Q114.17 27.37 113.71 28.17Q113.25 28.97 113.1 30.24Q112.95 31.52 112.95 33.34V46Z"/>
+      <path data-glyph="e" d="M145.47 46.38Q142.22 46.38 140.06 45.95Q137.9 45.51 136.62 44.58Q135.33 43.64 134.7 42.17Q134.07 40.71 133.89 38.62Q133.7 36.54 133.7 33.81Q133.7 30.52 134.05 28.12Q134.4 25.72 135.48 24.17Q136.57 22.62 138.83 21.88Q141.09 21.14 144.91 21.14Q147.96 21.14 149.89 21.61Q151.82 22.08 152.94 23.05Q154.06 24.02 154.57 25.53Q155.08 27.03 155.22 29.1Q155.36 31.18 155.36 33.81V35.68H140.06Q140.06 37.52 140.23 38.63Q140.39 39.75 141.04 40.33Q141.7 40.91 143.1 41.11Q144.5 41.31 146.96 41.31Q147.98 41.31 149.26 41.26Q150.54 41.21 151.9 41.1Q153.27 40.99 154.4 40.89V45.63Q153.36 45.84 151.84 46.01Q150.32 46.19 148.66 46.28Q147 46.38 145.47 46.38ZM149.31 32.49V31.77Q149.31 29.87 149.1 28.74Q148.89 27.61 148.38 27.04Q147.87 26.47 147 26.3Q146.13 26.12 144.83 26.12Q143.24 26.12 142.31 26.34Q141.38 26.56 140.9 27.17Q140.41 27.78 140.24 28.89Q140.06 29.99 140.06 31.77H150.17Z"/>
+      <path data-glyph="r" d="M160.83 46V21.52H166.77L166.96 25.77H167.36Q167.99 23.91 169.08 22.91Q170.16 21.91 171.7 21.52Q173.24 21.14 175.2 21.14V27.19Q172.08 27.19 170.33 28.06Q168.59 28.92 167.89 30.89Q167.19 32.86 167.19 36.21V46Z"/>
+      <path data-glyph="d" d="M186.58 46.38Q184.33 46.38 182.73 45.79Q181.13 45.2 180.13 43.76Q179.14 42.33 178.67 39.9Q178.19 37.48 178.19 33.81Q178.19 30.15 178.65 27.7Q179.1 25.25 180.08 23.81Q181.05 22.38 182.62 21.76Q184.18 21.14 186.44 21.14Q188.01 21.14 189.37 21.4Q190.72 21.65 191.81 22.31Q192.9 22.97 193.63 24.22H193.98V10.34H200.34V46H194.4L194.21 42.97H193.85Q193.13 44.39 191.95 45.13Q190.78 45.86 189.39 46.12Q188.01 46.38 186.58 46.38ZM189.31 40.92Q191.06 40.92 192.01 40.46Q192.95 40 193.38 38.97Q193.77 38.04 193.88 36.75Q193.98 35.45 193.98 33.76Q193.98 32.03 193.88 30.78Q193.78 29.53 193.39 28.66Q192.96 27.57 192.01 27.11Q191.06 26.64 189.31 26.64Q187.71 26.64 186.76 26.86Q185.81 27.08 185.35 27.78Q184.89 28.49 184.74 29.91Q184.58 31.32 184.58 33.76Q184.58 36.2 184.74 37.64Q184.89 39.07 185.35 39.78Q185.81 40.48 186.76 40.7Q187.71 40.92 189.31 40.92Z"/>
+    </g>
+  </defs>
+</svg>
+<main>
+
+<header>
+  <svg class="lockup" viewBox="0 0 320 64" role="img" aria-label="Shepherd" xmlns="http://www.w3.org/2000/svg">
+    <use href="#mark"/>
+    <use href="#wordmark" class="wordmark" x="80" fill="#1C1915"/>
+  </svg>
+  <div>
+    <div class="eyebrow">Brand guide</div>
+    <h1>Shepherd — brand guide</h1>
+    <p class="meta">First draft. Plugin 2.0.0 (Unreleased). Palette "Furrow", mark A and the wordmark face (Saira) approved by the owner 2026-10-12; files as of 2026-10-12. Source of record: <code>docs/brand/shepherd/palette.json</code>.</p>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Contents">
+  <div class="eyebrow">Contents</div>
+  <ol>
+    <li><a href="#name">Name</a></li>
+    <li><a href="#mark">The mark</a></li>
+    <li><a href="#construction">Construction and clear space</a></li>
+    <li><a href="#sizes">Minimum sizes</a></li>
+    <li><a href="#colour">Colour</a></li>
+    <li><a href="#type">Typography</a></li>
+    <li><a href="#voice">Voice</a></li>
+    <li><a href="#dodont">Do and don't</a></li>
+    <li><a href="#files">File inventory</a></li>
+  </ol>
+</nav>
+
+<!-- 1 ------------------------------------------------------------------ -->
+<h2 id="name">1. Name</h2>
+<p>The product is <b>Shepherd</b>. One word, one capital. It names two things together: the <code>shepherd-sdlc</code> plugin for Claude Code and its Electron desktop app. A shepherd walks the flock through a gate one at a time and keeps the fold closed; the plugin walks each spec through its gates, one spec on one branch to one pull request, and nothing passes a gate that did not earn it.</p>
+
+<table>
+  <tr><th style="width:160px">Written</th><td>Shepherd. Capital S, the rest lower-case. Never <i>shepherd</i> as the name, never <i>SHEPHERD</i>, never <i>Shepherd™</i>.</td></tr>
+  <tr><th>Spoken</th><td>SHEP-erd. Two syllables, stress on the first.</td></tr>
+  <tr><th>Refers to</th><td>The plugin and the desktop app as one product. In code, the app's folder is still <code>studio/</code>, its package is <code>sdlc-studio</code> and the renderer bridge is <code>window.studio</code>; the screens, window title, packaged app name and slash-command prefix (<code>/sprd-*</code>) are Shepherd's.</td></tr>
+  <tr><th>Kept on purpose</th><td><code>.sdlc/</code>, the seven gates, "SDLC" as the name of the lifecycle. Brand is a surface, not a schema: what a project stores does not change its name.</td></tr>
+  <tr><th>Slug</th><td><code>shepherd</code>. ASCII, lower-case, for paths and file names only: <code>docs/brand/shepherd/</code>, <code>shepherd.ico</code>, <code>shepherd-tile-512.png</code>. The slug is a file name. It is not the name.</td></tr>
+</table>
+
+<div class="note">
+  <p>The mark is a gate with the letter S inside it. The frame is the gate: two halves, green and brown, that meet at the corners and leave a gap. The S is what passes through — and it rests on the tab, so it has been let in, not left out.</p>
+</div>
+
+<!-- 2 ------------------------------------------------------------------ -->
+<h2 id="mark">2. The mark</h2>
+<p>Mark A, the gate-S, is the mark. It is in the product: the window icon, the tile, the favicon, the Welcome hero, the opening card, the steering lockup. It is <b>two-tone by design</b> — the moss half acts (top and right, with the tab), the umber half holds (left and bottom) — and the two values never change between themes. There are no alternates: the owner's two earlier concepts are archived in <code>brandkit/drafts</code> and are not used anywhere.</p>
+<p>The <b>solid two-tone mark is the mark</b>. It has one sanctioned hero treatment, <b>Depth</b>: the same mark with a single gradient laid over its silhouette (§2 "Mark A — Depth"). Depth lives in exactly four places — the Welcome hero, the opening card, the app icon and the steering-mode title lockup — and nowhere else.</p>
+
+<h3>Mark A — primary</h3>
+<div class="grid g4">
+  <figure>
+    <div class="art on-white">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, two-tone"><use href="#mark"/></svg>
+    </div>
+    <figcaption><b>Two-tone</b> · <code>mark-a-gate-s.svg</code> · moss #3F6B35, umber #5E452A</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, ink"><g fill="#1C1915"><use href="#frame-moss"/><use href="#frame-umber"/><use href="#s-moss"/><use href="#s-umber"/></g></svg>
+    </div>
+    <figcaption><b>Ink</b> · <code>mark-a-gate-s-ink.svg</code> · fill #1C1915 · for one-colour print and documents</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-moss">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, white on moss"><g fill="#FFFFFF"><use href="#frame-moss"/><use href="#frame-umber"/><use href="#s-moss"/><use href="#s-umber"/></g></svg>
+    </div>
+    <figcaption><b>White on moss</b> · <code>mark-a-gate-s-white.svg</code></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-ink">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, two-tone on bark"><use href="#mark"/></svg>
+    </div>
+    <figcaption><b>Two-tone on bark</b> · the same file; both tones hold their contrast on the dark ground</figcaption>
+  </figure>
+</div>
+
+<h3>Mark A — Depth</h3>
+<p>The hero treatment. The two-tone mark stays exactly as drawn, and <b>one</b> linear gradient in the mark's own units is laid over its silhouette at 30&nbsp;% opacity. The gradient runs from the frame's top-left corner (4, 4) to its bottom-right corner (60, 60) — a vector perpendicular to both chamfer seams, so the two halves meet at the same stop and read as one object lit from one side rather than two tinted pieces. The stops are two steps of the moss ramp and follow the theme: on light grounds moss 300 → moss 900 (<code>#9DC58E → #192D17</code>), on dark grounds <code>#9DC58E → #3F6B35</code> — 300 and the shared 600 — so the dark mark stays luminous rather than sinking into the surface. The overlay is judged, not derived: at 55&nbsp;% the umber half read as olive and the two tones merged; at 30&nbsp;% both tones survive and the mark still reads lit. Depth carries no meaning. It is allowed at <b>48 px and above</b>, in the four hero places only (§4): never on a control, a chip, a status, a data body or behind text — there the solid mark stays.</p>
+<div class="grid g4">
+  <figure>
+    <div class="art on-white">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, Depth on light"><use href="#mark-depth"/></svg>
+    </div>
+    <figcaption><b>Depth — light</b> · <code>mark-a-gate-s-depth.svg</code> · #9DC58E → #192D17 at 30 %</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-ink">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd mark, Depth on dark"><use href="#mark-depth-dark"/></svg>
+    </div>
+    <figcaption><b>Depth — dark</b> · the app's <code>--mark-depth-a/-b</code> tokens · #9DC58E → #3F6B35</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white" style="min-height:120px">
+      <svg width="120" height="120" viewBox="-6 -6 76 76" role="img" aria-label="Construction of the Depth gradient" font-family="JetBrains Mono Variable, JetBrains Mono, ui-monospace, Menlo, monospace" font-size="3.2"><defs><linearGradient id="depthC" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="60" y2="60"><stop offset="0" stop-color="#9DC58E"/><stop offset="1" stop-color="#192D17"/></linearGradient></defs><g opacity=".9"><use href="#mark"/><rect width="64" height="64" fill="url(#depthC)" clip-path="url(#mark-clip)" opacity=".3"/></g><line x1="4" y1="4" x2="60" y2="60" stroke="#0EA5E9" stroke-width=".4" stroke-dasharray="1.5 1.5"/><circle cx="4" cy="4" r="1" fill="#0EA5E9"/><circle cx="60" cy="60" r="1" fill="#0EA5E9"/><text x="-5" y="2" fill="#3D3630">(4, 4)</text><text x="52" y="66" fill="#3D3630">(60, 60)</text></svg>
+    </div>
+    <figcaption><b>Construction</b> · one vector, corner to corner, perpendicular to both seams · <code>gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="60" y2="60"</code></figcaption>
+  </figure>
+  <figure>
+    <div class="art">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd tile, Depth"><use href="#tile-depth"/></svg>
+    </div>
+    <figcaption><b>Tile — Depth</b> · <code>tile-depth.svg</code> · the full mark on sand; the app icon from 64 px, the flat tile at 16 and 32 px</figcaption>
+  </figure>
+</div>
+
+<h3>Tile</h3>
+<div class="grid g3">
+  <figure>
+    <div class="art">
+      <svg width="96" height="96" viewBox="0 0 64 64" role="img" aria-label="Shepherd tile"><use href="#tile"/></svg>
+    </div>
+    <figcaption><b>Tile</b> · <code>tile.svg</code> · a rounded sand square carrying the <b>frame alone</b> at 7/8. The app icon and favicon at 16 and 32 px, where the S cannot be read (§3, §4).</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white" style="min-height:120px">
+      <svg width="201" height="64" viewBox="0 0 201 64" role="img" aria-label="Shepherd wordmark"><use href="#wordmark" fill="#1C1915"/></svg>
+    </div>
+    <figcaption><b>Wordmark</b> · <code>wordmark.svg</code> · "shepherd" in Saira 600, lowercase, tracking −0.01em, outlined to paths — never live text, never retyped. <code>wordmark-white.svg</code> for moss, umber or bark grounds.</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white" style="min-height:120px">
+      <svg width="240" height="48" viewBox="0 0 320 64" role="img" aria-label="Shepherd lockup"><use href="#mark"/><use href="#wordmark" x="80" fill="#1C1915"/></svg>
+    </div>
+    <figcaption><b>Lockup</b> · <code>lockup.svg</code> · the mark on its 64-unit canvas, the outlined word from x 80 on the same baseline (y 46). 320 × 64.</figcaption>
+  </figure>
+</div>
+
+<h3>Alternates</h3>
+<p>None. The owner's two earlier concepts — the peak-path and the three brackets — are archived in <code>brandkit/drafts</code> with the frame and S studies that led to mark A. Nothing from that folder appears in the product, in documents, or in the app's assets folder.</p>
+
+<!-- 3 ------------------------------------------------------------------ -->
+<h2 id="construction">3. Construction and clear space</h2>
+<p>The mark is drawn on a 64-unit grid. Four filled paths, no strokes: two frame halves that are mirror images across the main diagonal, and a two-tone S.</p>
+
+<div class="grid g2">
+  <figure>
+    <div class="art on-white" style="min-height:300px">
+      <svg width="300" height="300" viewBox="-8 -8 80 80" role="img" aria-label="Construction grid for mark A" font-family="JetBrains Mono Variable, JetBrains Mono, ui-monospace, Menlo, monospace" font-size="3">
+        <defs>
+          <pattern id="g8" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M8 0H0V8" fill="none" stroke="#D9D1C4" stroke-width=".25"/></pattern>
+        </defs>
+        <rect width="64" height="64" fill="url(#g8)"/>
+        <rect width="64" height="64" fill="none" stroke="#A69D94" stroke-width=".4"/>
+        <!-- the seams: x + y = 20.7 and x + y = 107.3 -->
+        <line x1="-4" y1="24.7" x2="24.7" y2="-4" stroke="#0EA5E9" stroke-width=".3" stroke-dasharray="1.5 1.5"/>
+        <line x1="39.3" y1="68" x2="68" y2="39.3" stroke="#0EA5E9" stroke-width=".3" stroke-dasharray="1.5 1.5"/>
+        <g opacity=".9"><use href="#mark"/></g>
+        <!-- bar thickness, top -->
+        <line x1="30" y1="4" x2="30" y2="14.9" stroke="#FFFFFF" stroke-width=".35"/>
+        <text x="31" y="10.6" fill="#FFFFFF">10.9</text>
+        <!-- outer chamfer, top-right -->
+        <line x1="51.5" y1="2" x2="60" y2="2" stroke="#3D3630" stroke-width=".3"/>
+        <text x="52.5" y="1" fill="#3D3630">8.5</text>
+        <!-- split chamfer, top-left -->
+        <line x1="4" y1="2" x2="16.7" y2="2" stroke="#3D3630" stroke-width=".3"/>
+        <text x="5.5" y="1" fill="#3D3630">12.7</text>
+        <!-- gap -->
+        <line x1="10.47" y1="10.22" x2="7.47" y2="13.22" stroke="#DC2626" stroke-width=".4"/>
+        <text x="-7" y="12.5" fill="#DC2626">4.24</text>
+        <!-- S height and baseline on the tab -->
+        <line x1="42" y1="23" x2="42" y2="44.5" stroke="#3D3630" stroke-width=".3"/>
+        <line x1="41" y1="23" x2="43" y2="23" stroke="#3D3630" stroke-width=".3"/>
+        <text x="43.5" y="34.5" fill="#3D3630">21.5</text>
+        <line x1="18" y1="44.5" x2="50.25" y2="44.5" stroke="#3D3630" stroke-width=".3" stroke-dasharray="1 1"/>
+        <text x="14" y="48" fill="#3D3630">baseline y 44.5 = tab edge</text>
+        <!-- outer box -->
+        <text x="-7.5" y="4.8" fill="#6B625A">4</text>
+        <text x="60.8" y="61" fill="#6B625A">60</text>
+      </svg>
+    </div>
+    <figcaption><b>Geometry</b> · bars 10.9 thick · outer chamfers 8.5 · split chamfers 12.7 · a 4.24 gap along the seams · the S 21.5 tall, centred at x 29.6, its baseline on the tab</figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white" style="min-height:300px">
+      <svg width="300" height="300" viewBox="-14 -14 92 92" role="img" aria-label="Clear space around mark A" font-family="JetBrains Mono Variable, JetBrains Mono, ui-monospace, Menlo, monospace" font-size="3">
+        <!-- clear-space box: bbox 4–60, plus 10.9 -->
+        <rect x="-6.9" y="-6.9" width="77.8" height="77.8" fill="#F3F7F0" stroke="#3F6B35" stroke-width=".3" stroke-dasharray="1.5 1.5"/>
+        <rect x="4" y="4" width="56" height="56" fill="none" stroke="#A69D94" stroke-width=".3"/>
+        <use href="#mark"/>
+        <!-- 10.9-unit markers -->
+        <rect x="-6.9" y="-6.9" width="10.9" height="10.9" fill="none" stroke="#3F6B35" stroke-width=".3"/>
+        <rect x="60" y="60" width="10.9" height="10.9" fill="none" stroke="#3F6B35" stroke-width=".3"/>
+        <text x="-6" y="-8.5" fill="#3F6B35">10.9 = one bar thickness</text>
+        <text x="-6.9" y="75.5" fill="#6B625A">box 56 × 56 · with clear space 77.8 × 77.8</text>
+      </svg>
+    </div>
+    <figcaption><b>Clear space</b> · one bar thickness (10.9 units) on all four sides, measured from the frame's outer box</figcaption>
+  </figure>
+</div>
+
+<table>
+  <tr><th style="width:160px">Element</th><th>Geometry (64-unit grid)</th></tr>
+  <tr><td>Frame, moss half</td><td>Top bar y 4–14.9 and right bar x 49.1–60, with a <b>tab</b> reaching in from the right bar: x 42.7–49.1, y 38.9–44.5. Outer chamfer at the top-right corner, 8.5 on each axis: (51.5, 4) → (60, 12.5).</td></tr>
+  <tr><td>Frame, umber half</td><td>Left bar x 4–14.9 and bottom bar y 49.1–60. Outer chamfer at the bottom-left corner, 8.5: (12.5, 60) → (4, 51.5). The two halves are mirror images across the main diagonal.</td></tr>
+  <tr><td>Bar thickness</td><td>10.9 units, every bar. The frame's open centre is 34.2 square: x and y 14.9–49.1.</td></tr>
+  <tr><td>Seams</td><td>The halves part at the other two corners along 45° cuts of 12.7 on each axis — the lines x&nbsp;+&nbsp;y&nbsp;=&nbsp;20.7 (top-left) and x&nbsp;+&nbsp;y&nbsp;=&nbsp;107.3 (bottom-right) — leaving a <b>gap of 4.24</b> (3 on each axis) between the moss and umber ends. The gap is the gate standing open a crack; never close it.</td></tr>
+  <tr><td>The S</td><td>Two lobes: moss above, umber below, drawn over the moss where they meet. 21.5 units tall (y 23–44.5), 19 wide (x 20.14–39.11), centred at x 29.6. Its <b>baseline sits on the tab's bottom edge</b>, y 44.5 — the owner's placement ("1 is the one", 2026-10-12). Never redraw, re-fit or re-centre it.</td></tr>
+  <tr><td>Bounding box</td><td>56 × 56: x 4–60, y 4–60. The artwork sits 4 from every edge of the canvas.</td></tr>
+  <tr><td>Clear space</td><td>10.9 units (one bar thickness) outside the bounding box. Nothing enters it: no text, no other mark, no container edge.</td></tr>
+  <tr><td>Scaling</td><td>Scale the whole canvas. Never change the bar thickness, the chamfers, the gap, or the S's seat.</td></tr>
+</table>
+
+<h3>Tile and lockup</h3>
+<p>The tile is the mark inset, not a new drawing. A 64 square with corner radius 14 in sand (#F5EFE4); the mark at 7/8 — <code>translate(4 4) scale(0.875)</code>, so the frame's outer edge sits 7.5 units in from every side and its chamfers stay clear of the rounded corner. <code>tile.svg</code> carries the <b>frame alone</b>, because at 16 and 32 px the S is three pixels of noise; <code>tile-depth.svg</code> carries the full mark with the Depth overlay, for 64 px and above. The two tiles share the inset, so the icon does not jump size between the 32 and 64 px slots.</p>
+<p>The lockup places the mark on its own 64-unit canvas and starts the word at x 80, baseline y 46. Its gap is 20 units from the frame's right edge (60), one bar thickness plus the S's own half-width of air. The word is the outlined wordmark at font size 48: Saira's x-height of 24.5 puts the lowercase band at y 21.5–46, on the S inside the frame (y 23–44.5), so the letters and the S read at one height; the ascenders of h and d reach y 10.3, inside the frame's top edge (4), and the p's descender y 55.5, inside its bottom (60). The word ends at x 280.3 on the 320 × 64 canvas. The wordmark alone (<code>wordmark.svg</code>) is 201 × 64 on the same baseline, its left edge at x 0.</p>
+
+<!-- 4 ------------------------------------------------------------------ -->
+<h2 id="sizes">4. Minimum sizes</h2>
+<div class="sizes">
+  <div>
+    <svg width="16" height="16" viewBox="0 0 64 64" role="img" aria-label="Tile at 16 px"><use href="#tile"/></svg>
+    <span class="px">16 px</span><br>favicon · tile, frame alone
+  </div>
+  <div>
+    <svg width="32" height="32" viewBox="0 0 64 64" role="img" aria-label="Tile at 32 px"><use href="#tile"/></svg>
+    <span class="px">32 px</span><br>taskbar · tile, frame alone
+  </div>
+  <div>
+    <svg width="24" height="24" viewBox="0 0 64 64" role="img" aria-label="Frame at 24 px"><use href="#frame"/></svg>
+    <span class="px">24 px</span><br>UI · frame alone
+  </div>
+  <div>
+    <svg width="48" height="48" viewBox="0 0 64 64" role="img" aria-label="Mark at 48 px, Depth allowed"><use href="#mark-depth"/></svg>
+    <span class="px">48 px+</span><br>full mark · Depth allowed
+  </div>
+  <div>
+    <svg width="56" height="56" viewBox="0 0 64 64" role="img" aria-label="Mark at 56 px, the Welcome hero"><use href="#mark-depth"/></svg>
+    <span class="px">56 px</span><br>Welcome hero · Depth
+  </div>
+  <div>
+    <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Depth tile at 64 px, the app icon"><use href="#tile-depth"/></svg>
+    <span class="px">64 px+</span><br>app icon · Depth tile
+  </div>
+</div>
+<table>
+  <tr><th style="width:120px">Size</th><th>Use</th><th>Asset</th></tr>
+  <tr><td>16 px, 32 px</td><td>Favicon, browser tab, taskbar, window lists.</td><td><code>tile.svg</code> flat — the frame alone on sand — in <code>studio/build/icon.ico</code> / <code>.icns</code>, <code>studio/public/favicon.ico</code> and <code>exports/tile-16.png</code>. The S is not drawn below 48 px, and a gradient is noise at this size.</td></tr>
+  <tr><td>24 px</td><td>In-app icon: the top band, list rows, the small lockup.</td><td>The <b>frame alone</b>, two-tone — in the app <code>ShepherdMark frameOnly</code>. Flat only. The frame reads as the gate at 24 px; the S would not.</td></tr>
+  <tr><td>48 px+</td><td>The full mark: the opening card (48 px), the steering lockup (48 px), the Welcome hero (56 px); marketing, headers, print.</td><td><code>mark-a-gate-s.svg</code> flat; <b>Depth allowed</b> — <code>mark-a-gate-s-depth.svg</code>, or in the app <code>ShepherdMark variant="depth"</code>.</td></tr>
+  <tr><td>64 px+</td><td>The app icon: dock, Finder, Explorer tiles.</td><td><code>tile-depth.svg</code> → <code>studio/build/icon.png</code> (256) and the larger members of <code>icon.ico</code> / <code>icon.icns</code>.</td></tr>
+</table>
+<p>Below 16 px the mark is not shown. The S below 48 px is not shown. Depth below 48 px is not shown. The lockup is not shown below 48 px tall: at that height its mark is exactly at the S's floor. The wordmark alone is not shown below 20 px tall, where Saira's x-height falls under 8 px; smaller than that, the name is a word in the UI face.</p>
+
+<!-- 5 ------------------------------------------------------------------ -->
+<h2 id="colour">5. Colour</h2>
+<p>Palette "Furrow": earth colours. <b>Moss</b> is the accent — it acts: the mark's green half, primary buttons, focus, "now". <b>Umber</b> is the support — it holds: the mark's brown half, structure, warm emphasis. <b>Lake</b> is information: links, the steering tint, a second chart series. Surfaces are sand in light and bark in dark; ink is bark on sand and sand on bark. Four semantic colours carry meaning and do not change between themes.</p>
+<div class="note">
+  <p><b>One accent, semantic colours mean one thing each.</b> Green is always signed. Amber is always a warning. Red is always an error. Sky is always running. Moss is a green too — so it is a <i>dark olive</i> green (6.24:1 on white) where <code>signed</code> is a bright emerald (3.30:1), the two never share a lightness, and <code>signed</code> is always paired with its word on screen. The accent never carries status; status never borrows the accent.</p>
+</div>
+
+<h3>Moss — light</h3>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#F3F7F0"></div><div class="lab"><b>50</b>#F3F7F0</div></div>
+  <div class="sw"><div class="chip" style="background:#E3EDDD"></div><div class="lab"><b>100</b>#E3EDDD</div></div>
+  <div class="sw"><div class="chip" style="background:#C7E0BC"></div><div class="lab"><b>200</b>#C7E0BC</div></div>
+  <div class="sw"><div class="chip" style="background:#9DC58E"></div><div class="lab"><b>300</b>#9DC58E · spring</div></div>
+  <div class="sw"><div class="chip" style="background:#6FA55F"></div><div class="lab"><b>400</b>#6FA55F</div></div>
+  <div class="sw"><div class="chip" style="background:#4F8545"></div><div class="lab"><b>500</b>#4F8545</div></div>
+  <div class="sw"><div class="chip" style="background:#3F6B35"></div><div class="lab"><b>600</b>#3F6B35 · primary</div></div>
+  <div class="sw"><div class="chip" style="background:#2F5229"></div><div class="lab"><b>700</b>#2F5229</div></div>
+  <div class="sw"><div class="chip" style="background:#243F20"></div><div class="lab"><b>800</b>#243F20</div></div>
+  <div class="sw"><div class="chip" style="background:#192D17"></div><div class="lab"><b>900</b>#192D17</div></div>
+</div>
+
+<h3>Moss — dark</h3>
+<div class="swatches">
+  <div class="sw"><div class="chip" style="background:#192D17"></div><div class="lab"><b>50</b>#192D17</div></div>
+  <div class="sw"><div class="chip" style="background:#243F20"></div><div class="lab"><b>100</b>#243F20</div></div>
+  <div class="sw"><div class="chip" style="background:#2F5229"></div><div class="lab"><b>200</b>#2F5229</div></div>
+  <div class="sw"><div class="chip" style="background:#3F6B35"></div><div class="lab"><b>300</b>#3F6B35</div></div>
+  <div class="sw"><div class="chip" style="background:#4F8545"></div><div class="lab"><b>400</b>#4F8545</div></div>
+  <div class="sw"><div class="chip" style="background:#6FA55F"></div><div class="lab"><b>500</b>#6FA55F</div></div>
+  <div class="sw"><div class="chip" style="background:#3F6B35"></div><div class="lab"><b>600</b>#3F6B35</div></div>
+  <div class="sw"><div class="chip" style="background:#2F5229"></div><div class="lab"><b>700</b>#2F5229</div></div>
+  <div class="sw"><div class="chip" style="background:#9DC58E"></div><div class="lab"><b>800</b>#9DC58E</div></div>
+  <div class="sw"><div class="chip" style="background:#C7E0BC"></div><div class="lab"><b>900</b>#C7E0BC</div></div>
+</div>
+<p>The dark ramp is a remap, not an inversion, and introduces no value the light ramp lacks. 600 and 700 keep their values so the mark and primary buttons stay the same colour in both themes. 800 and 900 become the light tints (300 and 200) for text and focus on dark surfaces; 50–500 run the light ramp's deep end upward so a tint step is always darker than the surface it sits on.</p>
+
+<h3>Umber, wheat, lake</h3>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#7C5A36"></div><div class="lab"><b>umber 600</b>#7C5A36 · warm emphasis</div></div>
+  <div class="sw"><div class="chip" style="background:#5E452A"></div><div class="lab"><b>umber 700</b>#5E452A · the mark's brown</div></div>
+  <div class="sw"><div class="chip" style="background:#553A21"></div><div class="lab"><b>umber 800</b>#553A21 · icon ground, hover</div></div>
+  <div class="sw"><div class="chip" style="background:#D9C7A3"></div><div class="lab"><b>wheat</b>#D9C7A3 · warm light accent, dark grounds only</div></div>
+</div>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#8FB8D3"></div><div class="lab"><b>lake 300</b>#8FB8D3 · links on dark</div></div>
+  <div class="sw"><div class="chip" style="background:#3B739A"></div><div class="lab"><b>lake 500</b>#3B739A · chart series 2</div></div>
+  <div class="sw"><div class="chip" style="background:#2F5D7C"></div><div class="lab"><b>lake 600</b>#2F5D7C · links, information</div></div>
+  <div class="sw"><div class="chip" style="background:#244B66"></div><div class="lab"><b>lake 700</b>#244B66 · link hover, steering tint</div></div>
+</div>
+<p>Lake is slate-blue, not sky: <code>running</code> (#0EA5E9) is sky, and the two stay apart in lightness and saturation as moss and <code>signed</code> do. Wheat is for dark grounds only (11.26:1 on bark 0; 1.66:1 on white) — never text on a light surface.</p>
+
+<h3>Roles and contrast</h3>
+<p>Ratios by the WCAG 2.x formula, recorded in <code>palette.json</code>.</p>
+<table>
+  <tr><th style="width:200px">Role</th><th>Light</th><th>Dark</th><th>Contrast</th></tr>
+  <tr><td>Primary (the mark's green, primary buttons)</td><td>moss 600 · #3F6B35</td><td>moss 600 · #3F6B35</td><td>600 on white <b>6.24:1</b>; white on 600 the same. 600 on sand surface 0 (#F5EFE4) 5.45:1; on surface 3 (#E9E3D9) 4.89:1 — surface 3 was lightened so the accent as text still clears 4.8:1 on it.</td></tr>
+  <tr><td>Support (the mark's brown)</td><td>umber 700 · #5E452A</td><td>umber 700 · #5E452A</td><td>700 on white <b>8.90:1</b>; on sand 7.77:1. 600 (#7C5A36) on white 6.23:1, 800 (#553A21) 10.43:1. Moss 600 and umber 700 differ by only 1.43:1 against each other: the two halves are told apart by hue and by the seam, never by lightness alone.</td></tr>
+  <tr><td>Focus ring</td><td>#3F6B35</td><td>#9DC58E</td><td>Spring (#9DC58E) on dark surface 0 (#14120F): <b>9.63:1</b>; on dark surface 1: 9.01:1.</td></tr>
+  <tr><td>Accent text</td><td>600 or 700</td><td>800 (#9DC58E)</td><td>700 (#2F5229) on white 8.90:1. 500 (#4F8545) on white 4.40:1, so 500 is for large text and fills only.</td></tr>
+  <tr><td>Links, information</td><td>lake 600 · #2F5D7C</td><td>lake 300 · #8FB8D3</td><td>Lake 600 on white <b>7.05:1</b>; 700 9.24:1; 500 5.12:1. Lake 300 on dark 0: 8.87:1.</td></tr>
+  <tr><td>Accent tints (chips, selected rows)</td><td>moss 50–200</td><td>50–200 of the dark ramp</td><td>Backgrounds only. Text on a tint uses ink or 700+.</td></tr>
+</table>
+
+<h3>Surface</h3>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#F5EFE4"></div><div class="lab"><b>surface 0</b>#F5EFE4 · page (sand)</div></div>
+  <div class="sw"><div class="chip" style="background:#FFFFFF;border-bottom:1px solid var(--line)"></div><div class="lab"><b>surface 1</b>#FFFFFF · card</div></div>
+  <div class="sw"><div class="chip" style="background:#EFEAE1"></div><div class="lab"><b>surface 2</b>#EFEAE1 · inset</div></div>
+  <div class="sw"><div class="chip" style="background:#E9E3D9"></div><div class="lab"><b>surface 3</b>#E9E3D9 · hairline fill</div></div>
+</div>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#14120F"></div><div class="lab"><b>dark 0</b>#14120F · page (bark)</div></div>
+  <div class="sw"><div class="chip" style="background:#1C1915"></div><div class="lab"><b>dark 1</b>#1C1915 · card</div></div>
+  <div class="sw"><div class="chip" style="background:#25211C"></div><div class="lab"><b>dark 2</b>#25211C · inset</div></div>
+  <div class="sw"><div class="chip" style="background:#2E2923"></div><div class="lab"><b>dark 3</b>#2E2923 · hairline fill</div></div>
+</div>
+
+<h3>Ink</h3>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#1C1915"></div><div class="lab"><b>ink 1</b>#1C1915 · 17.51:1 on white</div></div>
+  <div class="sw"><div class="chip" style="background:#3D3630"></div><div class="lab"><b>ink 2</b>#3D3630 · 11.87:1</div></div>
+  <div class="sw"><div class="chip" style="background:#6B625A"></div><div class="lab"><b>ink 3</b>#6B625A · 5.97:1 · 4.98 on surface 2, 4.67 on surface 3</div></div>
+  <div class="sw"><div class="chip" style="background:#A69D94"></div><div class="lab"><b>ink 4</b>#A69D94 · 2.67:1, decorative only</div></div>
+</div>
+<div class="swatches ramp4">
+  <div class="sw"><div class="chip" style="background:#F5EFE4"></div><div class="lab"><b>dark ink 1</b>#F5EFE4 · 16.34:1 on bark 0</div></div>
+  <div class="sw"><div class="chip" style="background:#D9D1C4"></div><div class="lab"><b>dark ink 2</b>#D9D1C4 · 12.35:1</div></div>
+  <div class="sw"><div class="chip" style="background:#A69D94"></div><div class="lab"><b>dark ink 3</b>#A69D94 · 7.01:1</div></div>
+  <div class="sw"><div class="chip" style="background:#6B625A"></div><div class="lab"><b>dark ink 4</b>#6B625A · 2.94:1 on bark 1, decorative only</div></div>
+</div>
+<p>Ink 1 and dark surface 1 share one value, #1C1915; sand surface 0 and dark ink 1 share #F5EFE4. The darkest text and the card it reads on in the other theme are the same colour. Ink 3 is the quietest colour a <i>word</i> may wear (4.67:1 on surface 3); ink 4 is decoration — placeholders, dividers, hidden glyphs — and is held <b>below</b> 3:1 on surface 1 by test so it can never be mistaken for text.</p>
+
+<h3>Semantic — fixed in both themes</h3>
+<div class="semantic">
+  <div class="sw"><div class="chip" style="background:#16A34A"></div><div class="lab"><b>signed</b>#16A34A · a stage signed off by a named human</div></div>
+  <div class="sw"><div class="chip" style="background:#D97706"></div><div class="lab"><b>warn</b>#D97706 · a refusal, a could-not-reach, a SHOULD finding</div></div>
+  <div class="sw"><div class="chip" style="background:#DC2626"></div><div class="lab"><b>error</b>#DC2626 · a failed MUST gate, a hard error</div></div>
+  <div class="sw"><div class="chip" style="background:#0EA5E9"></div><div class="lab"><b>running</b>#0EA5E9 · a check or command in progress</div></div>
+</div>
+<p>These four never recolour for theme, density or emphasis. A red the plugin called amber is a lie. Each is paired with a word on screen; colour alone never carries the state.</p>
+
+<!-- 6 ------------------------------------------------------------------ -->
+<h2 id="type">6. Typography</h2>
+<table>
+  <tr><th style="width:160px">Use</th><th>Face</th><th>Notes</th></tr>
+  <tr><td>UI</td><td>Inter Variable</td><td>Bundled in the desktop app as woff2. Falls back to Inter, then the system sans. Tabular numerals on. Every word in the app, headings included — the spine plate, the screen h2s — is Inter: one UI face. The one exception is the wordmark wherever it appears, including the Welcome hero h1, which wears the display face.</td></tr>
+  <tr><td>Code, ids, paths</td><td>JetBrains Mono Variable</td><td>Bundled. 12 / 16, weight 450. Spec ids (<code>0007</code>), sprint ids (<code>S07</code>), paths and <code>&lt;pre&gt;</code> blocks.</td></tr>
+  <tr><td>Wordmark</td><td><b>Saira Variable 600</b></td><td>The one place type is brand. "shepherd" — lowercase, weight 600, tracking −0.01em — outlined to glyph paths in <code>wordmark.svg</code>, <code>wordmark-white.svg</code> and <code>lockup.svg</code>, so it renders where the font is not installed; the files are used, never retyped. Saira is a Google Fonts face (OFL), bundled in the app as <code>@fontsource-variable/saira</code>. Never all caps, never a logotype drawn as a picture: the word stays the word.</td></tr>
+  <tr><td>Display — brand materials</td><td>Saira Variable 600</td><td>Covers, deck titles, one-pagers and the headings of brand materials may set display lines in Saira 600 at −0.01em, sentence case. Not in the app.</td></tr>
+</table>
+<p><b>One UI face, one display face.</b> Inter is every word in the app; the only Saira in the UI is the wordmark itself (the Welcome hero h1, the lockups). Saira belongs to the wordmark and to brand materials, at weight 600 and −0.01em — sentence case, except the wordmark itself, which is lowercase. Both are variable fonts bundled with the app (<code>@fontsource-variable/inter</code>, <code>@fontsource-variable/saira</code>); nothing is fetched. The wordmark files carry outlines, not text, so a document that embeds them needs neither font.</p>
+<p><b>Lockup geometry</b> (§3): the mark on a 64-unit canvas at x 0; the word at font size 48 from x 80, baseline y 46, x-height 24.5 (y 21.5–46, the S's own band), ascenders to y 10.3, the p's descender to y 55.5, right edge x 280.3; canvas 320 × 64. The wordmark alone is 201 × 64 on the same baseline.</p>
+
+<h3>Type scale</h3>
+<p>From the Observatory tokens. Sizes in px; line height after the slash.</p>
+<ul class="scale">
+  <li><span class="t">--text-2xs</span><span style="font-size:10.5px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;font-weight:600">10.5 / 14 · upper · 600 · Sidebar group label</span><span class="u">eyebrows, group labels</span></li>
+  <li><span class="t">--text-xs</span><span style="font-size:12px;line-height:16px">12 / 16 · Meta, chips, table cells</span><span class="u">meta, chips, table cells</span></li>
+  <li><span class="t">--text-sm</span><span style="font-size:13px;line-height:18px">13 / 18 · Body default in dense UI</span><span class="u">body in dense UI</span></li>
+  <li><span class="t">--text-base</span><span style="font-size:14px;line-height:20px">14 / 20 · Document prose</span><span class="u">document prose</span></li>
+  <li><span class="t">--text-md</span><span style="font-size:15px;line-height:20px;letter-spacing:-0.005em;font-weight:600">15 / 20 · −0.005em · 600 · Project name, spec title</span><span class="u">project name, spec title</span></li>
+  <li><span class="t">--text-lg</span><span style="font-size:18px;line-height:24px;letter-spacing:-0.01em;font-weight:600">18 / 24 · −0.01em · 600 · Panel title</span><span class="u">panel titles</span></li>
+  <li><span class="t">--text-xl</span><span style="font-size:22px;line-height:28px;letter-spacing:-0.015em;font-weight:600">22 / 28 · −0.015em · 600 · Screen h2</span><span class="u">screen h2: Build, Sprint</span></li>
+  <li><span class="t">--text-2xl</span><span style="font-size:28px;line-height:34px;letter-spacing:-0.02em;font-weight:650">28 / 34 · −0.02em · 650</span><span class="u">Welcome h1</span></li>
+  <li><span class="t">--text-display</span><span style="font-size:40px;line-height:44px;letter-spacing:-0.025em;font-weight:650">40 / 44 · 650</span><span class="u">spine plate name, sign-off ceremony title</span></li>
+</ul>
+
+<!-- 7 ------------------------------------------------------------------ -->
+<h2 id="voice">7. Voice</h2>
+<p>Shepherd keeps a gate. It lets one spec through at a time, says plainly what held and what did not, and never pretends the fold is closed when it is not. The writing follows.</p>
+<ul>
+  <li><b>Honest.</b> "no data" is text, never a zero. A missing value says what would produce one: "no data. Run <code>sprint.py close</code> on a sprint to see rework."</li>
+  <li><b>The plugin's words, not the app's.</b> READY and NOT READY. Kept, carried, dropped. "Signed off by Priya Nair." "Phase 0: Discovery." "G3 metrics failed." The desktop app shows what the plugin reports and does not rename it, round it, or draw a shape from its prose.</li>
+  <li><b>One spec at a time.</b> One spec, one branch, one pull request. A sentence about the work names the spec, not "the sprint's changes".</li>
+  <li><b>The gate is a fact.</b> A gate held or it did not; a check passed or it failed. No "soft fail", no "minor issues", no "mostly green".</li>
+  <li><b>Short declarative sentences.</b> One idea per sentence. Tables where they help.</li>
+  <li><b>Named humans.</b> Every decision names who made it. An AI is never the actor. A name that reads as one is refused.</li>
+  <li><b>Counts, never scores.</b> Specs slated, business days waited, who holds the next action. Never velocity, story points, PR count, lines of code, or a per-person total.</li>
+  <li><b>Calm.</b> No exclamation marks in the product. No marketing adjectives. The setup confirmation block in the plugin ends with one "!" and that is the budget.</li>
+</ul>
+<table>
+  <tr><th style="width:50%">Write</th><th>Not</th></tr>
+  <tr><td>no data</td><td>0 · — · N/A</td></tr>
+  <tr><td>Signed off by Sam Oduya on 2026-10-02</td><td>Phase complete · 100%</td></tr>
+  <tr><td>NOT READY (Scope out missing)</td><td>Almost ready · Nearly there</td></tr>
+  <tr><td>G3 metrics failed on requirements.md: FR-004 has no success measure</td><td>Minor issues · Soft fail · Mostly green</td></tr>
+  <tr><td>Claude Code 2.1.239 lacks --permission-mode — update with <code>claude update</code></td><td>Something went wrong</td></tr>
+  <tr><td>Agent proposes, named human decides</td><td>AI-approved · Auto-approved</td></tr>
+  <tr><td>0007 is building on its branch; 0008 waits for it</td><td>Two specs in flight · The team is on the sprint's work</td></tr>
+  <tr><td>Carried → S08: dependency 0007 not merged (Jordan Baptiste)</td><td>Spilled over · Rolled</td></tr>
+  <tr><td>Shepherd</td><td>shepherd · SHEPHERD · the Shepherd tool · Shepherd™</td></tr>
+</table>
+
+<h3>Signature motion</h3>
+<p>The mark moves twice in the desktop app and nowhere else: once when the app first opens (the assemble), and once on the card that covers the window while a project opens (the draw-in). The draw-in is one gesture in three beats under 0.9 s — the two frame halves are <b>traced</b> as outlines, each in its own tone; the frame <b>fills</b> as the trace hands over; the S <b>settles</b> onto the tab from its own centre — then the mark rests; the ring beside the clock, not the mark, is what keeps saying "still working". The gesture is the brand's; the shape is not a canvas for it. Another element (a rail station, a plate) may trace-fill-settle once as it arrives. Nothing may draw the gate and S that is not the mark, and the mark never loops, pulses or spins.</p>
+
+<!-- 8 ------------------------------------------------------------------ -->
+<h2 id="dodont">8. Do and don't</h2>
+<h3>Do</h3>
+<ul>
+  <li>Use mark A two-tone — moss 600 and umber 700 — or in one colour: ink 1, or white. The solid two-tone mark is the mark.</li>
+  <li>Keep the 64-unit proportions, the gap at the seams, the S's seat on the tab, and the clear space.</li>
+  <li>Use the tile for the favicon and app icon — the frame alone, flat, at 16 and 32 px; the full mark in Depth from 64 px. In the app, the frame alone at 24 px and the full mark from 48 px.</li>
+  <li>Use Depth only at 48 px and above, only as a hero: the Welcome hero, the opening card, the steering lockup, the app icon. Always the one construction (§2): one gradient, corner to corner, over the whole silhouette at 30&nbsp;%.</li>
+  <li>Set the name as one capitalised word in every language and every system — Shepherd. Only the drawn wordmark is lowercase.</li>
+  <li>Use the wordmark files — <code>wordmark.svg</code>, <code>wordmark-white.svg</code>, <code>lockup.svg</code> — never a retyped word. The wordmark is "shepherd" in Saira 600, lowercase, −0.01em, outlined; in running text the name is Shepherd in the UI face.</li>
+  <li>Pair every status colour with the plugin's word for it.</li>
+</ul>
+<div class="dd good">
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Do: Depth at hero size"><use href="#mark-depth"/></svg>
+    </div>
+    <figcaption>Depth at 48 px+<span>hero and icon only; one gradient, one light direction, both tones kept</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="24" height="24" viewBox="0 0 64 64" role="img" aria-label="Do: the frame alone at 24 px"><use href="#frame"/></svg>
+    </div>
+    <figcaption>The frame alone below 48 px<span>the gate reads; the S would not</span></figcaption>
+  </figure>
+</div>
+<h3>Don't</h3>
+<div class="dd">
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: Depth below 48 px or on a control"><rect x="4" y="22" width="56" height="20" rx="6" fill="#3F6B35"/><g transform="translate(8 25) scale(0.22)"><use href="#mark-depth"/></g><rect x="26" y="29" width="28" height="6" rx="2" fill="#FFFFFF" fill-opacity=".9"/></svg>
+    </div>
+    <figcaption>No Depth below 48 px, on controls, chips, data or behind text<span>there the solid mark — and below 48 px, the frame alone</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: the S without its frame"><g fill="#3F6B35"><use href="#s-moss"/></g><g fill="#5E452A"><use href="#s-umber"/></g></svg>
+    </div>
+    <figcaption>Never the S alone<span>it is the thing let through; the gate is the mark</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: drop shadow"><defs><filter id="bad2" x="-20%" y="-20%" width="150%" height="150%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#1C1915" flood-opacity=".45"/></filter></defs><g filter="url(#bad2)"><use href="#mark"/></g></svg>
+    </div>
+    <figcaption>No drop shadows<span>hairlines, not shadows</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: rotation"><g transform="rotate(-20 32 32)"><use href="#mark"/></g></svg>
+    </div>
+    <figcaption>No rotation<span>the gate stands square</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: off-palette colour"><g fill="#0EA5E9"><use href="#frame-moss"/><use href="#s-moss"/></g><g fill="#DC2626"><use href="#frame-umber"/><use href="#s-umber"/></g></svg>
+    </div>
+    <figcaption>No recolouring<span>moss and umber, ink, or white; never a status hue</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <svg width="72" height="72" viewBox="0 0 64 64" role="img" aria-label="Don't: closing the gap"><g fill="#3F6B35"><use href="#frame-moss"/><use href="#s-moss"/></g><g fill="#5E452A"><use href="#frame-umber"/><use href="#s-umber"/></g><path fill="#3F6B35" d="M10.47 10.22 L16.7 4 L4 16.7 L7.47 13.22 L15.15 14.9 Z"/><path fill="#5E452A" d="M56.52 50.77 L60 47.3 L47.3 60 L53.52 53.77 L48.85 49.1 Z"/></svg>
+    </div>
+    <figcaption>Never close the gap<span>the seams stay open 4.24 units</span></figcaption>
+  </figure>
+  <figure>
+    <div class="art on-white">
+      <span style="font-weight:650;letter-spacing:.04em;font-size:22px;color:#1C1915;text-decoration:line-through;text-decoration-color:#DC2626;text-decoration-thickness:2px">SHEPHERD</span>
+    </div>
+    <figcaption>Never all caps<span>in headings, menus or the wordmark</span></figcaption>
+  </figure>
+</div>
+<ul>
+  <li>Do not outline the mark, add a stroke, or place it inside a second shape other than the tile.</li>
+  <li>Do not stretch, skew, thicken a bar, or move the S off the tab.</li>
+  <li>Do not swap the tones: moss is always the top-and-right half with the tab and the S's upper lobe; umber the left-and-bottom half and the lower lobe.</li>
+  <li>Do not place the mark on a photograph, a gradient, or a patterned ground. (Depth puts the gradient <i>on</i> the mark, never under it.)</li>
+  <li>Do not use a second gradient mechanism — no 3D mesh, no shadow, no bevel. Depth is the one treatment and has the one construction.</li>
+  <li>Do not use anything from <code>brandkit/drafts</code> or <code>brandkit/logo</code>: they are the road to the mark, not marks.</li>
+  <li>Do not animate the mark except its two signature moments in the desktop app: the first-open assemble and the opening card's draw-in (the halves are traced, the frame fills, the S settles). The <i>gesture</i> — trace, fill, settle — may be reused by other elements; the shape may not (§7, Signature motion).</li>
+</ul>
+
+<!-- 9 ------------------------------------------------------------------ -->
+<h2 id="files">9. File inventory</h2>
+<h3><code>docs/brand/shepherd/</code> — the source set</h3>
+<table>
+  <tr><th style="width:290px">File</th><th>What it is</th></tr>
+  <tr><td><code>palette.json</code></td><td>The palette and roles. Source of record for every value in §5, the Depth pair and vector, and the typography.</td></tr>
+  <tr><td><code>mark-a-gate-s.svg</code></td><td>The mark, two-tone: moss #3F6B35, umber #5E452A. 64 × 64. Owner-locked (<code>brandkit/logo-lock.json</code> holds its geometry fingerprint); never altered.</td></tr>
+  <tr><td><code>mark-a-gate-s-ink.svg</code></td><td>The mark in one ink, #1C1915.</td></tr>
+  <tr><td><code>mark-a-gate-s-white.svg</code></td><td>The mark in white, for moss, umber or bark grounds.</td></tr>
+  <tr><td><code>mark-a-gate-s-depth.svg</code></td><td>The mark in Depth (§2): the two-tone paths with one user-space gradient #9DC58E → #192D17 on the (4, 4) → (60, 60) vector laid over their silhouette at 30 %. The light pair; the app swaps the dark pair through its tokens. 48 px+, hero only.</td></tr>
+  <tr><td><code>tile.svg</code></td><td>App icon and favicon tile, flat: the frame alone at 7/8 on a sand (#F5EFE4) rounded square. The icon at 16 and 32 px.</td></tr>
+  <tr><td><code>tile-depth.svg</code></td><td>The tile carrying the full mark in Depth at the same inset. The icon from 64 px.</td></tr>
+  <tr><td><code>wordmark.svg</code></td><td>The wordmark in ink (#1C1915): "shepherd" in Saira Variable 600, lowercase, tracking −0.01em, outlined to eight glyph paths — no <code>&lt;text&gt;</code>, so it renders where the font is not installed. 201 × 64 on the 64-unit grid, baseline y 46, left edge x 0.</td></tr>
+  <tr><td><code>wordmark-white.svg</code></td><td>The same outlines in white, for moss, umber or bark grounds.</td></tr>
+  <tr><td><code>lockup.svg</code></td><td>The mark (two-tone, byte for byte) on its 64-unit canvas at x 0 and the outlined wordmark from x 80 on the same baseline. 320 × 64.</td></tr>
+  <tr><td><code>build-assets.mjs</code></td><td>The pipeline. Rasterises every <code>mark-*.svg</code>, <code>tile.svg</code> and <code>tile-depth.svg</code> at 16–1024 px with librsvg, assembles the PNG-in-container <code>.ico</code> and <code>.icns</code>, copies the eight shipped SVGs (marks, tiles, wordmark, lockup) byte for byte, and writes <code>exports/</code>, <code>studio/public/brand/</code>, <code>studio/public/favicon.ico</code> and <code>studio/build/icon.*</code>. Deterministic: a re-run changes nothing. It copies the wordmark files; it never writes them.</td></tr>
+  <tr><td><code>outline-wordmark.py</code></td><td>The outlining step. Instances the bundled Saira Variable at weight 600 (and Inter Variable for the steering eyebrow) with fontTools, shapes "shepherd" with HarfBuzz at −0.01em, and emits each glyph as path data: <code>wordmark.svg</code>, <code>wordmark-white.svg</code>, <code>lockup.svg</code> and the constants the command center's steering lockup draws from. By default it only <em>checks</em> that the shipped files and constants still match the fonts; <code>--write</code> regenerates them. Re-outlining is a deliberate act when the font changes, never a build step. Runs under <code>uv run --with fonttools --with brotli --with uharfbuzz</code>.</td></tr>
+  <tr><td><code>exports/&lt;name&gt;-{16,32,64,128,256,512,1024}.png</code></td><td>PNG exports of the mark (two-tone, ink, white, Depth) and both tiles — seven sizes each, 42 files, written by the pipeline.</td></tr>
+  <tr><td><code>exports/shepherd.ico</code></td><td>The same Windows icon as <code>studio/build/icon.ico</code>.</td></tr>
+  <tr><td><code>brandkit/</code></td><td>The Higgsfield record of how the identity was chosen: palette boards and reviews, the seven logo candidates, the owner's references, the frame and S studies in <code>drafts/</code>, and the lock. History, not assets.</td></tr>
+  <tr><td><code>brandbook.html</code></td><td>This document.</td></tr>
+</table>
+
+<h3><code>studio/public/brand/</code> — what the desktop app ships</h3>
+<table>
+  <tr><th style="width:290px">File</th><th>Used for</th></tr>
+  <tr><td><code>mark-a-gate-s.svg</code></td><td>The mark as a file, for documents. Byte-identical to the source; in the app the mark is drawn inline (<code>ShepherdMark</code>).</td></tr>
+  <tr><td><code>mark-a-gate-s-white.svg</code></td><td>The mark on moss and bark grounds.</td></tr>
+  <tr><td><code>mark-a-gate-s-depth.svg</code></td><td>The Depth mark as a file; in the app <code>ShepherdMark variant="depth"</code> draws it inline so its stops follow the theme.</td></tr>
+  <tr><td><code>tile.svg</code>, <code>tile-depth.svg</code></td><td>Icon sources, flat and Depth.</td></tr>
+  <tr><td><code>wordmark.svg</code>, <code>wordmark-white.svg</code>, <code>lockup.svg</code></td><td>The outlined wordmark and lockup as files, byte-identical to the source, for documents and the guides.</td></tr>
+  <tr><td><code>shepherd-tile-512.png</code></td><td>The Depth tile at 512, for stores and documents.</td></tr>
+  <tr><td><code>shepherd.ico</code></td><td>The Windows icon, same bytes as <code>studio/build/icon.ico</code>.</td></tr>
+  <tr><td><code>cc/*.svg</code></td><td>The command center's twelve static figures, generated from <code>ccFigureGeometry.ts</code> in the moss tones (200 quiet, 500 lit, 600 glyph); the steering lockup carries the Depth mark with the wordmark (Saira 600) and the eyebrow (Inter 600) outlined — no file in the folder has live text.</td></tr>
+</table>
+<p><code>studio/public/favicon.ico</code> is the window and tab icon: the same ICO bytes as <code>studio/build/icon.ico</code>, written by the pipeline rather than placed by hand.</p>
+
+<h3><code>studio/build/</code> — the packaged app icon</h3>
+<table>
+  <tr><th style="width:290px">File</th><th>Used for</th></tr>
+  <tr><td><code>icon.png</code></td><td><code>tile-depth</code> at 256 — what <code>electron-builder.json</code> (<code>"icon": "build/icon"</code>, mac and win) packages; Linux and the window icon.</td></tr>
+  <tr><td><code>icon.ico</code></td><td>Windows: six PNG members, 16, 32 and 48 flat, 64–256 Depth.</td></tr>
+  <tr><td><code>icon.icns</code></td><td>macOS: the 1× and 2× ladder from 16 to 1024, flat at 16 and 32 (the 16@2x and 32 slots), Depth from 64.</td></tr>
+</table>
+<p>The Studio folder holds mark A (two-tone, white and Depth), the tiles, the wordmark, the lockup and the command-center figures only. Nothing in either folder is fetched over the network; the app bundles its fonts and the Content-Security-Policy in <code>studio/index.html</code> allows no remote script.</p>
+
+<footer>
+  <p>First draft: mark A is in the product, two-tone everywhere, the frame alone below 48 px, Depth in its four hero places. The wordmark is Saira 600, lowercase, outlined; <code>wordmark.svg</code>, <code>wordmark-white.svg</code> and <code>lockup.svg</code> ship.</p>
+  <p>Shepherd — plugin 2.0.0 (Unreleased). Values from <code>docs/brand/shepherd/palette.json</code>; geometry from <code>mark-a-gate-s.svg</code>; type scale from <code>docs/proposals/studio-observatory.md</code> §2.5.</p>
+</footer>
+
+</main>
+</body>
+</html>

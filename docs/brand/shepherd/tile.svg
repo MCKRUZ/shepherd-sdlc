@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Shepherd">
+  <!-- The tile: a 64 square, corner radius 14, in sand (#F5EFE4), carrying the FRAME ALONE at
+       7/8 (translate 4, scale 0.875 — 7.5 units in from every edge) so it reads at 16 px. The S
+       is unreadable below 48 px and is left off. The app icon and favicon at 16 and 32 px. -->
+  <rect width="64" height="64" rx="14" fill="#F5EFE4"/>
+  <g transform="translate(4 4) scale(0.875)">
+    <path fill="#3F6B35" d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+    <path fill="#5E452A" d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+  </g>
+</svg>
