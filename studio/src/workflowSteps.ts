@@ -125,7 +125,7 @@ function missingCapabilityReason(activity: StageActivity, capabilities: string[]
   return missing ? `needs a newer plugin: lacks ${needed}` : null
 }
 
-/** A plugin command as a person types it: the plugin declares `sdlc-rules`, people read `/sdlc-rules`. */
+/** A plugin command as a person types it: the plugin declares `sprd-rules`, people read `/sprd-rules`. */
 export function slashCommand(command: string): string {
   return command.startsWith('/') ? command : `/${command}`
 }

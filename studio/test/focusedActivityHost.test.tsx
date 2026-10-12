@@ -17,7 +17,7 @@ import { activity, readinessWith } from './activityFixtures'
 vi.mock('../src/components/ActivitiesPanel', async () => {
   const { useFocusedActivity } = await import('../src/components/FocusedActivityHost')
   const { activity: make } = await import('./activityFixtures')
-  const sprint = make({ id: 'sprint', kind: 'run', label: 'Sprint', command: 'sdlc-sprint' })
+  const sprint = make({ id: 'sprint', kind: 'run', label: 'Sprint', command: 'sprd-sprint' })
   function ActivitiesPanel() {
     const host = useFocusedActivity()
     return (
@@ -33,7 +33,7 @@ vi.mock('../src/components/ActivitiesPanel', async () => {
   return { ActivitiesPanel }
 })
 
-const SPRINT: StageActivity = activity({ id: 'sprint', kind: 'run', label: 'Sprint', command: 'sdlc-sprint' })
+const SPRINT: StageActivity = activity({ id: 'sprint', kind: 'run', label: 'Sprint', command: 'sprd-sprint' })
 
 function doc(path: string, ready: boolean): StageDocument {
   return { name: path, path, exists: true, folder: false, shaped: true, findingCount: 0, ready } as StageDocument
@@ -55,7 +55,7 @@ describe('FocusedActivityHost on its own', () => {
     )
     const host = screen.getByTestId('focused-activity-host')
     expect(host.getAttribute('data-activity-id')).toBe('sprint')
-    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Sprint /sdlc-sprint')
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe('Sprint /sprd-sprint')
     expect(within(host).getByText('The panel body')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: FOCUSED_ACTIVITY_BACK }))
     expect(onClose).toHaveBeenCalledTimes(1)

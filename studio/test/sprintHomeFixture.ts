@@ -74,7 +74,7 @@ export const SPRINT: SprintView = {
 export const NO_SPRINT: SprintView = {
   ...SPRINT, sprint: null, slate: [], readiness: { ready: 0, total: 0, gaps: [] }, verdictsPending: [], handoffsOpen: [], mix: {},
   mixWarnings: [], wip: { inFlight: null, cap: null }, buildOrder: [], nextUp: null, decisions: null, carriedIn: [], hasData: false,
-  note: 'No sprint — open one with /sdlc-sprint new.',
+  note: 'No sprint — open one with /sprd-sprint new.',
 }
 
 export const ROSTER: ProjectSettings['roster'] = {

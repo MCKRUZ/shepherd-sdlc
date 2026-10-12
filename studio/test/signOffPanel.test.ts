@@ -58,6 +58,6 @@ describe('SignOffPanel', () => {
   it('names what it is about to do', () => {
     const text = render('Matt K').replace(/<[^>]+>/g, '')
     expect(text).toContain('Sign off Phase 0: Discovery')
-    expect(text).toMatch(/sdlc-next/)
+    expect(text).toMatch(/sprd-next/)
   })
 })

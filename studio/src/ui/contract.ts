@@ -238,11 +238,12 @@ export interface DisclosureProps extends NativeProps<'details', 'open' | 'onTogg
   summaryProps?: NativeProps<'summary', 'children'>
 }
 
-// --- brand: TogoMark variant (round 2, B2) ----------------------------------------------------
+// --- brand: ShepherdMark variant (round 2, B2) ------------------------------------------------
 
-/** `flat` is the solid Macron in `currentColor` (the mark everywhere in the app, 24 px up).
- * `depth` fills bar and disc from ONE `linearGradient` (`--mark-depth-a` → `--mark-depth-b`,
- * userSpaceOnUse 17,9 → 47,56) — hero and icon only, ≥ 48 px, never on a control, chip, status,
- * data body or behind text. `src/components/brand/TogoMark.tsx` adds `variant?: TogoMarkVariant`
- * to its own `TogoMarkProps`; this is the frozen name both the component and its tests use. */
-export type TogoMarkVariant = 'flat' | 'depth'
+/** `flat` is the two-tone gate-S mark as drawn — moss frame half and S lobe, umber frame half
+ * and S lobe (the mark everywhere in the app; the frame alone below 48 px). `depth` lays ONE
+ * `linearGradient` (`--mark-depth-a` → `--mark-depth-b`, userSpaceOnUse 4,4 → 60,60) over the
+ * mark's own silhouette — hero and icon only, ≥ 48 px, never on a control, chip, status, data
+ * body or behind text. `src/components/brand/ShepherdMark.tsx` adds `variant?: ShepherdMarkVariant`
+ * to its own `ShepherdMarkProps`; this is the frozen name both the component and its tests use. */
+export type ShepherdMarkVariant = 'flat' | 'depth'

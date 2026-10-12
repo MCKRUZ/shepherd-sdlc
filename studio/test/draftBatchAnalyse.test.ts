@@ -53,7 +53,7 @@ describe.skipIf(!PLUGIN.available)('the analyse job', () => {
     const folder = join(project, '.sdlc', 'context', 'intake')
     expect(claude.log()[0].argv).toEqual([
       '--plugin-dir', root, '--add-dir', project, root,
-      '--agent', 'claude-code-sdlc:discovery-analyst',
+      '--agent', 'shepherd:discovery-analyst',
       '--tools', 'Read,Grep,Glob', '--allowedTools', 'Read,Grep,Glob',
       '--permission-mode', 'dontAsk', '--strict-mcp-config',
       '--output-format', 'stream-json', '--verbose',

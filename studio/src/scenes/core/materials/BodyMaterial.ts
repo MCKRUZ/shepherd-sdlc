@@ -86,7 +86,7 @@ export class BodyMaterial extends MeshStandardMaterial {
   readonly rim: BodyUniforms = {
     uRim: { value: RIM_STRENGTH },
     uRimMode: { value: 0 },
-    uRimColor: { value: new Color('#334155') },
+    uRimColor: { value: new Color('#3d3630') },
     uSpec: { value: SPEC_WEIGHT },
   }
 

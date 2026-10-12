@@ -5,7 +5,7 @@ import type { DataTableColumn } from '../ui'
 import { useEnter } from '../motion/useEnter'
 
 // The diff is code: the code type token (12/16, weight 450) on the code surface, 10 px corners.
-const DIFF_CLASS = 'max-h-64 overflow-auto rounded-[10px] bg-surface-code p-3 font-mono text-code leading-4 text-slate-100'
+const DIFF_CLASS = 'max-h-64 overflow-auto rounded-[10px] bg-surface-code p-3 font-mono text-code leading-4 text-white'
 
 /** Versions of one document: who saved each and why, what changed between two, and restoring
  * one.

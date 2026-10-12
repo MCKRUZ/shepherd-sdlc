@@ -41,7 +41,7 @@ export function validateTypedActor(raw: unknown): TypedActorCheck {
   if (AI_LOOKING.test(name)) {
     return {
       ok: false,
-      error: `Refused: '${name}' reads as an AI/automation, not a named human. Studio records who is accountable; an agent may not be that name.`,
+      error: `Refused: '${name}' reads as an AI/automation, not a named human. Shepherd records who is accountable; an agent may not be that name.`,
     }
   }
   return { ok: true, name }

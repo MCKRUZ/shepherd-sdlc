@@ -71,7 +71,7 @@ test.afterAll(async () => {
 test.describe('[sdlc-studio] e2e tests', () => {
   test('startup', async () => {
     const title = await page.title()
-    expect(title).toBe('SDLC Studio')
+    expect(title).toBe('Shepherd')
   })
 
   test('should finish loading into a real screen', async () => {

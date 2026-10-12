@@ -53,7 +53,7 @@ async function auditArtifacts(
  * parser would read as a flag rather than a filename. */
 function checkedRelPath(projectPath: string, relPath: string): string {
   if (relPath.startsWith('-')) {
-    throw new UnsafePathError(`${relPath} is not a document name Studio will pass on.`)
+    throw new UnsafePathError(`${relPath} is not a document name Shepherd will pass on.`)
   }
   resolveProjectDocument(projectPath, relPath)
   return relPath

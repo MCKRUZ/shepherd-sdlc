@@ -42,7 +42,7 @@ describe('registerDraftHandlers', () => {
   it('says the plugin is missing, on every channel that needs it, and starts nothing', async () => {
     const fake = fakeClaude('success')
     const { call } = register(null, fake.launch)
-    const missing = { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    const missing = { ok: false, error: 'Shepherd plugin scripts not found' }
     expect(await call('studio:startDraft', 'C:/p', { kind: 'enhance', stageId: '1', document: SOURCE_REL })).toEqual(missing)
     expect(await call('studio:keepDraft', 'C:/p', 'j', 'Matt K')).toEqual(missing)
     expect(await call('studio:discardDraft', 'C:/p', 'j', 'Matt K')).toEqual(missing)

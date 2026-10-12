@@ -82,7 +82,7 @@ describe.skipIf(!PLUGIN.available)('the summarise job', () => {
       const logged = claude.log().filter((l) => l.event === 'start')[i]
       expect(logged.argv).toEqual([
         '--plugin-dir', root, '--add-dir', project, root,
-        '--agent', 'claude-code-sdlc:document-summarizer',
+        '--agent', 'shepherd:document-summarizer',
         '--tools', 'Read,Grep,Glob', '--allowedTools', 'Read,Grep,Glob',
         '--permission-mode', 'dontAsk', '--strict-mcp-config',
         '--output-format', 'stream-json', '--verbose',

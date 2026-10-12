@@ -3,7 +3,7 @@
 // washed `today-act-bg`, `today-late-*` only on the plugin's `overdue:true` — then "Team is
 // waiting on" (`verdicts_pending`, a lane and a wait, never a person), "since yesterday"
 // (`sinceYesterday[]` with origin tags, the window a FILTER the person picks), "Claude's work" as
-// one labelled line of SDLC Studio's own record, and a Standup notes button that is present, disabled,
+// one labelled line of Shepherd's own record, and a Standup notes button that is present, disabled,
 // with its reason. The list main built is shown as it came: the chip in the TopBand is its length
 // and nothing here re-counts it. A later row rises alone by its identity key, never a re-stagger.
 import { useLayoutEffect, useRef, useState, type ReactNode } from 'react'
@@ -25,7 +25,7 @@ export interface TodayColumnProps {
   onSince: (since: SinceWindow) => void
   /** Exit 0 anywhere → the host re-reads; nothing here moves on its own. */
   onActed: () => void
-  /** SDLC Studio's own record of Claude's work this session, labelled as such; null → nothing drafted. */
+  /** Shepherd's own record of Claude's work this session, labelled as such; null → nothing drafted. */
   claudeLine: string | null
   /** Drawn as the STRIP above the lanes (the home under 1240 px): needs-you shows `STRIP_ROWS`
    * whole and folds the rest behind "N more"; the other groups keep their header and fold every
@@ -146,8 +146,8 @@ export function TodayColumn({ cc, onRun, onDecide, onConfirmTier, onSince, onAct
 
       <section aria-labelledby="claude-title" className="space-y-2">
         <Eyebrow as="h3" id="claude-title">Claude's work</Eyebrow>
-        <p className="text-xs text-ink-2" data-testid="claude-line" title="SDLC Studio's own record, not a plugin field">
-          {claudeLine ?? 'nothing drafted this session'} <span className="text-ink-3">· SDLC Studio's record</span>
+        <p className="text-xs text-ink-2" data-testid="claude-line" title="Shepherd's own record, not a plugin field">
+          {claudeLine ?? 'nothing drafted this session'} <span className="text-ink-3">· Shepherd's record</span>
         </p>
         <Button size="sm" variant="secondary" icon={Bell} disabled disabledReason={STANDUP_NOTES}>Standup notes</Button>
       </section>

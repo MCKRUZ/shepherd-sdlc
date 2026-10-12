@@ -57,7 +57,7 @@ export const ADO_ARGV = {
   prPolicyList: (r: RemoteInfo, number: number): string[] => ['repos', 'pr', 'policy', 'list', '--id', String(number), '--org', r.orgUrl ?? ''],
 } as const
 
-export const ADO_MERGE_REFUSAL = 'Studio does not complete Azure DevOps pull requests in this version — complete it in Azure DevOps once checks and approval are in.'
+export const ADO_MERGE_REFUSAL = 'Shepherd does not complete Azure DevOps pull requests in this version — complete it in Azure DevOps once checks and approval are in.'
 
 export class AzureDevOpsHost implements CodeHost {
   readonly kind = 'azure-devops' as const

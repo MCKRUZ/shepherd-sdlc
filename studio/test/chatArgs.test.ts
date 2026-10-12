@@ -17,7 +17,7 @@ function baseOpts(overrides: Partial<Parameters<typeof buildChatArgs>[0]> = {}) 
     prompt: 'hello',
     projectPath: 'C:/fake/project',
     pluginRoot: 'C:/fake/plugin',
-    pluginName: 'claude-code-sdlc',
+    pluginName: 'shepherd',
     stageId: '1',
     stageDisplay: 'Requirements',
     mcpConfig: 'C:/fake/mcp-config.json',
@@ -160,7 +160,7 @@ describe('buildSystemPrompt', () => {
     const prompt = buildSystemPrompt({
       projectPath: 'C:/fake/project',
       pluginRoot: 'C:/fake/plugin',
-      pluginName: 'claude-code-sdlc',
+      pluginName: 'shepherd',
       stageId: '0',
       stageDisplay: 'Discovery',
     })
@@ -169,7 +169,7 @@ describe('buildSystemPrompt', () => {
     // "helpfully" reading a file into it.
     expect(prompt).toContain('C:/fake/project')
     expect(prompt).toContain('C:/fake/plugin')
-    expect(prompt).toContain('claude-code-sdlc:<agent-name>')
+    expect(prompt).toContain('shepherd:<agent-name>')
   })
 
   it('tells the model to end its turn immediately after AskStructuredQuestion', () => {
@@ -243,7 +243,7 @@ describe('readPluginName', () => {
   })
 
   it('falls back to the known plugin name when the manifest is unreadable', () => {
-    expect(readPluginName(join(tmpdir(), 'definitely-does-not-exist-' + Date.now()))).toBe('claude-code-sdlc')
+    expect(readPluginName(join(tmpdir(), 'definitely-does-not-exist-' + Date.now()))).toBe('shepherd')
   })
 })
 

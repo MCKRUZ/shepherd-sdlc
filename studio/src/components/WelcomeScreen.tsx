@@ -7,8 +7,8 @@ import { useStudioGSAP, engineFor } from '../motion/useStudioGSAP'
 import { welcomeOpen } from '../motion/choreo'
 import { readFamiliarity, recordFamiliarityOpen } from '../scenes/ambient/familiarity'
 import { CornerThemeToggle, EntryShell, choreoContext } from './entryScreenBits'
-import { TogoMark } from './brand/TogoMark'
-import { PRODUCT_NAME } from './brand/TogoWordmark'
+import { ShepherdMark } from './brand/ShepherdMark'
+import { PRODUCT_NAME, WORDMARK_CLASS } from './brand/ShepherdWordmark'
 
 /** A list in one card reads as one instrument panel; more rows than this read as a feed. */
 const RECENT_ROWS = 6
@@ -93,12 +93,13 @@ export function WelcomeScreen({
         <div className="space-y-8">
           <div>
             {/* The hero is the mark's first Depth home (brand §4 "48 px+ · Depth allowed"): 56 px
-                (`h-14`), a 28 px gap — the lockup's 33 units at this size — and the h1 in
-                `text-display` (40/44, 650, −0.025em) with no extra weight or tracking classes,
-                so the kit's type scale owns it. */}
+                (`h-14`), a 28 px gap — the lockup's 33 units at this size — and the h1 as the
+                wordmark: `text-display` for the size (40/44) with WORDMARK_CLASS laying the display
+                face over it (Saira 600, lowercase glyphs, −0.01em), so the hero and the lockups
+                everywhere else read as one wordmark. The DOM text stays "Shepherd". */}
             <div className="flex items-start gap-7">
-              <TogoMark variant="depth" className="mt-[2px] h-14 w-14 shrink-0" />
-              <h1 ref={titleRef} className="text-display text-ink-1">{PRODUCT_NAME}</h1>
+              <ShepherdMark variant="depth" className="mt-[2px] h-14 w-14 shrink-0" />
+              <h1 ref={titleRef} className={`text-display text-ink-1 ${WORDMARK_CLASS}`}>{PRODUCT_NAME}</h1>
             </div>
             <p className="mt-3 text-sm text-ink-3">
               The delivery instrument.

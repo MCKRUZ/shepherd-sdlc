@@ -149,7 +149,7 @@ function ConsoleRow({ entry, view }: { entry: ConsoleEntry; view: 'plain' | 'tec
           {/* The two `<pre>` colour sets are kept literally (the dark-theme list names them);
               only the code type token, leading and corner radius are added. */}
           {entry.stdout && (
-            <pre className="max-h-48 overflow-auto rounded-[8px] bg-slate-900 p-2.5 font-mono text-code leading-4 text-slate-100">
+            <pre className="max-h-48 overflow-auto rounded-[8px] bg-surface-code p-2.5 font-mono text-code leading-4 text-white">
               {entry.stdout}
             </pre>
           )}

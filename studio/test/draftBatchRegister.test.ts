@@ -44,7 +44,7 @@ describe('batch registration', () => {
     const { handlers, ipcMain } = fakeIpc()
     registerBatchHandlers(ipcMain, async () => null, () => {}, () => undefined)
     const call = (channel: string, ...args: unknown[]) => handlers.get(channel)!({}, ...args)
-    const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+    const NO_PLUGIN = 'Shepherd plugin scripts not found'
 
     expect(await call('studio:previewBatch', '/p', 'summarise')).toEqual({ ok: false, error: NO_PLUGIN })
     expect(await call('studio:startBatch', '/p', 'summarise')).toEqual({ ok: false, error: NO_PLUGIN })

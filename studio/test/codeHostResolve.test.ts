@@ -94,11 +94,20 @@ describe('resolveCodeHost', () => {
     expect((await resolveCodeHost(p2, d2)).cli.reason).toBe(WORDING.ghMissing)
   })
 
-  it('SDLC_CODE_HOST wins; host none still tries gh but says the features are off', async () => {
-    const { d, project } = deps({ env: { SDLC_CODE_HOST: 'none' } })
+  it('SHEPHERD_CODE_HOST wins; host none still tries gh but says the features are off', async () => {
+    const { d, project } = deps({ env: { SHEPHERD_CODE_HOST: 'none' } })
     const r = await resolveCodeHost(project, d)
     expect(r).toMatchObject({ host: 'none', source: 'env', cli: { name: 'gh', reason: WORDING.hostNone } })
     expect(r.provider).toBeInstanceOf(GitHubHost)
+  })
+
+  it('SDLC_CODE_HOST alone still works (the pre-2.0 name), and SHEPHERD_CODE_HOST wins when both are set', async () => {
+    const { d, project } = deps({ env: { SDLC_CODE_HOST: 'none' } })
+    expect(await resolveCodeHost(project, d)).toMatchObject({ host: 'none', source: 'env' })
+    const { d: d2, project: p2 } = deps({ env: { SHEPHERD_CODE_HOST: 'github', SDLC_CODE_HOST: 'none' } })
+    const r2 = await resolveCodeHost(p2, d2)
+    expect(r2).toMatchObject({ host: 'github', source: 'env' })
+    expect(r2.provider).toBeInstanceOf(GitHubHost)
   })
 
   it('.sdlc/code-host.yaml stands in for an unparseable remote; without the three fields az has no scope', async () => {

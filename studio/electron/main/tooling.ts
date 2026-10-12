@@ -1,4 +1,4 @@
-// Locates claude, uv, git, gh, az, and the claude-code-sdlc plugin's scripts/ directory on the
+// Locates claude, uv, git, gh, az, and the Shepherd plugin's scripts/ directory on the
 // local machine. Spec 0008's Decision List: "detect them, and if either is missing, say so
 // with a link rather than installing anything" — auto-detect, VERIFY with a real invocation
 // (never trust a found path without running it), and only ask the person to point at the
@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import { AZ_ENV } from './az'
 import { rawStdout, runCommand } from './commandRunner'
 import { missingClaudeFlags } from '../../shared/claudeContract'
+import { LEGACY_PLUGIN_IDS, PLUGIN_DISPLAY_NAME, PLUGIN_ID } from '../../shared/pluginId'
 import type { ToolStatus, ToolingReport } from '../../shared/types'
 
 export type { ToolStatus, ToolingReport }
@@ -209,6 +210,10 @@ function compareVersions(a: string, b: string): number {
  * older plugin from a current one, so a directory without it is an older plugin by definition. */
 export const PLUGIN_MARKER = 'capabilities.py'
 
+/** The directory names the cache scan looks under, in preference order: the current id, then
+ * every id the same plugin was installed under before 2.0. */
+const PLUGIN_IDS: readonly string[] = [PLUGIN_ID, ...LEGACY_PLUGIN_IDS]
+
 /** The version `.claude-plugin/plugin.json` beside a `scripts/` directory declares, when
  * readable — so Settings can say WHICH plugin is driving this session, not only where it is. */
 function readPluginVersion(scriptsDir: string): string | undefined {
@@ -241,8 +246,11 @@ export function siblingPluginScripts(appRoot: string | undefined = process.env.A
  *      plugin Studio drives is always the one beside it", which used to be false: the cache
  *      scan below ran first and picked an older marketplace copy over the checkout;
  *   3. the newest marketplace-cached version under ~/.claude/plugins/cache/<namespace>/
- *      claude-code-sdlc/<version>/ (verified against a real local install) that carries the
- *      marker.
+ *      <plugin id>/<version>/ (verified against a real local install) that carries the
+ *      marker — `shepherd` first, then the pre-2.0 ids (LEGACY_PLUGIN_IDS):
+ *      a packaged 2.x Studio beside a not-yet-reinstalled plugin still finds it, and a
+ *      cached copy under the current id always wins over one under the old, whatever
+ *      their versions.
  *
  * Every result says which of the three it was (`source`) and the version it declares. */
 export async function detectPluginScripts(
@@ -254,7 +262,7 @@ export async function detectPluginScripts(
       ? foundPlugin(overridePath, 'override')
       : {
           found: false,
-          error: `${PLUGIN_MARKER} not found under ${overridePath} — Studio needs the scripts/ folder of a current claude-code-sdlc plugin`,
+          error: `${PLUGIN_MARKER} not found under ${overridePath} — Shepherd needs the scripts/ folder of a current ${PLUGIN_DISPLAY_NAME} plugin`,
         }
   }
 
@@ -266,16 +274,20 @@ export async function detectPluginScripts(
     return { found: false, error: `Plugin cache directory not found: ${cacheDir}` }
   }
 
-  const candidates: string[] = []
+  // `rank` is the id's position in PLUGIN_IDS — 0 for the current id — so the sort below can
+  // prefer it before it ever compares versions.
+  const candidates: { dir: string; rank: number }[] = []
   try {
     const namespaces = await readdir(cacheDir, { withFileTypes: true })
     for (const ns of namespaces) {
       if (!ns.isDirectory()) continue
-      const pluginDir = join(cacheDir, ns.name, 'claude-code-sdlc')
-      if (!existsSync(pluginDir)) continue
-      const versions = await readdir(pluginDir, { withFileTypes: true })
-      for (const v of versions) {
-        if (v.isDirectory()) candidates.push(join(pluginDir, v.name))
+      for (let rank = 0; rank < PLUGIN_IDS.length; rank++) {
+        const pluginDir = join(cacheDir, ns.name, PLUGIN_IDS[rank])
+        if (!existsSync(pluginDir)) continue
+        const versions = await readdir(pluginDir, { withFileTypes: true })
+        for (const v of versions) {
+          if (v.isDirectory()) candidates.push({ dir: join(pluginDir, v.name), rank })
+        }
       }
     }
   } catch (err) {
@@ -283,17 +295,17 @@ export async function detectPluginScripts(
   }
 
   const withScripts = candidates
-    .map((dir) => ({ dir, scripts: join(dir, 'scripts') }))
+    .map(({ dir, rank }) => ({ dir, rank, scripts: join(dir, 'scripts') }))
     .filter(({ scripts }) => existsSync(join(scripts, PLUGIN_MARKER)))
 
   if (withScripts.length === 0) {
     return {
       found: false,
-      error: `no claude-code-sdlc plugin with ${PLUGIN_MARKER} under ~/.claude/plugins/cache — install or update the plugin, or point Studio at a checkout's scripts/ folder`,
+      error: `no ${PLUGIN_DISPLAY_NAME} plugin with ${PLUGIN_MARKER} under ~/.claude/plugins/cache — install or update the plugin, or point Shepherd at a checkout's scripts/ folder`,
     }
   }
 
-  withScripts.sort((a, b) => compareVersions(b.dir.split(/[\\/]/).pop()!, a.dir.split(/[\\/]/).pop()!))
+  withScripts.sort((a, b) => a.rank - b.rank || compareVersions(b.dir.split(/[\\/]/).pop()!, a.dir.split(/[\\/]/).pop()!))
   return foundPlugin(withScripts[0].scripts, 'cache')
 }
 

@@ -110,7 +110,7 @@ const DATA_PATHS = [
 
 function activity(overrides: Partial<StageActivity> = {}): StageActivity {
   return {
-    id: 'data', label: 'Data contract', command: 'sdlc-data', kind: 'create', optional: true,
+    id: 'data', label: 'Data contract', command: 'sprd-data', kind: 'create', optional: true,
     creates: DATA_PATHS, after: [], status: 'available', reason: null, ...overrides,
   }
 }

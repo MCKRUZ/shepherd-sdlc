@@ -53,7 +53,7 @@ export function GatesView({ projectPath }: { projectPath: string }) {
           lede={(
             <>
               What every change has to pass. Described in{' '}
-              <span className="font-mono text-xs">{inventory.guide_source}</span> — Studio does not
+              <span className="font-mono text-xs">{inventory.guide_source}</span> — Shepherd does not
               describe the gates itself, so this screen and the pipelines cannot disagree.
             </>
           )}

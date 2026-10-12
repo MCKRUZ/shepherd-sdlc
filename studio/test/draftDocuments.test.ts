@@ -37,7 +37,7 @@ describe.skipIf(!PLUGIN.available)('model jobs against a real project and the st
       ['a stage id with a path in it', () => ({ ...enhance(), stageId: '../x' }), /not a stage/i],
       ['an empty stage id', () => ({ ...enhance(), stageId: '' }), /not a stage/i],
       ['a document outside .sdlc/artifacts/', () => enhance('specs/0001-x.md'), /\.sdlc\/artifacts/],
-      ['a document with ..', () => enhance('.sdlc/artifacts/01-requirements/../../../secret.md'), /not one Studio can summarise/],
+      ['a document with ..', () => enhance('.sdlc/artifacts/01-requirements/../../../secret.md'), /not one Shepherd can summarise/],
       ['a document that is already a summary', () => enhance(NARRATIVE_REL), /summar/i],
       ['a document that is not markdown', () => enhance('.sdlc/artifacts/01-requirements/data.json'), /markdown/i],
       ['a document that does not exist', () => enhance('.sdlc/artifacts/01-requirements/nope.md'), /not there/i],
@@ -132,11 +132,11 @@ describe.skipIf(!PLUGIN.available)('model jobs against a real project and the st
       const { argv } = fake.recorded()
       expect(argv[argv.length - 1]).toBe(
         `Review the documents of the Phase 1: Requirements stage in ${join(project, '.sdlc/artifacts/01-requirements')} in adversarial mode, `
-        + `exactly as the /sdlc-review command (read ${join(PLUGIN.root!, 'commands', 'sdlc-review.md')}) describes, `
+        + `exactly as the /sprd-review command (read ${join(PLUGIN.root!, 'commands', 'sprd-review.md')}) describes, `
         + 'including the machine-readable ## Gate Results table. You cannot save files in this session: do not try. '
         + 'Reply with ONLY the complete markdown text of review-report.md.',
       )
-      expect(argv).toContain('claude-code-sdlc:multi-reviewer')
+      expect(argv).toContain('shepherd:multi-reviewer')
     })
 
     it('gives a run that was told to ignore its instructions no tool that can write, and nothing appears', async () => {

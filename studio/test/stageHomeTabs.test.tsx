@@ -13,8 +13,8 @@ function doc(path: string, ready: boolean): StageDocument {
 
 const ACTIVITIES = [
   activity({ id: 'rules-check', kind: 'check', label: 'Business rules check' }),
-  activity({ id: 'analysis', kind: 'run', label: 'Read the documents', command: 'sdlc-intake' }),
-  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sdlc-data' }),
+  activity({ id: 'analysis', kind: 'run', label: 'Read the documents', command: 'sprd-intake' }),
+  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sprd-data' }),
 ]
 
 function stage(stageId: string, over: Partial<StageReadiness> = {}): StageReadiness {
@@ -70,7 +70,7 @@ describe('StageHome: the Guide tab', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Guide' }))
     expect(await screen.findByText('The stage guide text.')).toBeTruthy()
     const items = screen.getAllByTestId('guide-activity').map((i) => i.textContent)
-    expect(items).toContain('Read the documents /sdlc-intake')
+    expect(items).toContain('Read the documents /sprd-intake')
   })
 
   it('goes back to Workflow when the stage changes, as the other tabs do', async () => {

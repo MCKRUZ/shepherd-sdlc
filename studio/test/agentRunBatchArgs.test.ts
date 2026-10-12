@@ -16,7 +16,7 @@ describe('buildAgentArgs for the batch jobs', () => {
     expect(buildAgentArgs(opts('summarise')).args).toEqual([
       '--plugin-dir', 'C:/work/plugin',
       '--add-dir', 'C:/work/project', 'C:/work/plugin',
-      '--agent', 'claude-code-sdlc:document-summarizer',
+      '--agent', 'shepherd:document-summarizer',
       '--tools', 'Read,Grep,Glob',
       '--allowedTools', 'Read,Grep,Glob',
       '--permission-mode', 'dontAsk',
@@ -31,7 +31,7 @@ describe('buildAgentArgs for the batch jobs', () => {
     expect(buildAgentArgs(opts('analyse')).args).toEqual([
       '--plugin-dir', 'C:/work/plugin',
       '--add-dir', 'C:/work/project', 'C:/work/plugin',
-      '--agent', 'claude-code-sdlc:discovery-analyst',
+      '--agent', 'shepherd:discovery-analyst',
       '--tools', 'Read,Grep,Glob',
       '--allowedTools', 'Read,Grep,Glob',
       '--permission-mode', 'dontAsk',

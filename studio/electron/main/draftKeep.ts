@@ -46,7 +46,7 @@ export type TargetPermit = (target: string) => boolean
 
 function checkTarget(projectPath: string, target: string, permit: TargetPermit): { full: string } | { error: string } {
   if (!permit(target)) {
-    return { error: `${target} is not a document Studio may write a draft to.` }
+    return { error: `${target} is not a document Shepherd may write a draft to.` }
   }
   try {
     return { full: resolveProjectDocument(projectPath, target) }

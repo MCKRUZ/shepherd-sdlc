@@ -107,10 +107,10 @@ describe('team is waiting on, since yesterday, Claude, standup', () => {
     expect(screen.getByTestId('stream-unavailable').textContent).toBe(STREAM_ARRIVES)
   })
 
-  it('Claude\'s line is labelled as SDLC Studio\'s record; Standup notes is present, disabled, with its reason', () => {
+  it('Claude\'s line is labelled as Shepherd\'s record; Standup notes is present, disabled, with its reason', () => {
     mount()
     expect(screen.getByTestId('claude-line').textContent).toContain('drafted 2 fields · 1 proposal waiting for a yes')
-    expect(screen.getByTestId('claude-line').textContent).toContain("SDLC Studio's record")
+    expect(screen.getByTestId('claude-line').textContent).toContain("Shepherd's record")
     const standup = screen.getByRole('button', { name: /Standup notes/ })
     expect(standup.hasAttribute('disabled')).toBe(true)
     expect(standup.querySelector('[data-disabled-reason]')?.textContent).toBe(STANDUP_NOTES)

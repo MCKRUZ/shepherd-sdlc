@@ -97,7 +97,7 @@ describe('registerBriefHandlers', () => {
 
   it('answers "plugin scripts not found" for both when the plugin cannot be located, and starts nothing', async () => {
     registerBriefHandlers(ipc, async () => null)
-    const none = { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    const none = { ok: false, error: 'Shepherd plugin scripts not found' }
     expect(await handlers.get('studio:getBriefCandidates')!({}, PROJECT)).toEqual(none)
     expect(await handlers.get('studio:buildBrief')!({}, PROJECT, {})).toEqual(none)
     expect(run).not.toHaveBeenCalled()

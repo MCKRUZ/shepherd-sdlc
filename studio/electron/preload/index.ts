@@ -210,10 +210,15 @@ const safeDOM = {
 }
 
 /**
- * https://tobiasahlin.com/spinkit
+ * https://tobiasahlin.com/spinkit — the spin is SpinKit's; the square it turns is the brand's
+ * flat tile (docs/brand/shepherd/tile.svg: the two-tone frame alone on sand, the same drawing the
+ * OS shows at 16 and 32 px), inlined as a data URI because nothing is loaded before the renderer
+ * paints. Sand (#F5EFE4) and bark (#14120F) are the brand's canvas values; `img-src data:` is
+ * allowed by the renderer's CSP.
  */
 function useLoading() {
   const className = `loaders-css__square-spin`
+  const tile = 'data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2214%22%20fill=%22%23F5EFE4%22/%3E%3Cg%20transform=%22translate(4%204)%20scale(0.875)%22%3E%3Cpath%20fill=%22%233F6B35%22%20d=%22M10.47%2010.22%20L16.7%204%20L51.5%204%20L60%2012.5%20L60%2047.3%20L56.52%2050.77%20L50.25%2044.5%20L42.7%2044.5%20L42.7%2038.9%20L49.1%2038.9%20L49.1%2014.9%20L15.15%2014.9%20Z%22/%3E%3Cpath%20fill=%22%235E452A%22%20d=%22M7.47%2013.22%20L14.9%2020.65%20L14.9%2049.1%20L48.85%2049.1%20L53.52%2053.77%20L47.3%2060%20L12.5%2060%20L4%2051.5%20L4%2016.7%20Z%22/%3E%3C/g%3E%3C/svg%3E'
   const styleContent = `
 @keyframes square-spin {
   25% { transform: perspective(100px) rotateX(180deg) rotateY(0); }
@@ -225,7 +230,8 @@ function useLoading() {
   animation-fill-mode: both;
   width: 50px;
   height: 50px;
-  background: #fff;
+  border-radius: 11px;
+  background: #F5EFE4 url("${tile}") center / contain no-repeat;
   animation: square-spin 3s 0s cubic-bezier(0.09, 0.57, 0.49, 0.9) infinite;
 }
 .app-loading-wrap {
@@ -237,7 +243,7 @@ function useLoading() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #282c34;
+  background: #14120F;
   z-index: 9;
 }
     `

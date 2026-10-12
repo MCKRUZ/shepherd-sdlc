@@ -1,21 +1,21 @@
-# SDLC Studio
+# Shepherd
 
-SDLC Studio is the desktop shell for the [claude-code-sdlc](../) plugin,
-which is the repository this folder lives in — so the plugin SDLC Studio drives is always the one
-beside it. SDLC Studio is an **optional add-on** — the plugin is fully usable on its own; SDLC Studio just
-gives it a visual front end for people who want one. SDLC Studio never reimplements plugin logic:
+Shepherd is the desktop shell for the [Shepherd](../) plugin,
+which is the repository this folder lives in — so the plugin Shepherd drives is always the one
+beside it. Shepherd is an **optional add-on** — the plugin is fully usable on its own; Shepherd just
+gives it a visual front end for people who want one. Shepherd never reimplements plugin logic:
 every piece of project state it shows, and every change it makes, goes through the plugin's
 own scripts, run the same way a person would run them from the command line.
 
 The folder is still `studio/` and the npm package `sdlc-studio`; the product, window title and
-packaged app are SDLC Studio — see `docs/brand/togo/brandbook.html`.
+packaged app are Shepherd — see `docs/brand/shepherd/brandbook.html`.
 
 Scaffolded from [electron-vite-react](https://github.com/electron-vite/electron-vite-react)
 (Electron + Vite + React + TypeScript + Tailwind).
 
 ## Quick Start
 
-SDLC Studio is a Node project inside a Python plugin repository, so everything below runs from
+Shepherd is a Node project inside a Python plugin repository, so everything below runs from
 this folder, not the repository root.
 
 ```sh
@@ -39,7 +39,7 @@ fail loudly rather than skipping, on purpose; run only the rest with
 - `npm run test:e2e`: build the test-mode bundle and run Playwright end-to-end tests.
 - `npm run typecheck`: run the TypeScript type checker.
 
-## The smoke suite: Studio as a user sees it
+## The smoke suite: Shepherd as a user sees it
 
 `test/e2e/smoke.spec.ts` walks the real window the way a person would: a first-time user (Welcome, New project,
 the setup wizard) and a team a few days in (every stage and tab, the Build screens, a document and its history,
@@ -51,7 +51,7 @@ npm run pretest
 STUDIO_SKIP_LIVE_MODEL=1 npx playwright test test/e2e/smoke.spec.ts
 ```
 
-It takes about 3.5 minutes, needs the plugin checkout and its Python environment, and Studio must not already
+It takes about 3.5 minutes, needs the plugin checkout and its Python environment, and Shepherd must not already
 be open. It uses **no live model**: the chat and draft entry points are replaced for the run, because opening a
 stage with an unstarted document otherwise makes the chat greet with a real model call by itself.
 
@@ -118,7 +118,7 @@ business-day bar; four lanes — Ready, Building, Checking, Merged — a *partit
 `status`, `dor`, `verdicts_pending` and the pull request's `waiting_on` (anything else is listed
 as "slated, not in a lane"); the hand-off **baton** on the Building→Checking edge (`↵` acks); the
 Today column ("needs you" with one action each, "Team is waiting on", "since yesterday" from
-`sprint.py log`, SDLC Studio's own record of Claude's work, Standup notes disabled with its reason);
+`sprint.py log`, Shepherd's own record of Claude's work, Standup notes disabled with its reason);
 **In the room** (roster people with lane dots — presence, never digits; hover lights their cards);
 **Refining** for the next sprint with the checker's own DoR gaps; **How it is going** from the
 scorecard. The slate constellation keeps its Graph surface below, with the slate table as its twin.
@@ -222,18 +222,18 @@ close → steering) and `steering.spec.ts` (the room pages; no tile straddles th
 script has the same probe: `SHOT_OVERLAP=1 SHOT_WIDTHS="1280x800,1440x900,1680x1000"` measures
 every shot and exits 3 on a violation; `SHOT_PROBE=ghost` measures the band above the header at
 1.2 / 1.6 / 2.0 / 2.5 s; a GPU console line fails the run. The series the guide ships on is
-`observatory-v20`.
+`observatory-v30` (the Shepherd re-capture; `docs/guide/build-user-guide.mjs` defaults to it).
 
 ## Releases — the .dmg and the .exe
 
 Installers are never committed: `studio/release/` is gitignored and the artifacts live on GitHub
 Releases. `.github/workflows/release.yml` builds them on a version tag — the `.dmg` (and `.zip`)
 on a macOS runner, the `.exe` installer on a Windows runner, both from `electron-builder.json`
-with the SDLC Studio icon and bundle id `com.mckruz.sdlc-studio` — and attaches them to one Release with
+with the Shepherd icon and bundle id `com.mckruz.shepherd` — and attaches them to one Release with
 install notes. The tag must match `.claude-plugin/plugin.json`'s version:
 
 ```bash
-git tag v1.7.0 && git push origin v1.7.0
+git tag v2.0.0 && git push origin v2.0.0
 ```
 
 Locally, `npm run build` produces the same files under `release/<version>/`. Signing is switched
@@ -241,8 +241,8 @@ on by secrets alone (macOS: `CSC_LINK`, `CSC_KEY_PASSWORD`, `APPLE_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`; Windows: `WIN_CSC_LINK`, `WIN_CSC_KEY_PASSWORD`);
 without them the builds are unsigned and the first launch needs right-click → Open on macOS or
 SmartScreen's "run anyway" on Windows. There is no auto-update channel: people install the new
-release. A packaged SDLC Studio finds the plugin in Claude Code's marketplace cache
-(`/plugin install claude-code-sdlc@mckruz`), or at the path set in Settings.
+release. A packaged Shepherd finds the plugin in Claude Code's marketplace cache
+(`/plugin install shepherd@mckruz`), or at the path set in Settings.
 
 ## Window
 
@@ -317,8 +317,8 @@ unsaved edit — the field editor, hand-off form and an open AI proposal registe
 Two 3D scenes and one background, all built on `src/scenes/core/SceneShell.tsx`: a lazily
 loaded `<canvas>` with a **Graph / Table** toggle, where the Table twin is the real content, not
 a fallback. The Table is what renders when WebGL is unavailable, the window is under 400 px,
-the canvas has crashed, or SDLC Studio is under test. Scenes draw only what the plugin reports —
-SDLC Studio computes no status of its own, and a value the plugin reports as null reads "no data".
+the canvas has crashed, or Shepherd is under test. Scenes draw only what the plugin reports —
+Shepherd computes no status of its own, and a value the plugin reports as null reads "no data".
 
 - **Lifecycle strip** (`scenes/spine/SpineStrip.tsx`) — the shell's navigation: the same nine
   stations as the Spine, as plain SVG (no canvas) from `spineModel` — a 2 px lit rail for the
@@ -395,20 +395,20 @@ calls in plain words. Design: `../docs/proposals/code-host-providers.md`.
 
 ## Status
 
-SDLC Studio drives the plugin **beside it**. Unpackaged, tool detection prefers `<studio>/../scripts`
+Shepherd drives the plugin **beside it**. Unpackaged, tool detection prefers `<studio>/../scripts`
 when it carries `capabilities.py`, then the newest marketplace-cached plugin that does, then a
-path set in SDLC Studio — and Settings › *Tooling on this machine* says which one is in use and the
+path set in Shepherd — and Settings › *Tooling on this machine* says which one is in use and the
 version it declares. Every `claude` call uses the flags listed in `shared/claudeContract.ts`,
 checked once against the installed CLI's `--help`: an older Claude Code is reported ("Claude Code
 <version> lacks <flags> — update with `claude update`") and the model controls stay off until it is
 updated, while the project itself stays readable.
 
-The specs in the repository's `specs/` directory (0008 onward) record SDLC Studio's build order;
+The specs in the repository's `specs/` directory (0008 onward) record Shepherd's build order;
 `docs/proposals/studio-improvements.md` is the plan (Batches 1–2 built; its D4/D5 became the
 code-host providers plan, built through Wave 7), `docs/proposals/studio-observatory.md` the visual
 overhaul (spec 0033, built), `docs/proposals/studio-upgrade-2.md` the second round (built;
 its status line records what P7 verified), `docs/proposals/togo-command-center.md` the command
 center (built as P0–P8; its status line and §8 record what P8 verified and which pins moved, with
-evidence), and `docs/brand/togo/` the identity — the solid Macron is the mark; its Depth gradient
-lives at hero size only (Welcome, the opening card, the app icon, the steering lockup),
-regenerated by `docs/brand/togo/build-assets.mjs`.
+evidence), and `docs/brand/shepherd/` the identity — the mark is a chamfered frame holding the S
+(Mark A, the gate-S); its Depth gradient lives at hero size only (Welcome, the opening card, the
+app icon, the steering lockup), regenerated by `docs/brand/shepherd/build-assets.mjs`.

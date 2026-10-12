@@ -18,7 +18,10 @@ export type HostSource = 'flag' | 'env' | 'file' | 'remote' | 'manifest' | 'defa
 export type CliName = 'gh' | 'az'
 export const HOSTS: readonly HostName[] = ['github', 'azure-devops', 'none']
 export const CODE_HOST_FILE = '.sdlc/code-host.yaml'
-export const CODE_HOST_ENV = 'SDLC_CODE_HOST'
+export const CODE_HOST_ENV = 'SHEPHERD_CODE_HOST'
+/** The pre-2.0 name — already in shells and CI, so still read, after the new one (the same
+ * two-name lookup as scripts/code_host.py's `code_host_env`). */
+export const LEGACY_CODE_HOST_ENV = 'SDLC_CODE_HOST'
 
 /** What the main process knows about the CLI a project's host needs. Honesty rules: `found`
  * is a fact from tooling detection; `extension` is null when it does not apply (gh) or was not
@@ -143,8 +146,10 @@ function remoteFromFile(settings: CodeHostFile): RemoteInfo | null {
 // ── detection precedence: env → file → remote → manifest tie-breaker → none (Python's order) ──
 
 export interface DetectInputs {
-  /** `SDLC_CODE_HOST` (Studio has no `--host` flag; the env is what reaches a desktop app). */
+  /** `SHEPHERD_CODE_HOST` (Studio has no `--host` flag; the env is what reaches a desktop app). */
   flagOrEnv?: string | null
+  /** `SDLC_CODE_HOST`, the pre-2.0 name — read only when `flagOrEnv` holds no value. */
+  legacyEnv?: string | null
   fileHost?: CodeHostFile | null
   /** The parse error for `.sdlc/code-host.yaml` when it exists but could not be read. */
   fileError?: string | null
@@ -166,10 +171,14 @@ export function detectHostFromInputs(inputs: DetectInputs): Detection {
   const remote = parseRemote(url)
   const notes: string[] = []
 
+  // The first variable that holds a value wins — an empty one counts as unset, as it always
+  // did — and the detail names whichever it was, so a person reads the variable they set.
   const env = inputs.flagOrEnv
+    ? { name: CODE_HOST_ENV, value: inputs.flagOrEnv }
+    : inputs.legacyEnv ? { name: LEGACY_CODE_HOST_ENV, value: inputs.legacyEnv } : null
   if (env) {
-    if ((HOSTS as readonly string[]).includes(env)) return { host: env as HostName, source: 'env', remote, detail: `${CODE_HOST_ENV}=${env}` }
-    notes.push(`${CODE_HOST_ENV}=${JSON.stringify(env)} ignored: not one of ${HOSTS.join(', ')}`)
+    if ((HOSTS as readonly string[]).includes(env.value)) return { host: env.value as HostName, source: 'env', remote, detail: `${env.name}=${env.value}` }
+    notes.push(`${env.name}=${JSON.stringify(env.value)} ignored: not one of ${HOSTS.join(', ')}`)
   }
 
   if (inputs.fileHost) {

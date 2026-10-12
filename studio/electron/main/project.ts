@@ -6,6 +6,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { rawStdout, runCommand, type ConsoleEntry } from './commandRunner'
+import { PLUGIN_DISPLAY_NAME } from '../../shared/pluginId'
 import type { OpenProjectResult, PreviewSetupResult, ProjectStatus, RunSetupResult, SetupPlan } from '../../shared/types'
 
 export type { OpenProjectResult, ProjectStatus, SetupPlan }
@@ -34,9 +35,9 @@ export function explainIfVersionMismatch(entry: ConsoleEntry, scriptName: string
   if (entry.ok || !ARGPARSE_MISMATCH.test(entry.stderr)) return entry
   return {
     ...entry,
-    stderr: `The installed claude-code-sdlc plugin doesn't match what Studio expects — `
-      + `${scriptName} rejected an option Studio needs. This project's plugin may be older or `
-      + `newer than the one Studio was built against. Point Studio at a different plugin `
+    stderr: `The installed ${PLUGIN_DISPLAY_NAME} plugin doesn't match what Shepherd expects — `
+      + `${scriptName} rejected an option Shepherd needs. This project's plugin may be older or `
+      + `newer than the one Shepherd was built against. Point Shepherd at a different plugin `
       + `checkout in Settings, or update the installed plugin, then try again.\n\n`
       + `What the script actually said:\n${entry.stderr}`,
   }

@@ -61,7 +61,7 @@ export function FindingsLedger({ findings, error = null, hasFindingsCapability =
               hold: the line pitch is 24 px (`leading-6`) and the chips drop their vertical padding
               (`py-0`: ≈ 18 px tall, inside the pitch with room). The e2e probe
               (`overlap.spec` "spec-card caption") measures the chips against the text. */}
-          <p className="text-xs leading-6 text-ink-3 [&_code]:py-0" data-testid="findings-caption">A <code className="font-mono text-ident">/sdlc-review</code> report recorded with <code className="font-mono text-ident">record_findings.py record</code> would appear here.</p>
+          <p className="text-xs leading-6 text-ink-3 [&_code]:py-0" data-testid="findings-caption">A <code className="font-mono text-ident">/sprd-review</code> report recorded with <code className="font-mono text-ident">record_findings.py record</code> would appear here.</p>
         </div>
       ) : (
         <ul className="divide-y divide-line-1" role="list">

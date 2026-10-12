@@ -192,10 +192,10 @@ export function nextUpLabel(view: SprintView): string {
 
 /** What to say instead of a slate when there is none to show. Null when there is a slate. */
 export function emptyMessage(view: SprintView): string | null {
-  if (view.sprint === null) return view.note ?? 'No sprint — open one with /sdlc-sprint new.'
+  if (view.sprint === null) return view.note ?? 'No sprint — open one with /sprd-sprint new.'
   if (view.slate.length > 0) return null
-  if (view.sprint.state === 'closed') return `Closed; see .sdlc/reports/sprint-${view.sprint.id}-review.html. Start the next sprint with /sdlc-sprint new.`
-  return 'Nothing slated yet — propose a slate with /sdlc-sprint slate.'
+  if (view.sprint.state === 'closed') return `Closed; see .sdlc/reports/sprint-${view.sprint.id}-review.html. Start the next sprint with /sprd-sprint new.`
+  return 'Nothing slated yet — propose a slate with /sprd-sprint slate.'
 }
 
 /** A slate row as the spec view takes it. The board's row carries the people and the live pull

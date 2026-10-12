@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-  <!-- SDLC Studio command center — the baton. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
-  <rect x="3" y="10" width="18" height="4" rx="2" fill="#1A99A3"/>
-  <rect x="7" y="10" width="2" height="4" rx="0" fill="#A7E6E7"/>
-  <rect x="15" y="10" width="2" height="4" rx="0" fill="#A7E6E7"/>
+  <!-- Shepherd command center — the baton. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
+  <rect x="3" y="10" width="18" height="4" rx="2" fill="#4F8545"/>
+  <rect x="7" y="10" width="2" height="4" rx="0" fill="#C7E0BC"/>
+  <rect x="15" y="10" width="2" height="4" rx="0" fill="#C7E0BC"/>
 </svg>

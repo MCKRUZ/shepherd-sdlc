@@ -44,7 +44,7 @@ describe('window bounds', () => {
     let dir = ''
     afterEach(() => { if (dir) rmSync(dir, { recursive: true, force: true, maxRetries: 5 }) })
     it('round-trips and reads null when absent or corrupt', () => {
-      dir = mkdtempSync(join(tmpdir(), 'togo-bounds-'))
+      dir = mkdtempSync(join(tmpdir(), 'shepherd-bounds-'))
       expect(readSavedBounds(dir)).toBeNull()
       writeSavedBounds(dir, { x: 1, y: 2, width: 1300, height: 800 })
       expect(readSavedBounds(dir)).toEqual({ x: 1, y: 2, width: 1300, height: 800 })

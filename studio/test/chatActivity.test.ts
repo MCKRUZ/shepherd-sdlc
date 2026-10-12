@@ -38,7 +38,7 @@ describe('describeLatestActivity â€” what the person sees instead of "Thinkingâ€
   })
 
   it('names the sub-agent being consulted, without the plugin prefix', () => {
-    const out = stream(assistantLine([toolUse('Task', { subagent_type: 'claude-code-sdlc:discovery-analyst', description: 'd', prompt: 'p' })]))
+    const out = stream(assistantLine([toolUse('Task', { subagent_type: 'shepherd:discovery-analyst', description: 'd', prompt: 'p' })]))
     expect(describeLatestActivity(out)).toBe('Asking the discovery-analyst sub-agent')
   })
 

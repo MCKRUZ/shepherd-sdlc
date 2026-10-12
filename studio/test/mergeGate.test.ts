@@ -16,12 +16,12 @@ import { isOursToMerge, type PrListEntry } from '../electron/main/sync'
 
 const OURS: PrListEntry = {
   number: 7,
-  headRefName: 'studio/1758700000000',
+  headRefName: 'shepherd/1758700000000',
   author: { login: 'matt' },
   headRepositoryOwner: { login: 'MCKRUZ' },
 }
 
-const pushed = 'studio/1758700000000'
+const pushed = 'shepherd/1758700000000'
 
 describe('isOursToMerge', () => {
   it('merges the branch this Studio pushed, from this account, in this repository', () => {
@@ -29,8 +29,8 @@ describe('isOursToMerge', () => {
   })
 
   it('refuses a different branch that merely looks like ours', () => {
-    expect(isOursToMerge({ ...OURS, headRefName: 'studio/9999999999999' }, pushed, 'matt', 'MCKRUZ')).toBe(false)
-    expect(isOursToMerge({ ...OURS, headRefName: 'studio/1758700000000-evil' }, pushed, 'matt', 'MCKRUZ')).toBe(false)
+    expect(isOursToMerge({ ...OURS, headRefName: 'shepherd/9999999999999' }, pushed, 'matt', 'MCKRUZ')).toBe(false)
+    expect(isOursToMerge({ ...OURS, headRefName: 'shepherd/1758700000000-evil' }, pushed, 'matt', 'MCKRUZ')).toBe(false)
   })
 
   it('refuses a pull request somebody else opened', () => {
@@ -69,7 +69,7 @@ describe('isOursToMerge — an Azure DevOps entry', () => {
   const REPO_GUID = '00000000-0000-0000-0000-000000000003'
   const ADO_OURS: PrListEntry = {
     number: 40347,
-    headRefName: 'studio/1758700000000',
+    headRefName: 'shepherd/1758700000000',
     author: { login: 'person1@example.com' },
     headRepositoryOwner: { login: REPO_GUID },
     files: null,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /** The lifecycle home (togo-command-center.md §3.4): StageHome composed with a Today column —
- * needs-you (the addressed list, one action per item), SDLC Studio's own record of chat activity, and
+ * needs-you (the addressed list, one action per item), Shepherd's own record of chat activity, and
  * the plugin's open decisions with `today-late-*` ONLY on its `overdue:true`. The screen root is
  * still `<main>`'s first child and holds the stage's h2; the column is a `<section>`, never a
  * third `<aside>`; a block the plugin did not answer reads "no data". */
@@ -134,7 +134,7 @@ describe('LifecycleHome', () => {
     expect(screen.getByText(`${NO_DATA} — no decision-log`)).toBeTruthy()
   })
 
-  it('leaning into Build offers the sprint home; SDLC Studio\'s record says nothing ran until activity arrives', async () => {
+  it('leaning into Build offers the sprint home; Shepherd\'s record says nothing ran until activity arrives', async () => {
     const studio = install()
     const { onNavigate } = home(cc(), 'build')
     await screen.findByRole('heading', { level: 2 })

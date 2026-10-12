@@ -23,7 +23,7 @@ const ID_FORMS = {
 // The plugin cites a claim's document as DOC-NNN with at least three digits.
 const CLAIM_DOC = /^DOC-\d{3,}$/
 const LINE_BREAK = /[\r\n\v\f\u0085\u2028\u2029]/
-const NOT_A_SHAPE = 'The brief selections are not in a shape Studio can use.'
+const NOT_A_SHAPE = 'The brief selections are not in a shape Shepherd can use.'
 
 const refuse = (error: string): { ok: false; error: string } => ({ ok: false, error })
 const show = (value: unknown): string => String(value).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/g, ' ').slice(0, 40)
@@ -42,7 +42,7 @@ function idList(raw: unknown, kind: keyof typeof ID_FORMS): Checked<string[]> {
   const { pattern, noun } = ID_FORMS[kind]
   const seen = new Set<string>()
   for (const id of raw) {
-    if (typeof id !== 'string' || !pattern.test(id)) return refuse(`${show(id)} is not ${noun} Studio can use.`)
+    if (typeof id !== 'string' || !pattern.test(id)) return refuse(`${show(id)} is not ${noun} Shepherd can use.`)
     if (seen.has(id)) return refuse(`${id} appears more than once.`)
     seen.add(id)
   }
@@ -164,7 +164,7 @@ function questionRoutes(s: BriefSelections, c: Ready): string | null {
     const route = c.questions.find((q) => q.id === id)?.route ?? ''
     if (isEmailedBefore(route)) return `${id} is emailed before the workshop, not placed on the page.`
     if (isInterview(route)) return `${id} is neither in the room nor emailed.`
-    if (!inTheRoom(route)) return `${id} has a route Studio does not recognise.`
+    if (!inTheRoom(route)) return `${id} has a route Shepherd does not recognise.`
   }
   return null
 }

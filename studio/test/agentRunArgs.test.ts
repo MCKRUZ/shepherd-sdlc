@@ -17,7 +17,7 @@ describe('buildAgentArgs', () => {
     expect(buildAgentArgs(opts('enhance')).args).toEqual([
       '--plugin-dir', 'C:/work/plugin',
       '--add-dir', 'C:/work/project', 'C:/work/plugin',
-      '--agent', 'claude-code-sdlc:narrative-enhancer',
+      '--agent', 'shepherd:narrative-enhancer',
       '--tools', 'Read,Grep,Glob',
       '--allowedTools', 'Read,Grep,Glob',
       '--permission-mode', 'dontAsk',
@@ -32,7 +32,7 @@ describe('buildAgentArgs', () => {
     const enhance = buildAgentArgs(opts('enhance')).args
     const review = buildAgentArgs(opts('review')).args
     expect(review.map((a) => a.replace('multi-reviewer', 'narrative-enhancer'))).toEqual(enhance)
-    expect(review).toContain('claude-code-sdlc:multi-reviewer')
+    expect(review).toContain('shepherd:multi-reviewer')
   })
 
   it('keeps -p -- <prompt> last even when the prompt starts with a dash', () => {

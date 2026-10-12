@@ -71,7 +71,7 @@ export function TierChip({ projectPath, specPath, risk, whyNotes, canConfirm, wr
           data-write=""
           tone="inverse"
           value={current}
-          // The plugin's own rule, not a SDLC Studio one: raising a tier is free, and lowering asks for
+          // The plugin's own rule, not a Shepherd one: raising a tier is free, and lowering asks for
           // the name through the refusal flow above (`authorisedBy`). A missing signed-in person
           // gates the verbs that carry --by (Confirm tier), never this control — the CI runner has
           // no identity and board.spec pins that a raise still takes effect there.

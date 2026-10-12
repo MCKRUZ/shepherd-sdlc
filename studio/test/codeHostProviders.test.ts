@@ -128,12 +128,12 @@ describe('the two hosts fill identical shapes', () => {
   it('createPullRequest mirrors the save fallback: a normal (non-draft) PR, reviewer by email only when resolved', async () => {
     const { azJson, calls } = fakeAz()
     const ado = new AzureDevOpsHost('/p', remote, { azJson, env: {} })
-    const result = await ado.createPullRequest({ base: 'master', head: 'studio/1', title: 'Edited', body: 'Saved from SDLC Studio.\n\n-x\nline two', reviewer: 'priya@contoso.com' })
+    const result = await ado.createPullRequest({ base: 'master', head: 'shepherd/1', title: 'Edited', body: 'Saved from Shepherd.\n\n-x\nline two', reviewer: 'priya@contoso.com' })
     expect(result.url).toBe(`${remote.webUrl}/pullrequest/${CREATED_ID}`)
     expect(result.note).toMatch(/does not complete Azure DevOps pull requests/)
     expect(calls[0]).toEqual(['repos', 'pr', 'create', '--detect', 'false', '--org', remote.orgUrl, '--project', remote.project, '--repository', remote.repo,
-      '--source-branch', 'studio/1', '--target-branch', 'master', '--title', 'Edited',
-      '--description', 'Saved from SDLC Studio.', '', ' -x', 'line two', '--required-reviewers', 'priya@contoso.com'])
+      '--source-branch', 'shepherd/1', '--target-branch', 'master', '--title', 'Edited',
+      '--description', 'Saved from Shepherd.', '', ' -x', 'line two', '--required-reviewers', 'priya@contoso.com'])
     expect(calls[0]).not.toContain('--draft')
     expect(ADO_ARGV.prCreate(remote, { base: 'm', head: 'h', title: 't', body: 'b', reviewer: null })).not.toContain('--required-reviewers')
   })

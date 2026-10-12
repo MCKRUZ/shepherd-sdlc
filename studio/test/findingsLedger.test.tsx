@@ -50,7 +50,7 @@ describe('FindingsLedger', () => {
     expect(document.querySelectorAll('[data-stat]')).toHaveLength(0)
     expect(document.body.textContent).not.toMatch(/\b0 (attributed|tracked|unattributed)/)
     expect(document.body.textContent).not.toContain('`')
-    expect(Array.from(document.querySelectorAll('code')).map((c) => c.textContent)).toEqual(['/sdlc-review', 'record_findings.py record'])
+    expect(Array.from(document.querySelectorAll('code')).map((c) => c.textContent)).toEqual(['/sprd-review', 'record_findings.py record'])
     // v13 fixer round: the chips painted over the line above when the caption wrapped (1280, 1680
     // shots). Two guards in the caption's classes: a 24 px pitch and chips with no vertical padding.
     const caption = screen.getByTestId('findings-caption')

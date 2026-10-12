@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { claudeWorkingDirectory, CLAUDE_SHARED_SAFE_ARGS } from './claudeAssist'
 import { ASK_QUESTION_TOOL as ASK_QUESTION, PROPOSE_WRITE_TOOL as PROPOSE_WRITE } from './chatMcpServer'
 import { hostLabel, type HostName } from '../../shared/codeHostModel'
+import { PLUGIN_ID } from '../../shared/pluginId'
 
 
 // --- the fixed tool surface ---------------------------------------------------------------
@@ -37,7 +38,7 @@ export function readPluginName(pluginRoot: string): string {
     const parsed = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     if (typeof parsed.name === 'string' && parsed.name) return parsed.name
   } catch { /* fall through to the fallback below */ }
-  return 'claude-code-sdlc' // this plugin's own known name, if the manifest is ever unreadable
+  return PLUGIN_ID // this plugin's own known name, if the manifest is ever unreadable
 }
 
 // --- system prompt ---------------------------------------------------------------------
@@ -55,7 +56,7 @@ export function buildSystemPrompt(opts: {
   host?: HostName
 }): string {
   return [
-    'You are the SDLC assistant inside SDLC Studio\'s chat panel, authoring this project\'s '
+    'You are the SDLC assistant inside Shepherd\'s chat panel, authoring this project\'s '
       + 'documents through a live conversation. You have no Edit, Write or Bash tool — you '
       + 'cannot and must not write to any file yourself, on this machine or any other, by any '
       + 'means. Never claim a write happened; only ProposeWrite reaches the person, and only '

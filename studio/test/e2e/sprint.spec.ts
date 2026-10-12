@@ -7,7 +7,7 @@
  * changes the sprint — the only buttons write a page, and nothing runs until one is pressed.
  *
  * The fixture is built by the plugin's scripts, not by hand-written files: init_project.py,
- * new_spec.py three times, sprint.py new / slate / verdict — the same commands /sdlc-sprint runs.
+ * new_spec.py three times, sprint.py new / slate / verdict — the same commands /sprd-sprint runs.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -192,7 +192,7 @@ test.describe('[studio-improvements B2] the Sprint view in the real window', () 
   })
 })
 
-/** A project with no sprint record at all must say so and point at /sdlc-sprint new — not show an
+/** A project with no sprint record at all must say so and point at /sprd-sprint new — not show an
  * empty table, and not a "0 of 0". A separate app instance, because the fixture above has one. */
 test.describe('[studio-improvements B2] a project with no sprint, in the real window', () => {
   test.skip(!PLUGIN_ROOT || !existsSync(VENV_PYTHON), 'needs a plugin checkout beside this repo')
@@ -240,7 +240,7 @@ test.describe('[studio-improvements B2] a project with no sprint, in the real wi
     await openBuildView(barePage, 'Home')
     // The plugin's own note wins when it gives one ("no sprint record under … — create one with
     // `sprint.py new`"); Studio's sentence is the fallback. Either names where to start.
-    await expect(barePage.getByTestId('sprint-empty')).toHaveText(/no sprint record|No sprint — open one with \/sdlc-sprint new\./, { timeout: 60_000 })
+    await expect(barePage.getByTestId('sprint-empty')).toHaveText(/no sprint record|No sprint — open one with \/sprd-sprint new\./, { timeout: 60_000 })
     await expect(barePage.getByTestId('sprint-slate')).toHaveCount(0)
     await expect(barePage.getByTestId('sprint-header')).toHaveCount(0)
     await expect(barePage.getByText(/0 of 0/)).toHaveCount(0)

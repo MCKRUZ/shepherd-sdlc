@@ -160,7 +160,7 @@ describe('parseStreamJsonToMessages', () => {
       // The orchestrator spawns discovery-analyst via Task.
       assistantLine([
         { type: 'text', text: 'Let me check the intake corpus for contradictions.' },
-        { type: 'tool_use', id: 'task-1', name: 'Task', input: { subagent_type: 'claude-code-sdlc:discovery-analyst', description: 'find contradictions', prompt: '...' } },
+        { type: 'tool_use', id: 'task-1', name: 'Task', input: { subagent_type: 'shepherd:discovery-analyst', description: 'find contradictions', prompt: '...' } },
       ], { uuid: 'orchestrator-1' }),
       // The sub-agent's OWN forwarded text (--forward-subagent-text), not a paraphrase.
       assistantLine([{ type: 'text', text: 'Found 3 contradictions across the corpus.' }], { parentToolUseId: 'task-1', uuid: 'sub-1' }),
@@ -169,7 +169,7 @@ describe('parseStreamJsonToMessages', () => {
     expect(messages).toHaveLength(2)
     expect(messages[0]).toMatchObject({ id: 'orchestrator-1', role: 'assistant' })
     expect(messages[1]).toMatchObject({
-      id: 'sub-1', role: 'subagent', subagentType: 'claude-code-sdlc:discovery-analyst',
+      id: 'sub-1', role: 'subagent', subagentType: 'shepherd:discovery-analyst',
       text: 'Found 3 contradictions across the corpus.',
     })
   })

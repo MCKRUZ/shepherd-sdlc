@@ -173,7 +173,7 @@ export function SettingsScreen({
         <PageHeader
           eyebrow="Project · Settings"
           title="Settings"
-          lede="Every setting here is stored in the project itself, not in SDLC Studio — so it travels with the repository and changes like any other file."
+          lede="Every setting here is stored in the project itself, not in Shepherd — so it travels with the repository and changes like any other file."
           actions={(
             <Button
               size="sm"
@@ -258,7 +258,7 @@ export function SettingsScreen({
           <CodeHostOverride value={connection.host} busy={busy} onSet={changeCodeHost} />
         )}
         <p className="mt-3 text-xs text-ink-3">
-          Studio reads and writes the project's own documents and specs. It never writes your
+          Shepherd reads and writes the project's own documents and specs. It never writes your
           code — that stays read-only, and a save it makes is an ordinary commit with a person
           and a reason on it.
         </p>
@@ -335,7 +335,7 @@ export function SettingsScreen({
         ) : null}
         <p className="mt-3 text-xs text-ink-3">
           Adding someone here records that they may hold a role. It grants nobody access —
-          Studio never invites anyone or changes anyone's repository permissions.
+          Shepherd never invites anyone or changes anyone's repository permissions.
         </p>
       </Section>
 

@@ -81,7 +81,7 @@ describe.skipIf(!PLUGIN.available)('which documents a batch is about', () => {
   it('refuses a job that is not one of the two, and a path that is not a project', () => {
     project = makeIntakeProject(PLUGIN, { files: FIVE })
     for (const kind of ['enhance', 'review', 'constructor', '', undefined, 7, { toString: () => 'summarise' }]) {
-      expect(preview(kind), String(kind)).toEqual({ ok: false, error: 'That is not a job Studio can run.' })
+      expect(preview(kind), String(kind)).toEqual({ ok: false, error: 'That is not a job Shepherd can run.' })
     }
     expect(previewBatch(join(project, 'docs'), PLUGIN.scriptsDir, 'summarise')).toEqual({ ok: false, error: 'Open a project first.' })
   })
@@ -142,7 +142,7 @@ describe.skipIf(!PLUGIN.available)('which documents a batch is about', () => {
     for (const kind of ['summarise', 'analyse']) {
       const fake = fakeClaude('success')
       const result = await startDraft(project, PLUGIN.scriptsDir, { kind, stageId: '0' }, deps(fake))
-      expect(result, kind).toEqual({ ok: false, error: 'That is not a job Studio can run.' })
+      expect(result, kind).toEqual({ ok: false, error: 'That is not a job Shepherd can run.' })
       expect(fake.hasRun()).toBe(false)
     }
   })

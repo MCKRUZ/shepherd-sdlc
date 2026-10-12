@@ -12,12 +12,13 @@ import { join, resolve, sep } from 'node:path'
 import type { IpcMain } from 'electron'
 import { runPluginScript } from './project'
 import { rawStdout } from './commandRunner'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type {
   IntakeCatalogue, IntakeChange, IntakeDocument, NarrativeArtifact, NarrativeCoverage, PhaseReportEntry,
   PhaseReportResult, ReviewStanding, StrictCheckResult,
 } from '../../shared/types'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
 const DOC_ID = /^DOC-\d{3,}$/
 const STAGE_ID = /^[A-Za-z0-9]{1,16}$/
 
@@ -83,7 +84,7 @@ export async function exportPhaseReport(
   stageId: string,
   all: boolean,
 ): Promise<PhaseReportResult> {
-  if (!all && !STAGE_ID.test(stageId)) return noReports('That is not a stage Studio can write a report for.')
+  if (!all && !STAGE_ID.test(stageId)) return noReports('That is not a stage Shepherd can write a report for.')
   const args = ['--state', stateFile(projectPath), ...(all ? ['--all'] : ['--phase', stageId]), '--json']
   const result = await runJson(scriptsDir, 'generate_phase_report.py', args, 'The report')
   if (!result.ok) return noReports(result.error)
@@ -115,8 +116,8 @@ export async function openReport(
   open: OpenPath = openWithSystem,
 ): Promise<{ ok: boolean; error?: string }> {
   const refuse = (error: string) => ({ ok: false, error })
-  if (reportPath.replace(/\\/g, '/').split('/').includes('..')) return refuse('Studio only opens reports from this project’s .sdlc/reports folder.')
-  if (!/\.html$/i.test(reportPath)) return refuse('Studio only opens report pages (.html).')
+  if (reportPath.replace(/\\/g, '/').split('/').includes('..')) return refuse('Shepherd only opens reports from this project’s .sdlc/reports folder.')
+  if (!/\.html$/i.test(reportPath)) return refuse('Shepherd only opens report pages (.html).')
 
   const reportsDir = join(projectPath, '.sdlc', 'reports')
   const full = resolve(projectPath, reportPath)
@@ -127,7 +128,7 @@ export async function openReport(
   const realFull = realpathSync.native(full)
   // The reports folder must be the project's own, not a link elsewhere, and the file must really be in it.
   if (realReports !== realProjectReports || !inside(realReports, realFull)) {
-    return refuse('Studio only opens reports from this project’s .sdlc/reports folder.')
+    return refuse('Shepherd only opens reports from this project’s .sdlc/reports folder.')
   }
   try {
     const failure = await open(realFull)
@@ -164,7 +165,7 @@ function readDocument(raw: unknown): IntakeDocument | null {
 }
 
 export async function runIntake(projectPath: string, scriptsDir: string, change: IntakeChange = {}): Promise<IntakeCatalogue> {
-  if (!validIds(change.skip) || !validIds(change.priority)) return noCatalogue('Those are not document ids Studio can use.')
+  if (!validIds(change.skip) || !validIds(change.priority)) return noCatalogue('Those are not document ids Shepherd can use.')
   // Exit 2 is the script's "nothing to catalogue": it prints an empty catalogue. Taken as a result
   // only when the document list really is empty, so a missing script (python's own exit 2, nothing
   // printed) and a half-written answer are still errors.
@@ -201,7 +202,7 @@ function readArtifact(raw: unknown): NarrativeArtifact | null {
 }
 
 export async function getNarrativeCoverage(projectPath: string, scriptsDir: string, stageId: string): Promise<NarrativeCoverage> {
-  if (!STAGE_ID.test(stageId)) return noCoverage('That is not a stage Studio can read summaries for.')
+  if (!STAGE_ID.test(stageId)) return noCoverage('That is not a stage Shepherd can read summaries for.')
   const result = await runJson(scriptsDir, 'narrative_status.py', ['--state', stateFile(projectPath), '--phase', stageId, '--json'], 'The summary coverage')
   if (!result.ok) return noCoverage(result.error)
 

@@ -6,7 +6,7 @@
  * `src/theme/tokens.d.ts` is expanded here through `satisfies Record<Union, 1>`, which the
  * typechecker refuses if a key is missing or extra, and the expanded name is then looked for in
  * the CSS text. The build itself is verified once by `vite build`, not here. */
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type {
@@ -20,6 +20,9 @@ const root = join(__dirname, '..', 'src')
 // The Windows runner checks out with CRLF on purpose (ci.yml); the multi-line expectations below
 // are written with \n, so line endings are normalised here rather than in every assertion.
 const read = (rel: string) => readFileSync(join(root, rel), 'utf8').replace(/\r\n/g, '\n')
+/** Every file under `dir`, recursively — for the "exactly one carrier" pins below. */
+const walk = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(join(dir, d.name)) : [join(dir, d.name)]))
 const index = read('index.css')
 const tokens = read('theme/tokens.css')
 const type = read('theme/type.css')
@@ -55,17 +58,21 @@ const STAGGERS = Object.keys({ 'stagger-1': 1, 'stagger-2': 1 } satisfies Record
  * block. Not a `TypeToken`/`ColorToken` union on purpose (tokens.d.ts is the kit's; these are the
  * command center's) — the list is the contract here. */
 const CC_HEX_LIGHT: Record<string, string> = {
-  lane: '#eef2f7', 'lane-header': '#e9eef5', 'lane-line': '#dce3ec', 'card-lit': '#1a99a3', baton: '#0e7c86', 'baton-bg': '#d3f3f3',
-  'baton-ink': '#0b6470', 'you-ring': '#0e7c86', 'plan-says': '#edfafa', 'plan-says-line': '#a7e6e7', 'rung-pending': '#0369a1',
-  'steer-bg': '#ffffff', 'steer-tile': '#f8fafc',
+  lane: '#efeae1', 'lane-header': '#e9e3d9', 'lane-line': '#d9d1c4', 'card-lit': '#4f8545', baton: '#3f6b35', 'baton-bg': '#e3eddd',
+  'baton-ink': '#3f6b35', 'you-ring': '#3f6b35', 'plan-says': '#f3f7f0', 'plan-says-line': '#c7e0bc', 'rung-pending': '#0369a1',
+  'steer-bg': '#ffffff', 'steer-tile': '#f5efe4',
+  // strip-lit is a hex row, not the `stage-signed-fill` alias: on the sand canvas the signed fill is 2.88:1,
+  // under the 3:1 UI floor, so light takes the signed INK step (the `rung-pending` move) and dark the fill.
+  'strip-lit': '#15803d',
 }
 const CC_HEX_DARK: Record<string, string> = {
-  lane: '#0e1727', 'lane-header': '#121c2f', 'lane-line': '#1b2639', 'card-lit': '#22a3ad', baton: '#22a3ad', 'baton-bg': '#0c363b',
-  'baton-ink': '#6fd1d4', 'you-ring': '#6fd1d4', 'plan-says': '#0a2a2e', 'plan-says-line': '#0f4a50', 'rung-pending': '#38bdf8',
-  'steer-bg': '#070c16', 'steer-tile': '#111a2b',
+  lane: '#1c1915', 'lane-header': '#25211c', 'lane-line': '#2e2923', 'card-lit': '#6fa55f', baton: '#6fa55f', 'baton-bg': '#243f20',
+  'baton-ink': '#9dc58e', 'you-ring': '#9dc58e', 'plan-says': '#192d17', 'plan-says-line': '#2f5229', 'rung-pending': '#38bdf8',
+  'steer-bg': '#0e0c0a', 'steer-tile': '#1c1915',
+  'strip-lit': '#34d399',
 }
 const CC_ALIAS: Record<string, string> = {
-  'strip-lit': 'stage-signed-fill', 'strip-unlit': 'line-2', 'strip-viewing': 'stage-current-fill',
+  'strip-unlit': 'line-2', 'strip-viewing': 'stage-current-fill',
   'today-act-bg': 'stage-current-bg', 'today-act-ink': 'stage-current-ink', 'today-act-line': 'stage-current-line',
   'today-wait-bg': 'status-warn-bg', 'today-wait-ink': 'status-warn-ink', 'today-wait-line': 'status-warn-line',
   'today-late-bg': 'status-error-bg', 'today-late-ink': 'status-error-ink', 'today-late-line': 'status-error-line',
@@ -101,6 +108,7 @@ describe('index.css', () => {
   it('keeps the Tailwind import first and imports the fonts and the four theme files', () => {
     expect(index.trimStart().startsWith('@import "tailwindcss";')).toBe(true)
     for (const dep of ['@fontsource-variable/inter/wght.css', '@fontsource-variable/jetbrains-mono/wght.css',
+      '@fontsource-variable/saira/wght.css',
       './theme/tokens.css', './theme/type.css', './theme/dark.css', './theme/base.css']) {
       expect(index).toContain(`@import "${dep}";`)
     }
@@ -123,11 +131,11 @@ describe('tokens.css (light)', () => {
   })
 
   it('defines the brand scrim once: surface-0 at .55 with a 2 px blur, aliased to the bg-scrim utility (P3)', () => {
-    expect(tokens).toContain('--scrim: rgb(248 250 252 / 0.55);')
+    expect(tokens).toContain('--scrim: rgb(245 239 228 / 0.55);')
     expect(tokens).toContain('--scrim-filter: blur(2px) saturate(1);')
     expect(tokens).toMatch(/:root\s*\{[^}]*--color-scrim: var\(--scrim\);/)
-    // Never a black wash: the light scrim is surface-0's rgb, not slate-900's.
-    expect(tokens).not.toMatch(/--scrim: rgb\(11 17 32/)
+    // Never a black wash: the light scrim is surface-0's rgb (sand), not the dark canvas's (bark-0).
+    expect(tokens).not.toMatch(/--scrim: rgb\(20 18 15/)
   })
 
   it('completes the brand scale (200/300/800/900 were used with no CSS emitted)', () => {
@@ -143,15 +151,15 @@ describe('tokens.css (light)', () => {
   })
 
   it('round 2: accent-as-text, the eyebrow voice and the Depth stops (C1, C2, B2)', () => {
-    expect(tokens).toContain('--color-accent-text: #0b6470;')
-    expect(tokens).toContain('--color-accent-text-hover: #0b505a;')
+    expect(tokens).toContain('--color-accent-text: #3f6b35;')
+    expect(tokens).toContain('--color-accent-text-hover: #2f5229;')
     expect(tokens).toContain('--color-eyebrow: var(--color-ink-3);')
-    // ink-3 is retuned so a word in it passes AA on surface-2 (tokenContrast.test holds the ratio).
-    expect(tokens).toContain('--color-ink-3: #5d6c84;')
+    // ink-3 is bark, tuned so a word in it passes AA on surface-2 (tokenContrast.test holds the ratio).
+    expect(tokens).toContain('--color-ink-3: #6b625a;')
     expect(tokens).toMatch(/ink-4.*decoration only — placeholders, dividers, aria-hidden glyphs; never a\s+word/s)
     for (const v of MARK_DEPTH) expect(declares(tokens, v), v).toBe(true)
-    expect(tokens).toContain('--mark-depth-a: #6fd1d4;')
-    expect(tokens).toContain('--mark-depth-b: #0a3f47;')
+    expect(tokens).toContain('--mark-depth-a: #9dc58e;')
+    expect(tokens).toContain('--mark-depth-b: #192d17;')
     // Depth is not a colour token: no `--color-mark-*`, so no utility can put it on a control.
     expect(tokens).not.toMatch(/--color-mark-depth/)
   })
@@ -173,7 +181,7 @@ describe('tokens.css (light)', () => {
 })
 
 describe('command center tokens (togo-command-center-visual.md §2–§3)', () => {
-  it('declares all 46 on :root — the 13 hex rows with the written light values, the 33 alias rows as var() of the token they name', () => {
+  it('declares all 46 on :root — the 14 hex rows with the written light values, the 32 alias rows as var() of the token they name', () => {
     expect(CC_TOKENS).toHaveLength(46)
     for (const [name, hex] of Object.entries(CC_HEX_LIGHT)) expect(tokens, name).toContain(`--color-${name}: ${hex};`)
     for (const [name, target] of Object.entries(CC_ALIAS)) expect(tokens, name).toContain(`--color-${name}: var(--color-${target});`)
@@ -215,6 +223,37 @@ describe('type.css', () => {
     expect(type).toContain('--text-sm: 13px;')
     expect(type).toMatch(/--font-sans: "Inter Variable"/)
     expect(type).toMatch(/--font-mono: "JetBrains Mono Variable"/)
+    expect(type).toMatch(/--font-display: "Saira Variable"/)
+  })
+
+  it('keeps the display face to the wordmark: one UI face, one display face for the wordmark only', () => {
+    // The UI face is unchanged by the display face's arrival, and shares its fallback shape.
+    expect(type).toMatch(/--font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;/)
+    expect(type).toMatch(/--font-display: "Saira Variable", Saira, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;/)
+    // Inter's `cv11`/`ss01` alternates are Inter's; the display face does not inherit them.
+    expect(type).toContain('--font-display--font-feature-settings: normal;')
+    // No type token names a family: headings keep `--font-sans` through inheritance, so a size
+    // token that started carrying `--font-display` would be the global change the brand forbids.
+    expect(type).not.toMatch(/--text-[\w-]+--font-family/)
+    expect(base).not.toContain('font-display')
+    // `font-display` as a utility appears in exactly one component: the wordmark.
+    const components = join(root, 'components')
+    const carriers = walk(components).filter((f) => /\.tsx?$/.test(f) && /\bfont-display\b/.test(readFileSync(f, 'utf8')))
+    expect(carriers.map((f) => f.replace(/\\/g, '/').split('/components/')[1])).toEqual(['brand/ShepherdWordmark.tsx'])
+  })
+})
+
+describe('ShepherdWordmark', () => {
+  const wordmark = read('components/brand/ShepherdWordmark.tsx')
+  it('keeps the name capitalised in the DOM and lowercases only the glyphs, in the display face at 600, −0.01em', () => {
+    // The DOM text (window title, h1 prefix, accessible name) is "Shepherd"; the lowercase
+    // "shepherd" of the owner's references is `text-transform`, never a second spelling.
+    expect(wordmark).toContain("export const PRODUCT_NAME = 'Shepherd'")
+    expect(wordmark).not.toMatch(/=\s*['"`]shepherd['"`]|>\s*shepherd\s*</)
+    expect(wordmark).toContain("export const WORDMARK_CLASS = 'font-display font-semibold lowercase tracking-[-0.01em]'")
+    expect(wordmark).toContain('{PRODUCT_NAME}')
+    // Live text, never a picture, never shouting (brand §6, §8).
+    expect(wordmark).not.toMatch(/<svg|<img|uppercase/)
   })
 })
 
@@ -226,18 +265,18 @@ describe('dark.css', () => {
   })
 
   it('round 2: dark accent-text is the pale ramp end, ink-4 is lifted, Depth never sinks into surface-0', () => {
-    expect(dark).toContain('--color-accent-text: #6fd1d4;')
-    expect(dark).toContain('--color-accent-text-hover: #a7e6e7;')
+    expect(dark).toContain('--color-accent-text: #9dc58e;')
+    expect(dark).toContain('--color-accent-text-hover: #c7e0bc;')
     expect(dark).toContain('--color-eyebrow: var(--color-ink-3);')
-    expect(dark).toContain('--color-ink-4: #6b7a94;')
+    expect(dark).toContain('--color-ink-4: #6b625a;')
     for (const v of MARK_DEPTH) expect(declares(dark, v), v).toBe(true)
-    expect(dark).toContain('--mark-depth-a: #6fd1d4;')
-    // The far stop is accent-600, not accent-900: #0a3f47 on #0b1120 would read as a hole.
-    expect(dark).toContain('--mark-depth-b: #0e7c86;')
+    expect(dark).toContain('--mark-depth-a: #9dc58e;')
+    // The far stop is accent-600, not accent-900: #192d17 on #14120f would read as a hole.
+    expect(dark).toContain('--mark-depth-b: #3f6b35;')
   })
 
   it('restates the scrim as surface-0 dark at .6 and keeps the bg-scrim alias (P3)', () => {
-    expect(dark).toContain('--scrim: rgb(11 17 32 / 0.6);')
+    expect(dark).toContain('--scrim: rgb(20 18 15 / 0.6);')
     expect(dark).toMatch(/\[data-theme="dark"\]\s*\{[^}]*--color-scrim: var\(--scrim\);/)
     // The blur is defined once, on :root — dark must not fork it.
     expect(declares(dark, '--scrim-filter')).toBe(false)
@@ -301,8 +340,8 @@ describe('base.css', () => {
     // `html` keeps the ground colour so the canvas is never bare.
     expect(base).toMatch(/\n {2}html \{[^}]*background: var\(--color-surface-0\);/)
     const darkGlow = base.match(/\[data-theme="dark"\] \{([^}]*)\}/)?.[1] ?? ''
-    expect(darkGlow).toContain('--canvas-glow-1: rgb(26 153 163 / 0.09);')
-    expect(darkGlow).toContain('--canvas-glow-2: rgb(14 124 134 / 0.05);')
+    expect(darkGlow).toContain('--canvas-glow-1: rgb(79 133 69 / 0.09);')
+    expect(darkGlow).toContain('--canvas-glow-2: rgb(63 107 53 / 0.05);')
   })
 
   it('round 2 (M8): universal press and focus-arrive, both zeroed by the motion-off rules', () => {

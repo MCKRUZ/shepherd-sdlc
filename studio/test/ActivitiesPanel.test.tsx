@@ -256,7 +256,7 @@ describe('ActivitiesPanel: a check that fails shows one error line and no count'
   const failures: Array<[string, string]> = [
     ['the script is missing', 'rules_check.py was not found in the plugin.'],
     ['the script exits with code 1', 'The check stopped with an error: bad table.'],
-    ['the script prints something that is not one JSON document', 'The check printed something Studio could not read.'],
+    ['the script prints something that is not one JSON document', 'The check printed something Shepherd could not read.'],
   ]
 
   it.each(failures)('when %s', async (_name, error) => {

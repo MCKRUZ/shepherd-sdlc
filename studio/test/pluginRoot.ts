@@ -1,6 +1,6 @@
 /** Locating the plugin the integration tests run against — and refusing to be quiet about it.
  *
- * Studio drives the claude-code-sdlc plugin's own scripts, so its most valuable tests need a
+ * Studio drives the Shepherd plugin's own scripts, so its most valuable tests need a
  * real plugin checkout with a real Python environment. When one cannot be located, those tests
  * skip. That is the right behaviour: somebody who has cloned Studio alone should still be able
  * to run its unit tests.
@@ -85,7 +85,7 @@ export function requirePlugin(testDir: string): PluginLocation {
   if (process.env.STUDIO_SKIP_PLUGIN_TESTS === '1') return found
 
   throw new Error(
-    'No usable claude-code-sdlc checkout was located, so the tests that prove Studio actually '
+    'No usable Shepherd plugin checkout was located, so the tests that prove Studio actually '
     + 'drives the plugin cannot run.\n\n'
     + `A usable checkout has both ${MARKER} and a Python environment under scripts/.venv.\n\n`
     + 'Looked in:\n'

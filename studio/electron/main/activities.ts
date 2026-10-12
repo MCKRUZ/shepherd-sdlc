@@ -11,9 +11,10 @@ import { ensureDocumentFromTemplate } from './documents'
 import { runPluginScript } from './project'
 import { rawStdout } from './commandRunner'
 import { getStageReadiness } from './readiness'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type { ActivityCheckResult, StageGuide, StartActivityResult } from '../../shared/types'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
 
 function refused(error: string, created: string[] = [], existing: string[] = []): StartActivityResult {
   return { ok: false, created, existing, error }
@@ -28,7 +29,7 @@ export async function startActivity(
   const readiness = await getStageReadiness(projectPath, scriptsDir, stageId)
   const activity = readiness.activities?.find((a) => a.id === activityId)
   if (!activity) return refused('That activity is not part of this stage.')
-  if (activity.kind !== 'create') return refused(`${activity.label} is not something Studio can start from templates.`)
+  if (activity.kind !== 'create') return refused(`${activity.label} is not something Shepherd can start from templates.`)
   if (activity.status === 'blocked') return refused(activity.reason ?? `${activity.label} is not available yet.`)
 
   const created: string[] = []
@@ -82,7 +83,7 @@ export async function runActivityCheck(
   activityId: string,
 ): Promise<ActivityCheckResult> {
   const check = CHECKS[activityId]
-  if (!check) return { ok: false, error: 'Studio has no check for that activity.' }
+  if (!check) return { ok: false, error: 'Shepherd has no check for that activity.' }
 
   const failed: ActivityCheckResult = { ok: false, error: 'The check could not be run, so there is no result to show.' }
   const entry = await runPluginScript(scriptsDir, check.script, check.args(projectPath))
@@ -101,7 +102,7 @@ export async function runActivityCheck(
 export function getStageGuide(scriptsDir: string, definition: string): StageGuide {
   const segments = definition.replace(/\\/g, '/').split('/')
   if (isAbsolute(definition) || segments.some((s) => s === '..') || !definition.endsWith('.md')) {
-    return { ok: false, error: 'That is not a guidance file Studio can read.' }
+    return { ok: false, error: 'That is not a guidance file Shepherd can read.' }
   }
   try {
     return { ok: true, markdown: readFileSync(join(dirname(scriptsDir), definition), 'utf-8') }
@@ -119,7 +120,7 @@ export function startDocument(
   scriptsDir: string,
   relPath: unknown,
 ): { ok: boolean; created?: boolean; error?: string } {
-  if (typeof relPath !== 'string' || relPath.trim() === '') return { ok: false, error: 'That is not a document Studio can start.' }
+  if (typeof relPath !== 'string' || relPath.trim() === '') return { ok: false, error: 'That is not a document Shepherd can start.' }
   return ensureDocumentFromTemplate(projectPath, scriptsDir, relPath)
 }
 

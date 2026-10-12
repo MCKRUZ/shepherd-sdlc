@@ -180,7 +180,7 @@ function planAnalyse(project: string, catalogue: Catalogue): BatchPlan | Refusal
 /** The whole gate in front of a batch. Returns the plan, or the one line that says why not. */
 export function planBatch(projectPath: string, kind: unknown): BatchPlan | Refusal {
   if (typeof projectPath !== 'string' || !hasSdlcProject(projectPath)) return refuse('Open a project first.')
-  if (typeof kind !== 'string' || !BATCH_KINDS.includes(kind as BatchKind)) return refuse('That is not a job Studio can run.')
+  if (typeof kind !== 'string' || !BATCH_KINDS.includes(kind as BatchKind)) return refuse('That is not a job Shepherd can run.')
   const catalogue = readCatalogue(projectPath)
   if (!catalogue || !catalogue.locked) return refuse(NOT_LOCKED)
   return kind === 'summarise' ? planSummarise(projectPath, catalogue) : planAnalyse(projectPath, catalogue)
