@@ -1,8 +1,9 @@
-"""ado_sync.py -- The CLI of the Azure Boards mirror: set it up, read the client's process, check the fit (B1).
+"""ado_sync.py -- The CLI of the Azure Boards mirror: set it up, read the client's process, plan and read the board (B1, B2).
 
 Azure DevOps Boards is a board the team already uses; this mirror projects the repository's specs, epics and
-features onto it and reads board changes back. The skeleton below carries the verbs that never touch a work
-item (the later Folds add `plan`, `pull`, `apply` and the rest to `VERBS`):
+features onto it and reads board changes back. Fold B1 shipped the verbs that never touch a work item; Fold B2
+adds the READ verbs. Nothing in this file writes to the board: `apply` and the comment writes arrive with the
+write path.
 
   config init [--force]   copy the starter `.sdlc/ado.yaml` in and ignore the local cache folder
   config check            the config's findings, one per line (against the saved schema when there is one)
@@ -10,14 +11,40 @@ item (the later Folds add `plan`, `pull`, `apply` and the rest to `VERBS`):
                           read the process with serial `devops invoke` GETs, save `.sdlc/ado/schema.json`
   validate                every configured kind resolves on the discovered process; the fit table and the
                           process additions an administrator would make for what does not fit as an item
+  plan [--kind K] [--id ID] [--sprint SNN] [--all] [--validate] [--no-comments]
+                          the dry run: what each item of the repository would do on the board (create, update,
+                          link, or why it would not), the hash a person echoes to `apply`
+  status                  what the ledger says, offline: linked, pending, drifted, as of when -- `no data`
+                          where nothing was ever measured, never a zero
+  pull [--id ID] [--all] [--discussion [--full]]
+                          read the ledgered items back: record `observed` and `drift_seen`, write the session
+                          hook's one line; `--discussion` caches each item's comments instead
+  drift [--id ID] [--kind K]
+                          the same classification as `pull`, printed, and the board items nobody has linked
+  link <ref> --work-item N --by H | adopt --all --by H
+                          map a repository item to a work item that exists (the ledger's `linked`)
+  show <ref|#id> [--fetch] [--versions] [--expand reactions] [--for-agent]
+                          a work item's cached discussion, quoted; `--fetch` reads it from the board first
+  discussion gc [--dry-run]
+                          delete discussion caches past `discussion.retain_days` or for unlinked items
 
 What it reads
-  - `.sdlc/ado.yaml` (the config) and `.sdlc/ado/schema.json` (what `discover` saved)
-  - Azure DevOps through `ado_transport.invoke_body`, for `discover` only; `az` is never called twice for
-    the same answer and never probed to explain a failure (the `host` block reads the failure it was given)
+  - `.sdlc/ado.yaml` (the config), `.sdlc/ado/schema.json` (what `discover` saved), the repository's own specs,
+    epics, features, sprints and decisions (through `ado_sync_sources`), `.sdlc/team.yaml`, and the ledger
+  - Azure DevOps through `ado_wit` (and `ado_transport.invoke_body` for `discover`); `az` is never called twice
+    for the same answer and never probed to explain a failure (the `host` block reads the failure it was given)
 What it writes
   - `config init`: `.sdlc/ado.yaml` and `.sdlc/ado/local/.gitignore`; `discover`: `.sdlc/ado/schema.json`
+  - `plan`: `.sdlc/ado/local/plans/<hash>.json`, ledger `planned`, `.sdlc/ado/local/hook-status.txt`
+  - `pull`: ledger `observed` and `drift_seen`, the hook line; `pull --discussion` and `show --fetch`: the local
+    discussion cache (`.sdlc/ado/local/discussion/<id>.json`, `me.json`) and ledger `discussion_pulled`,
+    `comment_seen`, `directive_seen` -- counts, ids and hashes only, never a comment's text, a name or an address
+  - `link`, `adopt`: ledger `linked`; `discussion gc`: deletions under the local folder, ledger `discussion_gc`
   - Nothing else: never `state.yaml`, never a spec, never the board. `--help` and an import write nothing.
+  The ledger is `.sdlc/metrics/ado-sync-log.jsonl`, append-only, one `json.dumps(event)` per line; a failed
+  append prints `DRIFT: ...` and exits 1. A `linked` (or, later, `applied`) line carries `work_item`, `rev_after`
+  (the board's revision it was written against), `type` and `projection_hash`: `ado_sync_model.projection_hash` of
+  the projection WITH the `sdlc-repo:<slug>` tag added, which is the document every verb here compares and plans.
 
 Exit codes (the kit's verb table)
   config init   0 written  | 1 the config exists and no --force
@@ -28,11 +55,21 @@ Exit codes (the kit's verb table)
                   not Azure DevOps, a document the mapping does not recognise. The `host` block is printed.
   validate      0 resolvable | 1 gaps (no config or schema, an unresolvable pin, a kind with no type) |
                 2 a forbidden field is mapped
+  plan, status, drift, show
+                0 always -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
+                no rows, never a failure; 1 only for a usage error (an unknown kind, a ref that is not ledgered
+                and no `#id`, `--fetch` on a remote that is not Azure DevOps)
+  pull          0 | 1 `DRIFT` (the ledger append failed)
+  link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous
+                | 2 an AI or agent `--by`, or the `AB#` form of a work item
+  discussion gc 0 | 1 `DRIFT`
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
   precondition. Both are copied from `sprint.py`, not imported.
 
 Honesty: a team, backlog or state never read is `null` in the schema and "not discovered" in the output, never an
-empty list or a zero; `--json` prints exactly one JSON document on stdout.
+empty list or a zero; a count never measured is `null` / "no data" and a 0 appears only after a read that found
+none; `--json` prints exactly one JSON document on stdout. The ledger, the plan file and every output of these
+verbs carry no e-mail address, GUID or display name: an assignee is a roster `@handle`.
 
 Standalone or Workflow (CLAUDE.md design rule):
   - Standalone: --repo <path>              (default: cwd) needs no `.sdlc/state.yaml`
@@ -42,21 +79,38 @@ Standalone or Workflow (CLAUDE.md design rule):
 
 import argparse
 import json
+import os
+import re
 import sys
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
+from typing import NamedTuple
+
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ado_discussion_cache as cache  # noqa: E402
+import ado_discussion_map as dm  # noqa: E402
 import ado_schema  # noqa: E402
 import ado_schema_map as sm  # noqa: E402
 import ado_sync_config as cfgmod  # noqa: E402
+import ado_sync_model as model  # noqa: E402
+import ado_sync_sources as sources  # noqa: E402
+import ado_sync_sources_tree  # noqa: E402,F401  (registers outcome, domain, requirement and the epic parent)
+import ado_transport  # noqa: E402
+import ado_wit  # noqa: E402
+import ado_wit_map as wm  # noqa: E402
+import boards_contract as bc  # noqa: E402
 import host_report  # noqa: E402
+import validate_team  # noqa: E402
 from ado_map import AdoImportError  # noqa: E402
-from boards_contract import CONFIG_FILE, DISCIPLINE_AGENTS, KINDS, SCHEMA_FILE  # noqa: E402
-from findings_model import is_ai_actor  # noqa: E402
+from boards_contract import CONFIG_FILE, KINDS, LEDGER, LOCAL_DIR, REF_RE, SCHEMA_FILE, TREE_ORDER  # noqa: E402
+from check_spec import parse_frontmatter  # noqa: E402
+from sprint_model import SPRINT_ID_RE  # noqa: E402
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
-AGENT_PREFIX = "shepherd:"
+AGENT_PREFIX = model.AGENT_PREFIX  # "shepherd:", the only prefix `ai_by` strips
 # The kinds `validate` checks as work item types without a fit: the config must name the type.
 PINNED_KINDS = ("spike", "decision", "finding", "question")
 # The starter's `kinds` (templates/ado/ado.yaml); a config without the key means this set.
@@ -82,15 +136,14 @@ class Illegal(Exception):
 # --- people, paths, the host -----------------------------------------------------------------------------------
 
 def require_human(name: str | None, flag: str) -> str:
-    """A named human for `--by`. A blank is `Illegal` (1). An AI or an agent is `Refused` (2): the name after a
-    leading `shepherd:` (only that prefix) reads as an AI (`is_ai_actor`), is an `agents/*.md` stem, or is one of
-    the discipline agents. Honestly labelled: this is a label check, not an identity check."""
+    """A named human for `--by`. A blank is `Illegal` (1). An AI or an agent is `Refused` (2), decided by
+    `ado_sync_model.ai_by` (K7): the name after a leading `shepherd:` (only that prefix) reads as an AI
+    (`is_ai_actor`), is an `agents/*.md` stem, or is one of the discipline agents. Honestly labelled: this is a
+    label check, not an identity check."""
     clean = str(name or "").strip()
     if not clean:
         raise Illegal(f"{flag} is required: name a person, not a role or a blank")
-    stem = clean[len(AGENT_PREFIX):].strip() if clean.lower().startswith(AGENT_PREFIX) else clean
-    lowered = stem.lower()
-    if is_ai_actor(stem) or lowered in AGENT_STEMS or lowered in DISCIPLINE_AGENTS:
+    if model.ai_by(clean, AGENT_STEMS):
         raise Refused(f"Refused: {flag} '{clean}' reads as an AI or an agent, not a named human. The mirror records "
                       "who is accountable for a change to the board; an agent may not be that name. (This is "
                       "labelling, not enforcement: it cannot verify identity, only refuse the obvious.)")
@@ -368,6 +421,1294 @@ def cmd_validate(args, repo_root: Path) -> int:
     return code
 
 
+# --- the ledger, the clock and the local files ---------------------------------------------------------------------
+
+LINKING_EVENTS = ("linked", "adopted", "applied")
+PLAN_SCHEMA = 1
+LEDGER_STAMP = "%Y-%m-%dT%H:%MZ"  # minute precision, the form the hook line prints after "as of"
+
+
+class LedgerDrift(Exception):
+    """Exit 1: a ledger append failed, so the files and the ledger now disagree."""
+
+
+def _now() -> datetime:
+    return ado_schema.now_utc()
+
+
+def _stamp(now: datetime | None = None) -> str:
+    return (now or _now()).strftime(LEDGER_STAMP)
+
+
+def _tidy(text, limit: int = 240) -> str:
+    """One line of someone else's words (an `az` error): control characters gone, runs collapsed, cut."""
+    clean = " ".join(dm.strip_control(str(text)).split())
+    return clean if len(clean) <= limit else clean[:limit - 1] + "…"
+
+
+def _event(ts: str, name: str, **fields) -> dict:
+    """One ledger line through the model (it refuses an unknown event, an address and a GUID)."""
+    try:
+        return model.ledger_entry(ts, name, **fields)
+    except ValueError as exc:
+        raise Illegal(f"not written to the ledger: {exc}") from None
+
+
+def read_ledger(repo_root) -> list[dict]:
+    """The ledger's lines in append order; a missing file is `[]`, a line that is not a JSON object is skipped."""
+    path = Path(repo_root) / LEDGER
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return []
+    except OSError as exc:
+        raise Illegal(f"could not read {LEDGER} ({type(exc).__name__})") from None
+    out = []
+    for line in text.splitlines():
+        try:
+            entry = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(entry, dict):
+            out.append(entry)
+    return out
+
+
+def append_ledger(repo_root, events: list[dict]) -> None:
+    """Append one `json.dumps(event)` line per event, opened with "a". An `OSError` is `LedgerDrift` (copied from
+    `sprint.py`'s `commit`): the caller has already written whatever else the verb writes."""
+    if not events:
+        return
+    path = Path(repo_root) / LEDGER
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8") as f:
+            for event in events:
+                f.write(json.dumps(event) + "\n")
+    except OSError as exc:
+        raise LedgerDrift(f"DRIFT: the ledger append failed ({LEDGER}): {exc}\n"
+                          "       Anything else this verb wrote now disagrees with the ledger; "
+                          "re-run it once the path is writable.") from None
+
+
+def _is_id(value) -> bool:
+    return type(value) is int and value >= 1
+
+
+def _word(value) -> str:
+    return str(value or "").strip().upper().replace("-", "_")
+
+
+def linked_items(ledger: list[dict]) -> dict[str, dict]:
+    """`ref` -> its last linking line (`linked`, `adopted` or `applied`, with an integer `work_item`). A ref whose
+    last word is an UNLINK `reconciled` line is left out: the rule `ado_sync_model.summarize` counts `linked` by."""
+    out: dict[str, dict] = {}
+    for e in ledger:
+        event, ref = e.get("event"), e.get("ref")
+        if event not in model.LEDGER_EVENTS or not isinstance(ref, str) or not ref:
+            continue
+        if event in LINKING_EVENTS and _is_id(e.get("work_item")):
+            out[ref] = e
+        elif event == "reconciled" and ref in out and not e.get("field") and _word(e.get("disposition")) == "UNLINK":
+            del out[ref]
+    return out
+
+
+REF_SEGMENT_KIND = {"fr": "requirement"}  # a requirement's ref is `sdlc:fr:<digits>` (ado_sync_sources_tree)
+
+
+def _kind_of(ref: str) -> str | None:
+    """The kind a `sdlc:<segment>:<id>` ref names: the segment, or the kind a differently spelled one stands for."""
+    parts = ref.split(":")
+    segment = parts[1] if len(parts) == 3 else ""
+    return segment if segment in KINDS else REF_SEGMENT_KIND.get(segment)
+
+
+def _link_row(ref: str, link: dict) -> dict:
+    """A linking line as the `ledger_row` `classify_drift` reads: its kind comes from the ref when the line has none."""
+    return {**link, "kind": link.get("kind") or _kind_of(ref)}
+
+
+def _write_json(path: Path, doc: dict) -> None:
+    """Sorted, indented JSON through a temporary file and a rename, so a crash never leaves half a file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    scratch = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        scratch.write_text(json.dumps(doc, sort_keys=True, indent=1) + "\n", encoding="utf-8")
+        os.replace(scratch, path)
+    finally:
+        scratch.unlink(missing_ok=True)
+
+
+def _ensure_local_ignore(repo_root: Path) -> None:
+    """`.sdlc/ado/local/` is ignored before anything lands in it (a clone that never ran `config init`)."""
+    ignore = repo_root / LOCAL_DIR / ".gitignore"
+    if not (ignore.exists() or ignore.is_symlink()):
+        ignore.parent.mkdir(parents=True, exist_ok=True)
+        ignore.write_bytes(b"*\n")
+
+
+def _write_hook_line(repo_root: Path, ledger: list[dict]) -> str:
+    """Line 1 of `hook-status.txt` is the summary's `hook_line` (K11). Returns the line."""
+    line = model.summarize(ledger, ado_schema.today())["hook_line"]
+    _ensure_local_ignore(repo_root)
+    cfgmod.write_hook_status(repo_root, line)
+    return line
+
+
+# --- reading the repository's side and the board's -------------------------------------------------------------------
+
+def _roster(repo_root: Path) -> dict:
+    try:
+        data = yaml.safe_load((repo_root / ".sdlc" / "team.yaml").read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError, UnicodeDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _emails(repo_root: Path) -> dict[str, str]:
+    """`{lower-case address: @handle}`: the only way a board identity becomes a person here."""
+    return validate_team.people_by_email(_roster(repo_root))
+
+
+def _cfg_or_empty(repo_root: Path) -> dict:
+    try:
+        return cfgmod.load_config(repo_root)
+    except cfgmod.ConfigError as exc:
+        if exc.kind == "missing":
+            return {}
+        raise
+
+
+def _load(repo_root: Path) -> tuple[dict, dict] | str:
+    """`(cfg, schema)` or the sentence saying why there is nothing to read against: the read verbs go
+    `unavailable` on these, they do not fail."""
+    try:
+        cfg = cfgmod.load_config(repo_root)
+    except cfgmod.ConfigError as exc:
+        if exc.kind == "missing":
+            return f"not configured: {CONFIG_FILE} does not exist (run `ado_sync.py config init`)"
+        return _tidy(exc)
+    try:
+        schema = ado_schema.load_schema(repo_root)
+    except AdoImportError as exc:
+        return _tidy(exc)
+    if schema is None:
+        return "no discovered schema: run `ado_sync.py discover` first, so there is a process to read against"
+    return cfg, schema
+
+
+def _scope_kinds(cfg: dict, wanted: list[str] | None) -> tuple[list[str], list[dict]]:
+    """The kinds a verb covers (those asked for, else the configured ones) that have a source, and the rest
+    named as skipped. An unknown kind is `Illegal`."""
+    for kind in wanted or []:
+        if kind not in KINDS:
+            raise Illegal(f"unknown kind {kind!r}; the kinds are {', '.join(KINDS)}")
+    asked = tuple(dict.fromkeys(wanted)) if wanted else _configured_kinds(cfg)
+    have = [k for k in asked if k in sources.SOURCES]
+    skipped = [{"kind": k, "reason": f"no source reads {k} yet (a later Fold adds it)"} for k in asked
+               if k not in sources.SOURCES]
+    return have, skipped
+
+
+def _projections(repo_root: Path, cfg: dict, schema: dict, kinds: list[str]) -> list[dict]:
+    """The repository's projections for `kinds`, each carrying the `sdlc-repo:<slug>` tag that says this
+    repository owns the item. `AdoImportError` when the remote is not Azure DevOps; `ValueError` when an artifact
+    contradicts itself."""
+    slug = ado_transport.remote(repo_root).repo
+    rows = sources.projections(repo_root, cfg, schema, kinds) if kinds else []
+    for row in rows:
+        row["tags"] = set(row["tags"]) | {f"{wm.REPO_TAG_PREFIX}{slug}"}
+    return rows
+
+
+def _read_items(repo_root: Path, ids: list[int], emails: dict[str, str]) -> tuple[dict[int, dict], list[int]]:
+    """`(items by id, ids the board no longer has)` from one batch read per 200 ids. A row nobody asked for is
+    ignored, never parsed."""
+    wanted = list(dict.fromkeys(ids))
+    if not wanted:
+        return {}, []
+    rows, _ = ado_wit.get_batch(repo_root, wanted)
+    keep = set(wanted)
+    items: dict[int, dict] = {}
+    for raw in rows:
+        if isinstance(raw, dict) and raw.get("id") in keep:
+            item = wm.remote_item(raw, emails)
+            items[item["id"]] = item
+    return items, [i for i in wanted if i not in items]
+
+
+FIND_CHUNK = 40  # refs per by-tag query: far under the length WIQL accepts
+
+
+def _by_tag_wiql(refs: list[str]) -> str:
+    """One query for the work items tagged with any of `refs`. Every ref is checked against `REF_RE` first (it is
+    `sdlc:` plus letters, digits and dashes, so it cannot end the string it sits in)."""
+    for ref in refs:
+        if not REF_RE.fullmatch(ref):
+            raise ValueError(f"not a ref of the form sdlc:<kind>:<id>: {ref!r}")
+    clauses = " OR ".join(f"[System.Tags] CONTAINS '{ref}'" for ref in refs)
+    return f"SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND ({clauses})"
+
+
+def _query_tagged(repo_root: Path, refs: list[str]) -> list[int]:
+    """The ids of the work items tagged with any of `refs`: one query per `FIND_CHUNK` refs, so a plan costs one query
+    and one batch read however many items it covers, not one query each. No refs, no call."""
+    ids: list[int] = []
+    for start in range(0, len(refs), FIND_CHUNK):
+        ids += ado_wit.query_ids(repo_root, _by_tag_wiql(refs[start:start + FIND_CHUNK]))
+    return list(dict.fromkeys(ids))
+
+
+def _tag_map(items: dict[int, dict], refs: list[str]) -> dict[str, list[int]]:
+    """`ref` -> the ids of the items whose tags name it exactly (a tag the query matched loosely is dropped here)."""
+    found: dict[str, list[int]] = {ref: [] for ref in refs}
+    for wid, item in sorted(items.items()):
+        for tag in item["tags"]:
+            if tag in found:
+                found[tag].append(wid)
+    return found
+
+
+def _unavailable(args, repo_root: Path, verb: str, reason: str, *, host_error: str | None = None, **extra) -> int:
+    """A read that could not be made: exit 0, no rows, the reason in words (and the host block when `az` was the
+    reason, read from the error it raised, never probed)."""
+    host = host_block_for(repo_root, host_error) if host_error is not None else None
+    lines = [f"Azure Boards mirror: {verb} - unavailable", f"  {reason}"]
+    if host is not None:
+        lines.append(_host_line(host))
+    _emit(args, {"ok": True, "unavailable": True, "reason": reason, "host": host, **extra}, "\n".join(lines))
+    return 0
+
+
+def _id_match(token: str, ref: str, ident: str | None = None, wid: int | None = None) -> bool:
+    """Does an `--id` token name this item: its ref, its id as people write it, or (`#N`) its work item."""
+    t = token.strip().lower()
+    if t == ref.lower() or (ident is not None and t == str(ident).lower()):
+        return True
+    return wid is not None and bool(re.fullmatch(r"#[0-9]+", t)) and int(t[1:]) == wid
+
+
+def _shown(value, emails: dict[str, str]):
+    """A value for the screen or the plan file: an address becomes the roster handle (or a placeholder)."""
+    if isinstance(value, str) and bc.EMAIL_RE.fullmatch(value.strip()):
+        return emails.get(value.strip().lower()) or "(an identity that is not on the roster)"
+    return value
+
+
+# --- plan ------------------------------------------------------------------------------------------------------------
+
+ACTION_ORDER = ("create", "update", "link", "ambiguous", "unmapped", "refused", "held")
+PENDING_ACTIONS = ("create", "update")  # the rows `apply` would send; every other row needs a person first
+PLACEHOLDER_HISTORY = f"{bc.HISTORY_TOKEN} · created"
+NOT_WRITTEN_WORDS = ("effort fields", "read-only field")  # a ValueError that says "never written", not "fix it by hand"
+SYSTEM_FILLED = "System."  # a required System.* field is the board's or the mirror's to fill, not a config gap
+TAGS_PATH = "/fields/System.Tags"
+DESCRIPTION_PATH = "/fields/System.Description"
+FIELDS_PREFIX = "/fields/"
+
+
+def _sprint_arg(text: str | None) -> str | None:
+    if text is None:
+        return None
+    if not SPRINT_ID_RE.fullmatch(text.strip()):
+        raise Illegal(f"--sprint {text!r} is not a sprint id (S07, S12): the id of a file in .sdlc/sprints/")
+    return text.strip()
+
+
+def _in_sprint(repo_root: Path, proj: dict, sprint: str) -> bool:
+    """The sprint's own item, or a spec whose frontmatter names the sprint."""
+    if proj["ref"] == f"sdlc:sprint:{sprint}":
+        return True
+    if proj["kind"] != "spec":
+        return False
+    try:
+        text = (repo_root / proj["source_path"]).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return str(parse_frontmatter(text)[0].get("sprint") or "").strip() == sprint
+
+
+def _select(repo_root: Path, projs: list[dict], ids: list[str], sprint: str | None) -> tuple[list[dict], list[str]]:
+    """The projections an `--id`/`--sprint` selection names (both given: both must hold), and the `--id` tokens that
+    named nothing."""
+    chosen = []
+    for p in projs:
+        if ids and not any(_id_match(t, p["ref"], p["id"]) for t in ids):
+            continue
+        if sprint and not _in_sprint(repo_root, p, sprint):
+            continue
+        chosen.append(p)
+    unmatched = [t for t in ids if not any(_id_match(t, p["ref"], p["id"]) for p in projs)]
+    return chosen, unmatched
+
+
+def _refusal(proj: dict, schema: dict) -> str | None:
+    """The sentence for a projection that carries an effort field (the mirror never writes one), else None."""
+    refused = {r.lower() for r in sm.refused_fields(schema)}
+    for ref in proj["fields"]:
+        if ref.lower() in refused or ref.lower().startswith("microsoft.vsts.scheduling."):
+            return (f"{ref} is in the projection: effort fields (points, estimates, hours) are never written "
+                    "(a forbidden metric; exit 2 at apply)")
+    return None
+
+
+def _split_tags(value) -> list[str]:
+    return [t.strip() for t in str(value or "").split(";") if t.strip()]
+
+
+def _tags_op(op: str, have: set, want: set) -> dict:
+    kept = sum(1 for t in have if not t.startswith(bc.PLUGIN_TAG_PREFIXES))
+    return {"op": op, "path": TAGS_PATH, "add": sorted(want - have), "remove": sorted(have - want), "kept": kept}
+
+
+def _update_ops(patch: list[dict], remote: dict, projection: dict, emails: dict[str, str]) -> list[dict]:
+    """The ops of `wm.build_update_patch` (less its `test /rev` guard) as the screen shows them: `old` from the model's
+    diff, a tag change as an add/remove list, a description as the block it replaces."""
+    by_path = {o["path"]: o for o in model.diff(projection, remote, model.ownership_for(projection.get("kind")))}
+    ops = []
+    for op in patch[1:]:
+        path = op["path"]
+        if path == TAGS_PATH:
+            ops.append(_tags_op(op["op"], set(remote.get("tags") or ()), set(_split_tags(op["value"]))))
+        elif path == DESCRIPTION_PATH:
+            ops.append({"op": op["op"], "path": path, "old": "(the block between the sdlc markers)",
+                        "new": "(the block from the repository)"})
+        else:
+            ops.append({"op": op["op"], "path": path, "old": _shown(by_path.get(path, {}).get("old"), emails),
+                        "new": _shown(op["value"], emails)})
+    return ops
+
+
+def _create_ops(projection: dict, emails: dict[str, str]) -> list[dict]:
+    """What a create sets: the model's `diff(projection, None)`, the tags as an add list, an identity as a handle."""
+    ops = []
+    for op in model.diff(projection, None):
+        if op["path"] == TAGS_PATH:
+            ops.append(_tags_op("add", set(), set(_split_tags(op["new"]))))
+        else:
+            ops.append({"op": "add", "path": op["path"], "old": None, "new": _shown(op["new"], emails)})
+    return ops
+
+
+def _required_notes(schema: dict, type_name: str, proj: dict) -> list[str]:
+    """A field the type always requires that the create would leave empty: it would fail on the board."""
+    info = (schema.get("types") or {}).get(type_name) or {}
+    notes = []
+    for ref in info.get("required_fields") or []:
+        if ref.startswith(SYSTEM_FILLED) or ref in proj["fields"]:
+            continue
+        facts = sm.field_on_type(schema, type_name, ref)
+        if facts is not None and facts.get("default") is not None:
+            continue
+        notes.append(f"required field {ref} has no value -> create would fail; add it under fields.{proj['kind']} "
+                     "or give it a process default")
+    return notes
+
+
+def _validation(schema: dict, type_name: str, ops: list[dict], creating: bool) -> list[str]:
+    """`plan --validate`: each op checked against the discovered process, locally (the board is not asked). A
+    transition the type does not allow, a field the type does not carry, a value outside a picklist."""
+    info = (schema.get("types") or {}).get(type_name) or {}
+    read_fields = bool(info.get("fields"))
+    found = []
+    for op in ops:
+        if not op["path"].startswith(FIELDS_PREFIX) or op["path"] == TAGS_PATH:
+            continue
+        ref = op["path"][len(FIELDS_PREFIX):]
+        facts = sm.field_on_type(schema, type_name, ref)
+        if facts is None:
+            if read_fields:
+                found.append(f"{ref} is not a field of {type_name} on this process")
+            continue
+        new = op.get("new")
+        allowed = facts.get("allowed_values")
+        if isinstance(allowed, list) and new is not None and new not in allowed:
+            found.append(f"{ref}: {new!r} is not one of the allowed values ({', '.join(str(a) for a in allowed)})")
+        if ref == "System.State" and isinstance(new, str):
+            frm = "" if creating else str(op.get("old") or "")
+            if sm.transition_allowed(schema, type_name, frm, new) is False:
+                found.append(f"{type_name} does not allow {frm or 'creation'} -> {new}")
+    return found
+
+
+def _row(p: dict, action: str, type_name, *, reason=None, work_item=None, rev=None, ops=None, notes=None) -> dict:
+    notes = list(notes or []) + list(p.get("notes") or [])
+    return {"ref": p["ref"], "kind": p["kind"], "id": p["id"], "action": action, "reason": reason,
+            "work_item": work_item, "rev": rev, "type": type_name, "ops": list(ops or []), "notes": notes,
+            "parent": None, "related_refs": sorted(p.get("related_refs") or []),
+            "source_path": p["source_path"], "source_sha": p["source_sha"], "projection_hash": model.projection_hash(p)}
+
+
+def _unwritable(exc: ValueError) -> str:
+    """`refused` for a field the mirror never writes, `held` for anything a person must fix by hand first."""
+    return "refused" if any(w in str(exc) for w in NOT_WRITTEN_WORDS) else "held"
+
+
+class _Board(NamedTuple):
+    """What the ledger and the board said about the items a plan covers."""
+    links: dict       # ref -> last linking line
+    found: dict       # ref -> ids a by-tag query found (refs the ledger did not know)
+    items: dict       # work item id -> remote_item
+    missing: set      # ledgered ids the board no longer has
+    emails: dict      # lower-case address -> @handle
+    web_url: str      # the repository's web address: what a create's hyperlink is validated with
+
+
+def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | None, board: _Board) -> dict:
+    """One projection against what the ledger and the board say. The model and the patch builders decide every
+    op (`diff`, `build_update_patch`, `build_create_patch`), so what a plan shows is what an apply would send."""
+    if cfg_refusal:
+        return _row(p, "refused", type_name, reason=cfg_refusal)
+    if type_name is None:
+        return _row(p, "unmapped", None, reason=why)
+    refusal = _refusal(p, schema)
+    if refusal:
+        return _row(p, "refused", type_name, reason=refusal)
+    link = board.links.get(p["ref"])
+    if link is not None:
+        wid = link["work_item"]
+        if wid in board.missing:
+            return _row(p, "held", type_name, work_item=wid, reason=f"#{wid} is gone from the board (deleted, or not "
+                        "visible to this az login); the mirror does not recreate it unasked")
+        remote = board.items[wid]
+        if remote["type"] != type_name:
+            return _row(p, "held", type_name, work_item=wid, rev=remote["rev"],
+                        reason=f"#{wid} is a {remote['type']} on the board but {p['kind']} maps to {type_name}")
+        try:
+            patch = wm.build_update_patch(remote, p)
+        except ValueError as exc:
+            return _row(p, _unwritable(exc), type_name, work_item=wid, rev=remote["rev"], reason=_tidy(exc))
+        ops = _update_ops(patch, remote, p, board.emails) if wm.has_changes(patch) else []
+        return _row(p, "update" if ops else "in_sync", type_name, work_item=wid, rev=remote["rev"], ops=ops)
+    ids = board.found.get(p["ref"], [])
+    if len(ids) > 1:
+        return _row(p, "ambiguous", type_name, reason="tagged on " + ", ".join(f"#{i}" for i in ids)
+                    + "; map the right one with `link <ref> --work-item N --by <you>`")
+    if len(ids) == 1:
+        kind_of_item = (board.items.get(ids[0]) or {}).get("type")
+        return _row(p, "link", type_name, work_item=ids[0],
+                    reason=f"#{ids[0]}{f' ({kind_of_item})' if kind_of_item else ''} is tagged {p['ref']} but is not in "
+                    f"this clone's ledger; `ado_sync.py link {p['ref']} --work-item {ids[0]} --by <you>` maps it")
+    try:
+        wm.build_create_patch(p, schema, board.web_url, PLACEHOLDER_HISTORY, None)  # validated, then thrown away
+    except ValueError as exc:
+        return _row(p, _unwritable(exc), type_name, reason=_tidy(exc))
+    return _row(p, "create", type_name, ops=_create_ops(p, board.emails), notes=_required_notes(schema, type_name, p))
+
+
+def _kind_order(kind: str) -> int:
+    return TREE_ORDER.index(kind) if kind in TREE_ORDER else len(TREE_ORDER) + KINDS.index(kind)
+
+
+def _val(value) -> str:
+    return "(none)" if value is None else str(value)
+
+
+def _op_line(op: dict, width: int) -> str:
+    label = op["path"][len(FIELDS_PREFIX):] if op["path"].startswith(FIELDS_PREFIX) else op["path"]
+    if "add" in op:
+        change = "  ".join([*(f"+ {t}" for t in op["add"]), *(f"- {t}" for t in op["remove"])]) or "(no change)"
+        kept = f"   ({_plural(op['kept'], 'human tag')} kept)" if op["op"] != "add" else ""
+        return f"  {label.ljust(width)}{change}{kept}"
+    return f"  {label.ljust(width)}{_val(op['old'])} -> {_val(op['new'])}"
+
+
+def _row_head(r: dict) -> str:
+    head = f"{r['kind']} {r['id']}  {r['action']}"
+    if r["action"] == "update":
+        return f"{head}  #{r['work_item']} rev {r['rev']}"
+    if r["action"] == "create":
+        return f'{head}  type "{r["type"]}"'
+    return f"{head}  {r['reason']}"
+
+
+def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
+    schema = out["schema"]
+    age = schema["age_days"]
+    old = "age unknown" if age is None else f"{_plural(age, 'day')} old"
+    who = out["executed_as_word"]
+    lines = [f"plan {out['plan']}  (schema {str(schema['discovered_at'])[:10]}, {old}; posture {out['posture']}; "
+             f"az executed as {who})"]
+    width = max([len(o["path"]) - len(FIELDS_PREFIX) for r in out["rows"] for o in r["ops"]
+                 if o["path"].startswith(FIELDS_PREFIX)] + [10]) + 2
+    for r in out["rows"]:
+        lines.append(_row_head(r))
+        lines += [_op_line(o, width) for o in r["ops"]]
+        parent = r["parent"]
+        if parent is not None and r["action"] == "create":
+            target = f"#{parent['work_item']}" if parent["work_item"] else f"no work item yet ({parent['state']})"
+            lines.append(f"  parent {parent['ref']} -> {target}")
+        lines += [f"  note: {n}" for n in r["notes"]]
+        lines += [f"  validate: {v}" for v in r.get("validation", [])]
+    if not out["rows"]:
+        lines.append("nothing to push: no row is waiting on the board")
+    if in_sync:
+        lines.append(f"in sync: {_plural(in_sync, 'item')}")
+    for s in out["skipped"]:
+        lines.append(f"skipped {s['kind']}: {s['reason']}")
+    if out["unmatched_ids"]:
+        lines.append("no item matches --id " + ", ".join(out["unmatched_ids"]))
+    if fit_lines:
+        lines += ["", "How each kind lands on this process", *fit_lines, ""]
+    c = out["cost"]
+    lines.append(f"cost: {_plural(c['writes'], 'write')}, {_plural(c['creates'], 'create')}, "
+                 f"{_plural(c['links'], 'link')}  (az spawns on apply: {c['az_spawns']})")
+    lines += [f"note: {n}" for n in out["notes"]]
+    if out["validated"]:
+        lines.append("validated locally against the discovered process; the board was not asked")
+    lines.append(f"Plan file: {out['path']}")
+    return "\n".join(lines)
+
+
+def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict) -> list[str]:
+    limits = cfg.get("limits") if isinstance(cfg.get("limits"), dict) else {}
+    first_seed, per_run = limits.get("first_seed"), limits.get("writes_per_run")
+    notes = []
+    never_applied = not any(e.get("event") == "applied" for e in ledger)
+    if scope_all and never_applied and _is_id(first_seed) and counts["create"] > first_seed:
+        notes.append(f"first seed: {_plural(counts['create'], 'create')} is over limits.first_seed ({first_seed}); "
+                     "an apply of this plan will need --limit")
+    pending = counts["create"] + counts["update"]
+    if _is_id(per_run) and pending > per_run:
+        notes.append(f"{_plural(pending, 'row')} is over limits.writes_per_run ({per_run}); an apply stops at "
+                     f"{per_run}, and the next plan covers the rest")
+    return notes
+
+
+def _open_conflicts(ledger: list[dict]) -> dict[str, list[dict]]:
+    """`ref` -> the CONFLICT and RETYPED rows a pull recorded that nothing has cleared: judged exactly as
+    `ado_sync_model.summarize` judges them (a later `applied` naming the field, or a later `reconciled` that puts the
+    row legitimately off the books). A plan notes them: its update would overwrite what the board changed."""
+    latest: dict[tuple, tuple[int, dict]] = {}
+    for i, e in enumerate(ledger):
+        if e.get("event") == "drift_seen" and e.get("ref"):
+            latest[(e["ref"], e.get("field"))] = (i, e)
+    out: dict[str, list[dict]] = {}
+    for (ref, field), (i, row) in latest.items():
+        if row.get("class") not in ("CONFLICT", "RETYPED"):
+            continue
+        merged, cleared = dict(row), False
+        for later in ledger[i + 1:]:
+            if later.get("ref") != ref:
+                continue
+            if later.get("event") == "applied" and field in (later.get("fields") or []):
+                cleared = True
+            elif later.get("event") == "reconciled" and later.get("field") in (field, None):
+                merged.update({k: v for k, v in later.items() if k not in ("ts", "event", "class")})
+                cleared = cleared or not model.counts_as_open(merged)
+        if not cleared and model.counts_as_open(merged):
+            out.setdefault(ref, []).append(row)
+    return out
+
+
+def cmd_plan(args, repo_root: Path) -> int:
+    need = _load(repo_root)
+    if isinstance(need, str):
+        return _unavailable(args, repo_root, "plan", need, plan=None, rows=[], counts=None)
+    cfg, schema = need
+    kinds, skipped = _scope_kinds(cfg, args.kind)
+    sprint = _sprint_arg(args.sprint)
+    ids = [t.strip() for t in args.id or [] if t.strip()]
+    scope = {"kinds": list(args.kind or []), "ids": ids, "sprint": sprint,
+             "all": bool(args.all or not (args.kind or ids or sprint))}
+    fit, resolved, _gaps, _recommendations = _fit_view(schema, cfg, tuple(kinds))
+    rides = [k for k, v in fit.items() if v["mode"] != "item"]  # a requirement or domain that rides as a tag or an area
+    skipped += [{"kind": k, "reason": fit[k]["reason"]} for k in rides]
+    refusals = [r["message"] for r in cfgmod.validate_config(cfg, _with_refusals(schema)) if r["level"] == "refused"]
+    emails = _emails(repo_root)
+    try:
+        projs = _projections(repo_root, cfg, schema, [k for k in kinds if k not in rides])
+        web_url = ado_transport.remote(repo_root).web_url
+    except AdoImportError as exc:
+        return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
+    except ValueError as exc:
+        return _unavailable(args, repo_root, "plan", f"the repository's sources do not agree: {_tidy(exc)}", plan=None,
+                            rows=[], counts=None)
+    selected, unmatched = _select(repo_root, projs, ids, sprint)
+    ledger = read_ledger(repo_root)
+    links = linked_items(ledger)
+    typed = {kind: sm.resolve_type(schema, kind, cfg) for kind in dict.fromkeys(p["kind"] for p in selected)}
+    live = [p for p in selected if not refusals and typed[p["kind"]][0] is not None and _refusal(p, schema) is None]
+    unledgered = [p["ref"] for p in live if p["ref"] not in links]
+    ledgered_ids = [links[p["ref"]]["work_item"] for p in live if p["ref"] in links]
+    try:  # one by-tag query for every ref the ledger does not know, then one batch read of everything it names
+        items, missing = _read_items(repo_root, ledgered_ids + _query_tagged(repo_root, unledgered), emails)
+    except AdoImportError as exc:
+        return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
+    board = _Board(links, _tag_map(items, unledgered), items, set(missing) & set(ledgered_ids), emails, web_url)
+    pairs = [(p, _plan_row(p, *typed[p["kind"]], schema, refusals[0] if refusals else None, board)) for p in selected]
+    in_sync = sum(1 for _, r in pairs if r["action"] == "in_sync")
+    pairs = sorted(((p, r) for p, r in pairs if r["action"] != "in_sync"), key=lambda pr: _kind_order(pr[1]["kind"]))
+    creating = {r["ref"] for _, r in pairs if r["action"] == "create"}
+    conflicts = _open_conflicts(ledger)
+    for p, r in pairs:
+        if r["action"] == "update":
+            r["notes"] += [f"open {c['class']} on {c.get('field') or 'the item'} since {c.get('ts')}: the board and the "
+                           "repository both changed it, and this update would overwrite the board's value"
+                           for c in conflicts.get(r["ref"], [])]
+        parent = p.get("parent_ref")
+        if parent:
+            state = "linked" if parent in links else "in this plan" if parent in creating else "not planned"
+            r["parent"] = {"ref": parent, "work_item": links[parent]["work_item"] if parent in links else None,
+                           "state": state}
+        elif p.get("parent_note"):
+            r["notes"].append(p["parent_note"])
+        if args.validate and r["action"] in PENDING_ACTIONS:
+            r["validation"] = _validation(schema, r["type"], r["ops"], r["action"] == "create")
+    rows = [r for _, r in pairs]
+    counts = {a: sum(1 for r in rows if r["action"] == a) for a in ACTION_ORDER}
+    counts["in_sync"] = in_sync
+    cost = {"writes": counts["update"], "creates": counts["create"], "links": 0,
+            "az_spawns": counts["update"] + counts["create"]}
+    plan = model.plan_hash(rows)
+    stamp = _stamp()
+    posture = cfg.get("posture") if cfg.get("posture") in ("plan-only", "assisted") else "plan-only"
+    path = f"{LOCAL_DIR}/plans/{plan}.json"
+    try:
+        _ensure_local_ignore(repo_root)
+        _write_json(repo_root / path, {"schema": PLAN_SCHEMA, "plan": plan, "created": stamp, "scope": scope,
+                                       "posture": posture, "rows": rows})
+    except OSError as exc:
+        raise Illegal(f"could not write the plan file {path} ({type(exc).__name__})") from None
+    events = [_event(stamp, "planned", plan=plan, ref=r["ref"], kind=r["kind"], action=r["action"],
+                     work_item=r["work_item"]) for r in rows if r["action"] in PENDING_ACTIONS]
+    if not events:  # "a plan that found nothing" is a line with no ref, so `pending` reads 0, not no data
+        events = [_event(stamp, "planned", plan=plan, ref=None)]
+    if next((e.get("plan") for e in reversed(ledger) if e.get("event") == "planned"), None) != plan:
+        append_ledger(repo_root, events)
+        ledger = ledger + events
+    hook = _write_hook_line(repo_root, ledger)
+    me = cache.load_me(repo_root)
+    executed_as = me.get("handle") if me else None
+    word = executed_as or ("an identity that is not on the roster" if me else "not read yet")
+    out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
+           "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
+           "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
+           "notes": _plan_notes(cfg, ledger, scope["all"], counts), "validated": bool(args.validate),
+           "comments": "not planned in this version", "hook_line": hook}
+    if args.json:
+        print(json.dumps(out, indent=2))
+    else:
+        lines = _fit_table(fit, resolved) if fit or resolved else []
+        print(_plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n"))
+    return 0
+
+
+# --- status ----------------------------------------------------------------------------------------------------------
+
+def _n(value) -> str:
+    return "no data" if value is None else str(value)
+
+
+def _status_text(doc: dict, configured: bool) -> str:
+    c = doc["counts"]
+    lines = ["Azure Boards mirror: status",
+             f"config: {CONFIG_FILE}" if configured else "not configured (run `ado_sync.py config init`)",
+             f"summary: {doc['hook_line']}",
+             f"  linked    {_n(c['linked'])}",
+             f"  pending   {_n(c['pending'])}",
+             f"  drifted   {_n(c['drifted'])}",
+             f"  conflicts {_n(c['conflicts'])}",
+             f"  debt      {_n(c['debt'])}",
+             f"as of: {doc['as_of'] or 'never pulled'}"]
+    if doc["last_plan"] is not None:
+        p = doc["last_plan"]
+        lines.append(f"last plan: {p['plan']} at {p['ts']} ({_plural(p['rows'], 'row')})")
+    if doc["by_class"]:
+        lines.append("open drift: " + ", ".join(f"{k} {v}" for k, v in doc["by_class"].items()))
+    for item in doc["debt"] or []:
+        lines.append(f"  debt: {item['ref']} {item['field'] or '(whole item)'} {item['class']} seen {item['seen']}, "
+                     f"due {item['due']}")
+    lines += [f"note: {n}" for n in doc["notes"]]
+    return "\n".join(lines)
+
+
+def cmd_status(args, repo_root: Path) -> int:
+    doc = model.summarize(read_ledger(repo_root), ado_schema.today())
+    if args.json:
+        print(json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False))  # the golden's form, byte for byte
+    else:
+        print(_status_text(doc, (repo_root / CONFIG_FILE).is_file()))
+    return 0
+
+
+# --- pull and drift --------------------------------------------------------------------------------------------------
+
+def _ident(ref: str, proj: dict | None) -> str:
+    return proj["id"] if proj else ref.split(":", 2)[2]
+
+
+def _select_links(links: dict[str, dict], projs: dict[str, dict], ids: list[str],
+                  kinds: list[str] | None) -> tuple[list[str], list[str]]:
+    """The ledgered refs an `--id` (ref, id, or `#work item`) and `--kind` selection names, in ref order, and the ids
+    that named none."""
+    for kind in kinds or []:
+        if kind not in KINDS:
+            raise Illegal(f"unknown kind {kind!r}; the kinds are {', '.join(KINDS)}")
+    chosen = []
+    for ref, link in sorted(links.items()):
+        if kinds and _kind_of(ref) not in kinds:
+            continue
+        if ids and not any(_id_match(t, ref, _ident(ref, projs.get(ref)), link["work_item"]) for t in ids):
+            continue
+        chosen.append(ref)
+    unmatched = [t for t in ids if not any(_id_match(t, ref, _ident(ref, projs.get(ref)), l["work_item"])
+                                           for ref, l in links.items())]
+    return chosen, unmatched
+
+
+def _observe(repo_root: Path, links: dict, refs: list[str], projs: dict, emails: dict) -> list[dict]:
+    """Read the board for the ledgered `refs` (one batch read, then `wit/updates` only for an item whose revision moved
+    past the ledger's `rev_after`) and classify each with `ado_sync_model.classify_drift`. An item that cannot be
+    classified is a row with `unavailable` set, never a guessed class. An `AdoImportError` from the batch read
+    propagates: nothing was read."""
+    items, missing = _read_items(repo_root, [links[r]["work_item"] for r in refs], emails)
+    gone = set(missing)
+    results = []
+    for ref in refs:
+        link, proj = links[ref], projs.get(ref)
+        wid = link["work_item"]
+        remote = items.get(wid)
+        row = {"ref": ref, "kind": _link_row(ref, link)["kind"], "work_item": wid, "rev": remote["rev"] if remote else None,
+               "class": None, "fields": [], "attachments": [], "ignored": [], "unavailable": None}
+        results.append(row)
+        rev_after = link.get("rev_after")
+        if wid not in gone and proj is not None and not _is_id(rev_after):
+            row["unavailable"] = "the ledger line that linked it has no rev_after; link it again to set the baseline"
+            continue
+        updates = []
+        if remote is not None and proj is not None and remote["rev"] > rev_after:
+            try:
+                updates = ado_wit.updates_since(repo_root, wid, rev_after)
+            except AdoImportError as exc:
+                row["unavailable"] = _tidy(exc)
+                continue
+        try:
+            row.update(model.classify_drift(_link_row(ref, link), remote, proj, updates))
+        except ValueError as exc:
+            row["unavailable"] = _tidy(exc)
+        # an attachment is listed by name and revision; its address carries a GUID the output has no use for
+        row["attachments"] = [{"name": a.get("name"), "rev": a.get("rev")} for a in row["attachments"]]
+    return results
+
+
+def _drift_context(args, repo_root: Path, verb: str):
+    """`(cfg, schema, projections by ref, links, emails, ledger)` or the exit code of an `unavailable` answer."""
+    need = _load(repo_root)
+    if isinstance(need, str):
+        return _unavailable(args, repo_root, verb, need, items=[], counts=None)
+    cfg, schema = need
+    ledger = read_ledger(repo_root)
+    links = linked_items(ledger)
+    kinds = sorted({_link_row(ref, link)["kind"] for ref, link in links.items()} & set(sources.SOURCES))
+    try:
+        projs = {p["ref"]: p for p in _projections(repo_root, cfg, schema, kinds)}
+    except AdoImportError as exc:
+        return _unavailable(args, repo_root, verb, _tidy(exc), host_error=str(exc), items=[], counts=None)
+    except ValueError as exc:
+        return _unavailable(args, repo_root, verb, f"the repository's sources do not agree: {_tidy(exc)}",
+                            items=[], counts=None)
+    return cfg, schema, projs, links, _emails(repo_root), ledger
+
+
+def _unmapped(repo_root: Path, cfg: dict) -> tuple[list[int] | None, str | None]:
+    """The work items under the mirror's area and iteration paths that this repository has not tagged
+    (`UNMAPPED_IN_ADO`: candidates for `link` and `adopt`), as ids; or None and why they were not searched."""
+    areas = [cfg["area_path"]] if isinstance(cfg.get("area_path"), str) and cfg["area_path"].strip() else []
+    iterations = cfg.get("iterations") if isinstance(cfg.get("iterations"), dict) else {}
+    paths = [v for v in iterations.values() if isinstance(v, str) and v.strip()]
+    if not areas and not paths:
+        return None, "not searched: no area_path or iterations in the config to look under"
+    try:
+        wiql = wm.wiql_untagged(areas, paths, ado_transport.remote(repo_root).repo)
+        return ado_wit.query_ids(repo_root, wiql), None
+    except (AdoImportError, ValueError) as exc:
+        return None, f"not searched: {_tidy(exc)}"
+
+
+def _class_counts(results: list[dict]) -> dict:
+    counts: dict[str, int] = {}
+    for r in results:
+        if r["class"]:
+            counts[r["class"]] = counts.get(r["class"], 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def _drift_lines(results: list[dict], projs: dict) -> list[str]:
+    lines = []
+    for r in results:
+        head = f"{r['kind']} {_ident(r['ref'], projs.get(r['ref']))}  #{r['work_item']}"
+        if r["unavailable"]:
+            lines.append(f"{head}  unavailable: {r['unavailable']}")
+            continue
+        rev = f"  rev {r['rev']}" if r["rev"] is not None else ""
+        lines.append(f"{head}{rev}  {r['class']}")
+        for f in r["fields"]:
+            change = f"  {_val(f['old'])} -> {_val(f['new'])}" if "new" in f else ""
+            lines.append(f"  {f['field']}  {f['class']} (owner {f['owner'] or 'none'}) rev {f['rev']}{change}")
+        for a in r["attachments"]:
+            lines.append(f"  attachment added at rev {a['rev']} (listed, not drift)")
+    return lines
+
+
+def cmd_drift(args, repo_root: Path) -> int:
+    ctx = _drift_context(args, repo_root, "drift")
+    if isinstance(ctx, int):
+        return ctx
+    cfg, _schema, projs, links, emails, _ledger = ctx
+    refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], args.kind)
+    try:
+        results = _observe(repo_root, links, refs, projs, emails)
+    except AdoImportError as exc:
+        return _unavailable(args, repo_root, "drift", _tidy(exc), host_error=str(exc), items=[], counts=None)
+    unmapped, why = _unmapped(repo_root, cfg)
+    notes = [why] if why else []
+    out = {"ok": True, "unavailable": False, "reason": None, "items": results, "counts": _class_counts(results),
+           "unmapped": unmapped, "unmatched_ids": unmatched, "notes": notes}
+    lines = ["Azure Boards mirror: drift  (advisory; nothing was written)"]
+    lines += _drift_lines(results, projs) or ["nothing is linked yet: no ledgered item to compare"]
+    if unmapped:
+        lines.append("untagged on the board: " + ", ".join(f"#{i}" for i in unmapped)
+                     + "  (`link <ref> --work-item N --by <you>` maps one; `show #N` reads it)")
+    elif unmapped is not None:
+        lines.append("untagged on the board: none found under the mirror's paths")
+    if unmatched:
+        lines.append("no ledgered item matches --id " + ", ".join(unmatched))
+    lines += [f"note: {n}" for n in notes]
+    _emit(args, out, "\n".join(lines))
+    return 0
+
+
+def _drift_events(ts: str, results: list[dict], ledger: list[dict]) -> tuple[list[dict], int]:
+    """`observed` per item and `drift_seen` per changed field, the latter only when the ledger's latest row for that
+    (ref, field) is not already this class at this revision: a pull a day later keeps the first-seen time (the
+    summary ages debt by it). A header `observed` with no ref says a pull ran when nothing is ledgered."""
+    latest: dict[tuple, tuple] = {}
+    for e in ledger:
+        if e.get("event") == "drift_seen" and e.get("ref"):
+            latest[(e["ref"], e.get("field"))] = (e.get("class"), e.get("rev"))
+    events, seen = [], 0
+    for r in results:
+        if r["unavailable"]:
+            continue
+        events.append(_event(ts, "observed", ref=r["ref"], kind=r["kind"], work_item=r["work_item"], rev=r["rev"],
+                             **{"class": r["class"]}))
+        # a relation's targets are work item ids; one that points at a pull request or a link has no id and is left out
+        rows = [{"field": f["field"], "class": f["class"], "owner": f["owner"], "rev": f["rev"],
+                 "revised_at": f.get("revised_at"),
+                 **({"added": [i for i in f["added"] if i is not None], "removed": [i for i in f["removed"] if i is not None]}
+                    if "added" in f else {})}
+                for f in r["fields"] if f["class"] not in model.NOT_DRIFT_CLASSES]
+        if r["class"] in ("DELETED_IN_ADO", "ORPHAN_IN_REPO"):
+            rows.append({"field": None, "class": r["class"], "owner": None, "rev": r["rev"], "revised_at": None})
+        for row in rows:
+            if latest.get((r["ref"], row["field"])) == (row["class"], row["rev"]):
+                continue
+            events.append(_event(ts, "drift_seen", ref=r["ref"], kind=r["kind"], work_item=r["work_item"], **row))
+            seen += 1
+    return events, seen
+
+
+def cmd_pull(args, repo_root: Path) -> int:
+    if args.discussion:
+        return _pull_discussion(args, repo_root)
+    if args.full:
+        raise Illegal("--full belongs to `pull --discussion` (it forgets the comment watermark)")
+    ctx = _drift_context(args, repo_root, "pull")
+    if isinstance(ctx, int):
+        return ctx
+    _cfg, _schema, projs, links, emails, ledger = ctx
+    refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], None)
+    try:
+        results = _observe(repo_root, links, refs, projs, emails)
+    except AdoImportError as exc:
+        return _unavailable(args, repo_root, "pull", _tidy(exc), host_error=str(exc), items=[], counts=None)
+    ts = _stamp()
+    events, seen = _drift_events(ts, results, ledger)
+    observed = sum(1 for e in events if e["event"] == "observed")
+    if not results:
+        events = [_event(ts, "observed", ref=None, items=0)]
+    append_ledger(repo_root, events)
+    hook = _write_hook_line(repo_root, ledger + events)
+    out = {"ok": True, "unavailable": False, "reason": None, "as_of": ts, "items": results,
+           "counts": _class_counts(results), "unmatched_ids": unmatched,
+           "recorded": {"observed": observed, "drift_seen": seen}, "hook_line": hook, "notes": []}
+    lines = [f"Azure Boards mirror: pull  (as of {ts})"]
+    lines += _drift_lines(results, projs) or ["nothing is linked yet: no ledgered item to read"]
+    if unmatched:
+        lines.append("no ledgered item matches --id " + ", ".join(unmatched))
+    lines += [f"recorded: {_plural(observed, 'observed line')}, {_plural(seen, 'drift_seen line')}", f"hook line: {hook}"]
+    _emit(args, out, "\n".join(lines))
+    return 0
+
+
+# --- link and adopt --------------------------------------------------------------------------------------------------
+
+AB_FORM = re.compile(r"^ab#", re.IGNORECASE)
+
+
+def _work_item_arg(text: str | None) -> int:
+    """`4521` or `#4521`. The `AB#4521` form is Azure Boards' commit-message link syntax, not an id: refused (2)."""
+    raw = str(text or "").strip()
+    if not raw:
+        raise Illegal("--work-item N is required: the number of the work item to map")
+    if AB_FORM.match(raw):
+        raise Refused(f"Refused: --work-item {raw!r} is the AB# commit-link form, not a work item id. Pass the "
+                      "number (4521 or #4521); the mirror maps by id and never by a commit-message link.")
+    found = re.fullmatch(r"#?([0-9]+)", raw)
+    if not found or int(found.group(1)) < 1:
+        raise Illegal(f"--work-item {raw!r} is not a work item id (a positive number, 4521 or #4521)")
+    return int(found.group(1))
+
+
+def _other_refs(item: dict, ref: str) -> list[str]:
+    """The mirror refs an item's tags name besides `ref` (`sdlc:spec:0004`; a status tag is not a ref)."""
+    return sorted(t for t in item["tags"] if REF_RE.fullmatch(t) and _kind_of(t) is not None and t != ref)
+
+
+def _mapped_elsewhere(links: dict, ref: str, wid: int) -> str | None:
+    return next((r for r, l in links.items() if l["work_item"] == wid and r != ref), None)
+
+
+def _link_event(ts: str, p: dict, item: dict, how: str, by: str) -> dict:
+    return _event(ts, "linked", ref=p["ref"], kind=p["kind"], work_item=item["id"], how=how, rev_after=item["rev"],
+                  type=item["type"], projection_hash=model.projection_hash(p), by=by)
+
+
+def cmd_link(args, repo_root: Path) -> int:
+    by = require_human(args.by, "--by")
+    wid = _work_item_arg(args.work_item)
+    ref = args.ref.strip()
+    kind = _kind_of(ref) if REF_RE.fullmatch(ref) else None
+    if kind is None:
+        raise Illegal(f"{ref!r} is not an sdlc:<kind>:<id> ref (sdlc:spec:0004, sdlc:feature:03)")
+    need = _load(repo_root)
+    if isinstance(need, str):
+        raise Illegal(need)
+    cfg, schema = need
+    if kind not in sources.SOURCES:
+        raise Illegal(f"no source reads {kind} yet, so there is nothing in the repository to map {ref} to")
+    try:
+        proj = next((p for p in _projections(repo_root, cfg, schema, [kind]) if p["ref"] == ref), None)
+    except ValueError as exc:
+        raise Illegal(f"the repository's sources do not agree: {_tidy(exc)}") from None
+    if proj is None:
+        raise Illegal(f"{ref} is not in this repository: no {kind} reads as that id")
+    links = linked_items(read_ledger(repo_root))
+    if ref in links:
+        raise Illegal(f"{ref} is already mapped to #{links[ref]['work_item']}; nothing was changed")
+    if (other := _mapped_elsewhere(links, ref, wid)) is not None:
+        raise Illegal(f"#{wid} is already mapped to {other}; nothing was changed")
+    items, missing = _read_items(repo_root, [wid], _emails(repo_root))
+    if wid in missing:
+        raise Illegal(f"work item #{wid} was not found (deleted, or not visible to this az login)")
+    item = items[wid]
+    if others := _other_refs(item, ref):
+        raise Illegal(f"#{wid} already carries another mirror ref ({', '.join(others)}); nothing was changed")
+    notes = []
+    type_name = sm.resolve_type(schema, kind, cfg)[0]
+    if type_name is not None and item["type"] != type_name:
+        notes.append(f"#{wid} is a {item['type']} but {kind} maps to {type_name}; a later pull will say so")
+    append_ledger(repo_root, [_link_event(_stamp(), proj, item, "linked", by)])
+    row = {"ref": ref, "work_item": wid, "how": "linked", "rev": item["rev"]}
+    _emit(args, {"ok": True, "linked": [row], "notes": notes},
+          "\n".join([f"Linked {ref} -> #{wid} (rev {item['rev']}) by {by}", *[f"note: {n}" for n in notes]]))
+    return 0
+
+
+def cmd_adopt(args, repo_root: Path) -> int:
+    by = require_human(args.by, "--by")
+    if not args.all:
+        raise Illegal("adopt needs --all: it maps every repository item the board already tags; use `link` for one")
+    need = _load(repo_root)
+    if isinstance(need, str):
+        raise Illegal(need)
+    cfg, schema = need
+    kinds, skipped = _scope_kinds(cfg, None)
+    fit, _resolved, _gaps, _recs = _fit_view(schema, cfg, tuple(kinds))
+    rides = {k for k, v in fit.items() if v["mode"] != "item"}
+    try:
+        projs = _projections(repo_root, cfg, schema, [k for k in kinds if k not in rides])
+    except ValueError as exc:
+        raise Illegal(f"the repository's sources do not agree: {_tidy(exc)}") from None
+    links = linked_items(read_ledger(repo_root))
+    candidates = [p for p in projs if p["ref"] not in links and sm.resolve_type(schema, p["kind"], cfg)[0] is not None]
+    refs = [p["ref"] for p in candidates]
+    items, _missing = _read_items(repo_root, _query_tagged(repo_root, refs), _emails(repo_root))  # one query, one read
+    found = _tag_map(items, refs)
+    ts, taken = _stamp(), {l["work_item"]: r for r, l in links.items()}
+    events, linked, refused, absent = [], [], [], []
+    for p in candidates:
+        ids, ref = found[p["ref"]], p["ref"]
+        if not ids:
+            absent.append(ref)
+        elif len(ids) > 1:
+            refused.append({"ref": ref, "reason": "ambiguous: tagged on " + ", ".join(f"#{i}" for i in ids)})
+        elif ids[0] in taken:
+            refused.append({"ref": ref, "reason": f"#{ids[0]} is already mapped to {taken[ids[0]]}"})
+        elif others := _other_refs(items[ids[0]], ref):
+            refused.append({"ref": ref, "reason": f"#{ids[0]} already carries another mirror ref ({', '.join(others)})"})
+        else:
+            events.append(_link_event(ts, p, items[ids[0]], "adopted", by))
+            taken[ids[0]] = ref
+            linked.append({"ref": ref, "work_item": ids[0], "how": "adopted", "rev": items[ids[0]]["rev"]})
+    append_ledger(repo_root, events)
+    code = 1 if refused else 0
+    lines = [f"Adopted {_plural(len(linked), 'item')} by {by}"]
+    lines += [f"  {r['ref']} -> #{r['work_item']} (rev {r['rev']})" for r in linked]
+    lines += [f"  refused {r['ref']}: {r['reason']}" for r in refused]
+    lines.append(f"not on the board: {_plural(len(absent), 'item')} (a plan would create them)")
+    _emit(args, {"ok": code == 0, "linked": linked, "refused": refused, "not_on_board": absent, "skipped": skipped},
+          "\n".join(lines))
+    return code
+
+
+# --- the discussion: show, pull --discussion, discussion gc ----------------------------------------------------------
+
+DEFAULT_MAX_ITEMS = 50        # templates/ado/ado.yaml: discussion.max_items_per_pull
+DEFAULT_MAX_COMMENTS = 300    # discussion.max_comments_per_item
+DISCUSSION_OFF = "discussion disabled (D-OWNER-7)"
+
+
+def _discussion_cfg(cfg: dict) -> dict:
+    block = cfg.get("discussion")
+    return block if isinstance(block, dict) else {}
+
+
+def _limit(block: dict, key: str, default: int) -> int:
+    value = block.get(key, default)
+    return value if _is_id(value) else default
+
+
+def _directive_scan_on(block: dict) -> bool:
+    """`directive_scan: on` is YAML's True; `off` is False (or the word, when quoted)."""
+    value = block.get("directive_scan", True)
+    return not (value is False or str(value).strip().lower() == "off")
+
+
+def _read_discussion(repo_root: Path, wid: int, ref: str | None, emails: dict, cached: dict | None, *, full: bool,
+                     max_comments: int, ts: str) -> tuple[dict, dict]:
+    """Read one item's comments and history from the board into a cache document (`ado_discussion_map` cleans every
+    line and scrubs every identity), plus the model's `{new, edited, deleted, watermark}` against the cache's
+    watermark (none with `full`). `AdoImportError` when the board could not be read: nothing is half-built."""
+    raw = ado_wit.comments(repo_root, wid)
+    mapped = [dm.map_comment(c, emails) for c in raw][-max_comments:]  # the newest are kept when an item has more
+    diff = dm.diff_against_watermark(mapped, {} if full or not cached else cached.get("watermark") or {})
+    old = [u for u in (cached or {}).get("updates") or [] if isinstance(u, dict) and _is_id(u.get("rev"))] \
+        if cached and not full else []
+    fresh = ado_wit.updates_since(repo_root, wid, max((u["rev"] for u in old), default=0))
+    doc = {"work_item": wid, "work_item_id": wid, "ref": ref, "pulled_at": ts, "as_of": ts, "comments": mapped,
+           "updates": old + dm.scrub_updates(fresh, emails), "watermark": diff["watermark"],
+           "truncated": bool(getattr(raw, "truncated", False)), "total_count": getattr(raw, "total_count", None)}
+    return doc, diff
+
+
+def _me(repo_root: Path, emails: dict, ts: str, *, refresh: bool) -> dict | None:
+    """Who the signed-in Azure DevOps user is: `me.json` (a roster handle or None, an identity id), read from
+    `connectionData` once when it is missing. None when it cannot be learnt: "mentions me" is then unknown."""
+    me = None if refresh else cache.load_me(repo_root)
+    if me is not None:
+        return me
+    try:
+        user = ado_wit.connection_data(repo_root)["authenticatedUser"]
+        account = ((user.get("properties") or {}).get("Account") or {}).get("$value")
+        who = dm.redact_identity({"uniqueName": account, "displayName": user.get("providerDisplayName"),
+                                  "id": user.get("id")}, emails)
+        cache.save_me(repo_root, who["handle"], who["id"], ts)
+    except (AdoImportError, ValueError, TypeError, AttributeError):
+        return None
+    return cache.load_me(repo_root)
+
+
+def _comment_events(ts: str, ref: str, wid: int, diff: dict, me: dict | None, scan: bool) -> list[dict]:
+    """`comment_seen` for each new, edited or deleted comment and `directive_seen` for each that has a line reading
+    as an instruction: ids, versions, hashes and line numbers only. No text, no name, no author handle."""
+    events = []
+    for change in ("new", "edited", "deleted"):
+        for c in diff[change]:
+            mine = None if not me or not me.get("id") else me["id"] in {m["id"] for m in c["mentions"]}
+            events.append(_event(ts, "comment_seen", ref=ref, work_item=wid, comment=c["id"], version=c["version"],
+                                 change=change, text_sha=c["text_sha"], mentions_me=mine))
+            if scan and change != "deleted" and c["flagged_lines"]:
+                events.append(_event(ts, "directive_seen", ref=ref, work_item=wid, comment=c["id"],
+                                     lines=c["flagged_lines"]))
+    return events
+
+
+def _staleness(repo_root: Path, link: dict) -> tuple:
+    """Items never pulled first, then the stalest: what a capped pull should spend its reads on."""
+    doc = cache.load_cache(repo_root, link["work_item"])
+    return (doc is not None, str(doc.get("pulled_at") or "") if doc else "")
+
+
+def _pull_discussion(args, repo_root: Path) -> int:
+    need = _load(repo_root)
+    if isinstance(need, str):
+        return _unavailable(args, repo_root, "pull --discussion", need, items=[])
+    cfg, _schema = need
+    block = _discussion_cfg(cfg)
+    if block.get("enabled", True) is False:
+        _emit(args, {"ok": True, "discussion": "disabled", "reason": DISCUSSION_OFF, "items": [], "skipped": 0},
+              f"{DISCUSSION_OFF}: set discussion.enabled: true in {CONFIG_FILE} to read the board's comments")
+        return 0
+    links = linked_items(read_ledger(repo_root))
+    ids = [t.strip() for t in args.id or [] if t.strip()]
+    refs, unmatched = _select_links(links, {}, ids, None)
+    refs.sort(key=lambda r: (_staleness(repo_root, links[r]), r))
+    cap = _limit(block, "max_items_per_pull", DEFAULT_MAX_ITEMS)
+    skipped, refs = max(0, len(refs) - cap), refs[:cap]
+    emails, ts = _emails(repo_root), _stamp()
+    me = _me(repo_root, emails, ts, refresh=args.full) if refs else None
+    scan, events, rows, comments_read, calls = _directive_scan_on(block), [], [], 0, (1 if refs else 0)
+    for ref in refs:
+        wid = links[ref]["work_item"]
+        row = {"ref": ref, "work_item": wid, "comments": None, "new": None, "edited": None, "deleted": None,
+               "truncated": None, "unavailable": None}
+        rows.append(row)
+        calls += 2
+        try:
+            doc, diff = _read_discussion(repo_root, wid, ref, emails, cache.load_cache(repo_root, wid), full=args.full,
+                                         max_comments=_limit(block, "max_comments_per_item", DEFAULT_MAX_COMMENTS),
+                                         ts=ts)
+            cache.save_cache(repo_root, doc)
+        except AdoImportError as exc:
+            row["unavailable"] = f"{wm.classify_write_error(str(exc))}: {_tidy(exc, 160)}"
+            continue
+        row.update({"comments": len(doc["comments"]), "new": len(diff["new"]), "edited": len(diff["edited"]),
+                    "deleted": len(diff["deleted"]), "truncated": doc["truncated"]})
+        comments_read += len(doc["comments"])
+        events += _comment_events(ts, ref, wid, diff, me, scan)
+        events.append(_event(ts, "discussion_pulled", ref=ref, work_item=wid, comments=row["comments"], new=row["new"],
+                             edited=row["edited"], deleted=row["deleted"], truncated=row["truncated"]))
+    append_ledger(repo_root, events)
+    cost = (f"cost: {_plural(len(refs), 'item')} read, {_plural(comments_read, 'comment')} "
+            f"(az calls: at least {calls})")
+    lines = [f"Azure Boards mirror: pull --discussion  (as of {ts})"]
+    for r in rows:
+        head = f"  {r['ref']}  #{r['work_item']}"
+        lines.append(f"{head}  unavailable: {r['unavailable']}" if r["unavailable"] else
+                     f"{head}  {_plural(r['comments'], 'comment')} ({r['new']} new, {r['edited']} edited, "
+                     f"{r['deleted']} deleted){'  truncated: the board holds more' if r['truncated'] else ''}")
+    if not rows:
+        lines.append("  nothing is linked yet: no ledgered item to read")
+    if unmatched:
+        lines.append("no ledgered item matches --id " + ", ".join(unmatched))
+    if skipped:
+        lines.append(f"skipped: {skipped}  (over discussion.max_items_per_pull {cap}; the stalest are read first)")
+    lines.append(cost)
+    _emit(args, {"ok": True, "discussion": "pulled", "as_of": ts, "items": rows, "skipped": skipped,
+                 "unmatched_ids": unmatched, "cost": cost}, "\n".join(lines))
+    return 0
+
+
+def _bound(item: dict, cfg: dict) -> bool:
+    """Is the item under the mirror's area path or one of its bound iterations: the places a raw `#id` is cached."""
+    area = cfg.get("area_path") if isinstance(cfg.get("area_path"), str) else None
+    iterations = cfg.get("iterations") if isinstance(cfg.get("iterations"), dict) else {}
+    under = lambda path, root: bool(root) and (path == root or path.startswith(root.rstrip("\\") + "\\"))  # noqa: E731
+    return under(item["area"], area) or any(isinstance(v, str) and under(item["iteration"], v)
+                                            for v in iterations.values())
+
+
+def _version_blocks(repo_root: Path, wid: int, comments: list[dict], emails: dict, for_agent: bool) -> list[str]:
+    """The edit history of every comment that has been edited, quoted the way a comment always is."""
+    lines = []
+    for c in comments:
+        if not isinstance(c, dict) or not isinstance(c.get("version"), int) or c["version"] < 2:
+            continue
+        mapped = [dm.map_comment(v, emails) for v in ado_wit.comment_versions(repo_root, wid, c["id"])]
+        shown = dm.render_show({"work_item_id": wid, "comments": mapped}, for_agent=for_agent).split("\n")
+        body = shown[next(i for i, line in enumerate(shown) if line.startswith("Work item")) + 1:]
+        lines += ["", f"Versions of comment {c['id']}", *body]
+    return lines
+
+
+def cmd_show(args, repo_root: Path) -> int:
+    target, links = args.target.strip(), linked_items(read_ledger(repo_root))
+    if raw := re.fullmatch(r"#([0-9]+)", target):
+        wid = int(raw.group(1))
+        ref = next((r for r, l in links.items() if l["work_item"] == wid), None) or f"#{wid}"
+    elif REF_RE.fullmatch(target):
+        if target not in links:
+            raise Illegal(f"{target} is not ledgered in this clone, so it has no work item here: pass #<work item id>, "
+                          "or `link` / `adopt` it first")
+        ref, wid = target, links[target]["work_item"]
+    else:
+        raise Illegal(f"{target!r} is neither an sdlc:<kind>:<id> ref nor a #<work item id>")
+    live_wanted = args.fetch or args.versions
+    if live_wanted:
+        try:
+            ado_transport.remote(repo_root)
+        except AdoImportError as exc:
+            raise Illegal(f"`show --fetch` and `--versions` read Azure DevOps: {_tidy(exc)}") from None
+    cfg, emails, ts = _cfg_or_empty(repo_root), _emails(repo_root), _stamp()
+    cached = cache.load_cache(repo_root, wid)
+    doc, unavailable, fetched, saved = cached, None, False, cached is not None
+    if args.fetch:
+        try:
+            items, missing = _read_items(repo_root, [wid], emails)
+            if wid in missing:
+                raise AdoImportError(f"work item #{wid} was not found (deleted, or not visible to this az login)")
+            block = _discussion_cfg(cfg)
+            fresh, _diff = _read_discussion(repo_root, wid, ref, emails, cached, full=False, ts=ts,
+                                            max_comments=_limit(block, "max_comments_per_item", DEFAULT_MAX_COMMENTS))
+            fetched, doc = True, fresh
+            if not ref.startswith("#") or _bound(items[wid], cfg):
+                cache.save_cache(repo_root, fresh)
+                append_ledger(repo_root, [_event(ts, "discussion_pulled", ref=ref, work_item=wid,
+                                                 comments=len(fresh["comments"]), new=len(_diff["new"]),
+                                                 edited=len(_diff["edited"]), deleted=len(_diff["deleted"]),
+                                                 truncated=fresh["truncated"])])
+                saved = True
+            else:
+                saved = False  # a raw id outside the bound paths is a live print: nothing is kept
+        except AdoImportError as exc:
+            unavailable, doc, saved = _tidy(exc), cached, cached is not None
+    stub = {"work_item_id": wid, "ref": ref}
+    rendered = dm.render_show(doc if doc is not None else stub, for_agent=args.for_agent)
+    comments = doc.get("comments") if isinstance(doc, dict) and isinstance(doc.get("comments"), list) else None
+    extra = []
+    if args.versions:
+        try:
+            listing = comments if comments is not None else [dm.map_comment(c, emails)
+                                                              for c in ado_wit.comments(repo_root, wid)]
+            extra += _version_blocks(repo_root, wid, listing, emails, args.for_agent)
+        except AdoImportError as exc:
+            unavailable = unavailable or _tidy(exc)
+    notes = []
+    if args.expand == "reactions":
+        notes.append("reactions: not read in this version (no route is pinned for them)")
+    if doc is None:
+        notes.append(f"no discussion is cached: `ado_sync.py pull --discussion --id {ref}` reads it, "
+                     f"or `show {ref} --fetch`")
+    if fetched and not saved:
+        notes.append("cached: no (the item is outside the mirror's bound paths, so nothing was saved)")
+    if unavailable:
+        notes.append(f"unavailable: {unavailable}")
+    out = {"ok": True, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
+           "as_of": doc.get("pulled_at") if isinstance(doc, dict) else None, "unavailable": unavailable,
+           "for_agent": bool(args.for_agent), "comment_count": len(comments) if comments is not None else None,
+           "rendered": "\n".join([rendered, *extra]), "notes": notes}
+    _emit(args, out, "\n".join([rendered, *extra, *notes]))
+    return 0
+
+
+def cmd_discussion(args, repo_root: Path) -> int:
+    cfg = _cfg_or_empty(repo_root)
+    try:
+        gone = cache.gc(repo_root, cfg, ado_schema.today(), dry_run=args.dry_run)
+    except (ValueError, OSError) as exc:
+        raise Illegal(f"discussion gc stopped: {_tidy(exc)}") from None
+    removed = [p.relative_to(repo_root).as_posix() for p in gone]
+    if gone and not args.dry_run:
+        append_ledger(repo_root, [_event(_stamp(), "discussion_gc", removed=len(gone),
+                                         work_items=[int(p.stem) for p in gone])])
+    verb = "would delete" if args.dry_run else "deleted"
+    lines = [f"discussion gc: {verb} {_plural(len(gone), 'cache file')}", *[f"  {r}" for r in removed]]
+    _emit(args, {"ok": True, "dry_run": bool(args.dry_run), "removed": removed, "count": len(gone)}, "\n".join(lines))
+    return 0
+
 # --- CLI -------------------------------------------------------------------------------------------------------------
 
 def build_parser() -> argparse.ArgumentParser:
@@ -379,8 +1720,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(
         prog="ado_sync.py",
-        description="Azure Boards mirror: configure it, discover the client's process, check that the config fits it. "
-                    "Reads and plans by default; nothing here writes to the board.")
+        description="Azure Boards mirror: configure it, discover the client's process, check that the config fits it, "
+                    "plan against the board and read it back. Reads and plans by default; nothing here writes to "
+                    "the board.")
     sub = parser.add_subparsers(dest="verb", required=True)
 
     p = sub.add_parser("config", help="Start or check .sdlc/ado.yaml")
@@ -400,11 +1742,67 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("validate", parents=[common],
                    help="Check every configured kind resolves on the discovered process; print the fit table")
+
+    p = sub.add_parser("plan", parents=[common],
+                       help="The dry run: what each repository item would do on the board, and the plan hash")
+    p.add_argument("--kind", action="append", metavar="K", help="Only this kind (repeat for several)")
+    p.add_argument("--id", action="append", metavar="ID",
+                   help="Only this item: its id (0004, FE-03) or ref (sdlc:spec:0004); repeat for several")
+    p.add_argument("--sprint", default=None, metavar="SNN", help="Only this sprint and the specs it holds")
+    p.add_argument("--all", action="store_true", help="Every configured kind (also what no selector means)")
+    p.add_argument("--validate", action="store_true",
+                   help="Also check each row against the discovered process (locally; the board is not asked)")
+    p.add_argument("--no-comments", action="store_true",
+                   help="Plan no comment rows (none are planned in this version; accepted so scripts do not change)")
+
+    sub.add_parser("status", parents=[common],
+                   help="What the ledger says, offline: linked, pending, drifted, as of when (no data is no data)")
+
+    p = sub.add_parser("pull", parents=[common],
+                       help="Read the ledgered items back and record what changed on the board")
+    p.add_argument("--id", action="append", metavar="ID", help="Only this item (id, ref or #work item); repeatable")
+    p.add_argument("--all", action="store_true", help="Every ledgered item (the default)")
+    p.add_argument("--discussion", action="store_true",
+                   help="Cache each item's comments (locally; ledger counts only) instead of reading its fields")
+    p.add_argument("--full", action="store_true", help="With --discussion: forget the comment watermark and read all")
+
+    p = sub.add_parser("drift", parents=[common],
+                       help="Classify each ledgered item against the board (advisory; writes nothing)")
+    p.add_argument("--id", action="append", metavar="ID", help="Only this item (id, ref or #work item); repeatable")
+    p.add_argument("--kind", action="append", metavar="K", help="Only this kind; repeatable")
+
+    p = sub.add_parser("link", parents=[common], help="Map one repository item to a work item that exists")
+    p.add_argument("ref", help="The repository item: sdlc:<kind>:<id>, e.g. sdlc:spec:0004")
+    p.add_argument("--work-item", default=None, metavar="N", help="The work item's number (4521 or #4521; not AB#4521)")
+    p.add_argument("--by", default=None, metavar="HUMAN", help="A named person; an AI or an agent is refused (exit 2)")
+
+    p = sub.add_parser("adopt", parents=[common],
+                       help="Map every repository item the board already tags (the ledger's `linked`)")
+    p.add_argument("--all", action="store_true", help="Required: adopt every ref the board tags exactly once")
+    p.add_argument("--by", default=None, metavar="HUMAN", help="A named person; an AI or an agent is refused (exit 2)")
+
+    p = sub.add_parser("show", parents=[common],
+                       help="A work item's cached discussion, every comment line quoted `  | `")
+    p.add_argument("target", help="sdlc:<kind>:<id> (ledgered) or #<work item id>")
+    p.add_argument("--fetch", action="store_true", help="Read the item's discussion from the board first")
+    p.add_argument("--versions", action="store_true", help="Also read the edit history of every edited comment")
+    p.add_argument("--expand", choices=["reactions"], default=None,
+                   help="Also read reactions (not available in this version; says so)")
+    p.add_argument("--for-agent", action="store_true",
+                   help="Fence the text as observed content and withhold lines that read as instructions")
+
+    p = sub.add_parser("discussion", help="Housekeeping for the local discussion cache")
+    discussion_sub = p.add_subparsers(dest="discussion_verb", required=True)
+    q = discussion_sub.add_parser("gc", parents=[common],
+                                  help="Delete caches past discussion.retain_days and those of unlinked items")
+    q.add_argument("--dry-run", action="store_true", help="List what would be deleted; delete nothing")
     return parser
 
 
 VERBS: dict[str, Callable[[argparse.Namespace, Path], int]] = {
-    "config": cmd_config, "discover": cmd_discover, "validate": cmd_validate,
+    "config": cmd_config, "discover": cmd_discover, "validate": cmd_validate, "plan": cmd_plan,
+    "status": cmd_status, "pull": cmd_pull, "drift": cmd_drift, "link": cmd_link, "adopt": cmd_adopt,
+    "show": cmd_show, "discussion": cmd_discussion,
 }
 
 
@@ -423,6 +1821,11 @@ def main(argv: list[str] | None = None) -> int:
         return _error(args, str(exc), 2 if exc.kind == "refused" else 1)
     except AdoImportError as exc:
         return _error(args, str(exc), 1)
+    except LedgerDrift as exc:
+        if args.json:
+            return _error(args, str(exc), 1)
+        print(exc)  # `DRIFT: ...` leads the line, as in sprint.py
+        return 1
 
 
 if __name__ == "__main__":
