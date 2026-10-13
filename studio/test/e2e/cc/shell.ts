@@ -12,6 +12,7 @@
  * reads the connection through the bridge and, only when nobody is identified, signs in as a
  * typed name through the Settings form exactly as a person would. */
 
+import { execFileSync } from 'node:child_process'
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { _electron as electron, expect, type ElectronApplication, type Page } from '@playwright/test'
@@ -187,11 +188,75 @@ export async function sequence(page: Page, first: string, second: string): Promi
   await page.keyboard.press(second)
 }
 
+const CLOSE_GRACE_MS = 20_000
+const EXIT_GRACE_MS = 5_000
+
+/** Whether a pid still exists. A zombie counts until its parent reaps it, which Playwright does
+ * at once, so "alive" five seconds after SIGKILL is a process that really did not die. */
+function pidAlive(pid: number): boolean {
+  try { process.kill(pid, 0); return true } catch { return false }
+}
+
+/** The app's main process and every descendant still running — state, age and command line —
+ * from one `ps` (Windows has no ps: empty). Chromium's own helpers show their `--type=`; a
+ * process that is not one of those is the one to look at. */
+function processTree(rootPid: number): string[] {
+  if (process.platform === 'win32') return []
+  try {
+    const rows = execFileSync('ps', ['-axo', 'pid=,ppid=,stat=,etime=,args='], { encoding: 'utf-8' })
+      .split('\n').map((line) => /^\s*(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.*)$/.exec(line)).filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => ({ pid: Number(m[1]), ppid: Number(m[2]), stat: m[3], etime: m[4], args: m[5] }))
+    const keep = new Set([rootPid])
+    for (let grew = true; grew;) { grew = false; for (const r of rows) if (keep.has(r.ppid) && !keep.has(r.pid)) { keep.add(r.pid); grew = true } }
+    // A Chromium helper's `--type=` sits after a long executable path, so it leads the line.
+    const kind = (args: string) => / --type=(\S+)/.exec(args)?.[1]
+    return rows.filter((r) => keep.has(r.pid)).map((r) => `${r.pid} (ppid ${r.ppid}) ${r.stat} up ${r.etime}${kind(r.args) ? ` [${kind(r.args)}]` : ''}: ${r.args.slice(0, 140)}`)
+  } catch (err) { return [`ps failed: ${err instanceof Error ? err.message : String(err)}`] }
+}
+
+/** The main process's own account of what keeps its event loop alive — every libuv handle, a
+ * ChildProcess with its command — and how many windows it has. Taken BEFORE quit, while the
+ * inspector link Playwright evaluates over still exists: `close()` tears that link down the
+ * moment it has sent app.quit(), so afterwards nothing can be asked. */
+async function liveHandles(app: ElectronApplication): Promise<string> {
+  const snapshot = app.evaluate(({ BrowserWindow }) => {
+    type Handle = { constructor?: { name?: string }; spawnargs?: string[]; hasRef?: () => boolean }
+    const handles = (process as unknown as { _getActiveHandles?: () => Handle[] })._getActiveHandles?.() ?? []
+    const named = handles.map((h) => `${h.constructor?.name ?? 'handle'}${h.spawnargs ? `[${h.spawnargs.slice(0, 6).join(' ')}]` : ''}${h.hasRef && !h.hasRef() ? '(unref)' : ''}`)
+    return `windows ${BrowserWindow.getAllWindows().length}; handles ${named.length ? named.join(', ') : 'none'}`
+  })
+  return Promise.race([snapshot, new Promise<string>((r) => setTimeout(() => r('the main process did not answer within 3 s'), 3_000))])
+    .catch((err: unknown) => `could not be read: ${err instanceof Error ? err.message : String(err)}`)
+}
+
+/** Closes the app and does not return while its process is still alive. app.quit() gets
+ * CLOSE_GRACE_MS; past that the process is ended by pid and its death is waited for. */
 export async function closeApp(app: ElectronApplication | undefined, page: Page | undefined, shot: string): Promise<void> {
   await page?.screenshot({ path: `test/screenshots/${shot}.png`, timeout: 15_000 }).catch(() => {})
-  // A close that does not return in 20 s is not waited on twice: the process is killed, or
-  // Playwright's worker teardown waits on the same app and times out after every test passed
-  // (the ubuntu job, twice).
-  const closed = await Promise.race([app?.close().then(() => true).catch(() => true), new Promise<boolean>((r) => setTimeout(() => r(false), 20_000))])
-  if (!closed) { try { app?.process().kill('SIGKILL') } catch { /* already gone */ } }
+  if (!app) return
+  const before = await liveHandles(app)
+  let pid: number | undefined
+  try { pid = app.process()?.pid } catch { pid = undefined }
+  const closed = await Promise.race([app.close().then(() => true).catch(() => true), new Promise<boolean>((r) => setTimeout(() => r(false), CLOSE_GRACE_MS))])
+  if (closed) return
+  // app.quit() has not ended the process in 20 s. Left like this, Playwright's worker teardown
+  // waits on the same process for two minutes more and then fails the whole run as "1 error was
+  // not a part of any test" with every test green — the ubuntu job, repeatedly, each time on
+  // the app a spec's afterAll had already asked this helper to close. The ChildProcess handle's
+  // own kill() is what ran here before, and the process stayed: so the kill goes by pid, the
+  // exit is waited for, and what was still alive is printed, which is the diagnosis the next
+  // red run needs and the last ones never gave.
+  const report = [
+    `[closeApp] ${shot}: app.quit() did not end the app (pid ${pid ?? 'unknown'}) within ${CLOSE_GRACE_MS / 1000} s.`,
+    `  before quit — ${before}`,
+    ...(pid === undefined ? [] : processTree(pid).map((line) => `  still running — ${line}`)),
+  ]
+  if (pid !== undefined) {
+    let sent: string
+    try { process.kill(pid, 'SIGKILL'); sent = 'sent' } catch (err) { sent = `not sent: ${err instanceof Error ? err.message : String(err)}` }
+    const deadline = Date.now() + EXIT_GRACE_MS
+    while (pidAlive(pid) && Date.now() < deadline) await new Promise((r) => setTimeout(r, 100))
+    report.push(`  SIGKILL ${sent}; pid ${pid} ${pidAlive(pid) ? `is STILL ALIVE ${EXIT_GRACE_MS / 1000} s later` : 'is gone'}.`)
+  }
+  console.log(report.join('\n'))
 }
