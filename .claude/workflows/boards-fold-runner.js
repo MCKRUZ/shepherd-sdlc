@@ -114,7 +114,7 @@ function mergeBrief(level, landedBefore) {
     `You are the merge agent for level [${level.join(', ')}] of Fold ${A.fold}. You are on branch ${A.branch}; \`git status --porcelain\` must be empty.`,
     `For each id in this order run \`git merge --no-ff --no-edit refs/pkg/<id> -m "merge <id>"\`: ${level.join(', ')}.`,
     'A merge conflict means two cards touched one file — do NOT resolve it: `git merge --abort`, report gate "merge <id>" as passed=false with the conflicting paths in output_tail, and continue with the next id.',
-    `After the merges run \`git diff --name-only ${START}\` (the commit this Fold started from — never the PR base) and report as gate "ownership" (passed=false if any path is listed) every path that matches NONE of these owned globs — the globs are authoritative, the kit's card prose is not: ${landedBefore.concat(level).flatMap(id => (A.packages[id] && A.packages[id].owns) || []).join(' ')}. '*' matches within one path segment, '**' matches any depth. List offending paths in output_tail.`,
+    `After the merges run \`git diff --name-only ${START}\` (the commit this Fold started from — never the PR base) and report as gate "ownership" (passed=false if any path is listed) every path that matches NONE of these owned globs — the globs are authoritative, the kit's card prose is not: ${Object.keys(A.packages).flatMap(id => (A.packages[id] && A.packages[id].owns) || []).join(' ')}. '*' matches within one path segment, '**' matches any depth. List offending paths in output_tail.`,
     'green = every merge clean and the ownership gate passed. Do not fix anything.',
   ].join('\n\n')
 }
