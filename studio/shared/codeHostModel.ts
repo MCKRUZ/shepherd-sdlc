@@ -10,6 +10,7 @@
  */
 
 import { parseRemote, remoteHostName, type RemoteInfo } from './codeHostRemote'
+import { WORK_ITEMS_NOT_SET_UP } from './reasons'
 
 export { parseRemote, type RemoteInfo } from './codeHostRemote'
 
@@ -42,7 +43,7 @@ export interface HostConnection {
   cli: CliStatus
 }
 
-export type HostFeature = 'board' | 'handoff' | 'pipelineEvidence' | 'gateCredential' | 'saveWhenProtected' | 'signedInAs'
+export type HostFeature = 'board' | 'handoff' | 'pipelineEvidence' | 'gateCredential' | 'saveWhenProtected' | 'signedInAs' | 'workItems'
 
 export function cliFor(host: HostName): CliName {
   return host === 'azure-devops' ? 'az' : 'gh'
@@ -63,6 +64,9 @@ export const WORDING = {
   ghMissing: 'This project\'s repository is on GitHub. The GitHub CLI (gh) wasn\'t found; the Azure CLI isn\'t needed for this project.',
   ghSignedOut: 'Not signed in — run `gh auth login`.',
   hostNone: 'This folder\'s origin is not GitHub or Azure DevOps; pull-request features are off (gh was tried, as before).',
+  /** The Azure Boards work-item mirror needs an Azure DevOps project; any other host has none. The one sentence
+   * is `reasons.WORK_ITEMS_NOT_SET_UP`, so the chip, a disabled control and the no-data sweep agree. */
+  boardsNotConfigured: WORK_ITEMS_NOT_SET_UP,
 } as const
 
 /** Why a CLI-backed feature is off right now, or null when nothing stands in its way. The
@@ -71,6 +75,9 @@ export const WORDING = {
 export function hostFeatureReason(connection: HostConnection, feature: HostFeature): string | null {
   const { host, cli } = connection
   const cliName = cliLabelShort(host)
+  // Work items exist only on an Azure DevOps project: on GitHub, or on no host, there is nothing to set up a
+  // CLI for — and the pull-request sentence below (`hostNone`) would be the wrong answer for it.
+  if (feature === 'workItems' && host !== 'azure-devops') return WORDING.boardsNotConfigured
   if (host === 'none' && feature !== 'signedInAs') return WORDING.hostNone
   const problem = cliProblem(cli)
   if (!problem) return null
@@ -83,6 +90,7 @@ export function hostFeatureReason(connection: HostConnection, feature: HostFeatu
     case 'gateCredential': return `Reading the gate credential needs the ${cliName}`
     case 'saveWhenProtected':
       return `A direct push was refused and ${cli.name ?? cliFor(host)} is not available to open a pull request — nothing was saved to the shared branch`
+    case 'workItems': return `Reaching Azure Boards work items needs the ${cliName}`
   }
 }
 
