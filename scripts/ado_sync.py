@@ -234,11 +234,12 @@ def _per_type_reads(schema: dict) -> list[str]:
 
 def _discover_payload(schema: dict, *, reused: bool, host: dict | None, notes: list[str]) -> dict:
     backlog = schema.get("backlog")
+    team_iterations = schema.get("team_iterations")
     return {"ok": True, "reused": reused, "path": SCHEMA_FILE, "discovered_at": schema.get("discovered_at"),
             "project": _name_of(schema.get("project")), "team": _name_of(schema.get("team")),
             "counts": {"types": len(schema.get("types") or {}), "fields": len(schema.get("fields") or {}),
                        "areas": len(schema.get("areas") or []), "iterations": len(schema.get("iterations") or []),
-                       "team_iterations": len(schema.get("team_iterations") or []),
+                       "team_iterations": len(team_iterations) if isinstance(team_iterations, list) else None,
                        "link_types": len(schema.get("link_types") or []),
                        "levels": len(backlog["levels"]) if isinstance(backlog, dict) else None},
             "per_type_reads": _per_type_reads(schema), "notes": notes, "host": host}
@@ -248,6 +249,7 @@ def _discover_text(payload: dict) -> str:
     c = payload["counts"]
     where = f"{payload['project'] or 'the project'} (team: {payload['team'] or 'not set'})"
     levels = "not read" if c["levels"] is None else str(c["levels"])
+    team_iterations = "not read" if c["team_iterations"] is None else str(c["team_iterations"])
     reads = ", ".join(payload["per_type_reads"]) or "none"
     if payload["reused"]:
         head = (f"The saved schema for {where} was read today ({payload['discovered_at']}); nothing was read from "
@@ -256,7 +258,7 @@ def _discover_text(payload: dict) -> str:
         head = f"Discovered the Azure DevOps process for {where} and saved {payload['path']}."
     lines = [head,
              f"  work item types {c['types']}, fields {c['fields']}, area paths {c['areas']}, iterations "
-             f"{c['iterations']}, team iterations {c['team_iterations']}, backlog levels {levels}",
+             f"{c['iterations']}, team iterations {team_iterations}, backlog levels {levels}",
              f"  states and fields read per type for: {reads}",
              *[f"Note: {n}" for n in payload["notes"]]]
     if payload["host"] is not None:

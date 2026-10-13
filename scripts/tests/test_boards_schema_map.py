@@ -282,6 +282,16 @@ def test_schema_refuses_states_or_fields_for_a_type_the_process_lacks():
             commands=[])
 
 
+def test_schema_keeps_team_iterations_never_read_as_none_and_an_empty_read_as_empty():
+    def built(team_iterations):
+        return asm.build_schema(
+            discovered_at="x", project=None, team=None, categories={}, types={}, states_by_type={},
+            fields_by_type={}, fields={}, backlog=None, nodes=([], []), team_iterations=team_iterations,
+            link_types=[], commands=[])
+    assert built(None)["team_iterations"] is None  # not read: unknown, not "none"
+    assert built([])["team_iterations"] == []  # read, and the team has none
+
+
 def test_field_on_type_and_transition_allowed():
     schema = agile_schema()
     assert schema["types"]["User Story"]["fields"]["Custom.RiskTier"]["allowed_values"] == ["LOW", "MEDIUM", "HIGH"]

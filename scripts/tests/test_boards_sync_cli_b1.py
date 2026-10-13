@@ -222,11 +222,14 @@ def test_discover_without_a_team_skips_the_team_reads_and_says_so(az, tmp_path, 
     az.answers["GET core/projects"] = project
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0 and out["team"] is None and out["counts"]["levels"] is None
+    assert out["counts"]["team_iterations"] is None
     assert not [k for k, _ in seen(az) if k.startswith("GET work/")]
     schema = read_schema(tmp_path)
-    assert schema["team"] is None and schema["backlog"] is None and schema["team_iterations"] == []
+    assert schema["team"] is None and schema["backlog"] is None and schema["team_iterations"] is None
     assert not [c for c in schema["commands"] if c.startswith("work/")]
     assert any("team" in note for note in out["notes"])
+    code, text = run(capsys, "discover", "--repo", tmp_path)  # the text names what was not read, never a 0
+    assert code == 0 and "team iterations not read, backlog levels not read" in text
 
 
 def test_discover_reads_the_types_the_config_writes_to_and_skips_pins_the_process_lacks(az, tmp_path, capsys):

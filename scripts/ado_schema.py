@@ -17,7 +17,7 @@ What `discover` reads, in order (each a `devops invoke` GET; the project is a ro
 Three rules decide the parts that are not fixed:
   * The team is `--team`, else `team:` in `.sdlc/ado.yaml`, else the project's default team (the one
     Azure DevOps itself uses when none is named); with none of those the two team reads are skipped
-    and the schema says so (`backlog: null`, `team: null`) instead of guessing.
+    and the schema says so (`backlog: null`, `team: null`, `team_iterations: null`) instead of guessing.
   * A type's states and fields are read for the spec's type and for every type a `types.<kind>` pin or a
     `fields.<kind>` block lands on, resolved by `ado_schema_map.resolve_type` against what was already
     read. A pin the process lacks is skipped here (`validate` reports it). A type that was never read
@@ -304,7 +304,7 @@ def discover(repo_root, team: str | None = None, *, notes: list[str] | None = No
     backlog = read("backlog_config", sm.map_backlog_config, project=project, team=team_name) if team_name else None
     nodes = read("classification_nodes", sm.map_nodes, query={"$depth": "3"}, project=project)
     team_iterations = (read("team_iterations", sm.map_team_iterations, project=project, team=team_name)
-                       if team_name else [])
+                       if team_name else None)
     link_types = read("relation_types", sm.map_link_types, project=project)
 
     def assemble(states_by_type: dict, fields_by_type: dict) -> dict:

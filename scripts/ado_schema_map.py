@@ -306,13 +306,14 @@ def build_schema(*, discovered_at: str, project: dict | None, team: dict | None,
                  states_by_type: dict, fields_by_type: dict, fields, backlog: dict | None, nodes,
                  team_iterations, link_types, commands: list[str]) -> dict:
     """Assemble the mapper outputs into the document `.sdlc/ado/schema.json` holds. Pure and
-    deterministic (`discovered_at` is passed in). A type's `states` and `fields` are None when they
-    were never read — unknown, not empty. `project` and `team` keep their `name` only."""
+    deterministic (`discovered_at` is passed in). A type's `states` and `fields`, and `team_iterations`,
+    are None when they were never read — unknown, not empty. `project` and `team` keep their `name` only."""
     for label, mapping in (("states_by_type", states_by_type), ("fields_by_type", fields_by_type)):
         stray = sorted(set(mapping) - set(types))
         if stray:
             raise AdoImportError(f"unexpected az shape: {label} names type(s) the process does not have: " + ", ".join(stray))
     areas, iterations = nodes
+    team_iterations = None if team_iterations is None else list(team_iterations)  # None = never read
     merged = {}
     for name, info in types.items():
         entry = dict(info)
@@ -322,7 +323,7 @@ def build_schema(*, discovered_at: str, project: dict | None, team: dict | None,
     return {"schema_version": SCHEMA_VERSION, "discovered_at": discovered_at,
             "project": _name_only(project, "project"), "team": _name_only(team, "team"),
             "categories": dict(categories), "types": merged, "fields": dict(fields), "backlog": backlog,
-            "areas": list(areas), "iterations": list(iterations), "team_iterations": list(team_iterations),
+            "areas": list(areas), "iterations": list(iterations), "team_iterations": team_iterations,
             "link_types": list(link_types), "commands": list(commands)}
 
 
