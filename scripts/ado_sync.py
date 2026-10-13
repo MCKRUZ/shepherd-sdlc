@@ -16,9 +16,10 @@ write path.
                           link, or why it would not), the hash a person echoes to `apply`
   status                  what the ledger says, offline: linked, pending, drifted, as of when -- `no data`
                           where nothing was ever measured, never a zero
-  pull [--id ID] [--all] [--discussion [--full]]
+  pull [--id ID] [--all] [--discussion] [--full]
                           read the ledgered items back: record `observed` and `drift_seen`, write the session
-                          hook's one line; `--discussion` caches each item's comments instead
+                          hook's one line; `--discussion` caches each item's comments instead (`--full`, which
+                          forgets the comment watermark, implies `--discussion`)
   drift [--id ID] [--kind K]
                           the same classification as `pull`, printed, and the board items nobody has linked
   link <ref> --work-item N --by H | adopt --all --by H
@@ -57,14 +58,24 @@ Exit codes (the kit's verb table)
                 2 a forbidden field is mapped
   plan, status, drift, show
                 0 always -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
-                no rows, never a failure; 1 only for a usage error (an unknown kind, a ref that is not ledgered
-                and no `#id`, `--fetch` on a remote that is not Azure DevOps)
-  pull          0 | 1 `DRIFT` (the ledger append failed)
-  link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous
-                | 2 an AI or agent `--by`, or the `AB#` form of a work item
+                no rows, never a failure; so is a ledger that cannot be read or holds a line that is not a ledger
+                line, and a plan file that cannot be written (`unavailable: <reason>`; in `--json`
+                `"unavailable": "<reason>"`). A ledger append or hook line that fails after the read is printed
+                (`DRIFT: ...`, `hook line: not written`) and the exit is still 0. 1 only for a usage error (a ref
+                that is not ledgered and no `#id`, a target that is neither, a `--sprint` that is not a sprint
+                id, `--fetch`/`--versions` on a remote that is not Azure DevOps); an unknown `--kind` is
+                argparse's own usage error (2), the choices being `boards_contract.KINDS`
+  pull          0 | 1 `DRIFT` (the ledger append failed) -- and nothing else: an unreadable ledger is `unavailable`
+                (exit 0), and `--full` without `--discussion` implies it
+  link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous;
+                the ledger cannot be read; `--by` names two people on the roster
+                | 2 an AI or agent `--by`, an e-mail address that is on nobody's roster entry, or the `AB#` form
   discussion gc 0 | 1 `DRIFT`
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
-  precondition. Both are copied from `sprint.py`, not imported.
+  precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `pull`'s DRIFT. Refused and Illegal are
+  copied from `sprint.py`, not imported.
+  `--by` is ledgered as a roster `@handle` when the typed text is, case-insensitively, one person's `handle`, `name`
+  or `email` on `.sdlc/team.yaml`; a name that matches nobody is kept as typed (the `sprint.py` precedent).
 
 Honesty: a team, backlog or state never read is `null` in the schema and "not discovered" in the output, never an
 empty list or a zero; a count never measured is `null` / "no data" and a 0 appears only after a read that found
@@ -133,6 +144,27 @@ class Illegal(Exception):
     """Exit 1: an illegal operation or a missing precondition."""
 
 
+class Usage(Illegal):
+    """Exit 1 on a read verb too: the command line asks for something that cannot be read as asked (a ref this clone
+    never ledgered, a target that is neither a ref nor `#id`, a `--sprint` that is not a sprint id, `--fetch` on a
+    remote that is not Azure DevOps). Any other `Illegal` on a read verb is answered `unavailable`, exit 0."""
+
+
+class LedgerUnreadable(Illegal):
+    """The ledger exists but cannot be read, or a line of it is not a ledger line. A read verb answers
+    `unavailable: <reason>` and exits 0; a verb that would append to it stops with exit 1 (it does not add to a
+    record it cannot read)."""
+
+
+# The verbs that only read the board (`pull` also records what it read): house rule 4, they exit 0 on every path
+# that is not a usage error; `pull` alone may exit 1, and only for `DRIFT`.
+READ_VERBS = ("plan", "status", "pull", "drift", "show")
+# What each read verb's `--json` carries when it is `unavailable`, beside `unavailable` and `reason`.
+UNAVAILABLE_EXTRA: dict[str, dict] = {"plan": {"plan": None, "rows": [], "counts": None},
+                                      "pull": {"items": [], "counts": None},
+                                      "drift": {"items": [], "counts": None}, "show": {}, "status": {}}
+
+
 # --- people, paths, the host -----------------------------------------------------------------------------------
 
 def require_human(name: str | None, flag: str) -> str:
@@ -147,6 +179,40 @@ def require_human(name: str | None, flag: str) -> str:
         raise Refused(f"Refused: {flag} '{clean}' reads as an AI or an agent, not a named human. The mirror records "
                       "who is accountable for a change to the board; an agent may not be that name. (This is "
                       "labelling, not enforcement: it cannot verify identity, only refuse the obvious.)")
+    return clean
+
+
+EMAIL_SHAPED = re.compile(r"@.*\.")  # the loose shape `--by` refuses off the roster: an `@` with a `.` after it
+
+
+def _roster_handles_for(roster: dict, typed: str) -> list[str]:
+    """The roster handles whose `handle`, `name` or `email` is `typed`, case-insensitively: an exact match or none,
+    never a guess (no prefix, no initials, no handle made up from a name)."""
+    folded = typed.casefold()
+    found = {h for h in validate_team.people_handles(roster) if h.strip().casefold() == folded}
+    found |= {h for email, h in validate_team.people_by_email(roster).items() if email.casefold() == folded}
+    people = roster.get("people") if isinstance(roster.get("people"), list) else []
+    found |= {p["handle"] for p in people if isinstance(p, dict) and isinstance(p.get("handle"), str)
+              and p["handle"].strip() and isinstance(p.get("name"), str) and p["name"].strip().casefold() == folded}
+    return sorted({h.strip() for h in found})
+
+
+def resolve_by(repo_root: Path, name: str | None, flag: str) -> str:
+    """The `--by` a ledger line records (house rule 10): `require_human`'s name, as the roster `@handle` it names.
+    One person on `.sdlc/team.yaml` whose `handle`, `name` or `email` is the typed text (case-insensitively) is
+    that person's handle; two are `Illegal` (the mirror never picks one). Off the roster, an e-mail-shaped value
+    (an `@` with a `.` after it) is `Refused` (exit 2: the ledger never keeps an address) and any other name is
+    kept as typed, as `sprint.py` keeps it. Labelling, not identity: it refuses the obvious only."""
+    clean = require_human(name, flag)
+    handles = _roster_handles_for(_roster(repo_root), clean)
+    if len(handles) > 1:
+        raise Illegal(f"{flag} names {len(handles)} people on the roster ({', '.join(handles)}): give the handle")
+    if handles:
+        return require_human(handles[0], flag)
+    if EMAIL_SHAPED.search(clean):
+        raise Refused(f"Refused: {flag} reads as an e-mail address that is on nobody's roster entry: give a roster "
+                      "handle or a name, not an address. (The ledger names a person by @handle and never keeps an "
+                      "address.)")
     return clean
 
 
@@ -454,24 +520,57 @@ def _event(ts: str, name: str, **fields) -> dict:
         raise Illegal(f"not written to the ledger: {exc}") from None
 
 
+LEDGER_TEXT_KEYS = ("event", "ref", "field", "plan", "class", "kind")  # looked up and grouped by: a string or null
+
+
+def _not_a_ledger_line(entry) -> str | None:
+    """Why a parsed line is not a ledger line, or None when it is one."""
+    if not isinstance(entry, dict):
+        return "is not a JSON object"
+    for key in LEDGER_TEXT_KEYS:
+        if entry.get(key) is not None and not isinstance(entry[key], str):
+            return f"has a {key!r} that is not a string"
+    if entry.get("fields") is not None and not isinstance(entry["fields"], list):
+        return "has a 'fields' that is not a list"
+    return None
+
+
 def read_ledger(repo_root) -> list[dict]:
-    """The ledger's lines in append order; a missing file is `[]`, a line that is not a JSON object is skipped."""
+    """The ledger's lines in append order; a missing file is `[]` and a blank line is skipped. A file that cannot be
+    read, or a line that is not a ledger line (not a JSON object; an `event`, `ref`, `field`, `plan`, `class` or
+    `kind` that is not a string or null; `fields` that is not a list), is `LedgerUnreadable` naming the line: the
+    ledger is append-only, so a person repairs the line, and a line skipped in silence would undercount."""
     path = Path(repo_root) / LEDGER
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except FileNotFoundError:
         return []
     except OSError as exc:
-        raise Illegal(f"could not read {LEDGER} ({type(exc).__name__})") from None
+        raise LedgerUnreadable(f"{LEDGER} could not be read ({type(exc).__name__})") from None
     out = []
-    for line in text.splitlines():
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.strip():
+            continue
         try:
             entry = json.loads(line)
-        except ValueError:
-            continue
-        if isinstance(entry, dict):
-            out.append(entry)
+        except (ValueError, RecursionError):
+            entry = None
+        problem = _not_a_ledger_line(entry)
+        if problem:
+            raise LedgerUnreadable(f"{LEDGER} line {number} {problem}; the ledger is append-only, so repair or "
+                                   "remove that line by hand (nothing was read from the ledger)")
+        out.append(entry)
     return out
+
+
+def _summary(ledger: list[dict]) -> dict:
+    """`ado_sync_model.summarize` of the ledger as of today. A line the summary cannot read is `LedgerUnreadable`:
+    `status` then says so instead of a traceback."""
+    try:
+        return model.summarize(ledger, ado_schema.today())
+    except (TypeError, ValueError, KeyError, AttributeError) as exc:
+        raise LedgerUnreadable(f"{LEDGER} holds a line the summary cannot read ({type(exc).__name__}: "
+                               f"{_tidy(exc, 120)})") from None
 
 
 def append_ledger(repo_root, events: list[dict]) -> None:
@@ -548,12 +647,20 @@ def _ensure_local_ignore(repo_root: Path) -> None:
         ignore.write_bytes(b"*\n")
 
 
-def _write_hook_line(repo_root: Path, ledger: list[dict]) -> str:
-    """Line 1 of `hook-status.txt` is the summary's `hook_line` (K11). Returns the line."""
-    line = model.summarize(ledger, ado_schema.today())["hook_line"]
-    _ensure_local_ignore(repo_root)
-    cfgmod.write_hook_status(repo_root, line)
-    return line
+def _write_hook_line(repo_root: Path, ledger: list[dict]) -> tuple[str | None, str | None]:
+    """Line 1 of `hook-status.txt` is the summary's `hook_line` (K11). `(line, problem)`: the file is a convenience
+    for the session hook, so a summary that cannot be made or a file that cannot be written is a note, never the
+    failure of a verb that has already written the ledger."""
+    try:
+        line = _summary(ledger)["hook_line"]
+    except LedgerUnreadable as exc:
+        return None, f"hook line: not written ({exc})"
+    try:
+        _ensure_local_ignore(repo_root)
+        cfgmod.write_hook_status(repo_root, line)
+    except OSError as exc:
+        return line, f"hook line: not written to {bc.HOOK_STATUS} ({type(exc).__name__})"
+    return line, None
 
 
 # --- reading the repository's side and the board's -------------------------------------------------------------------
@@ -600,10 +707,7 @@ def _load(repo_root: Path) -> tuple[dict, dict] | str:
 
 def _scope_kinds(cfg: dict, wanted: list[str] | None) -> tuple[list[str], list[dict]]:
     """The kinds a verb covers (those asked for, else the configured ones) that have a source, and the rest
-    named as skipped. An unknown kind is `Illegal`."""
-    for kind in wanted or []:
-        if kind not in KINDS:
-            raise Illegal(f"unknown kind {kind!r}; the kinds are {', '.join(KINDS)}")
+    named as skipped. An unknown kind never arrives: `--kind` is an argparse choice of `boards_contract.KINDS`."""
     asked = tuple(dict.fromkeys(wanted)) if wanted else _configured_kinds(cfg)
     have = [k for k in asked if k in sources.SOURCES]
     skipped = [{"kind": k, "reason": f"no source reads {k} yet (a later Fold adds it)"} for k in asked
@@ -712,7 +816,7 @@ def _sprint_arg(text: str | None) -> str | None:
     if text is None:
         return None
     if not SPRINT_ID_RE.fullmatch(text.strip()):
-        raise Illegal(f"--sprint {text!r} is not a sprint id (S07, S12): the id of a file in .sdlc/sprints/")
+        raise Usage(f"--sprint {text!r} is not a sprint id (S07, S12): the id of a file in .sdlc/sprints/")
     return text.strip()
 
 
@@ -1065,33 +1169,40 @@ def cmd_plan(args, repo_root: Path) -> int:
     stamp = _stamp()
     posture = cfg.get("posture") if cfg.get("posture") in ("plan-only", "assisted") else "plan-only"
     path = f"{LOCAL_DIR}/plans/{plan}.json"
-    try:
-        _ensure_local_ignore(repo_root)
-        _write_json(repo_root / path, {"schema": PLAN_SCHEMA, "plan": plan, "created": stamp, "scope": scope,
-                                       "posture": posture, "rows": rows})
-    except OSError as exc:
-        raise Illegal(f"could not write the plan file {path} ({type(exc).__name__})") from None
+    # the lines are built first: one the model refuses stops the plan before the plan file is written
     events = [_event(stamp, "planned", plan=plan, ref=r["ref"], kind=r["kind"], action=r["action"],
                      work_item=r["work_item"]) for r in rows if r["action"] in PENDING_ACTIONS]
     if not events:  # "a plan that found nothing" is a line with no ref, so `pending` reads 0, not no data
         events = [_event(stamp, "planned", plan=plan, ref=None)]
+    try:
+        _ensure_local_ignore(repo_root)
+        _write_json(repo_root / path, {"schema": PLAN_SCHEMA, "plan": plan, "created": stamp, "scope": scope,
+                                       "posture": posture, "rows": rows})
+    except OSError as exc:  # -> main: `unavailable`, exit 0; nothing was ledgered
+        raise Illegal(f"could not write the plan file {path} ({type(exc).__name__}); nothing was ledgered") from None
+    drift = None
     if next((e.get("plan") for e in reversed(ledger) if e.get("event") == "planned"), None) != plan:
-        append_ledger(repo_root, events)
-        ledger = ledger + events
-    hook = _write_hook_line(repo_root, ledger)
+        try:
+            append_ledger(repo_root, events)
+            ledger = ledger + events
+        except LedgerDrift as exc:  # printed, never a failure: plan exits 0 on every path that is not a usage error
+            drift = str(exc)
+    hook, hook_note = _write_hook_line(repo_root, ledger)
     me = cache.load_me(repo_root)
     executed_as = me.get("handle") if me else None
     word = executed_as or ("an identity that is not on the roster" if me else "not read yet")
     out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
            "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
            "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
-           "notes": _plan_notes(cfg, ledger, scope["all"], counts), "validated": bool(args.validate),
-           "comments": "not planned in this version", "hook_line": hook}
+           "notes": _plan_notes(cfg, ledger, scope["all"], counts) + ([hook_note] if hook_note else []),
+           "validated": bool(args.validate), "comments": "not planned in this version", "hook_line": hook,
+           "drift": drift}
     if args.json:
         print(json.dumps(out, indent=2))
     else:
         lines = _fit_table(fit, resolved) if fit or resolved else []
-        print(_plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n"))
+        text = _plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n")
+        print(text if drift is None else f"{text}\n{drift}")  # `DRIFT: ...` leads its line, as in sprint.py
     return 0
 
 
@@ -1125,7 +1236,7 @@ def _status_text(doc: dict, configured: bool) -> str:
 
 
 def cmd_status(args, repo_root: Path) -> int:
-    doc = model.summarize(read_ledger(repo_root), ado_schema.today())
+    doc = _summary(read_ledger(repo_root))  # LedgerUnreadable -> main: `unavailable: <reason>`, exit 0
     if args.json:
         print(json.dumps(doc, indent=2, sort_keys=True, ensure_ascii=False))  # the golden's form, byte for byte
     else:
@@ -1142,10 +1253,7 @@ def _ident(ref: str, proj: dict | None) -> str:
 def _select_links(links: dict[str, dict], projs: dict[str, dict], ids: list[str],
                   kinds: list[str] | None) -> tuple[list[str], list[str]]:
     """The ledgered refs an `--id` (ref, id, or `#work item`) and `--kind` selection names, in ref order, and the ids
-    that named none."""
-    for kind in kinds or []:
-        if kind not in KINDS:
-            raise Illegal(f"unknown kind {kind!r}; the kinds are {', '.join(KINDS)}")
+    that named none. `--kind` is an argparse choice of `boards_contract.KINDS`, so no unknown kind arrives here."""
     chosen = []
     for ref, link in sorted(links.items()):
         if kinds and _kind_of(ref) not in kinds:
@@ -1311,10 +1419,8 @@ def _drift_events(ts: str, results: list[dict], ledger: list[dict]) -> tuple[lis
 
 
 def cmd_pull(args, repo_root: Path) -> int:
-    if args.discussion:
+    if args.discussion or args.full:  # `--full` forgets the comment watermark, the only one there is: it implies it
         return _pull_discussion(args, repo_root)
-    if args.full:
-        raise Illegal("--full belongs to `pull --discussion` (it forgets the comment watermark)")
     ctx = _drift_context(args, repo_root, "pull")
     if isinstance(ctx, int):
         return ctx
@@ -1329,16 +1435,18 @@ def cmd_pull(args, repo_root: Path) -> int:
     observed = sum(1 for e in events if e["event"] == "observed")
     if not results:
         events = [_event(ts, "observed", ref=None, items=0)]
-    append_ledger(repo_root, events)
-    hook = _write_hook_line(repo_root, ledger + events)
+    append_ledger(repo_root, events)  # LedgerDrift -> main: `DRIFT: ...`, exit 1 (pull's only exit 1)
+    hook, hook_note = _write_hook_line(repo_root, ledger + events)
+    notes = [hook_note] if hook_note else []
     out = {"ok": True, "unavailable": False, "reason": None, "as_of": ts, "items": results,
            "counts": _class_counts(results), "unmatched_ids": unmatched,
-           "recorded": {"observed": observed, "drift_seen": seen}, "hook_line": hook, "notes": []}
+           "recorded": {"observed": observed, "drift_seen": seen}, "hook_line": hook, "notes": notes}
     lines = [f"Azure Boards mirror: pull  (as of {ts})"]
     lines += _drift_lines(results, projs) or ["nothing is linked yet: no ledgered item to read"]
     if unmatched:
         lines.append("no ledgered item matches --id " + ", ".join(unmatched))
-    lines += [f"recorded: {_plural(observed, 'observed line')}, {_plural(seen, 'drift_seen line')}", f"hook line: {hook}"]
+    lines += [f"recorded: {_plural(observed, 'observed line')}, {_plural(seen, 'drift_seen line')}",
+              f"hook line: {hook if hook is not None else 'not written'}", *[f"note: {n}" for n in notes]]
     _emit(args, out, "\n".join(lines))
     return 0
 
@@ -1377,7 +1485,7 @@ def _link_event(ts: str, p: dict, item: dict, how: str, by: str) -> dict:
 
 
 def cmd_link(args, repo_root: Path) -> int:
-    by = require_human(args.by, "--by")
+    by = resolve_by(repo_root, args.by, "--by")
     wid = _work_item_arg(args.work_item)
     ref = args.ref.strip()
     kind = _kind_of(ref) if REF_RE.fullmatch(ref) else None
@@ -1418,7 +1526,7 @@ def cmd_link(args, repo_root: Path) -> int:
 
 
 def cmd_adopt(args, repo_root: Path) -> int:
-    by = require_human(args.by, "--by")
+    by = resolve_by(repo_root, args.by, "--by")
     if not args.all:
         raise Illegal("adopt needs --all: it maps every repository item the board already tags; use `link` for one")
     need = _load(repo_root)
@@ -1571,17 +1679,22 @@ def _pull_discussion(args, repo_root: Path) -> int:
             doc, diff = _read_discussion(repo_root, wid, ref, emails, cache.load_cache(repo_root, wid), full=args.full,
                                          max_comments=_limit(block, "max_comments_per_item", DEFAULT_MAX_COMMENTS),
                                          ts=ts)
-            cache.save_cache(repo_root, doc)
         except AdoImportError as exc:
             row["unavailable"] = f"{wm.classify_write_error(str(exc))}: {_tidy(exc, 160)}"
             continue
-        row.update({"comments": len(doc["comments"]), "new": len(diff["new"]), "edited": len(diff["edited"]),
-                    "deleted": len(diff["deleted"]), "truncated": doc["truncated"]})
-        comments_read += len(doc["comments"])
-        events += _comment_events(ts, ref, wid, diff, me, scan)
-        events.append(_event(ts, "discussion_pulled", ref=ref, work_item=wid, comments=row["comments"], new=row["new"],
-                             edited=row["edited"], deleted=row["deleted"], truncated=row["truncated"]))
-    append_ledger(repo_root, events)
+        counts = {"comments": len(doc["comments"]), "new": len(diff["new"]), "edited": len(diff["edited"]),
+                  "deleted": len(diff["deleted"]), "truncated": doc["truncated"]}
+        try:  # the lines are built before the cache is saved: a refused line or an unwritable cache is a row, not a crash
+            item_events = [*_comment_events(ts, ref, wid, diff, me, scan),
+                           _event(ts, "discussion_pulled", ref=ref, work_item=wid, **counts)]
+            cache.save_cache(repo_root, doc)
+        except (Illegal, OSError, ValueError) as exc:
+            row["unavailable"] = f"not cached: {_tidy(exc, 160)}"
+            continue
+        row.update(counts)
+        comments_read += counts["comments"]
+        events += item_events
+    append_ledger(repo_root, events)  # LedgerDrift -> main: `DRIFT: ...`, exit 1 (pull's only exit 1)
     cost = (f"cost: {_plural(len(refs), 'item')} read, {_plural(comments_read, 'comment')} "
             f"(az calls: at least {calls})")
     lines = [f"Azure Boards mirror: pull --discussion  (as of {ts})"]
@@ -1624,27 +1737,60 @@ def _version_blocks(repo_root: Path, wid: int, comments: list[dict], emails: dic
     return lines
 
 
+def _cfg_or_note(repo_root: Path) -> tuple[dict, str | None]:
+    """The config `show` reads, and why it was set aside: missing is `{}` with no note; one that does not load is
+    `{}` and a note, never a failure (the cache can still be shown, with the default limits)."""
+    try:
+        return cfgmod.load_config(repo_root), None
+    except cfgmod.ConfigError as exc:
+        if exc.kind == "missing":
+            return {}, None
+        return {}, (f"config: ignored ({_tidy(exc, 160)}); the discussion limits are the defaults and a raw #id is "
+                    "not cached")
+
+
+def _keep_discussion(repo_root: Path, ts: str, ref: str, wid: int, doc: dict, diff: dict) -> tuple[bool, str | None]:
+    """Save a fetched discussion and ledger its `discussion_pulled`. `(saved, problem)`: a line the model refuses or
+    a cache that cannot be written leaves both unwritten; an append that fails after the save is the `DRIFT:`
+    sentence. Either is printed; `show` still exits 0."""
+    try:
+        event = _event(ts, "discussion_pulled", ref=ref, work_item=wid, comments=len(doc["comments"]),
+                       new=len(diff["new"]), edited=len(diff["edited"]), deleted=len(diff["deleted"]),
+                       truncated=doc["truncated"])
+        cache.save_cache(repo_root, doc)
+    except (Illegal, OSError, ValueError) as exc:
+        return False, f"not cached: {_tidy(exc, 160)}"
+    try:
+        append_ledger(repo_root, [event])
+    except LedgerDrift as exc:
+        return True, str(exc)
+    return True, None
+
+
 def cmd_show(args, repo_root: Path) -> int:
-    target, links = args.target.strip(), linked_items(read_ledger(repo_root))
-    if raw := re.fullmatch(r"#([0-9]+)", target):
+    target = args.target.strip()
+    raw = re.fullmatch(r"#([0-9]+)", target)
+    if raw is None and not REF_RE.fullmatch(target):
+        raise Usage(f"{target!r} is neither an sdlc:<kind>:<id> ref nor a #<work item id>")
+    links = linked_items(read_ledger(repo_root))  # LedgerUnreadable -> main: `unavailable: <reason>`, exit 0
+    if raw is not None:
         wid = int(raw.group(1))
         ref = next((r for r, l in links.items() if l["work_item"] == wid), None) or f"#{wid}"
-    elif REF_RE.fullmatch(target):
-        if target not in links:
-            raise Illegal(f"{target} is not ledgered in this clone, so it has no work item here: pass #<work item id>, "
-                          "or `link` / `adopt` it first")
-        ref, wid = target, links[target]["work_item"]
+    elif target not in links:
+        raise Usage(f"{target} is not ledgered in this clone, so it has no work item here: pass #<work item id>, "
+                    "or `link` / `adopt` it first")
     else:
-        raise Illegal(f"{target!r} is neither an sdlc:<kind>:<id> ref nor a #<work item id>")
+        ref, wid = target, links[target]["work_item"]
     live_wanted = args.fetch or args.versions
     if live_wanted:
         try:
             ado_transport.remote(repo_root)
         except AdoImportError as exc:
-            raise Illegal(f"`show --fetch` and `--versions` read Azure DevOps: {_tidy(exc)}") from None
-    cfg, emails, ts = _cfg_or_empty(repo_root), _emails(repo_root), _stamp()
+            raise Usage(f"`show --fetch` and `--versions` read Azure DevOps: {_tidy(exc)}") from None
+    (cfg, cfg_note), emails, ts = _cfg_or_note(repo_root), _emails(repo_root), _stamp()
     cached = cache.load_cache(repo_root, wid)
     doc, unavailable, fetched, saved = cached, None, False, cached is not None
+    outside, kept = False, None
     if args.fetch:
         try:
             items, missing = _read_items(repo_root, [wid], emails)
@@ -1653,18 +1799,14 @@ def cmd_show(args, repo_root: Path) -> int:
             block = _discussion_cfg(cfg)
             fresh, _diff = _read_discussion(repo_root, wid, ref, emails, cached, full=False, ts=ts,
                                             max_comments=_limit(block, "max_comments_per_item", DEFAULT_MAX_COMMENTS))
+        except AdoImportError as exc:
+            unavailable = _tidy(exc)  # the cache, if there is one, is shown as it was
+        else:
             fetched, doc = True, fresh
             if not ref.startswith("#") or _bound(items[wid], cfg):
-                cache.save_cache(repo_root, fresh)
-                append_ledger(repo_root, [_event(ts, "discussion_pulled", ref=ref, work_item=wid,
-                                                 comments=len(fresh["comments"]), new=len(_diff["new"]),
-                                                 edited=len(_diff["edited"]), deleted=len(_diff["deleted"]),
-                                                 truncated=fresh["truncated"])])
-                saved = True
+                saved, kept = _keep_discussion(repo_root, ts, ref, wid, fresh, _diff)
             else:
-                saved = False  # a raw id outside the bound paths is a live print: nothing is kept
-        except AdoImportError as exc:
-            unavailable, doc, saved = _tidy(exc), cached, cached is not None
+                saved, outside = False, True  # a raw id outside the bound paths is a live print: nothing is kept
     stub = {"work_item_id": wid, "ref": ref}
     rendered = dm.render_show(doc if doc is not None else stub, for_agent=args.for_agent)
     comments = doc.get("comments") if isinstance(doc, dict) and isinstance(doc.get("comments"), list) else None
@@ -1676,14 +1818,16 @@ def cmd_show(args, repo_root: Path) -> int:
             extra += _version_blocks(repo_root, wid, listing, emails, args.for_agent)
         except AdoImportError as exc:
             unavailable = unavailable or _tidy(exc)
-    notes = []
+    notes = [cfg_note] if cfg_note else []
     if args.expand == "reactions":
         notes.append("reactions: not read in this version (no route is pinned for them)")
     if doc is None:
         notes.append(f"no discussion is cached: `ado_sync.py pull --discussion --id {ref}` reads it, "
                      f"or `show {ref} --fetch`")
-    if fetched and not saved:
+    if outside:
         notes.append("cached: no (the item is outside the mirror's bound paths, so nothing was saved)")
+    if kept:
+        notes.append(kept)  # `not cached: ...`, or the `DRIFT: ...` sentence leading its own line
     if unavailable:
         notes.append(f"unavailable: {unavailable}")
     out = {"ok": True, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
@@ -1710,6 +1854,10 @@ def cmd_discussion(args, repo_root: Path) -> int:
     return 0
 
 # --- CLI -------------------------------------------------------------------------------------------------------------
+
+BY_HELP = ("A named person, ledgered as the roster @handle when it is one person's handle, name or address on "
+           ".sdlc/team.yaml (else as typed); an AI, an agent or an address off the roster is refused (exit 2)")
+
 
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
@@ -1745,7 +1893,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("plan", parents=[common],
                        help="The dry run: what each repository item would do on the board, and the plan hash")
-    p.add_argument("--kind", action="append", metavar="K", help="Only this kind (repeat for several)")
+    p.add_argument("--kind", action="append", metavar="K", choices=KINDS,
+                   help=f"Only this kind (repeat for several): one of {', '.join(KINDS)}")
     p.add_argument("--id", action="append", metavar="ID",
                    help="Only this item: its id (0004, FE-03) or ref (sdlc:spec:0004); repeat for several")
     p.add_argument("--sprint", default=None, metavar="SNN", help="Only this sprint and the specs it holds")
@@ -1764,22 +1913,24 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--all", action="store_true", help="Every ledgered item (the default)")
     p.add_argument("--discussion", action="store_true",
                    help="Cache each item's comments (locally; ledger counts only) instead of reading its fields")
-    p.add_argument("--full", action="store_true", help="With --discussion: forget the comment watermark and read all")
+    p.add_argument("--full", action="store_true",
+                   help="Forget the comment watermark and read every comment again; implies --discussion")
 
     p = sub.add_parser("drift", parents=[common],
                        help="Classify each ledgered item against the board (advisory; writes nothing)")
     p.add_argument("--id", action="append", metavar="ID", help="Only this item (id, ref or #work item); repeatable")
-    p.add_argument("--kind", action="append", metavar="K", help="Only this kind; repeatable")
+    p.add_argument("--kind", action="append", metavar="K", choices=KINDS,
+                   help=f"Only this kind; repeatable: one of {', '.join(KINDS)}")
 
     p = sub.add_parser("link", parents=[common], help="Map one repository item to a work item that exists")
     p.add_argument("ref", help="The repository item: sdlc:<kind>:<id>, e.g. sdlc:spec:0004")
     p.add_argument("--work-item", default=None, metavar="N", help="The work item's number (4521 or #4521; not AB#4521)")
-    p.add_argument("--by", default=None, metavar="HUMAN", help="A named person; an AI or an agent is refused (exit 2)")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
 
     p = sub.add_parser("adopt", parents=[common],
                        help="Map every repository item the board already tags (the ledger's `linked`)")
     p.add_argument("--all", action="store_true", help="Required: adopt every ref the board tags exactly once")
-    p.add_argument("--by", default=None, metavar="HUMAN", help="A named person; an AI or an agent is refused (exit 2)")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
 
     p = sub.add_parser("show", parents=[common],
                        help="A work item's cached discussion, every comment line quoted `  | `")
@@ -1806,26 +1957,43 @@ VERBS: dict[str, Callable[[argparse.Namespace, Path], int]] = {
 }
 
 
+def _read_unavailable(args, verb: str, reason: str) -> int:
+    """A read verb that could not answer for a reason that is not the board's (a ledger it cannot read, a file it
+    could not write): `unavailable: <reason>` and exit 0 (house rule 4: reads exit 0 always)."""
+    payload = {"ok": True, "unavailable": reason, "reason": reason, **UNAVAILABLE_EXTRA.get(verb, {})}
+    _emit(args, payload, f"Azure Boards mirror: {verb}\nunavailable: {reason}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     repo_root = resolve_repo_root(args)
     if repo_root is None:
         return _error(args, f"state file not found: {args.state}", 1)
+    reading = args.verb in READ_VERBS
     try:
         return VERBS[args.verb](args, repo_root)
     except Refused as exc:
         return _error(args, str(exc), 2)
-    except Illegal as exc:
+    except Usage as exc:
         return _error(args, str(exc), 1)
+    except Illegal as exc:  # LedgerUnreadable is one: on a read verb it is `unavailable`, never a failure
+        return _read_unavailable(args, args.verb, str(exc)) if reading else _error(args, str(exc), 1)
     except cfgmod.ConfigError as exc:
+        if reading:
+            return _read_unavailable(args, args.verb, _tidy(exc))
         return _error(args, str(exc), 2 if exc.kind == "refused" else 1)
     except AdoImportError as exc:
+        if reading:
+            return _unavailable(args, repo_root, args.verb, _tidy(exc), host_error=str(exc),
+                                **UNAVAILABLE_EXTRA.get(args.verb, {}))
         return _error(args, str(exc), 1)
     except LedgerDrift as exc:
+        code = 1 if args.verb not in READ_VERBS or args.verb == "pull" else 0  # pull's DRIFT is its only exit 1
         if args.json:
-            return _error(args, str(exc), 1)
+            return _error(args, str(exc), code)
         print(exc)  # `DRIFT: ...` leads the line, as in sprint.py
-        return 1
+        return code
 
 
 if __name__ == "__main__":

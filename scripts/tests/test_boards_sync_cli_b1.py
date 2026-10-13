@@ -810,12 +810,14 @@ def test_the_new_modules_have_no_subprocess_no_shell_join_and_no_preview_revisio
     assert not re.search(r"-preview\.\d", source)
 
 
-def test_ado_sync_imports_no_sibling_it_does_not_need():
+def test_ado_sync_never_imports_the_protected_clis_or_subprocess():
+    # the CLI spawns the protected CLIs as argv lists from ado_sync_reconcile, never imports them; ado_* siblings are fine
     import ast
     tree = ast.parse(Path(ado_sync.__file__).read_text(encoding="utf-8"))
     names = {a.name for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
     names |= {n.module for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
-    assert not names & {"subprocess", "ado_transport", "ado_wit", "ado_sync_reconcile", "sprint", "spec_transition"}
+    assert not names & {"subprocess", "sprint", "spec_transition", "handoff", "new_spec", "track_decisions",
+                        "advance_phase", "check_gates"}
 
 
 def test_default_kinds_are_the_starter_kinds():

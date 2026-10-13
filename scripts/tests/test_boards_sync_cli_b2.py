@@ -472,9 +472,10 @@ def test_plan_a_remote_that_is_not_azure_devops_is_unavailable_not_a_crash(repo,
     assert code == 0 and out["unavailable"] is True and "Azure DevOps" in out["reason"]
 
 
-def test_plan_an_unknown_kind_is_a_usage_error_and_a_kind_with_no_source_is_skipped(repo, capsys):
-    code, out = run(capsys, "plan", "--kind", "bogus", "--repo", repo)
-    assert code == 1 and "bogus" in out
+def test_plan_an_unknown_kind_is_argparse_s_usage_error_and_a_kind_with_no_source_is_skipped(repo, az, capsys):
+    with pytest.raises(SystemExit) as stop:                       # `--kind` is an argparse choice of bc.KINDS
+        ado_sync.main(["plan", "--kind", "bogus", "--repo", str(repo)])
+    assert stop.value.code == 2 and "bogus" in capsys.readouterr().err and az.calls == []
     code, doc = run_json(capsys, "plan", "--kind", "finding", "--repo", repo)
     assert code == 0 and doc["rows"] == [] and any(s["kind"] == "finding" for s in doc["skipped"])
 
@@ -1274,22 +1275,34 @@ def test_linked_items_keeps_the_last_linking_line_and_drops_an_unlinked_ref():
     assert set(got) == {SPEC4, FEATURE3} and got[SPEC4]["rev_after"] == 9 and got[FEATURE3]["work_item"] == 4410
 
 
-def test_read_ledger_skips_what_is_not_a_json_object(tmp_path):
+def test_read_ledger_skips_a_blank_line_and_refuses_a_line_that_is_not_a_ledger_line(tmp_path):
     path = ledger_path(tmp_path)
     path.parent.mkdir(parents=True)
-    path.write_text('{"event": "observed", "ts": "t"}\nnot json\n[1, 2]\n\n{"event": "posture"}\n', encoding="utf-8")
+    path.write_text('{"event": "observed", "ts": "t"}\n\n   \n{"event": "posture"}\n', encoding="utf-8")
     assert [e["event"] for e in ado_sync.read_ledger(tmp_path)] == ["observed", "posture"]
     assert ado_sync.read_ledger(tmp_path / "nowhere") == []
+    for bad, why in (("not json", "is not a JSON object"), ("[1, 2]", "is not a JSON object"),
+                     ('{"event": "linked", "ref": ["x"]}', "has a 'ref' that is not a string"),
+                     ('{"event": "applied", "fields": 5}', "has a 'fields' that is not a list")):
+        path.write_text('{"event": "observed", "ts": "t"}\n' + bad + "\n", encoding="utf-8")
+        with pytest.raises(ado_sync.LedgerUnreadable, match=re.escape(f"line 2 {why}")):   # never skipped in silence
+            ado_sync.read_ledger(tmp_path)
 
 
-def test_a_ledger_line_the_model_refuses_is_a_usage_error_and_nothing_is_written(repo, capsys):
-    code, out = run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "dev.one@example.com", "--repo", repo)
-    assert code == 1 and "e-mail" in out and not ledger_path(repo).exists()      # --by names a person, not an address
+def test_by_an_address_on_the_roster_is_ledgered_as_its_handle_never_as_the_address(repo, az, capsys):
+    code, out = run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "DEV.ONE@example.com", "--repo", repo)
+    assert code == 0 and "by @dev-one" in out and "example.com" not in out
+    (line,) = ledger(repo)
+    assert line["by"] == "@dev-one"
+    assert_no_identity(ledger_path(repo).read_text(encoding="utf-8"))
 
 
-def test_pull_full_belongs_to_discussion_and_drift_refuses_an_unknown_kind(repo, az, capsys):
-    assert run(capsys, "pull", "--full", "--repo", repo)[0] == 1
-    assert run(capsys, "drift", "--kind", "bogus", "--repo", repo)[0] == 1
+def test_pull_full_implies_discussion_and_an_unknown_drift_kind_is_argparse_s_usage_error(repo, az, capsys):
+    code, doc = run_json(capsys, "pull", "--full", "--repo", repo)
+    assert code == 0 and doc["discussion"] == "pulled" and doc["items"] == []
+    with pytest.raises(SystemExit) as stop:
+        ado_sync.main(["drift", "--kind", "bogus", "--repo", str(repo)])
+    assert stop.value.code == 2 and "bogus" in capsys.readouterr().err
     assert az.calls == []
 
 
@@ -1325,3 +1338,228 @@ def test_plan_names_a_create_row_s_parent_as_in_this_plan_or_linked(repo, az, ca
     assert rows[SPEC5]["parent"] == {"ref": FEATURE3, "work_item": 4410, "state": "linked"}
     assert {o["path"]: o.get("new") for o in rows[SPEC5]["ops"]}["/fields/System.AssignedTo"] == "@dev-two"
     assert_no_identity(json.dumps(rows))
+
+
+# --- B2 fix r3: the read verbs exit 0 on every path that is not a usage error (house rule 4, the verb table) ---------
+
+CORRUPT_LEDGER = '{"ts": "2026-10-12T08:00Z", "event": "observed", "ref": null}\nnot json at all\n'
+EVERY_READ = [["status"], ["plan"], ["plan", "--kind", "spec"], ["pull"], ["pull", "--discussion"], ["pull", "--full"],
+              ["drift"], ["show", "#4521"], ["show", "#4521", "--fetch"]]
+
+
+def refuse_ledger_appends(monkeypatch) -> None:
+    real = open
+
+    def refuse(path, mode="r", *args, **kwargs):
+        if str(path).endswith("ado-sync-log.jsonl") and "a" in mode:
+            raise OSError("read-only file system")
+        return real(path, mode, *args, **kwargs)
+    monkeypatch.setattr("builtins.open", refuse)
+
+
+@pytest.mark.parametrize("argv", EVERY_READ, ids=lambda a: "-".join(a))
+def test_a_corrupt_ledger_line_is_unavailable_exit_0_on_every_read_verb_and_nothing_is_written(repo, az, capsys, argv):
+    seed(repo, linked(SPEC4, 4521))
+    with open(ledger_path(repo), "a", encoding="utf-8") as f:
+        f.write(CORRUPT_LEDGER)
+    before = snapshot(repo)
+    code, out = run(capsys, *argv, "--repo", repo)
+    assert code == 0 and "\nunavailable: " in out and "line 3 is not a JSON object" in out, out
+    code, doc = run_json(capsys, *argv, "--repo", repo)
+    assert code == 0 and doc["ok"] is True and isinstance(doc["unavailable"], str)
+    assert "line 3 is not a JSON object" in doc["unavailable"] and doc["reason"] == doc["unavailable"]
+    assert snapshot(repo) == before and az.calls == []            # nothing written, the board never asked
+
+
+def test_an_unreadable_ledger_is_unavailable_exit_0_for_a_read_verb_and_exit_1_for_a_write(repo, az, capsys):
+    ledger_path(repo).mkdir(parents=True)                         # a folder where the file belongs: an OSError on read
+    for argv in EVERY_READ:
+        code, out = run(capsys, *argv, "--repo", repo)
+        assert code == 0 and "unavailable: " in out and "could not be read" in out, argv
+        code, doc = run_json(capsys, *argv, "--repo", repo)
+        assert code == 0 and "could not be read" in doc["unavailable"], argv
+    code, out = run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "@dev-one", "--repo", repo)
+    assert code == 1 and "could not be read" in out               # a write verb does not add to a record it cannot read
+    assert az.calls == []
+
+
+def test_status_a_ledger_the_summary_cannot_read_is_unavailable_not_a_traceback(repo, capsys):
+    seed(repo, {"ts": STAMP, "event": "observed", "ref": None},
+         {"ts": STAMP, "event": "drift_seen", "ref": SPEC4, "field": "System.State", "class": "CONFLICT"},
+         {"ts": STAMP, "event": "drift_seen", "ref": SPEC4, "field": "System.Title"})       # a drift row with no class
+    code, out = run(capsys, "status", "--repo", repo)
+    assert code == 0 and "unavailable: " in out and "summary cannot read" in out
+    code, doc = run_json(capsys, "status", "--repo", repo)
+    assert code == 0 and "summary cannot read" in doc["unavailable"]
+
+
+def test_plan_a_failed_ledger_append_prints_drift_and_still_exits_0(repo, az, capsys, monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+    refuse_ledger_appends(monkeypatch)
+    code, out = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0 and out.startswith("plan ") and "\nDRIFT: " in out    # the plan is shown; DRIFT leads its line
+    code, doc = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0 and doc["drift"].startswith("DRIFT:") and re.fullmatch(r"[0-9a-f]{12}", doc["plan"])
+    assert [e["event"] for e in ledger(repo)] == ["linked"]
+    assert plan_json(capsys, repo)["drift"].startswith("DRIFT:")
+
+
+def test_plan_without_a_failed_append_says_no_drift(repo, az, capsys):
+    seed(repo, linked(SPEC4, 4521))
+    assert plan_json(capsys, repo)["drift"] is None
+
+
+def test_plan_a_plan_file_that_cannot_be_written_is_unavailable_exit_0_and_nothing_is_ledgered(repo, az, capsys,
+                                                                                               monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+
+    def refuse(path, doc):
+        raise PermissionError("read-only")
+    monkeypatch.setattr(ado_sync, "_write_json", refuse)
+    code, out = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0 and "unavailable: could not write the plan file" in out
+    code, doc = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0 and doc["unavailable"].startswith("could not write the plan file")
+    assert doc["plan"] is None and doc["rows"] == [] and doc["counts"] is None
+    assert [e["event"] for e in ledger(repo)] == ["linked"]
+
+
+def test_show_fetch_a_failed_ledger_append_prints_drift_and_still_exits_0(repo, az, capsys, monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+    refuse_ledger_appends(monkeypatch)
+    code, out = run(capsys, "show", SPEC4, "--fetch", "--repo", repo)
+    assert code == 0 and "Work item #4521" in out and "\nDRIFT: " in out
+    assert cache.load_cache(repo, 4521) is not None               # saved; it is the ledger line that is missing
+    assert [e["event"] for e in ledger(repo)] == ["linked"]
+
+
+def test_show_fetch_a_cache_that_cannot_be_saved_is_a_note_exit_0_and_nothing_is_ledgered(repo, az, capsys,
+                                                                                          monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+
+    def refuse(root, doc):
+        raise PermissionError("read-only")
+    monkeypatch.setattr(ado_sync.cache, "save_cache", refuse)
+    code, doc = run_json(capsys, "show", SPEC4, "--fetch", "--repo", repo)
+    assert code == 0 and doc["fetched"] is True and doc["cached"] is False
+    assert any(n.startswith("not cached: ") for n in doc["notes"])
+    assert not any("bound paths" in n for n in doc["notes"])      # it is not outside the bound paths: it failed
+    assert [e["event"] for e in ledger(repo)] == ["linked"]
+
+
+def test_show_with_a_config_that_does_not_load_still_shows_the_cache_and_exits_0(repo, az, capsys):
+    seed(repo, linked(SPEC4, 4521))
+    cache.save_cache(repo, comment_cache())
+    (repo / bc.CONFIG_FILE).write_text("version: [unclosed\n", encoding="utf-8")
+    code, out = run(capsys, "show", SPEC4, "--repo", repo)
+    assert code == 0 and "Does the 409" in out and "config: ignored" in out
+    code, doc = run_json(capsys, "show", SPEC4, "--repo", repo)
+    assert code == 0 and doc["cached"] is True and any(n.startswith("config: ignored") for n in doc["notes"])
+
+
+def test_show_the_usage_errors_stay_exit_1_even_when_the_ledger_is_corrupt(repo, capsys):
+    seed(repo, linked(SPEC4, 4521))
+    with open(ledger_path(repo), "a", encoding="utf-8") as f:
+        f.write(CORRUPT_LEDGER)
+    code, out = run(capsys, "show", "4521x", "--repo", repo)      # neither a ref nor #id: read before the ledger
+    assert code == 1 and "neither" in out
+
+
+def test_pull_exits_1_only_on_drift_a_hook_line_that_cannot_be_written_is_a_note(repo, az, capsys, monkeypatch):
+    seed_for_drift(repo)
+
+    def refuse(root, line):
+        raise PermissionError("read-only")
+    monkeypatch.setattr(ado_sync.cfgmod, "write_hook_status", refuse)
+    code, doc = run_json(capsys, "pull", "--repo", repo)
+    assert code == 0 and any(n.startswith("hook line: not written") for n in doc["notes"])
+    assert doc["hook_line"].endswith(f"as of {STAMP}") and not (repo / bc.HOOK_STATUS).exists()   # made, not written
+    assert [e["event"] for e in ledger(repo)][1] == "observed"   # the ledger was written; only the hook file was not
+    code, out = run(capsys, "pull", "--repo", repo)
+    assert code == 0 and "note: hook line: not written" in out
+
+
+def test_pull_discussion_a_cache_that_cannot_be_saved_is_a_row_and_exit_0(repo, az, capsys, monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+
+    def refuse(root, doc):
+        raise PermissionError("read-only")
+    monkeypatch.setattr(ado_sync.cache, "save_cache", refuse)
+    code, doc = run_json(capsys, "pull", "--discussion", "--repo", repo)
+    assert code == 0 and doc["items"][0]["unavailable"] == "not cached: read-only"
+    assert doc["items"][0]["comments"] is None                    # not counted: nothing was kept
+    assert [e["event"] for e in ledger(repo)] == ["linked"]       # neither cached nor ledgered
+
+
+def test_pull_full_without_discussion_reads_the_comments_again_and_help_says_it_implies_it(repo, az, capsys):
+    seed(repo, linked(SPEC4, 4521))
+    run_json(capsys, "pull", "--discussion", "--repo", repo)
+    code, doc = run_json(capsys, "pull", "--full", "--repo", repo)   # the watermark forgotten: both comments new again
+    assert code == 0 and doc["discussion"] == "pulled" and doc["items"][0]["new"] == 2
+    assert not [e for e in ledger(repo) if e["event"] in ("observed", "drift_seen")]   # the fields were not read
+    with pytest.raises(SystemExit) as stop:
+        ado_sync.main(["pull", "--help"])
+    assert stop.value.code == 0 and "implies --discussion" in " ".join(capsys.readouterr().out.split())
+
+
+def test_the_kind_choices_are_the_contract_kinds():
+    parser = ado_sync.build_parser()
+    verbs = next(a for a in parser._actions if getattr(a, "choices", None)).choices
+    for verb in ("plan", "drift"):
+        kind = next(a for a in verbs[verb]._actions if "--kind" in a.option_strings)
+        assert tuple(kind.choices) == bc.KINDS, verb
+
+
+# --- B2 fix r3: `--by` resolves to the roster handle (house rule 10, an honest ledger) ----------------------------------
+
+KIM_ROSTER = ROSTER + """\
+  - handle: "@kim"
+    name: "Kim Lee"
+    team: core
+    roles: [developer]
+"""
+
+
+def test_by_a_roster_name_is_ledgered_as_the_handle_and_a_name_off_the_roster_as_typed(repo, az, capsys):
+    (repo / ".sdlc" / "team.yaml").write_text(KIM_ROSTER, encoding="utf-8")
+    code, out = run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "Kim Lee", "--repo", repo)
+    assert code == 0 and "by @kim" in out and ledger(repo)[-1]["by"] == "@kim"
+    code, _ = run(capsys, "link", FEATURE3, "--work-item", "4410", "--by", "Nobody Known", "--repo", repo)
+    assert code == 0 and ledger(repo)[-1]["by"] == "Nobody Known"   # the sprint.py precedent: kept as typed
+
+
+def test_by_an_address_off_the_roster_is_refused_with_exit_2_and_nothing_is_written(repo, az, capsys):
+    (repo / ".sdlc" / "team.yaml").write_text(KIM_ROSTER, encoding="utf-8")
+    code, out = run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "kim@example.com", "--repo", repo)
+    assert code == 2 and "give a roster handle or a name, not an address" in out and "example.com" not in out
+    code, doc = run_json(capsys, "adopt", "--all", "--by", "kim@example.com", "--repo", repo)
+    assert code == 2 and doc["ok"] is False and "not an address" in doc["error"]
+    assert run(capsys, "link", SPEC4, "--work-item", "4521", "--by", "Claude", "--repo", repo)[0] == 2
+    assert not ledger_path(repo).exists() and az.calls == []
+
+
+def test_resolve_by_matches_handle_name_and_address_case_insensitively_and_never_guesses(tmp_path):
+    (tmp_path / ".sdlc").mkdir()
+    (tmp_path / ".sdlc" / "team.yaml").write_text(KIM_ROSTER, encoding="utf-8")
+    for typed in ("Kim Lee", "kim lee", "  KIM LEE ", "@kim", "@KIM"):
+        assert ado_sync.resolve_by(tmp_path, typed, "--by") == "@kim", typed
+    assert ado_sync.resolve_by(tmp_path, "PERSON2@Example.com", "--by") == "@dev-two"
+    for typed in ("Kim", "Lee", "Kim Le", "Nobody Known"):          # no prefix, no first name, no made-up handle
+        assert ado_sync.resolve_by(tmp_path, typed, "--by") == typed
+    for typed in ("kim@example.com", "@kim.lee"):                   # e-mail shaped and not a roster handle
+        with pytest.raises(ado_sync.Refused, match="give a roster handle or a name, not an address"):
+            ado_sync.resolve_by(tmp_path, typed, "--by")
+    with pytest.raises(ado_sync.Refused):
+        ado_sync.resolve_by(tmp_path, "Claude", "--by")
+    with pytest.raises(ado_sync.Illegal, match="--by"):
+        ado_sync.resolve_by(tmp_path, "  ", "--by")
+    assert ado_sync.resolve_by(tmp_path / "no-roster", "Kim Lee", "--by") == "Kim Lee"
+
+
+def test_resolve_by_a_name_two_people_share_is_illegal_and_names_both_handles(tmp_path):
+    (tmp_path / ".sdlc").mkdir()
+    two = KIM_ROSTER + '  - handle: "@kim-two"\n    name: "kim lee"\n    team: core\n    roles: [developer]\n'
+    (tmp_path / ".sdlc" / "team.yaml").write_text(two, encoding="utf-8")
+    with pytest.raises(ado_sync.Illegal, match="2 people on the roster \\(@kim, @kim-two\\)"):
+        ado_sync.resolve_by(tmp_path, "Kim Lee", "--by")
+    assert ado_sync.resolve_by(tmp_path, "@kim-two", "--by") == "@kim-two"   # the handle is still one person
