@@ -94,7 +94,7 @@ const COMMON = [
 function cardText(id) {
   const p = A.packages[id]
   if (p && p.card) return p.card
-  return `Read ${KIT}, the section headed "## 5. Package cards", and find the row/card for ${id}. That card is your whole scope. Do NOT read docs/proposals/ado-boards-mirror.md.`
+  return `Read ${KIT}, the section headed "## 5. Package cards", and find the row/card for ${id}. That card is your whole scope. If the card cites a section of docs/proposals/ado-boards-mirror.md (for example '§6.2', 'the §8 drift matrix', 'the §8a templates', 'the §7 rows'), read ONLY that section of the design and treat it as part of your card; otherwise do not open the design document.`
 }
 
 function brief(id, isolated) {
