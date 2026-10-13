@@ -658,3 +658,40 @@ def test_the_interface_sheet_names_are_all_there():
                  "comment_versions", "connection_data", "create", "update", "add_comment", "add_history",
                  "list_recent_comments", "link_pr"):
         assert hasattr(ado_wit, name), name
+
+
+# --- Fold B5 (B5-P2): the watermark feed is a read of the same kind, in its own module ----------------------------
+# `ado_wit_feed` (its own tests: `test_boards_wit_feed.py`) pages `reporting/workItemRevisions`; it is not one of
+# `ado_wit`'s reads and adds no row to `BOARDS_AZ_CONTRACT`, but it keeps the rules every read here keeps.
+
+import ado_wit_feed  # noqa: E402
+
+FEED_ROUTE_KEY = "GET wit/workItemRevisions"
+
+
+def test_the_feed_read_keeps_the_seam_rules_every_read_here_keeps(az, tmp_path):
+    ado_wit_feed.revisions_since(tmp_path, None)
+    ado_wit_feed.revisions_since(tmp_path, "T1")
+    assert az.writes is False and az.written() == []
+    assert {route_key_boards(c) for c in az.calls} == {FEED_ROUTE_KEY} and len(az.calls) == 2
+    for argv in az.calls:
+        assert argv[argv.index("--detect") + 1] == "false", argv
+        assert argv[argv.index("--org") + 1] == ORG
+        assert argv[-2:] == ["-o", "json"] and "--only-show-errors" not in argv
+        assert "--repository" not in argv and "--project" not in argv
+        assert not any(re.search(r"-preview\.\d", word) for word in argv)
+        assert argv[argv.index("--api-version") + 1] in {ado_transport.API_VERSION, PREVIEW}
+        assert route_params(argv) == {"project": PROJECT}
+    assert list(tmp_path.iterdir()) == []  # reading stores nothing; the caller saves the watermark
+
+
+def test_the_feed_route_is_a_read_row_of_the_contract():
+    row = boards_contract.WIT_ROUTES["workitemrevisions"]
+    assert row["method"] == "GET" and row["method"] not in boards_contract.WRITE_METHODS
+    assert (row["area"], row["resource"]) not in boards_contract.READ_POSTS
+
+
+def test_the_feed_module_names_are_all_there():
+    for name in ("revisions_since", "feed_page", "load_watermark", "save_watermark", "RevisionList", "FEED_START",
+                 "FEED_FIELDS", "MAX_FEED_PAGES", "WATERMARK_FILE"):
+        assert hasattr(ado_wit_feed, name), name
