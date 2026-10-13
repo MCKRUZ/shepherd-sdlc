@@ -1,0 +1,116 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "boards",
+  "work-item",
+  "show",
+  "--id",
+  "4521",
+  "--expand",
+  "relations",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json"
+ ],
+ "value": {
+  "id": 4521,
+  "rev": 7,
+  "fields": {
+   "System.Id": 4521,
+   "System.AreaPath": "Claims\\SDLC\\Intake",
+   "System.TeamProject": "Claims",
+   "System.IterationPath": "Claims\\Sprint 7",
+   "System.WorkItemType": "User Story",
+   "System.State": "Active",
+   "System.Reason": "Implementation started",
+   "System.AssignedTo": {
+    "displayName": "Person 2",
+    "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+     }
+    },
+    "id": "00000000-0000-0000-0000-000000000003",
+    "uniqueName": "person2@example.com",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+    "descriptor": "aad.anonymised-2"
+   },
+   "System.CreatedDate": "2026-10-05T09:00:00Z",
+   "System.CreatedBy": {
+    "displayName": "Person 1",
+    "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "id": "00000000-0000-0000-0000-000000000002",
+    "uniqueName": "person1@example.com",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "descriptor": "aad.anonymised-1"
+   },
+   "System.ChangedDate": "2026-10-10T08:30:00Z",
+   "System.ChangedBy": {
+    "displayName": "Person 2",
+    "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+     }
+    },
+    "id": "00000000-0000-0000-0000-000000000003",
+    "uniqueName": "person2@example.com",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+    "descriptor": "aad.anonymised-2"
+   },
+   "System.CommentCount": 2,
+   "System.Title": "0004 · duplicate claim 409",
+   "System.Tags": "risk:MEDIUM; sdlc-repo:claims-api; sdlc:spec:0004; sdlc:status:in-flight",
+   "System.Description": "<div>Raised by the intake team after the October incident.</div><!-- sdlc:begin --><p>spec 0004 · duplicate claim 409 · <a href=\"https://dev.azure.com/contoso/Claims/_git/claims-api?path=/specs/0004-duplicate-claim-409.md&amp;version=GC0123456789abcdef0123456789abcdef01234567\">specs/0004-duplicate-claim-409.md</a></p><!-- sdlc:end -->",
+   "Microsoft.VSTS.Common.Priority": 2,
+   "Microsoft.VSTS.Common.StackRank": 1999.5,
+   "Microsoft.VSTS.Scheduling.StoryPoints": 3,
+   "Custom.RiskTier": "MEDIUM"
+  },
+  "relations": [
+   {
+    "rel": "ArtifactLink",
+    "url": "vstfs:///Git/PullRequestId/00000000-0000-0000-0000-000000000020%2F00000000-0000-0000-0000-000000000030%2F57",
+    "attributes": {
+     "authorizedDate": "2026-10-09T10:00:00Z",
+     "id": 101,
+     "resourceCreatedDate": "2026-10-09T10:00:00Z",
+     "resourceModifiedDate": "2026-10-09T10:00:00Z",
+     "revisedDate": "9999-01-01T00:00:00Z",
+     "name": "Pull Request"
+    }
+   },
+   {
+    "rel": "AttachedFile",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/attachments/00000000-0000-0000-0000-000000000401?fileName=Spec.txt",
+    "attributes": {
+     "authorizedDate": "2026-10-10T08:30:00Z",
+     "id": 102,
+     "resourceCreatedDate": "2026-10-10T08:29:00Z",
+     "resourceModifiedDate": "2026-10-10T08:29:00Z",
+     "revisedDate": "9999-01-01T00:00:00Z",
+     "resourceSize": 2048,
+     "name": "Spec.txt"
+    }
+   },
+   {
+    "rel": "System.LinkTypes.Hierarchy-Reverse",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4410",
+    "attributes": {
+     "isLocked": false,
+     "name": "Parent"
+    }
+   }
+  ],
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521"
+ }
+}

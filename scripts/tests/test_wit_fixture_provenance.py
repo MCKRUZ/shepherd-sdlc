@@ -39,9 +39,19 @@ def _ids(path):
     return f"{path.parent.name}/{path.name}"
 
 
-def test_the_fifteen_hand_written_fixtures_exist():
+# Fold B1 (B1-P0): the discovery reads and `az account show`.
+B1_NAMES = frozenset({"projects", "type_categories", "types", "type_states_user_story", "type_states_bug",
+                      "type_states_issue", "type_fields_user_story", "type_fields_issue", "fields", "backlog_config",
+                      "classification_nodes", "team_iterations", "relation_types", "connection_data", "account_show"})
+# Fold B2 (B2-P0): the item, drift and discussion reads.
+B2_NAMES = frozenset({"workitems_batch", "wiql_by_tag", "wiql_untagged", "updates", "workitem_show_relations",
+                      "comments", "comments_page2", "comment_versions", "comments_hostile", "updates_after_comment"})
+
+
+def test_the_twenty_five_hand_written_fixtures_exist():
     assert sorted(p.stem for p in HAND_WRITTEN_FILES) == sorted(WIT_FIXTURE_NAMES)
-    assert len(WIT_FIXTURE_NAMES) == 15
+    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES and not B1_NAMES & B2_NAMES
+    assert len(WIT_FIXTURE_NAMES) == 25
 
 
 @pytest.mark.parametrize("path", ALL_FILES, ids=_ids)

@@ -18,6 +18,11 @@ Every `test_boards_*.py` starts with `from tests.ado_boards_fixtures import boar
 `AssertionError("az spawned")`, `az_binary()` points at a path that does not exist) — it never
 patches `subprocess.run`, which hook and reconcile tests own. `az` swaps a `FakeBoardsAz` in for
 `run_az`, so a fake never sees the `--only-show-errors` that `run_az` appends.
+
+Same-route fixtures (B2-P0) are told apart by a refined key: a route parameter (`GET wit/updates
+id=4523`), a query parameter (`GET wit/comments continuationToken=*`) or the WIQL text (`boards
+query sdlc-repo:`). The fake tries those first; a test that re-answers the bare key, and not a
+refinement, gets its own answer for every call on that route.
 """
 
 import json
@@ -87,6 +92,37 @@ def route_params(args: list[str]) -> dict[str, str]:
     return out
 
 
+def query_params(args: list[str]) -> dict[str, str]:
+    """`k=v` words after `--query-parameters`, up to the next flag (B2-P0)."""
+    if "--query-parameters" not in args:
+        return {}
+    out = {}
+    for word in args[args.index("--query-parameters") + 1:]:
+        if word.startswith("--"):
+            break
+        k, _, v = word.partition("=")
+        out[k] = v
+    return out
+
+
+# B2-P0: the parameters that tell same-route fixtures apart, most specific first.
+REFINE_QUERY_PARAMS: tuple[str, ...] = ("continuationToken",)   # key `<route> continuationToken=*` (any value)
+REFINE_ROUTE_PARAMS: tuple[str, ...] = ("id", "workItemId")       # key `<route> id=<value>`
+WIQL_UNTAGGED_NEEDLE = "sdlc-repo:"                               # key `boards query sdlc-repo:`
+
+
+def refined_keys(key: str, args: list[str]) -> list[str]:
+    """The refined route keys a call could match, most specific first (the bare key and `type=` come after)."""
+    out = []
+    if key == "boards query" and WIQL_UNTAGGED_NEEDLE in (_arg_after(args, "--wiql") or ""):
+        out.append(f"{key} {WIQL_UNTAGGED_NEEDLE}")
+    query = query_params(args)
+    out += [f"{key} {name}=*" for name in REFINE_QUERY_PARAMS if name in query]
+    route = route_params(args)
+    out += [f"{key} {name}={route[name]}" for name in REFINE_ROUTE_PARAMS if name in route]
+    return out
+
+
 def route_key_boards(args: list[str]) -> str:
     """`GET wit/workItemTypes` | `POST wit/wiql` | `PATCH wit/workItems` for `devops invoke`
     (method defaults to GET, as az's does); otherwise the leading non-flag words, e.g.
@@ -127,6 +163,17 @@ DEFAULT_WIT_ANSWERS: dict[str, str] = {
     "GET work/iterations": "team_iterations",
     "GET wit/workItemRelationTypes": "relation_types",
     "GET core/connectionData": "connection_data",
+    # Fold B2 (B2-P0): item, drift and discussion reads
+    "POST wit/workitemsbatch": "workitems_batch",
+    "GET wit/updates": "updates",
+    "GET wit/updates id=4523": "updates_after_comment",
+    "GET wit/comments": "comments",
+    "GET wit/comments continuationToken=*": "comments_page2",
+    "GET wit/comments workItemId=4524": "comments_hostile",
+    "GET wit/commentsVersions": "comment_versions",
+    "boards query": "wiql_by_tag",
+    "boards query sdlc-repo:": "wiql_untagged",
+    "boards work-item show": "workitem_show_relations",
     "account show": "account_show",
 }
 WIT_FIXTURE_NAMES: tuple[str, ...] = tuple(sorted(set(DEFAULT_WIT_ANSWERS.values())))
@@ -137,6 +184,12 @@ def route_name_of(fixture: str) -> str:
     for stem in ("type_states", "type_fields"):
         if fixture.startswith(stem + "_"):
             return stem
+    renamed = {"workitems_batch": "workitemsbatch", "updates_after_comment": "updates",
+               "comment_versions": "comment_versions"}  # B2-P0
+    if fixture in renamed:
+        return renamed[fixture]
+    if fixture.startswith("comments_"):
+        return "comments"
     return fixture
 
 
@@ -169,6 +222,7 @@ class FakeBoardsAz:
                 raise AdoImportError(message)
         wit_type = route_params(args).get("type")
         candidates = [f"{key} type={wit_type}", key] if wit_type is not None else [key]
+        candidates = [*self._refinements(key, args), *candidates]
         found = next((k for k in candidates if k in self.answers), None)
         if found is None:
             raise AssertionError(f"unexpected az call: {key}")
@@ -180,6 +234,14 @@ class FakeBoardsAz:
         if isinstance(answer, str):
             answer = load_wit(answer)
         return json.dumps(answer)
+
+    def _refinements(self, key: str, args: list[str]) -> list[str]:
+        """B2-P0: the refined keys answered for this call. When the bare key no longer carries its default
+        answer (the test re-answered it), a refinement still carrying ITS default is skipped."""
+        found = [k for k in refined_keys(key, args) if k in self.answers]
+        if self.answers.get(key) != DEFAULT_WIT_ANSWERS.get(key):
+            found = [k for k in found if self.answers[k] != DEFAULT_WIT_ANSWERS.get(k)]
+        return found
 
     def count(self, *leading: str) -> int:
         return sum(1 for c in self.calls if c[:len(leading)] == list(leading))

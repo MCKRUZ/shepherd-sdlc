@@ -1,0 +1,20 @@
+{
+  "as_of": null,
+  "by_class": null,
+  "counts": {
+    "conflicts": null,
+    "debt": null,
+    "drifted": null,
+    "linked": null,
+    "open": null,
+    "pending": null
+  },
+  "debt": null,
+  "hook_line": "no data (never pulled)",
+  "last_plan": null,
+  "ledger": ".sdlc/metrics/ado-sync-log.jsonl",
+  "notes": [
+    "no data: the mirror has never pulled — every count is unmeasured, not zero"
+  ],
+  "schema": 1
+}

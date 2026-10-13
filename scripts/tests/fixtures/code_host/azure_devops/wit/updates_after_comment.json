@@ -1,0 +1,145 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "updates",
+  "--route-parameters",
+  "project=Claims",
+  "id=4523",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 2,
+  "value": [
+   {
+    "id": 1,
+    "workItemId": 4523,
+    "rev": 1,
+    "revisedBy": {
+     "displayName": "Person 1",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000002",
+     "uniqueName": "person1@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "descriptor": "aad.anonymised-1"
+    },
+    "revisedDate": "2026-10-11T16:20:00Z",
+    "fields": {
+     "System.Id": {
+      "newValue": 4523
+     },
+     "System.Rev": {
+      "newValue": 1
+     },
+     "System.AuthorizedDate": {
+      "newValue": "2026-10-06T09:00:00Z"
+     },
+     "System.RevisedDate": {
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "newValue": "2026-10-06T09:00:00Z"
+     },
+     "System.CreatedDate": {
+      "newValue": "2026-10-06T09:00:00Z"
+     },
+     "System.Watermark": {
+      "newValue": 41
+     },
+     "System.TeamProject": {
+      "newValue": "Claims"
+     },
+     "System.AreaPath": {
+      "newValue": "Claims\\SDLC\\Intake"
+     },
+     "System.IterationPath": {
+      "newValue": "Claims"
+     },
+     "System.WorkItemType": {
+      "newValue": "User Story"
+     },
+     "System.State": {
+      "newValue": "New"
+     },
+     "System.Reason": {
+      "newValue": "New"
+     },
+     "System.Title": {
+      "newValue": "0005 · claim status webhook"
+     },
+     "System.Tags": {
+      "newValue": "risk:LOW; sdlc-repo:claims-api; sdlc:spec:0005; sdlc:status:ready"
+     },
+     "System.History": {
+      "newValue": "sprd · created from the repository at abc1234"
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4523/updates/1"
+   },
+   {
+    "id": 2,
+    "workItemId": 4523,
+    "rev": 2,
+    "revisedBy": {
+     "displayName": "Person 3",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000004",
+     "uniqueName": "person3@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+     "descriptor": "aad.anonymised-3"
+    },
+    "revisedDate": "9999-01-01T00:00:00Z",
+    "fields": {
+     "System.Rev": {
+      "oldValue": 1,
+      "newValue": 2
+     },
+     "System.AuthorizedDate": {
+      "oldValue": "2026-10-06T09:00:00Z",
+      "newValue": "2026-10-11T16:20:00Z"
+     },
+     "System.RevisedDate": {
+      "oldValue": "2026-10-11T16:20:00Z",
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "oldValue": "2026-10-06T09:00:00Z",
+      "newValue": "2026-10-11T16:20:00Z"
+     },
+     "System.Watermark": {
+      "oldValue": 42,
+      "newValue": 43
+     },
+     "System.History": {
+      "newValue": "<div>Can the webhook retry on a 503?</div>"
+     },
+     "System.CommentCount": {
+      "oldValue": 0,
+      "newValue": 1
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4523/updates/2"
+   }
+  ]
+ }
+}
