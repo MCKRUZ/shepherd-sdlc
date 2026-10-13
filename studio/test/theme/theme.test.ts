@@ -90,7 +90,7 @@ describe('M10 dusk reveal', () => {
     const unhandled: unknown[] = []
     const onUnhandled = (e: PromiseRejectionEvent) => { unhandled.push(e.reason); e.preventDefault?.() }
     window.addEventListener('unhandledrejection', onUnhandled)
-    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown }
+    const doc = document as unknown as { startViewTransition?: (cb: () => void) => unknown }
     const ready = Promise.reject(new DOMException('Transition was skipped', 'AbortError'))
     doc.startViewTransition = vi.fn((cb: () => void) => { cb(); return { finished: Promise.resolve(), ready, updateCallbackDone: Promise.resolve() } })
     try {

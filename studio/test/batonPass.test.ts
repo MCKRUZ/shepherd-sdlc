@@ -33,7 +33,7 @@ describe('batonPassDue', () => {
 describe('batonPass', () => {
   it('full: pops the baton at 0 for 100 ms, slides it over dur-3 from 0.1, rises the card from 0.1; total 420 ms', () => {
     const baton = make('span'); const card = make(); const from = make(); const to = make()
-    const tl = batonPass.play(ctx(), { baton, fromSlot: from, toSlot: to, card, tier: 'full' })
+    const tl = batonPass.play(ctx(), { baton, fromSlot: from, toSlot: to, card, tier: 'full' }) as gsap.core.Timeline
     tl.pause()
     const [pop, slide] = on(tl, baton)
     expect(pop.duration()).toBeCloseTo(BATON_POP_S)

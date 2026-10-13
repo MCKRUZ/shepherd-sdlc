@@ -24,7 +24,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Frame } from '../src/components/Frame'
 import { StageHome } from '../src/components/StageHome'
 import { DocumentView } from '../src/components/DocumentView'
-import type { ChatState, OpenDocumentResult, ProjectStatus, StageDocument, StageReadiness } from '../../shared/types'
+import type { ChatState, OpenDocumentResult, ProjectStatus, StageDocument, StageReadiness } from '../shared/types'
 
 function stage(id: string, state: 'current' | 'signed_off' | 'later'): ProjectStatus['stages'][number] {
   return {

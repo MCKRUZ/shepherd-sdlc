@@ -6,6 +6,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { IpcMain } from 'electron'
 
 vi.mock('../electron/main/project', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../electron/main/project')>()),
@@ -261,7 +262,8 @@ describe('readSprintView', () => {
 describe('registerSprintHandlers', () => {
   it('registers exactly the two channels the preload exposes, and answers without a plugin in one line', async () => {
     const handlers = new Map<string, (...args: unknown[]) => unknown>()
-    registerSprintHandlers({ handle: (channel: string, fn: (...args: unknown[]) => unknown) => { handlers.set(channel, fn) } }, async () => null)
+    type IpcHandler = Parameters<IpcMain['handle']>[1]
+    registerSprintHandlers({ handle: (channel: string, fn: IpcHandler) => { handlers.set(channel, fn as (...args: unknown[]) => unknown) } }, async () => null)
     expect([...handlers.keys()].sort()).toEqual(['studio:getSprintStatus', 'studio:renderSprintReport'])
     expect(await handlers.get('studio:getSprintStatus')!({}, PROJECT)).toEqual({ ok: false, error: 'Shepherd plugin scripts not found' })
     expect(await handlers.get('studio:renderSprintReport')!({}, PROJECT, 'S07', 'planning')).toEqual({ ok: false, error: 'Shepherd plugin scripts not found' })

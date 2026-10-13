@@ -6,7 +6,7 @@
  * third `<aside>`; a block the plugin did not answer reads "no data". */
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { CommandCenter, ProjectStage, ProjectStatus, SourcedBlock, StageDocument } from '../shared/types'
+import type { ChatActivity, CommandCenter, ProjectStage, ProjectStatus, SourcedBlock, StageDocument } from '../shared/types'
 import { NO_DATA, NOTHING_NEEDS_YOU, SIGN_IN_TO_SEE } from '../shared/reasons'
 import { LifecycleHome, NEEDS_YOU_SOURCE, WORKING_SOURCE, workingText, LIFECYCLE_TODAY_MAX_HEIGHT_CLASS } from '../src/components/LifecycleHome'
 import { StageReadinessProvider } from '../src/components/StageReadinessContext'
@@ -48,7 +48,7 @@ function install() {
   const studio = {
     getStageReadiness: vi.fn((_p: string, stageId?: string) => Promise.resolve(readinessWith({ stageId: stageId ?? '1', display: `Phase ${stageId ?? '1'}: Stage`, documents: [doc('a.md', true)] }))),
     openDocument: vi.fn().mockReturnValue(new Promise(() => {})),
-    onChatActivity: vi.fn(() => () => {}),
+    onChatActivity: vi.fn((_cb: (activity: ChatActivity) => void) => () => {}),
   }
   // @ts-expect-error - partial test double
   window.studio = studio

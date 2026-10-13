@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { act, render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { ChatActivityLine, SILENT_HINT_AFTER_SECONDS, activityText, silenceHint } from '../src/components/ChatActivityLine'
 import type { ChatActivity } from '../shared/types'
 
@@ -22,11 +22,11 @@ describe('activityText / silenceHint — the wording', () => {
 
 describe('ChatActivityLine', () => {
   let emit: (activity: ChatActivity) => void
-  let unsubscribe: ReturnType<typeof vi.fn>
+  let unsubscribe: Mock<() => void>
 
   beforeEach(() => {
     vi.useFakeTimers()
-    unsubscribe = vi.fn()
+    unsubscribe = vi.fn<() => void>()
     // @ts-expect-error - test double, not the full StudioApi surface
     window.studio = {
       onChatActivity: vi.fn((cb: (a: ChatActivity) => void) => { emit = cb; return unsubscribe }),

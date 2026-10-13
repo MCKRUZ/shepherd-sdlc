@@ -3,7 +3,7 @@
  * labelled. The window is a filter date main passes as `--since`, never a reported number. */
 import { describe, expect, it } from 'vitest'
 import { logEventText, sinceDateFor, sinceYesterday, STREAM_ROW_FIELDS } from '../../electron/main/commandCenter'
-import type { BoardRow, SourcedBlock, SprintLogView } from '../../shared/types'
+import type { Board, BoardRow, SourcedBlock, SprintLogView } from '../../shared/types'
 
 const block = <T>(source: string, data: T | null): SourcedBlock<T> => ({ source, fetchedAt: 't', ok: data !== null, data, error: data === null ? 'no' : null })
 const row = (spec: string, mergedAt: string | null): BoardRow => ({
@@ -66,11 +66,11 @@ describe('sinceYesterday', () => {
   })
 
   it('a log block that failed (older plugin) leaves the board\'s merged rows alone', () => {
-    const rows = sinceYesterday({ log: block('l', null), board: block('b', board), since: '2026-10-05' })
+    const rows = sinceYesterday({ log: block<SprintLogView>('l', null), board: block('b', board), since: '2026-10-05' })
     expect(rows).toHaveLength(1); expect(rows[0].origin).toBe('board')
   })
 
   it('no aggregate: the result is rows, nothing counted', () => {
-    expect(Array.isArray(sinceYesterday({ log: block('l', log(events)), board: block('b', null), since: '2026-10-05' }))).toBe(true)
+    expect(Array.isArray(sinceYesterday({ log: block('l', log(events)), board: block<Board & { warnings: string[] }>('b', null), since: '2026-10-05' }))).toBe(true)
   })
 })

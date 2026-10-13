@@ -39,6 +39,7 @@ function makeReadiness(documents: StageDocument[], over: Partial<StageReadiness>
   return {
     ok: true,
     stageId: '1',
+    name: 'requirements',
     display: 'Phase 1: Requirements',
     isCurrent: true,
     documents,

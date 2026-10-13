@@ -29,7 +29,7 @@ const DOCS: StageDocument[] = [
 
 const FINDINGS: ReadinessFinding[] = [
   { path: 'requirements.md', section: 'FR-002', field: 'Dependencies', reason: 'absent or empty' },
-  { path: 'requirements.md', section: 'FR-003', field: undefined, reason: 'section is empty' },
+  { path: 'requirements.md', section: 'FR-003', field: null, reason: 'section is empty' },
 ]
 
 const QUESTIONS: SignOffQuestion[] = [
@@ -40,6 +40,7 @@ function makeReadiness(over: Partial<StageReadiness> = {}): StageReadiness {
   return {
     ok: true,
     stageId: '1',
+    name: 'requirements',
     display: 'Phase 1: Requirements',
     isCurrent: true,
     documents: DOCS,
@@ -132,7 +133,7 @@ describe('DocumentsTab: the behaviour suite (studio-observatory.md §7, D-B)', (
     expect(onOpenDocument).toHaveBeenCalledWith('requirements.md', { section: 'FR-002', field: 'Dependencies' })
     // A finding with no field names the section alone.
     fireEvent.click(screen.getByRole('button', { name: /^FR-003 — requirements\.md/ }))
-    expect(onOpenDocument).toHaveBeenLastCalledWith('requirements.md', { section: 'FR-003', field: undefined })
+    expect(onOpenDocument).toHaveBeenLastCalledWith('requirements.md', { section: 'FR-003', field: null })
   })
 
   it('pin 5b — "What is missing" appears only when there is something missing', () => {

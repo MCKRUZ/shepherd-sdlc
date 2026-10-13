@@ -115,7 +115,6 @@ describe('StageHome: Also in this stage on the Workflow tab', () => {
 
   it('refreshes readiness after Create so the activity status comes from the plugin again', async () => {
     const studio = install((id) => stage(id ?? '1', { capabilities: ['activities'], activities: ACTIVITIES.slice(2) }))
-    // @ts-expect-error - extending the test double
     window.studio.startActivity = vi.fn().mockResolvedValue({ ok: true, created: ['x/data-contract.md'], existing: [], opened: 'x/data-contract.md' })
     render(home('1'))
     fireEvent.click(await screen.findByRole('button', { name: 'Create' }))

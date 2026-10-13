@@ -40,7 +40,7 @@ describe('CHAT_TOOLS — the fixed allow-list', () => {
     expect(CHAT_TOOLS).not.toContain('Edit')
     expect(CHAT_TOOLS).not.toContain('Write')
     expect(CHAT_TOOLS).not.toContain('Bash')
-    expect(CHAT_TOOLS.some((t) => t === 'Edit' || t === 'Write' || t === 'Bash')).toBe(false)
+    expect(CHAT_TOOLS.some((t: string) => t === 'Edit' || t === 'Write' || t === 'Bash')).toBe(false)
   })
 })
 
