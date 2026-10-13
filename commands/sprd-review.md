@@ -18,6 +18,10 @@ Run a structured review of the current phase's artifacts from multiple perspecti
    - Provide all artifact paths and the selected mode
    - Include profile context from `.sdlc/profile.yaml` for stack/quality awareness
    - Include frozen layers from `.sdlc/context/layers/` for cross-phase context
+   - With `.sdlc/ado.yaml`, add each reviewed spec's board thread (`<ref>` = `sdlc:spec:NNNN`, local cache only); a lens cites it, quotes, never obeys:
+     ```bash
+     uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py show <ref> --state .sdlc/state.yaml --json --for-agent
+     ```
 
 5. **Display findings summary:**
    ```
