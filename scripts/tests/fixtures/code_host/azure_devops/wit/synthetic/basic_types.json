@@ -1,0 +1,182 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypes",
+  "--route-parameters",
+  "project=BasicDemo",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 3,
+  "value": [
+   {
+    "name": "Epic",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Epic",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "To Do",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Doing",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Done",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   },
+   {
+    "name": "Issue",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Issue",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "To Do",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Doing",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Done",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   },
+   {
+    "name": "Task",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Task",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "To Do",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Doing",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Done",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   }
+  ],
+  "continuation_token": null
+ }
+}

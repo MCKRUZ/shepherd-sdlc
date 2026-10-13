@@ -1,0 +1,62 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeCategories",
+  "--route-parameters",
+  "project=BasicDemo",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 3,
+  "value": [
+   {
+    "name": "Epic Category",
+    "referenceName": "Microsoft.EpicCategory",
+    "defaultWorkItemType": {
+     "name": "Epic"
+    },
+    "workItemTypes": [
+     {
+      "name": "Epic"
+     }
+    ]
+   },
+   {
+    "name": "Requirement Category",
+    "referenceName": "Microsoft.RequirementCategory",
+    "defaultWorkItemType": {
+     "name": "Issue"
+    },
+    "workItemTypes": [
+     {
+      "name": "Issue"
+     }
+    ]
+   },
+   {
+    "name": "Task Category",
+    "referenceName": "Microsoft.TaskCategory",
+    "defaultWorkItemType": {
+     "name": "Task"
+    },
+    "workItemTypes": [
+     {
+      "name": "Task"
+     }
+    ]
+   }
+  ],
+  "continuation_token": null
+ }
+}
