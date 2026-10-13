@@ -1,0 +1,5 @@
+{"ts": "2026-10-01T09:00:00Z", "event": "sprint_new", "sprint": "S07", "by": "@dev-one"}
+{"ts": "2026-10-02T09:00:00Z", "event": "slated", "sprint": "S07", "spec": "0004", "by": "@dev-one"}
+{"ts": "2026-10-02T09:05:00Z", "event": "carried", "sprint": "S06", "spec": "0005", "to_sprint": "S07", "by": "@dev-one", "reason": "waiting on design"}
+{"ts": "2026-10-03T09:00:00Z", "event": "carried", "sprint": "S05", "spec": "0005", "to_sprint": "S06", "by": "@dev-one", "reason": "waiting on design"}
+{"ts": "2026-10-04T09:00:00Z", "event": "ready", "sprint": "S07", "by": "@dev-one"}
