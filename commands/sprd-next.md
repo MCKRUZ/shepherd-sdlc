@@ -60,7 +60,8 @@ Run exit gate checks for the current phase and advance to the next phase if all 
      ```
      Print `Board: N to create · M to update · K comments to send` from `counts.create`, `counts.update` and
      `comments.draft`; `Board: unavailable (<reason>)` when `unavailable` is true, `no data` for a null count. `plan`
-     sends nothing (it leaves only its local plan file) and this line never gates the advance. **Never run `apply`
+     sends nothing to the board (it writes only local files: its plan file, `.sdlc/ado/local/hook-status.txt`, and
+     `planned` lines appended to `.sdlc/metrics/ado-sync-log.jsonl`) and this line never gates the advance. **Never run `apply`
      from here** — sending a plan is `/sprd-ado apply`, a named person's decision. Skip silently when the config is absent.
    - **HITL GATE — Ask for explicit sign-off before advancing:** Present the phase summary (what was produced, key decisions made) and ask: "Does this look correct? Shall I advance to Phase N?" Do NOT call `advance_phase.py` until the human explicitly confirms.
    - **Optional — capture discipline sign-off(s):** After the human confirms the advance, use

@@ -488,6 +488,21 @@ def test_the_first_all_seed_over_first_seed_needs_a_limit_in_range(repo, board, 
     assert later["refused_reason"] is None and later["exit"] == 0
 
 
+def test_a_clone_that_only_linked_a_pr_is_still_on_its_first_seed(repo, board, capsys):
+    seed(repo, linked(SPEC4, 4521, 7))
+    board.answers["repos pr work-item add"] = []
+    assert ado_sync.main(["link-pr", "--spec", "0004", "--pr", "12", "--by", "@dev-one", "--repo", str(repo)]) == 0
+    capsys.readouterr()
+    assert [(e["action"], e["ref"]) for e in events_of(repo, "applied")] == [("link_pr", SPEC4)]  # created nothing
+    doc = plan_doc(repo, capsys, "--all")
+    assert doc["scope"]["all"] and sum(1 for r in doc["rows"] if r["action"] == "create") > 5
+    cfg = {**load_cfg(repo), "limits": {"writes_per_run": 50, "first_seed": 5}}
+    board.calls.clear()
+    res = apply(repo, doc, cfg=cfg)
+    assert (res["exit"], res["refused_reason"], res["applied"], res["failed"]) == (2, "first_seed", [], [])
+    assert board.calls == []
+
+
 # --- refusals that cost no az call -------------------------------------------------------------------------
 
 def test_an_ai_or_agent_by_is_refused_with_zero_spawns(repo, board, two_updates):

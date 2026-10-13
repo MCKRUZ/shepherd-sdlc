@@ -1231,10 +1231,14 @@ def test_the_script_runs_help_for_the_new_verbs_in_an_empty_cwd(tmp_path):
 
 
 def test_the_new_verbs_are_in_the_parser_and_the_verb_table(repo):
-    assert {"config", "discover", "validate", "plan", "status", "pull", "drift", "link", "adopt", "show",
-            "discussion"} == set(ado_sync.VERBS)
+    # The B1 + B2 verbs are a subset: a later Fold adds verbs (B3: apply, link-pr, iteration, posture, comment), and
+    # none of these may go missing.
+    b2_verbs = {"config", "discover", "validate", "plan", "status", "pull", "drift", "link", "adopt", "show",
+                "discussion"}
+    assert b2_verbs <= set(ado_sync.VERBS)
     parser = ado_sync.build_parser()
     choices = next(a for a in parser._actions if getattr(a, "choices", None)).choices
+    assert b2_verbs <= set(choices)
     assert set(choices) == set(ado_sync.VERBS)
 
 

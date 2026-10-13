@@ -12,13 +12,16 @@ What this pins, and why each line exists (build kit §5 card B2-P2; house rules 
     argv carries `--detect false`, ends `-o json`, never holds `--only-show-errors` (the seam adds it)
     and never a `-preview.<digit>` string; a read-only fake (`writes=False`) passes every read;
   * a response is read only through `_require`; a shape it does not know is an `AdoImportError`;
-  * the six write functions are still stubs (`NotImplementedError("B3")`) and spawn nothing.
+  * since Fold B3 the six write functions have bodies (B3-P1's own tests pin their shapes): against a read-only
+    fake (`writes=False`) the five that write raise its `AssertionError("unexpected az write: ...")` — nothing
+    reaches the board — and go through against a writing one; `list_recent_comments` is the one read among the
+    six, so a read-only fake passes it.
 
 Nothing here spawns `az`: `boards_env` forbids it at the seam and `az` swaps a `FakeBoardsAz` in for `run_az`.
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import load_wit, route_key_boards, route_params
+from tests.ado_boards_fixtures import FakeBoardsAz, load_wit, route_key_boards, route_params
 
 import ast
 import inspect
@@ -579,24 +582,37 @@ def test_the_az_contract_is_read_only_and_never_pins_a_preview_revision():
             assert "create" not in argv and "update" not in argv
 
 
-# --- the six write functions are stubs until B3 ------------------------------------------------------------
+# --- the six write functions: B3 bodies, refused by a read-only fake ---------------------------------------
 
-WRITES = [
+WRITES = [  # 4560 is the item the `workitem_update_response` fixture answers for
     ("create", ("User Story", [{"op": "add", "path": "/fields/System.Title", "value": "t"}])),
-    ("update", (4521, [{"op": "test", "path": "/rev", "value": 7}])),
+    ("update", (4560, [{"op": "test", "path": "/rev", "value": 7}])),
     ("add_comment", (4521, "text", "markdown")),
-    ("add_history", (4521, 7, "<div>x</div>")),
+    ("add_history", (4560, 7, "<div>x</div>")),
     ("list_recent_comments", (4521,)),
     ("link_pr", (12, 4521)),
 ]
+WRITING = [(n, a) for n, a in WRITES if n != "list_recent_comments"]  # the recovery re-list is a GET
 
 
-@pytest.mark.parametrize("name, args", WRITES, ids=[n for n, _ in WRITES])
-def test_a_write_function_raises_not_implemented_and_spawns_nothing(az, tmp_path, name, args):
-    with pytest.raises(NotImplementedError) as info:
+@pytest.mark.parametrize("name, args", WRITING, ids=[n for n, _ in WRITING])
+def test_a_write_function_is_refused_by_a_read_only_fake_and_goes_through_a_writing_one(monkeypatch, tmp_path,
+                                                                                         name, args):
+    refusing = FakeBoardsAz(writes=False)
+    monkeypatch.setattr(ado_transport, "run_az", refusing)
+    with pytest.raises(AssertionError, match="unexpected az write: "):
         getattr(ado_wit, name)(tmp_path, *args)
-    assert info.value.args == ("B3",)
-    assert az.calls == []
+    assert len(refusing.calls) == 1 and refusing.written() == refusing.calls  # the one write, refused, not retried
+    writing = FakeBoardsAz({"repos pr work-item add": []}, writes=True)  # B3-P1's tests pin what each one returns
+    monkeypatch.setattr(ado_transport, "run_az", writing)
+    getattr(ado_wit, name)(tmp_path, *args)
+    assert len(writing.calls) == 1 and writing.written() == writing.calls  # the write went through
+
+
+def test_list_recent_comments_is_the_one_read_among_the_six_and_a_read_only_fake_passes_it(az, tmp_path):
+    assert not az.writes
+    assert isinstance(ado_wit.list_recent_comments(tmp_path, 4521), list)
+    assert len(az.calls) == 1 and az.written() == []
 
 
 def test_the_write_stubs_keep_the_pinned_signatures():
@@ -624,7 +640,9 @@ def test_the_module_imports_no_subprocess_and_reaches_az_only_through_the_seam()
             imported |= {a.name.split(".")[0] for a in node.names}
         elif isinstance(node, ast.ImportFrom):
             imported.add((node.module or "").split(".")[0])
-    assert imported <= {"sys", "pathlib", "ado_transport", "ado_map", "boards_contract"}, imported
+    # `ado_wit_map` (pure: `classify_write_error`) is imported by the B3 write bodies, inside the functions.
+    assert imported <= {"sys", "pathlib", "ado_transport", "ado_map", "boards_contract", "ado_wit_map"}, imported
+    assert "subprocess" not in imported
     assert "run_az" not in SOURCE  # only invoke_body and az_json, which own the spawn
     assert not re.search(r"shell\s*=\s*True|shlex\.join", SOURCE)
 

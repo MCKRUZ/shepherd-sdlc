@@ -28,7 +28,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
    spec (step 4); `--sprint SNN` → batch over the slate (step 5); `validate` → record a verdict
    (step 6); `--upstream --spec <id>` → the no-regression path (step 7).
 
-3. **Agenda (default) — read-only composition; writes nothing but, with the board read below, its local plan file.** Three reads:
+3. **Agenda (default) — read-only composition; writes nothing but, with the board read below, `plan`'s local files: its plan file, `.sdlc/ado/local/hook-status.txt`, and `planned` lines appended to `.sdlc/metrics/ado-sync-log.jsonl`.** Three reads:
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py status \
      --state .sdlc/state.yaml --json

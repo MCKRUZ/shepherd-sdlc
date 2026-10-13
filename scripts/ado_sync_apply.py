@@ -360,8 +360,11 @@ def _setting(block, key: str, default: int) -> int:
 
 
 def _first_seed_refusal(plan: dict, rows: list[dict], ledger: list[dict], cfg: dict, limit: int | None) -> str | None:
+    """A seed is no longer the first once an item was created or updated here: an `applied` line of another action
+    (`link-pr`'s `link_pr`, which creates nothing) leaves the `limits.first_seed` guard in place."""
     scope = plan.get("scope")
-    if not (isinstance(scope, dict) and scope.get("all") is True) or any(e.get("event") == "applied" for e in ledger):
+    if not (isinstance(scope, dict) and scope.get("all") is True) or any(
+            e.get("event") == "applied" and e.get("action") in FIELD_ACTIONS for e in ledger):
         return None
     seed = _setting(cfg.get("limits"), "first_seed", DEFAULT_FIRST_SEED)
     creates = sum(1 for r in rows if r.get("action") == "create")
