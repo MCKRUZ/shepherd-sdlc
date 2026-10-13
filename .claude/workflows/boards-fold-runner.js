@@ -15,6 +15,7 @@ export const meta = {
 //   fold          'B1'..'B5'
 //   branch        the Fold branch, already checked out by the orchestrator (e.g. spec/0034-ado-boards-schema-and-config)
 //   base          the sha the Fold branch was cut from = PR #106 head (or its merge commit) at run time
+//   start         optional: the branch commit this Fold run starts from (ownership diffs anchor here; defaults to base)
 //   spec          'specs/0034-....md'
 //   version       '2.1.0'
 //   kit           'docs/proposals/ado-boards-mirror-build-kit.md'
@@ -32,6 +33,7 @@ for (const k of ['fold', 'branch', 'base', 'spec', 'version', 'kit', 'levels', '
 }
 const PRESENT = A.present || []
 const KIT = A.kit
+const START = A.start || A.base   // the commit this Fold started from: ownership diffs anchor here, protected-core/test gates on A.base
 // Optional per-stage model override, e.g. { contracts: 'opus', packages: 'sonnet', merge: 'sonnet', verify: 'sonnet', critic: 'opus', fix: 'opus' }.
 // A stage left out inherits the session model. Recommended split: a stronger model for contracts, critic and fix; Sonnet for the pinned packages.
 const M = A.models || {}
@@ -100,7 +102,7 @@ function brief(id, isolated) {
   return [
     `You are building package ${id}. Your ONLY scope is this card:`, cardText(id), COMMON,
     `FILE OWNERSHIP: you may create or edit ONLY paths matching: ${(p.owns || []).join(', ')}. A card row marked (edit) may change an existing file; everything else you create. Needing any other file = stop and return status "blocked" with blocked_on=<path>. Never run \`az\`. Never run new_spec.py. Never edit a file under scripts/tests or studio/test that existed at ${A.base} unless your card marks it (edit).`,
-    'PROCEDURE: (1) `git status --porcelain` must be empty before you start' + (isolated ? `, then \`git checkout -b pkg/${id}\`` : '') + '. (2) Write the test file(s) your card names FIRST and run the card\'s acceptance command — it must fail. (3) Implement until it passes. (4) Run every "do-not" check on the card. (5) `git add` ONLY the paths you own; commit as "' + A.fold + ' ' + id + ': <card title>"; then `git update-ref refs/pkg/' + id + ' HEAD` and report sha = `git rev-parse HEAD`.',
+    'PROCEDURE: (1) `git status --porcelain` must be empty before you start' + (isolated ? `, then \`git checkout -b pkg/${id} ${A.branch}\` (this worktree may have been cut from another ref — that command puts you on the Fold branch tip) and confirm \`git merge-base --is-ancestor ${A.base} HEAD\` succeeds` : '') + '. (2) Write the test file(s) your card names FIRST and run the card\'s acceptance command — it must fail. (3) Implement until it passes. (4) Run every "do-not" check on the card. (5) `git add` ONLY the paths you own; commit as "' + A.fold + ' ' + id + ': <card title>"; then `git update-ref refs/pkg/' + id + ' HEAD` and report sha = `git rev-parse HEAD`.',
     'Hand-written fixtures carry "_provenance": "hand-written (unverified)" and are always wrapped {"_provenance", "_command", "value"}. Report real test counts from the output (passed/failed/skipped per command); a test you did not run is not listed. files = exactly what you committed.',
   ].join('\n\n')
 }
@@ -112,7 +114,7 @@ function mergeBrief(level, landedBefore) {
     `You are the merge agent for level [${level.join(', ')}] of Fold ${A.fold}. You are on branch ${A.branch}; \`git status --porcelain\` must be empty.`,
     `For each id in this order run \`git merge --no-ff --no-edit refs/pkg/<id> -m "merge <id>"\`: ${level.join(', ')}.`,
     'A merge conflict means two cards touched one file — do NOT resolve it: `git merge --abort`, report gate "merge <id>" as passed=false with the conflicting paths in output_tail, and continue with the next id.',
-    `After the merges run \`git diff --name-only ${A.base}\` and report as gate "ownership" (passed=false if any path is listed) every path that is NOT on any card of the packages landed so far: ${landedBefore.concat(level).join(', ')}. Use the kit's cards to decide; list offending paths in output_tail.`,
+    `After the merges run \`git diff --name-only ${START}\` (the commit this Fold started from — never the PR base) and report as gate "ownership" (passed=false if any path is listed) every path that matches NONE of these owned globs — the globs are authoritative, the kit's card prose is not: ${landedBefore.concat(level).flatMap(id => (A.packages[id] && A.packages[id].owns) || []).join(' ')}. '*' matches within one path segment, '**' matches any depth. List offending paths in output_tail.`,
     'green = every merge clean and the ownership gate passed. Do not fix anything.',
   ].join('\n\n')
 }
@@ -130,7 +132,7 @@ function verifyBrief() {
 function criticBrief() {
   return [
     COMMON,
-    `Adversarially review \`git diff ${A.base}..HEAD\` on ${A.branch} against the package cards in ${KIT} ("## 5. Package cards", Fold ${A.fold}) and the house rules. Try to REFUTE a green verify. For every card check: (a) every changed path is on exactly one card; (b) every exported signature matches the interface sheet (grep the def/export lines); (c) the card's do-not list holds; (d) no integer 0 stands for "no data"; (e) no email, UPN, GUID or display name is written to a committed file or JSONL line; (f) \`git diff --diff-filter=M --name-only ${A.base} -- scripts/tests studio/test\` lists only files a card marks (edit); (g) argv is always a list — grep for shell=True, shlex.join, '" ".join(' near args/argv/cmd; (h) every new az argv carries --detect false and no "-preview.<digit>" api-version; (i) the command doc names only verbs/flags in the kit's verb table; (j) a protected file is byte-identical to ${A.base}; (k) none of the legacy brand strings ${LEGACY.map(s => JSON.stringify(s)).join(', ')} was introduced outside .sdlc/ paths and sdlc:* tags.`,
+    `Adversarially review \`git diff ${START}..HEAD\` on ${A.branch} against the package cards in ${KIT} ("## 5. Package cards", Fold ${A.fold}) and the house rules. Try to REFUTE a green verify. For every card check: (a) every path changed since ${START} matches an owned glob of exactly one package in args (the globs, not the card prose, are the authority); (b) every exported signature matches the interface sheet (grep the def/export lines); (c) the card's do-not list holds; (d) no integer 0 stands for "no data"; (e) no email, UPN, GUID or display name is written to a committed file or JSONL line; (f) \`git diff --diff-filter=M --name-only ${A.base} -- scripts/tests studio/test\` lists only files a card marks (edit); (g) argv is always a list — grep for shell=True, shlex.join, '" ".join(' near args/argv/cmd; (h) every new az argv carries --detect false and no "-preview.<digit>" api-version; (i) the command doc names only verbs/flags in the kit's verb table; (j) a protected file is byte-identical to ${A.base}; (k) none of the legacy brand strings ${LEGACY.map(s => JSON.stringify(s)).join(', ')} was introduced outside .sdlc/ paths and sdlc:* tags.`,
     'blocking = a correctness or house-rule breach; style alone is non-blocking. verdict = fail if any finding is blocking.',
   ].join('\n\n')
 }
