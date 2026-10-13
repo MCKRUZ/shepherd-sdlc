@@ -1,0 +1,86 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeCategories",
+  "--route-parameters",
+  "project=ScrumDemo",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 5,
+  "value": [
+   {
+    "name": "Epic Category",
+    "referenceName": "Microsoft.EpicCategory",
+    "defaultWorkItemType": {
+     "name": "Epic"
+    },
+    "workItemTypes": [
+     {
+      "name": "Epic"
+     }
+    ]
+   },
+   {
+    "name": "Feature Category",
+    "referenceName": "Microsoft.FeatureCategory",
+    "defaultWorkItemType": {
+     "name": "Feature"
+    },
+    "workItemTypes": [
+     {
+      "name": "Feature"
+     }
+    ]
+   },
+   {
+    "name": "Requirement Category",
+    "referenceName": "Microsoft.RequirementCategory",
+    "defaultWorkItemType": {
+     "name": "Product Backlog Item"
+    },
+    "workItemTypes": [
+     {
+      "name": "Product Backlog Item"
+     }
+    ]
+   },
+   {
+    "name": "Task Category",
+    "referenceName": "Microsoft.TaskCategory",
+    "defaultWorkItemType": {
+     "name": "Task"
+    },
+    "workItemTypes": [
+     {
+      "name": "Task"
+     }
+    ]
+   },
+   {
+    "name": "Bug Category",
+    "referenceName": "Microsoft.BugCategory",
+    "defaultWorkItemType": {
+     "name": "Bug"
+    },
+    "workItemTypes": [
+     {
+      "name": "Bug"
+     }
+    ]
+   }
+  ],
+  "continuation_token": null
+ }
+}

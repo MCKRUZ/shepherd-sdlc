@@ -1,0 +1,98 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeCategories",
+  "--route-parameters",
+  "project=TwoLevelDemo",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 6,
+  "value": [
+   {
+    "name": "Theme Category",
+    "referenceName": "Custom.ThemeCategory",
+    "defaultWorkItemType": {
+     "name": "Theme"
+    },
+    "workItemTypes": [
+     {
+      "name": "Theme"
+     }
+    ]
+   },
+   {
+    "name": "Initiative Category",
+    "referenceName": "Custom.InitiativeCategory",
+    "defaultWorkItemType": {
+     "name": "Initiative"
+    },
+    "workItemTypes": [
+     {
+      "name": "Initiative"
+     }
+    ]
+   },
+   {
+    "name": "Epic Category",
+    "referenceName": "Microsoft.EpicCategory",
+    "defaultWorkItemType": {
+     "name": "Epic"
+    },
+    "workItemTypes": [
+     {
+      "name": "Epic"
+     }
+    ]
+   },
+   {
+    "name": "Feature Category",
+    "referenceName": "Microsoft.FeatureCategory",
+    "defaultWorkItemType": {
+     "name": "Feature"
+    },
+    "workItemTypes": [
+     {
+      "name": "Feature"
+     }
+    ]
+   },
+   {
+    "name": "Requirement Category",
+    "referenceName": "Microsoft.RequirementCategory",
+    "defaultWorkItemType": {
+     "name": "User Story"
+    },
+    "workItemTypes": [
+     {
+      "name": "User Story"
+     }
+    ]
+   },
+   {
+    "name": "Task Category",
+    "referenceName": "Microsoft.TaskCategory",
+    "defaultWorkItemType": {
+     "name": "Task"
+    },
+    "workItemTypes": [
+     {
+      "name": "Task"
+     }
+    ]
+   }
+  ],
+  "continuation_token": null
+ }
+}
