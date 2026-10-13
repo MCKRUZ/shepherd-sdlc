@@ -118,3 +118,102 @@ def invoke(repo_root, area: str, resource: str, route: dict, api_version: str = 
     params = [f"{k}={v}" for k, v in route.items()]
     return az_json(["devops", "invoke", "--area", area, "--resource", resource, "--route-parameters", *params,
                     "--api-version", api_version, "--org", remote(repo_root).org_url], repo_root)
+
+
+# ---------------------------------------------------------------------------------------------------
+# Azure Boards mirror (B1-P1): `devops invoke` WITH a request body. Appended below `invoke()`, which
+# stays byte-for-byte as shipped, as do `az_json()` and `run_az()`: `invoke()` still serves the two
+# code-host callers, `az_json` has no `timeout` (adding one would break every `FakeAz.__call__(args,
+# cwd)` in the suite), and `--only-show-errors` is still appended INSIDE `run_az` — a fake standing in
+# for `run_az` never sees it. `invoke_body` calls `run_az` directly so a test patches one seam.
+# The imports sit here, not at the top of the file, so that the whole change is an append.
+import re  # noqa: E402
+import tempfile  # noqa: E402
+
+_PREVIEW_REVISION_RE = re.compile(r"-preview\.\d")
+_WRITE_METHODS = frozenset({"POST", "PATCH", "PUT", "DELETE"})  # == boards_contract.WRITE_METHODS (a test pins it)
+BODY_FILE_PLACEHOLDER = "<request body file>"
+
+
+def check_api_version(v: str) -> str:
+    """`v` unchanged, or an AdoImportError for a preview pinned to a revision number. Only
+    API_VERSION and PREVIEW_API_VERSION leave this module: a revision crashes the az extension."""
+    if _PREVIEW_REVISION_RE.search(v):
+        raise AdoImportError(f"api-version {v!r} pins a preview revision, which crashes the az extension; "
+                             f"use API_VERSION ({API_VERSION}) or PREVIEW_API_VERSION ({PREVIEW_API_VERSION})")
+    return v
+
+
+def _unlink_quietly(path: str) -> None:
+    # Best effort. Raising here would replace the error that matters (an HTTP 412, a timeout), and the
+    # file is private (0600) in the temp directory.
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+
+
+def _write_body_file(payload: str) -> str:
+    """The request body in a private temp file; returns its path, which is never printed. A file
+    that was created is removed again if preparing it fails, and no OSError text (it names the path) escapes."""
+    path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as f:
+            path = f.name
+            os.chmod(path, 0o600)  # before a byte of the body is written
+            f.write(payload)
+    except OSError as e:
+        if path is not None:
+            _unlink_quietly(path)
+        raise AdoImportError(f"could not write the request body to a temporary file: "
+                             f"{e.strerror or type(e).__name__}") from None
+    return path
+
+
+def invoke_body(repo_root, area: str, resource: str, route: dict, *, method: str = "GET", body: list | dict | None = None,
+                media_type: str = "application/json-patch+json", query: dict | None = None,
+                api_version: str = API_VERSION, timeout: int = 60) -> dict | list:
+    """`az devops invoke` with an optional JSON request body (`--in-file`), returning the parsed JSON.
+
+    Returned as parsed, with NO shape validation — a caller `_require`s what it reads, because a check
+    here would break a `workitemsbatch` read that legitimately omits an id. Empty stdout is `[]` for a
+    read and an AdoImportError for a write (a write that answered nothing is not known to have worked).
+    `--detect false` is always emitted and the project is a route parameter, never `--project`.
+    The body goes through a 0600 temp file that is removed on every path, and its path is scrubbed
+    from any error `run_az` words from its own argv. Raises only AdoImportError."""
+    method = method.upper()
+    version = check_api_version(api_version)  # before any file exists
+    org_url = remote(repo_root).org_url
+    payload = None
+    if body is not None:  # `[]` and `{}` are bodies
+        try:
+            # ASCII-only (ensure_ascii): az reads --in-file in the locale encoding, so any non-ASCII
+            # text would arrive as mojibake on a non-UTF-8 console. The JSON escapes decode identically.
+            payload = json.dumps(body)
+        except (TypeError, ValueError) as e:
+            raise AdoImportError(f"the request body is not JSON-serialisable: {e}") from e
+    body_path = _write_body_file(payload) if payload is not None else None
+    try:
+        argv = ["devops", "invoke", "--area", area, "--resource", resource,
+                "--route-parameters", *[f"{k}={v}" for k, v in route.items()],
+                "--http-method", method,
+                *(["--in-file", body_path, "--media-type", media_type] if body_path is not None else []),
+                *(["--query-parameters", *[f"{k}={v}" for k, v in query.items()]] if query else []),
+                "--api-version", version, "--detect", "false", "--org", org_url, "-o", "json"]
+        out = run_az(argv, repo_root, timeout=timeout)
+    except AdoImportError as e:
+        if body_path is not None and body_path in str(e):
+            raise AdoImportError(str(e).replace(body_path, BODY_FILE_PLACEHOLDER)) from None
+        raise
+    finally:
+        if body_path is not None:
+            _unlink_quietly(body_path)
+    if not out.strip():
+        if method in _WRITE_METHODS:
+            raise AdoImportError("empty response on write")
+        return []
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError as e:
+        raise AdoImportError(f"`az devops invoke --area {area} --resource {resource}` returned "
+                             f"unparseable JSON: {e}") from e
