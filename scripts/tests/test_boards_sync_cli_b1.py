@@ -12,7 +12,8 @@ What this pins, and why each line exists (build kit sections 1 K6-K9, K19, 2, 4,
     `Refused` (2);
   * `validate` follows the verb table (0 resolvable / 1 gaps / 2 a forbidden field is mapped) and prints
     the fit table plus the recommendations for every kind that is not an item (a fallback fit is not a gap;
-    a `types.*` pin the process lacks is).
+    a `types.*` pin the process lacks is); backlog levels that were never read (no team) print "not discovered"
+    and one recommendation naming `--team` / `team`, never a 0, a gap or a numbered process addition.
 
 Nothing here spawns `az`: `boards_env` forbids it at the seam and the `az` fixture answers from the `wit/`
 fixtures. Reviewers and teams in the fixtures are fictional, and no test writes a real person.
@@ -729,6 +730,67 @@ def test_validate_on_a_process_with_two_portfolio_levels_fits_every_kind_as_an_i
     assert {entry["mode"] for entry in fit.values()} == {"item"}
     code, text = run(capsys, "validate", "--repo", tmp_path)
     assert code == 0 and "Recommendations" not in text and "Result: resolvable (exit 0)" in text
+
+
+UNREAD = "backlog levels were not discovered — pass --team or set `team` in .sdlc/ado.yaml so discover can read them"
+SCRUM_UNREAD_GOLDEN = f"""\
+Azure Boards mirror: validate
+Schema: read {STAMP} (0 days old), team not set
+Config: .sdlc/ado.yaml, 0 findings
+
+How each kind lands on this process
+  kind         mode            type                  level  why
+  outcome      not discovered  -                     -      {UNREAD}
+  domain       not discovered  -                     -      {UNREAD}
+  requirement  not discovered  -                     -      {UNREAD}
+  epic         item            Epic                  -      default type of EpicCategory
+  feature      item            Feature               -      default type of FeatureCategory
+  spec         item            Product Backlog Item  -      default type of RequirementCategory
+
+Recommendations
+  - outcome, domain, requirement: {UNREAD}; until then it is not known whether this process has portfolio backlog levels above Epic to hold these kinds as board items, so no process addition is recommended.
+
+Result: resolvable (exit 0)
+"""
+
+
+def discover_scrum_without_a_team(az, root, capsys) -> dict:
+    """The Scrum process with no --team, no `team` in the config and no default team: backlogconfiguration is
+    never read, so the schema's `backlog` is None."""
+    use_scrum(az)
+    project = copy.deepcopy(load_wit("projects"))
+    project.pop("defaultTeam")
+    az.answers["GET core/projects"] = project
+    write_cfg(root, KINDS_CFG)
+    schema = discovered(root, capsys)
+    assert schema["backlog"] is None and schema["team"] is None
+    return schema
+
+
+def test_validate_with_backlog_levels_never_read_says_not_discovered_never_a_zero_or_a_gap(az, tmp_path, capsys):
+    discover_scrum_without_a_team(az, tmp_path, capsys)
+    code, out = run(capsys, "validate", "--repo", tmp_path)
+    assert code == 0 and out == SCRUM_UNREAD_GOLDEN
+    assert "add two portfolio backlog levels" not in out and "third portfolio backlog level" not in out
+    code, js = run_json(capsys, "validate", "--repo", tmp_path)
+    assert code == 0 and js["gaps"] == [] and js["schema"]["team"] is None
+    assert [js["fit"][k]["mode"] for k in ("outcome", "domain", "requirement")] == ["unknown"] * 3
+    assert all(js["fit"][k]["level"] is None and js["fit"][k]["type"] is None for k in ("outcome", "domain", "requirement"))
+    (sentence,) = js["recommendations"]
+    assert "--team" in sentence and "`team` in .sdlc/ado.yaml" in sentence and not re.search(r"\d", sentence)
+
+
+def test_validate_with_backlog_levels_never_read_still_honours_a_type_pin(az, tmp_path, capsys):
+    discover_scrum_without_a_team(az, tmp_path, capsys)
+    write_cfg(tmp_path, KINDS_CFG + "types:\n  outcome: Impediment\n")
+    code, js = run_json(capsys, "validate", "--repo", tmp_path)
+    assert code == 0 and js["gaps"] == []
+    assert (js["fit"]["outcome"]["mode"], js["fit"]["outcome"]["type"], js["fit"]["outcome"]["level"]) == (
+        "item", "Impediment", None)  # a pin needs no level; its level number was never read, so it is null
+    assert [js["fit"][k]["mode"] for k in ("domain", "requirement")] == ["unknown", "unknown"]
+    assert js["recommendations"] == [
+        f"domain, requirement: {UNREAD}; until then it is not known whether this process has portfolio backlog levels "
+        "above Epic to hold these kinds as board items, so no process addition is recommended."]
 
 
 def test_validate_never_spawns_az(az, tmp_path, capsys):

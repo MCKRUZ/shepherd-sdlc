@@ -62,6 +62,9 @@ PINNED_KINDS = ("spike", "decision", "finding", "question")
 # The starter's `kinds` (templates/ado/ado.yaml); a config without the key means this set.
 DEFAULT_KINDS = ("outcome", "domain", "requirement", "epic", "feature", "spec", "spike", "sprint", "decision")
 RESULT_WORDS = {0: "resolvable", 1: "gaps", 2: "refused"}
+# How a fit mode reads in the text table; `--json` keeps the mode itself. A tree kind whose backlog levels were
+# never read is "not discovered" -- not known, never a 0 and never a gap.
+MODE_WORDS = {sm.UNKNOWN: "not discovered"}
 CHECK_WORDS = {0: "valid", 1: "gaps", 2: "refused"}
 
 # Every agents/*.md stem, read once at import (a read, never a write). A `--by` that is one of these is an agent.
@@ -316,8 +319,9 @@ def _configured_kinds(cfg: dict) -> tuple[str, ...]:
 
 def _fit_view(schema: dict, cfg: dict, kinds: tuple[str, ...]) -> tuple[dict, dict, list[str], list[str]]:
     """`(fit, resolved, gaps, recommendations)` for the configured kinds. A tree kind (outcome, domain,
-    requirement) always lands somewhere (an item, an Area Path or a tag), so it is never a gap; epic, feature
-    and spec must resolve to a type, and so must a spike, decision, finding or question, which have no default."""
+    requirement) lands somewhere (an item, an Area Path or a tag) or, when the backlog levels were never read,
+    is not known yet (`unknown`, printed "not discovered"); neither is a gap. Epic, feature and spec must
+    resolve to a type, and so must a spike, decision, finding or question, which have no default."""
     fit = {k: v for k, v in sm.fit_levels(schema, cfg).items() if k in kinds}
     resolved = {}
     for kind in PINNED_KINDS:
@@ -330,8 +334,8 @@ def _fit_view(schema: dict, cfg: dict, kinds: tuple[str, ...]) -> tuple[dict, di
 
 
 def _fit_table(fit: dict, resolved: dict) -> list[str]:
-    rows = [(k, v["mode"], v["type"] or "-", "-" if v["level"] is None else str(v["level"]), v["reason"])
-            for k, v in fit.items()]
+    rows = [(k, MODE_WORDS.get(v["mode"], v["mode"]), v["type"] or "-", "-" if v["level"] is None else str(v["level"]),
+             v["reason"]) for k, v in fit.items()]
     rows += [(k, "item" if v["type"] else "-", v["type"] or "-", "-", v["reason"]) for k, v in resolved.items()]
     header = ("kind", "mode", "type", "level", "why")
     widths = [max(len(header[i]), *(len(r[i]) for r in rows)) for i in range(4)]

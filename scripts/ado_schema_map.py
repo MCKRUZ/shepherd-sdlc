@@ -20,8 +20,10 @@ Config keys this module reads (all optional; a missing or wrong-typed one reads 
   `states.<kind>.<status>`    the design's §6.2 shape (templates/ado/_schema.yaml): a state category
                               name, or `{category, prefer}`. `category` replaces the status rule's
                               category; `prefer` names a concrete state, honoured only when the type
-                              has that state. `resolve_state` applies the rule of every kind whose
-                              type (`resolve_type`) is the type being resolved.
+                              has that state. `resolve_state` finds the kind of the type it is given
+                              by inverting the `types` pins first, then the default types of the
+                              categories in `STATE_KIND_CATEGORY` (and of the portfolio level a tree
+                              kind is fitted to); a pin is more specific than a default.
   `tree.fit.<kind>`           pin outcome / domain / requirement to "item", "area" or "tag"
   `tree.domains`              the domain names, so `fit_levels` can match them to Area Path nodes
                               (the caller fills it from `requirements.md`; this module reads no file)
@@ -34,7 +36,7 @@ their categories; only the requirements tree (outcome, domain, requirement) is f
 import re
 
 from ado_map import AdoImportError, _require
-from boards_contract import KINDS, TREE_ORDER
+from boards_contract import CONFIG_FILE, KINDS, TREE_ORDER
 
 SCHEMA_VERSION = 1
 KNOWN_STATE_CATEGORIES = ("Proposed", "InProgress", "Resolved", "Completed", "Removed")
@@ -76,10 +78,18 @@ CANDIDATES: dict[str, tuple[str, ...]] = {
     "question": ("Issue", "Impediment"),
 }
 DEFAULT_CATEGORY = {"epic": "EpicCategory", "feature": "FeatureCategory", "spec": "RequirementCategory"}
+# The category whose default type is a kind's type for reading its `states.<kind>.<status>` rule when no
+# `types.<kind>` pin names one (resolve_state). spike and finding still get no type from `resolve_type`:
+# a state rule written for them applies to their category's default type, nothing more.
+STATE_KIND_CATEGORY = {"epic": "EpicCategory", "feature": "FeatureCategory", "spec": "RequirementCategory",
+                       "spike": "TaskCategory", "finding": "BugCategory"}
 LEVEL_OF = {"requirement": 1, "domain": 2, "outcome": 3}  # portfolio levels above Epic, nearest first
 TAG_FORM = {"requirement": "fr:<id>", "domain": "domain:<slug>", "outcome": "outcome:<slug>"}
 _FIT_MODES = ("item", "area", "tag")
-_LEVELS_UNREAD = "backlog levels were not discovered"  # backlog configuration never read: unknown, not "none"
+UNKNOWN = "unknown"  # the fit mode of a tree kind whose answer waits on backlog levels that were never read
+# The backlog configuration was never read (no --team, no `team`, no default team): unknown, not "none".
+_LEVELS_UNREAD = (f"backlog levels were not discovered — pass --team or set `team` in {CONFIG_FILE} so discover "
+                  "can read them")
 _SCHEDULING = "microsoft.vsts.scheduling."
 _BUILTIN_SCHEDULING = ("StoryPoints", "OriginalEstimate", "RemainingWork", "CompletedWork", "Effort", "Size",
                        "DueDate", "TargetDate", "StartDate", "FinishDate")
@@ -366,6 +376,8 @@ def resolve_type(schema: dict, kind: str, cfg: dict) -> tuple[str | None, str]:
         fitted = fit_levels(schema, cfg)[kind]
         if fitted["mode"] == "item":
             return fitted["type"], fitted["reason"]
+        if fitted["mode"] == UNKNOWN:
+            return None, f"it is not known whether {kind} is an item on this process: {fitted['reason']}"
         return None, f"{kind} is fitted as {fitted['mode']}, not an item: {fitted['reason']}"
     if kind in DEFAULT_CATEGORY:
         category = DEFAULT_CATEGORY[kind]
@@ -411,46 +423,83 @@ def _fold(value) -> str | None:
     return value.lower() if isinstance(value, str) else None
 
 
-def _rules_for(schema: dict, name: str, status: str, cfg: dict) -> list[tuple[str, tuple[str | None, str | None]]]:
-    """`[(kind, (category, prefer))]`, in `KINDS` order, for every kind with a `states.<kind>.<status>`
-    rule whose type is `name`: the kind's `types` pin, else its category's default type, else its fit
-    (what `resolve_type` answers)."""
-    states = _dig(cfg, "states")
-    if not isinstance(states, dict):
-        return []
-    found = []
+def _kinds_on_type(schema: dict, name: str, cfg: dict) -> tuple[list[str], list[str]]:
+    """`(pinned, defaulted)`, each in `KINDS` order: the kinds whose `types.<kind>` pin names the type
+    `name`, and the kinds with no pin whose type it is by default — the default type of their category
+    (`STATE_KIND_CATEGORY`) or, for a tree kind, of the portfolio level `fit_levels` fits it to."""
+    pinned, defaulted, fit = [], [], None
+    categories = schema.get("categories") or {}
     for kind in KINDS:
-        rule = _state_rule(_dig(states, kind, status))
-        if rule == (None, None):
-            continue
-        resolved, _ = resolve_type(schema, kind, cfg)
-        if resolved is not None and _type_info(schema, resolved)[0] == name:
-            found.append((kind, rule))
-    return found
+        pin = _pin(cfg, "types", kind)
+        if pin is not None:
+            if _type_info(schema, pin)[0] == name:
+                pinned.append(kind)
+        elif kind in STATE_KIND_CATEGORY:
+            default = _dig(categories, STATE_KIND_CATEGORY[kind], "default_type")
+            if isinstance(default, str) and _type_info(schema, default)[0] == name:
+                defaulted.append(kind)
+        elif kind in LEVEL_OF:
+            fit = fit if fit is not None else fit_levels(schema, cfg)
+            if fit[kind]["mode"] == "item" and fit[kind]["type"] == name:
+                defaulted.append(kind)
+    return pinned, defaulted
+
+
+def _rule_for(schema: dict, name: str, status: str,
+              cfg: dict) -> tuple[str | None, tuple[str | None, str | None], str, str | None]:
+    """`(source, (category, prefer), aside, conflict)` for the type `name`: the `states.<kind>.<status>`
+    rule of its kind (`source` None when that kind has no rule), a sentence noting kinds passed over
+    (`aside`, "" when none), and `conflict`, the reason to refuse when equally specific kinds disagree."""
+    pinned, defaulted = _kinds_on_type(schema, name, cfg)
+    tier, passed = (pinned, defaulted) if pinned else (defaulted, [])
+    states = _dig(cfg, "states")
+    states = states if isinstance(states, dict) else {}
+
+    def rules(kinds):
+        found = [(kind, _state_rule(_dig(states, kind, status))) for kind in kinds]
+        return [(kind, rule) for kind, rule in found if rule != (None, None)]
+
+    ruled = rules(tier)
+    aside = ""
+    if passed:
+        skipped = rules(passed)
+        aside = (f"{name} is pinned by {' and '.join(f'types.{k}' for k in pinned)} and is also the default type "
+                 f"for {', '.join(passed)}; the pin is more specific")
+        if skipped:
+            aside += f", so {' and '.join(f'states.{k}.{status}' for k, _ in skipped)} is not applied"
+    if len({tuple(_fold(part) for part in rule) for _, rule in ruled}) > 1:
+        keys = " and ".join(f"states.{kind}.{status}" for kind, _ in ruled)
+        return None, (None, None), aside, (f"{keys} apply to {name} and disagree; pass a config whose `states` "
+                                           "holds only the kind being resolved")
+    if not ruled:
+        return None, (None, None), aside, None
+    return f"states.{ruled[0][0]}.{status}", ruled[0][1], aside, None
 
 
 def resolve_state(schema: dict, type_name: str, status: str, cfg: dict) -> tuple[str | None, str]:
     """`(state_name, reason)` for a status on a type.
 
     The config rule is `states.<kind>.<status>` (design §6.2): a category name, or `{category, prefer}`.
-    It applies to this type when the kind's type is this type (`resolve_type`: the `types` pin, else the
-    category's default type, else the fit). `prefer` wins when the type has that state; otherwise the
-    rule's `category` (or, with no rule, the status rule's own, `rule: last-proposed`) picks the state.
-    Two kinds on one type whose rules disagree are `(None, why)`, never a guess: a caller that knows the
-    kind passes `cfg` with `states` narrowed to that kind (still the §6.2 shape). What the type cannot
-    express is `(None, why)` too — a spec that was merged on a type with no Resolved or Completed state
-    is not given a state it does not have."""
+    The kind is the one whose `types.<kind>` pin names this type; with no pin naming it, the kind whose
+    category's default type it is (`STATE_KIND_CATEGORY`: RequirementCategory -> spec, EpicCategory -> epic,
+    FeatureCategory -> feature, TaskCategory -> spike, BugCategory -> finding) or whose fitted portfolio
+    level's type it is (requirement, domain, outcome). A pin is more specific than a default; the reason
+    says so when both name the type. `prefer` wins when the type has that state (matched
+    case-insensitively); otherwise the rule's `category` (or, with no rule, the status rule's own,
+    `rule: last-proposed`) picks the state, and the reason says the preferred state was not found.
+    Equally specific kinds on one type whose rules disagree are `(None, why)`, never a guess: a caller
+    that knows the kind passes `cfg` with `states` narrowed to that kind (still the §6.2 shape). What the
+    type cannot express is `(None, why)` too — a spec that was merged on a type with no Resolved or
+    Completed state is not given a state it does not have."""
     name, states, from_backlog = _states_of(schema, type_name)
     if name is None:
         return None, f"type {type_name!r} is not in the process"
     if not states:
         return None, f"no states were discovered for {name}"
-    rules = _rules_for(schema, name, status, cfg)
-    if len({tuple(part and part.lower() for part in rule) for _, rule in rules}) > 1:
-        keys = " and ".join(f"states.{kind}.{status}" for kind, _ in rules)
-        return None, (f"{keys} apply to {name} and disagree; pass a config whose `states` holds only the kind "
-                      "being resolved")
-    source, (category, prefer) = (f"states.{rules[0][0]}.{status}", rules[0][1]) if rules else (None, (None, None))
+    source, (category, prefer), aside, conflict = _rule_for(schema, name, status, cfg)
+    tail = f"; {aside}" if aside else ""
+    if conflict is not None:
+        return None, conflict + tail
     note = ""
     if prefer is not None:
         hit = next((s for s in states if _fold(s["name"]) == prefer.lower()), None)
@@ -458,14 +507,14 @@ def resolve_state(schema: dict, type_name: str, status: str, cfg: dict) -> tuple
             reason = f"prefer: {hit['name']} ({source})"
             if category is not None and _fold(hit["category"]) != category.lower():
                 reason += f"; {hit['name']} is {hit['category']}, not {category}"
-            return hit["name"], reason
-        note = f"prefer {prefer!r} is not a state of {name}; "
+            return hit["name"], reason + tail
+        note = f"prefer {prefer!r} was not found among the states of {name}; "
     default = STATUS_RULES.get(status)
     if category is not None:
         pick = next((p for c, p in default or () if c.lower() == category.lower()), "first")
         chain, label = ((category, pick),), source
     elif default is None:
-        return None, note + f"no state rule for status {status!r}"
+        return None, note + f"no state rule for status {status!r}" + tail
     else:
         chain, label = default, "rule"
     skipped = []
@@ -477,10 +526,10 @@ def resolve_state(schema: dict, type_name: str, status: str, cfg: dict) -> tuple
                 reason += f" ({name} has no {' or '.join(skipped)} state)"
             if from_backlog:
                 reason += "; states from backlog mapping"
-            return (pool[0] if pick == "first" else pool[-1])["name"], note + reason
+            return (pool[0] if pick == "first" else pool[-1])["name"], note + reason + tail
         skipped.append(wanted)
     missing = f"{name} has no {' or '.join(skipped)} state"
-    return None, note + (f"{missing} ({source})" if category is not None else missing)
+    return None, note + (f"{missing} ({source})" if category is not None else missing) + tail
 
 
 def field_on_type(schema: dict, type_name: str, ref: str) -> dict | None:
@@ -600,6 +649,14 @@ def _fit_domain(schema: dict, cfg: dict, prefix: str) -> dict:
                   f"(the rest ride as `{TAG_FORM['domain']}` tags)", names)
 
 
+def _unknown(schema: dict, cfg: dict, kind: str, reason: str) -> dict:
+    """A tree kind whose fit waits on backlog levels that were never read: not known, never a fallback."""
+    names = None
+    if kind == "domain":
+        names = {n: {"mode": UNKNOWN, "area_path": None} for n in _domain_names(schema, cfg, areas_ok=False)}
+    return _entry(UNKNOWN, None, None, reason, names)
+
+
 def _fit_tree_kind(schema: dict, cfg: dict, kind: str, above: list[dict], why: str | None, pin: str | None) -> dict:
     tags = f"rides as `{TAG_FORM[kind]}` tags"
     names = {} if kind == "domain" else None
@@ -616,6 +673,9 @@ def _fit_tree_kind(schema: dict, cfg: dict, kind: str, above: list[dict], why: s
             if kind == "domain":
                 names = {n: {"mode": "item", "area_path": None} for n in _domain_names(schema, cfg, areas_ok=False)}
             return _entry("item", name, level, reason, names)
+        if reason == _LEVELS_UNREAD:  # the levels that decide it were never read (a types pin never lands here)
+            unknown = f"tree.fit pins {kind} to item, but {reason}" if pin == "item" else reason
+            return _unknown(schema, cfg, kind, unknown)
         unmet = f"tree.fit pins {kind} to item, but {reason}" if pin == "item" else reason
     if kind == "domain":
         return _fit_domain(schema, cfg, "tree.fit pins domain to area" if pin == "area" else unmet)
@@ -624,14 +684,17 @@ def _fit_tree_kind(schema: dict, cfg: dict, kind: str, above: list[dict], why: s
 
 def fit_levels(schema: dict, cfg: dict) -> dict[str, dict]:
     """How each kind of the two trees lands on this process, in `TREE_ORDER`:
-    `{kind: {"mode": "item"|"area"|"tag", "type", "level", "reason"}}`, and for `domain` a `names` map
-    (`{name: {"mode", "area_path"}}`, from `tree.domains`).
+    `{kind: {"mode": "item"|"area"|"tag"|"unknown", "type", "level", "reason"}}`, and for `domain` a
+    `names` map (`{name: {"mode", "area_path"}}`, from `tree.domains`).
 
     Auto: requirement -> the first portfolio level above Epic, domain -> the second (else an Area Path
     node whose name matches, else a tag), outcome -> `types.outcome`, else the third level, else a tag.
     `tree.fit.<kind>` pins a mode, `types.<kind>` pins a type; a pin the process cannot meet falls back
-    to a tag and says so. Epic, Feature and Spec are items on their categories (`type` None when the
-    process has no such category — `recommendations` says so)."""
+    to a tag and says so. When the backlog configuration was never read (`schema["backlog"]` None: no
+    --team, no `team`, no default team) a tree kind whose answer waits on those levels is `"unknown"`,
+    never a fallback: a level count that was not taken is not a 0. A `types` pin, a `tree.fit` tag pin
+    and a `tree.fit` area pin need no levels and are answered as usual. Epic, Feature and Spec are items
+    on their categories (`type` None when the process has no such category — `recommendations` says so)."""
     above, why = _levels_above_epic(schema)
     modes = _dig(cfg, "tree", "fit")
     pins = {k: v for k, v in modes.items() if v in _FIT_MODES} if isinstance(modes, dict) else {}
@@ -654,27 +717,21 @@ def _domain_until(entry: dict) -> str:
             "`domain:<slug>` tags otherwise")
 
 
-_UNTIL = {"outcome": "outcomes ride as `outcome:<slug>` tags", "requirement": "each FR rides as an `fr:<id>` tag"}
-
-
-def _levels_unread(kinds: list[tuple[str, dict]]) -> str:
-    """The one sentence for tree kinds whose fit waits on backlog levels that were never read: no count
-    of levels (none was taken), only how to have discover read them."""
-    names = ", ".join(kind for kind, _ in kinds)
+def _levels_unread(kinds: list[str]) -> str:
+    """The one sentence for the tree kinds whose fit waits on backlog levels that were never read: no
+    count of levels (none was taken) and so no addition, only how to have discover read them."""
     which = "this kind" if len(kinds) == 1 else "these kinds"
-    until = "; ".join(_domain_until(entry) if kind == "domain" else _UNTIL[kind] for kind, entry in kinds)
-    return (f"{names}: the portfolio backlog levels were not discovered (Azure DevOps reports them for a team), so "
-            f"it is not known whether this process has levels above Epic to mirror {which} as board items; name "
-            "a team with `ado_sync.py discover --team <name>` or `team` in the config and run discover again so "
-            f"it can read them; until then {until}.")
+    return (f"{', '.join(kinds)}: {_LEVELS_UNREAD}; until then it is not known whether this process has "
+            f"portfolio backlog levels above Epic to hold {which} as board items, so no process addition is "
+            "recommended.")
 
 
 def recommendations(fit: dict, schema: dict) -> list[str]:
     """One sentence per kind that is not fitted as an item: the addition to the process an
     administrator would make and what the board gains. `[]` when every kind fits. The plugin never
     makes the addition. When the backlog levels were never read (no team), the tree kinds that wait on
-    them share one sentence saying so and naming how to read them — a level count that was never taken
-    is not a 0 to recommend additions from."""
+    them (`"unknown"` in the fit) share exactly one sentence saying so and naming `--team` and `team`
+    — a level count that was never taken is not a 0 to recommend numbered additions from."""
     above, why = _levels_above_epic(schema)
     have, unread = len(above), why == _LEVELS_UNREAD
     out, waiting, at = [], [], None
@@ -682,12 +739,13 @@ def recommendations(fit: dict, schema: dict) -> list[str]:
         if entry["mode"] == "item" and entry["type"] is not None:
             continue
         reason = entry["reason"]
-        if kind in LEVEL_OF and " pins " in reason.split("; ")[0]:  # a pin the process cannot meet
+        pinned = " pins " in reason.split("; ")[0]  # a pin the process cannot meet (it needs no levels)
+        if entry["mode"] == UNKNOWN or (kind in LEVEL_OF and unread and not pinned):
+            at = len(out) if at is None else at
+            waiting.append(kind)
+        elif kind in LEVEL_OF and pinned:
             out.append(f"{kind}: not fitted as an item ({reason.split('; ')[0]}); fix the cause named there to "
                        "mirror it as a board item.")
-        elif kind in LEVEL_OF and unread:
-            at = len(out) if at is None else at
-            waiting.append((kind, entry))
         elif kind == "outcome":
             out.append("outcome: add a work item type for outcomes (for example Objective) and name it in "
                        "types.outcome, or a third portfolio backlog level above Epic, so each success dimension "
