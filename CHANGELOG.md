@@ -147,6 +147,69 @@ human runs `posture assisted`, and a plan is sent only when that person types it
 - **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
   before the mirror, and the version.
 
+### Fold B4 — reconcile, findings source, unmapped items, desktop app
+
+A person can now settle what the board changed under the repository, and see the mirror in the desktop app.
+Nothing in this Fold adds a way to write to the board: `apply` and `link-pr` are still the only two verbs that do.
+
+- **`reconcile <ref> --field F --take ado|sdlc|ack|not-drift --by <human>`** (`scripts/ado_sync.py`, the engine
+  is `scripts/ado_sync_reconcile.py`) settles one drift row `pull` recorded and appends a `reconciled` line. The
+  words come from the design's disposition machine (`ado_sync_model.DISPOSITION_MACHINE`): an ordinary row takes
+  `ado`, `sdlc`, `ack` or `not-drift`; a `CONFLICT` or retyped row takes only `ado` or `sdlc`; a `DELETED_IN_ADO` row
+  takes only `ack` (RECREATE and UNLINK have no take word yet); an `ORPHAN_IN_REPO` row takes none and stays open.
+  `ack` needs `--owner`, `not-drift` a `--reason`, and a take the machine has no word for is refused (exit 2), never
+  guessed. Exit 0 settled or recorded; exit 1 no such row, already settled, a board that cannot answer, a ledger
+  that cannot be appended to, or the owning verb failed; exit 2 refused.
+- **`--take ado` runs the verb that owns the field and never edits anything itself.** A spec's assignee runs
+  `spec_transition.py assign --developer <handle> --by`, its iteration `sprint.py slate` (or `unslate --reason` when
+  the board moved it out of every sprint), a decision the board closed `track_decisions.py decide` with a resolution a
+  person typed (`--reason`, or `--from-comment <id>` for a cached comment that holds no instruction-like line and no
+  address). Each child is the argument **list** `[sys.executable, <script>, …]`, started without a shell, from a
+  per-verb table: `ready` and `defer` take no `--by` and are never handed one, and a child's nonzero exit — even
+  argparse's own 2 — is exit 1 here, never 2. A spec's `State` is never taken (it belongs to `spec_transition.py`
+  and `handoff.py`); an assignee change on an `in-flight` or `merged` spec is the repository's drift, with `assign`'s
+  own sentence, because a new developer is a new hand-off.
+- **Honest counting.** A disposition clears a row only when it carries what it claims — a child that exited 0, an
+  owner, a reason, a ref — so a `--take ado` whose child failed leaves the row open, and `--take sdlc` leaves it
+  open until the next confirmed `apply` writes the field. The ledger keeps the child's script name, its arguments with
+  every free-text value as `<text>`, its exit and a hash of that list — never a comment's words or an address — and the
+  ledger is proven appendable before a child starts, so a record is never lost after the edit.
+- **`pull` says what a person may do about each drift row**, and **`pull --propose-specs`** writes ONE batch file
+  under the gitignored `.sdlc/ado/local/proposals/` for the board items nobody has mapped: the `new_spec.py` and
+  `link` argument lists a person may run, never run for them, never a shell string. It cannot be combined with
+  `--discussion` or `--full`.
+- **A findings source is written, and not yet reachable.** `scripts/ado_sync_sources_df.py` projects each review
+  finding in `.sdlc/metrics/findings-log.jsonl` as a work item (CRITICAL and HIGH on the process's `BugCategory`, the
+  rest on the configured finding type; title `[<category>] <fingerprint>`; State from the disposition; no finding text
+  reaches a field). It registers `SOURCES["finding"]` when imported, and `ado_sync.py` does not import it yet, so
+  `plan` does not offer the `finding` kind until that one import line is added.
+- **The desktop app shows the mirror, through a closed table.** A work-item chip on the spec card (beside the PR
+  chip) with an apply dialog whose preview is the plan's own rows, a discussion block and a two-step comment composer
+  (draft, read, confirm; hidden while steering), and two Today rows. The renderer hands main an `AdoVerbRequest` from
+  a closed union of seven verbs; `studio/shared/adoVerbArgv.ts` (pure, golden-tested) builds the argument list,
+  `--json` on every verb and `--by <actor>` last on the four writes (main's resolved actor, never the renderer's),
+  and a comment's text travels as one `--message=<text>` element. `adoWrites.ts` starts `ado_sync.py` once per verb
+  (never `az`, never a shell) and invalidates the command center on every exit; the Boards block reads
+  `ado_sync.py status --json`. The renderer never reads `.sdlc/ado/**` and no timer mutates a ledger. No allowlist
+  row changed and `NeedsYouItem.kind` is unchanged. The table already holds `reconcile`, `link` and `pull`, which no
+  screen sends yet (the reconcile dialog and a Pull-now button are a later Fold), and the discussion block is built
+  and tested but mounted on no screen yet.
+- **One new capability, six names Studio gates on.** `ado-reconcile` is declared in `scripts/capabilities.py` and
+  proven against `reconcile --help`; Studio's `CAPABILITIES` name it with `ado-status-json`, `ado-apply`, `ado-show`,
+  `ado-pull-discussion` and `ado-comment` (the other five were declared in earlier Folds) and gain four digit-free
+  no-data sentences ("Not pulled yet", "Schema not discovered yet", "Work items are not set up for this project",
+  "Could not reach Azure Boards"). A plugin that lacks a name disables its control with `arrives with a newer plugin:
+  lacks <name>`.
+- **One existing test edited, by design.** `studio/test/reasons.test.ts` asserts the exact list of capability names;
+  its list now holds the six Boards ids (`ado-apply`, `ado-comment`, `ado-pull-discussion`, `ado-reconcile`,
+  `ado-show`, `ado-status-json`), because `CAPABILITIES` had to name them for the closed table to gate on them. No other
+  assertion in it changed.
+- **`/sprd-ado` and `references/ado-boards.md`** gain the reconcile section (the four takes, each with a human gate,
+  the exit codes and the honest-counting rule), `pull --propose-specs`, the disposition state machine and the desktop
+  surfaces.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
+  before the mirror except the one pin above, and the version.
+
 ## 2.0.0 — 2026-10-12
 
 ### Shepherd — the brand update

@@ -98,6 +98,13 @@ CAPABILITIES: dict[str, dict] = {
                   "flags": ["--repo", "--state", "--json", "--confirm", "--by", "--limit"]},
     "ado-comment": {"script": "ado_sync.py", "argv": ["comment"],
                     "flags": ["--repo", "--state", "--json", "--message", "--by", "--mention", "--event"]},
+    # Its disposition verb (Fold B4). `reconcile` settles one drift row `pull` recorded, through the design's
+    # disposition machine: `--take ado` starts the verb that owns the field (never edits a spec itself), `--take sdlc`
+    # keeps the repository's value, `ack` needs `--owner`, `not-drift` a `--reason`. Writes nothing to the board.
+    # The desktop app hides its control and says why when a plugin lacks the name.
+    "ado-reconcile": {"script": "ado_sync.py", "argv": ["reconcile"],
+                      "flags": ["--repo", "--state", "--json", "--field", "--take", "--by", "--owner", "--reason",
+                                "--from-comment"]},
 }
 
 

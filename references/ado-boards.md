@@ -8,10 +8,13 @@ and shown rather than silently resolved, and the repository stays the unit of wo
 This is a **Tier-3 reference**: loaded on demand, read by nothing at runtime. The executable halves are
 `scripts/ado_sync.py` (the CLI, driven by `/sprd-ado`), `scripts/ado_schema.py` and `scripts/ado_schema_map.py`
 (the process, the fit and the state rule), `scripts/ado_wit.py` and `scripts/ado_wit_map.py` (work-item reads),
-`scripts/ado_sync_model.py` (drift, ownership, honest counting, the ledger line), `scripts/ado_sync_sources.py`
-and `scripts/ado_sync_sources_tree.py` (the repository side), and `scripts/boards_contract.py` (every enum,
-path and REST location). The design is `docs/proposals/ado-boards-mirror.md`; the build kit beside it pins the
-verbs and exit codes. When this page and the code disagree, the code wins and this page is the bug.
+`scripts/ado_sync_model.py` (drift, ownership, the disposition machine, honest counting, the ledger line),
+`scripts/ado_sync_reconcile.py` (settling a drift row: the per-verb child table, the one module besides
+`ado_transport.py` that starts another process), `scripts/ado_sync_sources.py`, `scripts/ado_sync_sources_tree.py` and
+`scripts/ado_sync_sources_df.py` (the repository side), and `scripts/boards_contract.py` (every enum, path and REST
+location). The desktop app's half is `studio/shared/adoVerbArgv.ts` and `studio/electron/main/adoWrites.ts`. The
+design is `docs/proposals/ado-boards-mirror.md`; the build kit beside it pins the verbs and exit codes. When this
+page and the code disagree, the code wins and this page is the bug.
 
 Both modes hold everywhere: **workflow mode** passes `--state .sdlc/state.yaml`, **standalone mode** passes
 `--repo <path>` and needs no `state.yaml`. Nothing in the mirror writes `state.yaml`, edits a spec, moves a
@@ -26,7 +29,7 @@ phase or blocks a gate.
 | B1 | `config init`, `config check`, `discover`, `validate` | reads the process only |
 | B2 | `plan`, `status`, `pull`, `drift`, `link`, `adopt`, `show`, `discussion gc` | reads only — the two non-GET calls are the read POSTs `wit/wiql` and `wit/workitemsbatch`; every write in `ado_wit.py` raises `NotImplementedError("B3")` |
 | B3 | `apply`, `link-pr`, `iteration bind`, `posture`, `comment` | writes, only from a confirmed plan, as the signed-in person |
-| B4 | `reconcile`, finding items, unmapped board items, the desktop app's view | findings through a confirmed `apply`; `reconcile` runs the owning repository verb |
+| B4 | `reconcile`, `pull --propose-specs`, the desktop app's view; a finding loader | no new board write: `reconcile` records a disposition and, for `--take ado`, runs the owning repository verb; finding items would go through a confirmed `apply` once `ado_sync.py` imports the loader (it does not yet) |
 | B5 | lifecycle, NFR, BR, question and measurement kinds; the harness pack change below | through a confirmed `apply` |
 
 | File | Committed | Holds |
@@ -78,6 +81,71 @@ A board revision whose only change is `System.History` is `COMMENT`, not drift; 
 board is `DELETED_IN_ADO` and is never silently recreated; a ledgered ref whose file is gone is `ORPHAN_IN_REPO`.
 Debt is an open S-field drift or conflict older than two business days, rolled up by artifact and field —
 never by person.
+
+---
+
+## Dispositions — settling a drift row
+
+`pull` records each disagreement as a `drift_seen` line. `reconcile <ref> --field F --take ado|sdlc|ack|not-drift
+--by <human>` appends one `reconciled` line carrying the disposition a named person chose. The machine is the
+design's §8 one (`ado_sync_model.DISPOSITION_MACHINE`; a test holds it equal to `validate_disposition` for every
+drift class and every word), keyed by the state a row starts in:
+
+| Starts as | Drift classes | Dispositions it may take | Take word |
+|---|---|---|---|
+| `OPEN` | `SDLC_OWNED_DRIFT`, `ADO_OWNED_CHANGE`, `MOVED`, `RELATION_DRIFT`, `UNMAPPED_IN_ADO` | `TAKE_ADO`, `TAKE_SDLC`, `ACKNOWLEDGED`, `NOT_DRIFT` | `ado`, `sdlc`, `ack`, `not-drift` |
+| `CONFLICT` | `CONFLICT`, `RETYPED` (a retype requires a take) | `TAKE_ADO`, `TAKE_SDLC` | `ado`, `sdlc` |
+| `DELETED_IN_ADO` | `DELETED_IN_ADO` | `RECREATE`, `UNLINK`, `ACKNOWLEDGED` | `ack` only |
+| `ORPHAN_IN_REPO` | `ORPHAN_IN_REPO` | `UNLINK`, `RELINK` | none |
+| nothing to dispose of | `IN_SYNC`, `COMMENT`, `NEVER_PUSHED` | — | — |
+
+`RECREATE`, `UNLINK` and `RELINK` exist in the model and have no take word in this version, so an `ORPHAN_IN_REPO`
+row stays open and `status` keeps counting it; a take the machine has no word for is refused (exit 2) and names the
+words it does allow — it is never guessed into another one.
+
+**A word typed does not clear drift.** A row leaves the open count only when its disposition carries what it
+claims (`DISPOSITION_NEEDS`); otherwise it counts exactly like `OPEN`:
+
+| Disposition | Must carry |
+|---|---|
+| `TAKE_ADO`, `TAKE_SDLC` | a recorded child exit of `0` — for `--take ado`, the owning verb's; `--take sdlc` starts no child, so the row stays open until a later `apply` lands the field (a later `applied` line naming the field also closes any row) |
+| `ACKNOWLEDGED` | `owner`, a named human (an AI or an agent is refused) |
+| `NOT_DRIFT` | `reason` |
+| `RELINK` | `relink_ref`, an `sdlc:<kind>:<id>` ref |
+| `RECREATE`, `UNLINK` | the word |
+
+**Which take a field's owner allows** (D10, D11). `--take ado` and `--take sdlc` are the two that move a value, and
+each is open to one owner only; `ack` and `not-drift` record a person's judgement on any field of an `OPEN` row.
+
+| Take | Allowed for | What happens |
+|---|---|---|
+| `ado` | an **A** field that has an owning verb: a spec's `System.AssignedTo` (draft or ready only), a spec's `System.IterationPath`, a decision's `System.State` once the board holds it in the Completed category | the owning verb is started, as an argument list, and its exit is the record |
+| `sdlc` | an **S** field | nothing is sent: the next `plan` carries the update that puts the repository's value back, and the confirmed `apply` lands it |
+| `ack` | any field of an `OPEN` row, and a `DELETED_IN_ADO` row | someone named in `--owner` knows and owns it |
+| `not-drift` | any field of an `OPEN` row | `--reason` says why it is not drift |
+
+Never taken: a spec's `State` (written only by `spec_transition.py ready|defer`, and by `handoff.py` for `in-flight`,
+which creates a branch and a draft pull request — a board move must never do that); an assignee change on an
+`in-flight` or `merged` spec (its branch names who is building it; `assign` refuses it and a new developer is a new
+hand-off, so the row is the repository's drift and carries `assign`'s own sentence); a **C** field's text (it comes
+back as an `<artifact>.proposed` draft for `/sprd-revise`, which a later Fold writes); a relation (report only).
+
+**The child, never a shell.** `ado_sync_reconcile.CHILD_ARGV` holds one builder per owning verb and every spawn is the
+list `[sys.executable, <scripts>/<script>.py, …]` (`spec_transition.py` also gets `--spec <path>`): `assign` takes
+`--developer <handle> --by <by>`; `slate` and `unslate` take `--sprint SNN --spec ID --by <by>`, and `unslate` also
+`--reason`, which `sprint.py` requires; `decide` takes `--id ID --by <by> --resolution <text>`; `ready` and `defer`
+take no `--by` and are never handed one, because argparse's exit 2 for an unknown flag would read as "refused". Today's
+takes reach `assign`, `slate`, `unslate` and `decide`; the table also holds `ready`, `defer`, `risk` and
+`confirm-tier`. A decision's resolution is typed by a person (`--reason`, or `--from-comment <id>` for a cached
+comment with no instruction-like line and no address) — it is never filled in. **A child's nonzero exit, even
+argparse's own 2, is `reconcile`'s exit 1**, never 2: exit 2 means the mirror refused, and the mirror did not.
+
+**What the ledger keeps.** The `reconciled` line holds the ref, kind, work item, field, class, disposition and `by`,
+the `owner` and `reason` a person typed (kept as typed, so a reason holds nothing that does not belong in the
+repository), a `comment_id` when `--from-comment` was used, and for a child its script name, its arguments with every
+free-text value as `<text>`, its exit and a hash of that list. A cached comment's words reach the decision log, which
+is committed and checked for addresses and ids first, and never the ledger; the line is proven appendable before a
+child starts, so an edit is never left without its record.
 
 ---
 
@@ -199,6 +267,38 @@ must be the `--by` person, or the whole plan is refused and nothing is sent.
 **Claude Code's permission rules** — the Azure DevOps harness pack (`harness/packs/cicd/azure-devops/`), see
 the deny-list change below. The plugin never runs `az` from a command page; only `scripts/ado_transport.py`
 spawns it, as an argv list, never through a shell.
+
+---
+
+## The desktop app
+
+Shepherd, the desktop app, shows the mirror and sends a small closed set of requests; it **runs the scripts and never
+re-implements them**. The renderer hands the privileged main process an `AdoVerbRequest`, a closed union of seven
+verbs (`apply`, `reconcile`, `link`, `pull`, `pullDiscussion`, `show`, `comment`); `studio/shared/adoVerbArgv.ts` — pure,
+golden-tested — builds the argument list, and `studio/electron/main/adoWrites.ts` starts `ado_sync.py` once per verb
+through `runPluginScript`. Nothing it does reaches `az`; the plugin owns every call to the board.
+
+| Rule | How it holds |
+|---|---|
+| `--by` is a person, and main's | the request has no field for it; main resolves the signed-in actor and the table appends `--by <actor>` **last** on the four writes (`apply`, `reconcile`, `link`, `comment`) and never on the three reads (`pull`, `pullDiscussion`, `show`); no actor is `NO_ACTOR` with `exitCode: null` and nothing is spawned |
+| Free text is one argument | a comment's message, a reconcile `--reason` and `--owner` travel as `--message=<text>`, `--reason=<text>`, `--owner=<text>`, so a quote, a newline, `$(`, non-ASCII text or a leading `-` reaches argparse as one value; a message is sent byte for byte |
+| The plugin's JSON, not its prose | every verb ends in `--json`; the composer's `apply --confirm` hash comes from `comment --json` and is checked against `^[0-9a-f]{12}$` before it is sent |
+| One spawn per verb | `comment` drafts and prints a plan hash, a person reads the preview, and a second call, `apply`, sends it; main never chains the two, so a plan is never sent without a second click |
+| The exit code is the truth | 0 done, 1 not done, 2 refused by the plugin; `exitCode: null` is "Shepherd did not ask" (no actor, no plugin, a bad request, a capability the plugin lacks) |
+| Capabilities gate every control | each verb needs a capability (`ado-apply`, `ado-reconcile`, `ado-link`, `ado-pull`, `ado-pull-discussion`, `ado-show`, `ado-comment`) and the Boards block needs `ado-status-json`; a plugin without one disables the control with `arrives with a newer plugin: lacks <name>` |
+| The renderer never reads the mirror's files | no `.sdlc/ado/**` read, no allowlist row (`grep -rn 'ado/local' studio/src` prints 0); what a screen shows is the command center's `ado` block, the plugin's own `status --json` |
+| Nothing runs on a timer | no timer mutates a ledger, and `pull --discussion` is a person's click; the command center's local blocks are invalidated on every exit, so the next read is fresh |
+
+| Surface | Where | What it says and does |
+|---|---|---|
+| Work-item chip, `AdoChip` | the spec card, beside the PR chip | the mirror's status in words: **Work items are not set up for this project**, **Work items · no data**, **Work items · Not pulled yet**, or the drift on this spec past its two business days, by field and never by person; **Review plan** opens the apply dialog; in steering mode it draws a status and nothing that writes |
+| Apply dialog, `AdoApplyDialog` | opened from the chip | the preview is the plan's own rows; Confirm sends `{ verb: 'apply', confirm: <hash> }` and is disabled with its reason when the plugin lacks `ado-apply` |
+| Discussion block and comment composer, `DiscussionBlock`, `CommentComposer` | a component pair, **not mounted on any screen yet** | comment text is escaped, a line that reads as an instruction is marked `⚑`, attachments are links and are never fetched; the composer is hidden in steering mode and its Confirm is withheld while az and Shepherd disagree on who is writing (`Signed in to az as @x; Shepherd knows you as @y`) |
+| Today rows, `AdoTodayRows` | a sibling `<section data-testid="ado-today">` in `TodayColumn` and `LifecycleHome` | **Changed on the board** and **Not yet a spec**, each a `role="listitem"` with one action and no write control; **Not pulled yet** until a pull has measured them; `NeedsYouItem.kind` is not widened |
+
+The closed table already holds `reconcile`, `link` and `pull`; no screen sends them yet (the reconcile dialog and a
+Pull-now button are a later Fold), so settling a drift row is `/sprd-ado reconcile` for now, and **Propose spec** on
+the Today row shows the `ado_sync.py pull --propose-specs` line rather than running it.
 
 ---
 
