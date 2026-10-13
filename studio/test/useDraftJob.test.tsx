@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { gsap } from 'gsap'
 import { useDraftJob } from '../src/components/useDraftJob'
 import type { DraftProgressEvent, DraftRequest, StartDraftResult } from '../shared/types'
 import { deferred, draftCandidate, draftJob, installDraftApi, removeDraftApi } from './draftFixtures'
@@ -177,13 +178,24 @@ describe('useDraftJob: progress and cancel', () => {
   })
 
   it('stops its timer once the job is over', async () => {
+    // The window's animation clock is not what this test counts. gsap wakes its ticker the moment
+    // it is imported into a window (src/ui reaches it), and jsdom's requestAnimationFrame polyfill
+    // clears and re-creates its setInterval on EVERY frame while the ticker is its only subscriber —
+    // with whatever setInterval is global at that instant. A real frame landing inside this
+    // fake-timer window therefore leaves one fake interval behind that no hook cleanup can touch,
+    // and whether a frame lands here depends on load (it did, on the Windows runner). Sleep the
+    // ticker under real timers first, so the only interval that can exist below is the hook's own.
+    gsap.ticker.sleep()
     vi.useFakeTimers()
-    const { result } = setup()
-    await act(async () => { await result.current.start(ENHANCE) })
-    // The clearInterval runs in the effect cleanup of the commit that moves phase off 'running';
-    // under load (the CI runners) that commit lands a few microtasks after the act above, so
-    // flush until the timer is gone or twenty cycles have passed — the assertion is the same.
-    for (let i = 0; i < 20 && vi.getTimerCount() > 0; i++) await act(async () => { await Promise.resolve() })
+    // Hold the job open: a start that resolves at once lets React fold 'running' and 'candidate'
+    // into one commit, and then there is no interval to stop and nothing is proved.
+    const run = deferred<StartDraftResult>()
+    const { result } = setup({ startDraft: vi.fn().mockReturnValue(run.promise) })
+    act(() => { void result.current.start(ENHANCE) })
+    expect(result.current.state.phase).toBe('running')
+    expect(vi.getTimerCount()).toBe(1)
+    await act(async () => { run.resolve({ ok: true, candidate: draftCandidate() }) })
+    expect(result.current.state.phase).toBe('candidate')
     expect(vi.getTimerCount()).toBe(0)
   })
 
