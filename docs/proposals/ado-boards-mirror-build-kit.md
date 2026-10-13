@@ -450,7 +450,7 @@ The runner is `.claude/workflows/boards-fold-runner.js` (saved; invoke by name).
     "B1-P2": { "owns": ["scripts/ado_schema_map.py", "scripts/tests/test_boards_schema_map.py", "scripts/tests/fixtures/code_host/azure_devops/wit/synthetic/*.json"], "deps": ["B1-P0"] },
     "B1-P3": { "owns": ["scripts/ado_sync_config.py", "templates/ado/ado.yaml", "templates/ado/_schema.yaml", "scripts/tests/test_boards_sync_config.py"], "deps": ["B1-P0"] },
     "B1-P4": { "owns": ["scripts/ado_schema.py", "scripts/ado_sync.py", "scripts/tests/test_boards_sync_cli_b1.py", "scripts/tests/test_boards_az_contract.py"], "deps": ["B1-P1", "B1-P2", "B1-P3"] },
-    "B1-P5": { "owns": ["scripts/capabilities.py", "CHANGELOG.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "studio/package.json", "studio/package-lock.json", "CLAUDE.md", "docs/proposals/ado-boards-mirror-build-kit.md"], "deps": ["B1-P4"] }
+    "B1-P5": { "owns": ["scripts/capabilities.py", "CHANGELOG.md", ".claude-plugin/plugin.json", ".claude-plugin/marketplace.json", "studio/package.json", "studio/package-lock.json", "CLAUDE.md", "docs/architecture.md", "docs/proposals/ado-boards-mirror-build-kit.md"], "deps": ["B1-P4"] }
   },
   "gates": [
     { "name": "G1 protected present", "cmd": "for f in <PROTECTED>; do test -e \"$f\" || { echo missing $f; exit 1; }; done", "expect": "exit 0" },
