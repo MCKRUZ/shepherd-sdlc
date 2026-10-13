@@ -8,7 +8,9 @@
 //     never by person.
 //   * "Not yet a spec" — how many board items sit under the mirror's paths with no spec here. `Propose spec`
 //     shows the plugin line that writes a proposal for each; Shepherd does not run it (the closed Boards request
-//     table has no such verb), so the row stays a read.
+//     table has no such verb), so the row stays a read. The count is read ONLY from an `UNMAPPED_IN_ADO` entry the
+//     plugin put in `by_class`: a pull classes the items already in the ledger, it never runs the search for board
+//     items with no spec, so a `by_class` without that entry means "not counted" — never a zero.
 //
 // These are NOT needs-you items: `NeedsYouItem.kind` is never widened, and nothing here is counted into the
 // chip in the top band. Honesty (house rule 2): a count the plugin never measured is `null` and reads
@@ -24,6 +26,10 @@ import { Button, Eyebrow, cn } from '../../ui'
 
 /** The reason both actions are withheld after a pull that found nothing to act on. */
 export const NOTHING_WAITING = 'Nothing is waiting here'
+
+/** The unmapped row when the plugin's document holds no `UNMAPPED_IN_ADO` count: the search never ran, so there is
+ * no number to show (house rule 2: not measured is not zero). Digit-free. */
+export const UNMAPPED_NOT_COUNTED = 'not counted — only the proposal line searches the board for these'
 
 const SOURCE = 'ado_sync.py status --json'
 const UNMAPPED_CLASS = 'UNMAPPED_IN_ADO'
@@ -67,7 +73,15 @@ function driftRow(view: AdoSyncView): AdoTodayRow {
 function unmappedRow(view: AdoSyncView): AdoTodayRow {
   const base = { key: 'unmapped', label: 'Not yet a spec', action: 'Propose spec' } as const
   if (view.by_class === null) return { ...base, text: NOT_PULLED_YET, measured: false, reason: NOT_PULLED_YET, detail: [] }
-  const n = view.by_class[UNMAPPED_CLASS] ?? 0
+  const n = view.by_class[UNMAPPED_CLASS]
+  // No entry: the plugin never searched for these, so it is not a count of zero. The action stays offered: it only
+  // shows the line that does the search.
+  if (typeof n !== 'number') {
+    return {
+      ...base, text: UNMAPPED_NOT_COUNTED, measured: false, reason: null,
+      detail: ['Shepherd does not run this one: it searches the board for items that no spec here answers and writes a proposal file for each.', PROPOSE_COMMAND],
+    }
+  }
   if (n === 0) return { ...base, text: 'no item on the board is without a spec here', measured: true, reason: NOTHING_WAITING, detail: [] }
   return {
     ...base, text: `${plural(n, 'item', 'items')} on the board with no spec here`, measured: true, reason: null,

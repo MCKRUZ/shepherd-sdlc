@@ -11,9 +11,10 @@ a mislabelled SPLIT or ACCEPTED_RISK still counts as open; a SPLIT is `Related` 
 word a reviewer wrote (detail, reason, review condition, owner, approver) reaches any field, tag or note.
 
 `ado_sync_sources_df` is never imported at module level here: importing it registers a source in the real
-`ado_sync_sources.SOURCES`, and `test_boards_sync_cli_b2` relies on `finding` having none until the CLI itself
-imports the module. The `df` fixture imports it afresh against a stand-in hook table and leaves `sys.modules`
-as it found it.
+`ado_sync_sources.SOURCES`, which `ado_sync.py` itself now does (it imports the module, so `plan --kind finding`
+plans findings: `test_plan_with_the_cli_finding_is_a_sourced_kind` below). The `df` fixture imports it afresh
+against a stand-in hook table and leaves `sys.modules` as it found it, so a test's registration never lands in the
+real table.
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
@@ -509,6 +510,71 @@ def test_a_split_gaining_its_owner_moves_the_sha_because_it_changes_the_state(pr
     second = one(project, repo, schema=SCRUM)
     assert first["fields"]["System.State"] == "New" and second["fields"]["System.State"] == "Removed"
     assert first["source_sha"] != second["source_sha"]
+
+
+# --- through the CLI: `ado_sync.py` imports the source (spec 0037) -------------------------------------------------
+
+MINI = Path(__file__).resolve().parent / "fixtures" / "boards_repo"
+
+
+def _cli_repo(tmp_path: Path, capsys, **types_pin) -> Path:
+    import shutil
+
+    import yaml
+
+    import ado_sync
+    root = tmp_path / "repo"
+    shutil.copytree(MINI, root)
+    assert ado_sync.main(["config", "init", "--repo", str(root)]) == 0
+    assert ado_sync.main(["discover", "--repo", str(root)]) == 0
+    path = root / bc.CONFIG_FILE
+    cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
+    cfg["fields"] = {"spec": {"risk": {"field": "Custom.RiskTier",
+                                       "values": {"HIGH": "HIGH", "MEDIUM": "MEDIUM", "LOW": "LOW"}}}}
+    if types_pin:
+        cfg["types"] = {**(cfg.get("types") or {}), **types_pin}
+    path.write_text(yaml.safe_dump(cfg, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    capsys.readouterr()
+    return root
+
+
+def _plan_findings(root: Path, capsys) -> dict:
+    import ado_sync
+    code = ado_sync.main(["plan", "--kind", "finding", "--repo", str(root), "--json"])
+    doc = json.loads(capsys.readouterr().out)
+    assert code == 0, doc
+    return doc
+
+
+def test_plan_with_the_cli_finding_is_a_sourced_kind(tmp_path, az, capsys):
+    """`ado_sync.py` imports the source, so `plan --kind finding` plans review findings as work items: a HIGH finding
+    on the process's BugCategory default type, titled `[<category>] <fingerprint>`, with no reviewer's words."""
+    import ado_sync  # noqa: F401  (the CLI's own import is what registers the kind)
+    loader = src.SOURCES.get("finding")
+    assert loader is not None and (loader.__module__, loader.__name__) == ("ado_sync_sources_df", "load_findings")
+    root = _cli_repo(tmp_path, capsys)
+    bug = json.loads((root / bc.SCHEMA_FILE).read_text(encoding="utf-8"))["categories"]["BugCategory"]["default_type"]
+    record(root, finding(), finding(id="F2", category="style", severity="LOW", target="scripts/x.py:3"))
+    doc = _plan_findings(root, capsys)
+    assert not any(s["kind"] == "finding" for s in doc["skipped"])
+    rows = {r["ref"]: r for r in doc["rows"] if r["kind"] == "finding"}
+    high = rows[f"sdlc:finding:{short(FP)}"]
+    assert high["action"] == "create" and high["type"] == bug
+    title = next(o["new"] for o in high["ops"] if o["path"] == "/fields/System.Title")
+    assert title == f"[auth-gap] {FP}"
+    low = rows[f"sdlc:finding:{short('style:scripts/x.py')}"]
+    assert low["action"] == "unmapped" and low["type"] is None and "types.finding" in low["reason"]  # never guessed
+    assert "trusts the caller" not in json.dumps(doc)
+
+
+def test_plan_with_the_cli_lands_the_other_findings_on_the_pinned_finding_type(tmp_path, az, capsys):
+    root = _cli_repo(tmp_path, capsys, finding="Issue")
+    bug = json.loads((root / bc.SCHEMA_FILE).read_text(encoding="utf-8"))["categories"]["BugCategory"]["default_type"]
+    record(root, finding(), finding(id="F2", category="style", severity="LOW", target="scripts/x.py:3"))
+    rows = {r["ref"]: r for r in _plan_findings(root, capsys)["rows"] if r["kind"] == "finding"}
+    assert rows[f"sdlc:finding:{short(FP)}"]["type"] == bug                 # HIGH stays a Bug despite the pin
+    assert rows[f"sdlc:finding:{short('style:scripts/x.py')}"]["type"] == "Issue"
+    assert {r["action"] for r in rows.values()} == {"create"}
 
 
 # --- the module itself ----------------------------------------------------------------------------------------------

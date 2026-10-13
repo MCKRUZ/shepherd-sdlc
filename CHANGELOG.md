@@ -163,8 +163,10 @@ Nothing in this Fold adds a way to write to the board: `apply` and `link-pr` are
 - **`--take ado` runs the verb that owns the field and never edits anything itself.** A spec's assignee runs
   `spec_transition.py assign --developer <handle> --by`, its iteration `sprint.py slate` (or `unslate --reason` when
   the board moved it out of every sprint), a decision the board closed `track_decisions.py decide` with a resolution a
-  person typed (`--reason`, or `--from-comment <id>` for a cached comment that holds no instruction-like line and no
-  address). Each child is the argument **list** `[sys.executable, <script>, …]`, started without a shell, from a
+  person typed (`--reason`). `--from-comment <id>` never fills the resolution in: alone it is refused (exit 2) and
+  prints the cached comment behind the `  | ` gutter and the `⚑` marker as a suggestion to type or edit; with a typed
+  `--reason` the ledger records the comment's id, never its words, and the committed decision log gets only what the
+  person typed (design D52). Each child is the argument **list** `[sys.executable, <script>, …]`, started without a shell, from a
   per-verb table: `ready` and `defer` take no `--by` and are never handed one, and a child's nonzero exit — even
   argparse's own 2 — is exit 1 here, never 2. A spec's `State` is never taken (it belongs to `spec_transition.py`
   and `handoff.py`); an assignee change on an `in-flight` or `merged` spec is the repository's drift, with `assign`'s
@@ -177,12 +179,14 @@ Nothing in this Fold adds a way to write to the board: `apply` and `link-pr` are
 - **`pull` says what a person may do about each drift row**, and **`pull --propose-specs`** writes ONE batch file
   under the gitignored `.sdlc/ado/local/proposals/` for the board items nobody has mapped: the `new_spec.py` and
   `link` argument lists a person may run, never run for them, never a shell string. It cannot be combined with
-  `--discussion` or `--full`.
-- **A findings source is written, and not yet reachable.** `scripts/ado_sync_sources_df.py` projects each review
-  finding in `.sdlc/metrics/findings-log.jsonl` as a work item (CRITICAL and HIGH on the process's `BugCategory`, the
-  rest on the configured finding type; title `[<category>] <fingerprint>`; State from the disposition; no finding text
-  reaches a field). It registers `SOURCES["finding"]` when imported, and `ado_sync.py` does not import it yet, so
-  `plan` does not offer the `finding` kind until that one import line is added.
+  `--discussion` or `--full`. Its `propose_specs.counts` is `null` when nothing was measured or what was found was not
+  written (the search could not run, the items could not be read, the file could not be written); `0` only after a
+  search, or the read of what it found, came back empty.
+- **Review findings become work items.** `scripts/ado_sync_sources_df.py` projects each review finding in
+  `.sdlc/metrics/findings-log.jsonl` as a work item (CRITICAL and HIGH on the process's `BugCategory`, the rest on the
+  configured finding type; title `[<category>] <fingerprint>`; State from the disposition; no finding text reaches a
+  field). `ado_sync.py` imports it, so it registers `SOURCES["finding"]` and `plan --kind finding` (or `finding` in
+  `kinds:`, which stays opt-in) plans those items for a confirmed `apply`.
 - **The desktop app shows the mirror, through a closed table.** A work-item chip on the spec card (beside the PR
   chip) with an apply dialog whose preview is the plan's own rows, a discussion block and a two-step comment composer
   (draft, read, confirm; hidden while steering), and two Today rows. The renderer hands main an `AdoVerbRequest` from

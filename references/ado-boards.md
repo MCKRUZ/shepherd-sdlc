@@ -29,7 +29,7 @@ phase or blocks a gate.
 | B1 | `config init`, `config check`, `discover`, `validate` | reads the process only |
 | B2 | `plan`, `status`, `pull`, `drift`, `link`, `adopt`, `show`, `discussion gc` | reads only — the two non-GET calls are the read POSTs `wit/wiql` and `wit/workitemsbatch`; every write in `ado_wit.py` raises `NotImplementedError("B3")` |
 | B3 | `apply`, `link-pr`, `iteration bind`, `posture`, `comment` | writes, only from a confirmed plan, as the signed-in person |
-| B4 | `reconcile`, `pull --propose-specs`, the desktop app's view; a finding loader | no new board write: `reconcile` records a disposition and, for `--take ado`, runs the owning repository verb; finding items would go through a confirmed `apply` once `ado_sync.py` imports the loader (it does not yet) |
+| B4 | `reconcile`, `pull --propose-specs`, the desktop app's view; the `finding` kind | no new board write: `reconcile` records a disposition and, for `--take ado`, runs the owning repository verb; finding items (opt-in: `plan --kind finding`, or `finding` in `kinds:`) go through a confirmed `apply` like every other kind |
 | B5 | lifecycle, NFR, BR, question and measurement kinds; the harness pack change below | through a confirmed `apply` |
 
 | File | Committed | Holds |
@@ -136,16 +136,18 @@ list `[sys.executable, <scripts>/<script>.py, …]` (`spec_transition.py` also g
 `--reason`, which `sprint.py` requires; `decide` takes `--id ID --by <by> --resolution <text>`; `ready` and `defer`
 take no `--by` and are never handed one, because argparse's exit 2 for an unknown flag would read as "refused". Today's
 takes reach `assign`, `slate`, `unslate` and `decide`; the table also holds `ready`, `defer`, `risk` and
-`confirm-tier`. A decision's resolution is typed by a person (`--reason`, or `--from-comment <id>` for a cached
-comment with no instruction-like line and no address) — it is never filled in. **A child's nonzero exit, even
+`confirm-tier`. A decision's resolution is typed by a person (`--reason`) — it is never filled in. Other people's
+comments are never copied into a repository artifact (design D52): `--from-comment <id>` alone is refused (exit 2) and
+prints that cached comment behind the `  | ` gutter, with the `⚑` marker, as a suggestion to type or edit; with a
+typed `--reason` it records only the comment's id as where the suggestion came from. **A child's nonzero exit, even
 argparse's own 2, is `reconcile`'s exit 1**, never 2: exit 2 means the mirror refused, and the mirror did not.
 
 **What the ledger keeps.** The `reconciled` line holds the ref, kind, work item, field, class, disposition and `by`,
 the `owner` and `reason` a person typed (kept as typed, so a reason holds nothing that does not belong in the
 repository), a `comment_id` when `--from-comment` was used, and for a child its script name, its arguments with every
-free-text value as `<text>`, its exit and a hash of that list. A cached comment's words reach the decision log, which
-is committed and checked for addresses and ids first, and never the ledger; the line is proven appendable before a
-child starts, so an edit is never left without its record.
+free-text value as `<text>`, its exit and a hash of that list. A cached comment's words reach neither the ledger
+nor the decision log — the log holds what the person typed, checked for addresses and ids first; the line is proven
+appendable before a child starts, so an edit is never left without its record.
 
 ---
 
@@ -294,7 +296,7 @@ through `runPluginScript`. Nothing it does reaches `az`; the plugin owns every c
 | Work-item chip, `AdoChip` | the spec card, beside the PR chip | the mirror's status in words: **Work items are not set up for this project**, **Work items · no data**, **Work items · Not pulled yet**, or the drift on this spec past its two business days, by field and never by person; **Review plan** opens the apply dialog; in steering mode it draws a status and nothing that writes |
 | Apply dialog, `AdoApplyDialog` | opened from the chip | the preview is the plan's own rows; Confirm sends `{ verb: 'apply', confirm: <hash> }` and is disabled with its reason when the plugin lacks `ado-apply` |
 | Discussion block and comment composer, `DiscussionBlock`, `CommentComposer` | a component pair, **not mounted on any screen yet** | comment text is escaped, a line that reads as an instruction is marked `⚑`, attachments are links and are never fetched; the composer is hidden in steering mode and its Confirm is withheld while az and Shepherd disagree on who is writing (`Signed in to az as @x; Shepherd knows you as @y`) |
-| Today rows, `AdoTodayRows` | a sibling `<section data-testid="ado-today">` in `TodayColumn` and `LifecycleHome` | **Changed on the board** and **Not yet a spec**, each a `role="listitem"` with one action and no write control; **Not pulled yet** until a pull has measured them; `NeedsYouItem.kind` is not widened |
+| Today rows, `AdoTodayRows` | a sibling `<section data-testid="ado-today">` in `TodayColumn` and `LifecycleHome` | **Changed on the board** and **Not yet a spec**, each a `role="listitem"` with one action and no write control; **Not pulled yet** until a pull has measured them; **Not yet a spec** counts only an `UNMAPPED_IN_ADO` figure the plugin gave and otherwise reads **not counted** (a pull classes the ledgered items and never runs that search), never a zero; `NeedsYouItem.kind` is not widened |
 
 The closed table already holds `reconcile`, `link` and `pull`; no screen sends them yet (the reconcile dialog and a
 Pull-now button are a later Fold), so settling a drift row is `/sprd-ado reconcile` for now, and **Propose spec** on

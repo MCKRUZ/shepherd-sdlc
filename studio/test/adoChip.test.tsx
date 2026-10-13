@@ -61,8 +61,13 @@ beforeEach(() => {
   // @ts-expect-error - partial test double: only what the chip reaches
   window.studio = { getCommandCenter, runAdoVerb }
 })
-afterEach(() => {
+afterEach(async () => {
   cleanup()
+  // Radix's FocusScope sends its unmount event from a setTimeout(0) scheduled during cleanup. Let that timer fire
+  // while jsdom is still this file's environment: a file that ends right after closing a dialog otherwise reports an
+  // unhandled "parameter 1 is not of type 'Event'" at teardown (Node's own CustomEvent by then). Same-delay timers
+  // fire in the order they were set, so one macrotask after cleanup is enough.
+  await new Promise((resolve) => setTimeout(resolve, 0))
   resetConnectionStore()
   // @ts-expect-error - cleaning up the test double
   delete window.studio

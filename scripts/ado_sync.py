@@ -61,7 +61,8 @@ What it writes
   - `pull`: ledger `observed` and `drift_seen`, the hook line; `pull --discussion` and `show --fetch`: the local
     discussion cache (`.sdlc/ado/local/discussion/<id>.json`, `me.json`) and ledger `discussion_pulled`,
     `comment_seen`, `directive_seen` -- counts, ids and hashes only, never a comment's text, a name or an address
-  - `pull --propose-specs`: one file under `.sdlc/ado/local/proposals/` (the ignored local folder)
+  - `pull --propose-specs`: one file under `.sdlc/ado/local/proposals/` (the ignored local folder); its `counts` are
+    `null` when the search did not run, the items could not be read or the file was not written
   - `reconcile`: ledger `reconciled` (the disposition, the child's exit, the child's argument list with every free-text
     value as `<text>`); `--take ado` also runs the owning verb, which writes its own file (a spec's frontmatter, a
     sprint record, the decision log)
@@ -132,7 +133,8 @@ Exit codes (the kit's verb table)
                   take the disposition machine has no word for (DELETED_IN_ADO takes `ack`; ORPHAN_IN_REPO takes none
                   in this version), `--take ado` on a field the board does not own or that no verb owns (a spec's
                   State is never taken), a developer change on an in-flight spec, `--take sdlc` on a field the board
-                  owns, a resolution a person did not type or a cached comment that is flagged or holds an address
+                  owns, a resolution a person did not type (`--from-comment` alone is this refusal: it prints the
+                  cached comment as a suggestion to type, never fills it in, and never copies it into a file)
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
   precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `pull`'s DRIFT. Refused and Illegal are
   copied from `sprint.py`, not imported.
@@ -174,6 +176,7 @@ import ado_sync_model as model  # noqa: E402
 import ado_sync_reconcile as rc  # noqa: E402  (the one module that starts the owning verbs; this CLI never does)
 import ado_sync_sources as sources  # noqa: E402
 import ado_sync_sources_tree  # noqa: E402,F401  (registers outcome, domain, requirement and the epic parent)
+import ado_sync_sources_df  # noqa: E402,F401  (registers finding: review findings as BugCategory items)
 import ado_transport  # noqa: E402
 import ado_wit  # noqa: E402
 import ado_wit_map as wm  # noqa: E402
@@ -1009,6 +1012,20 @@ def _row(p: dict, action: str, type_name, *, reason=None, work_item=None, rev=No
             "source_path": p["source_path"], "source_sha": p["source_sha"], "projection_hash": model.projection_hash(p)}
 
 
+def _row_type(p: dict, schema: dict, cfg: dict, typed: dict | None = None) -> tuple[str | None, str]:
+    """`(type_name, reason)` a projection lands as: the type its source chose for this one row when the source names
+    one -- the finding source sets `type_name` and `type_route` together (CRITICAL and HIGH on the process's
+    `BugCategory` default type, the rest on `types.finding`, each validated against the discovered schema) -- else
+    the kind's own resolution (`ado_schema_map.resolve_type`). `typed` is that resolution, cached per kind."""
+    fields = p.get("fields") if isinstance(p.get("fields"), dict) else {}
+    chosen, route = fields.get("type_name"), fields.get("type_route")
+    if isinstance(chosen, str) and chosen and isinstance(route, str) and route:
+        return chosen, f"chosen by the {p['kind']} source: {route}"
+    if typed is not None and p["kind"] in typed:
+        return typed[p["kind"]]
+    return sm.resolve_type(schema, p["kind"], cfg)
+
+
 def _unwritable(exc: ValueError) -> str:
     """`refused` for a field the mirror never writes, `held` for anything a person must fix by hand first."""
     return "refused" if any(w in str(exc) for w in NOT_WRITTEN_WORDS) else "held"
@@ -1262,7 +1279,8 @@ def cmd_plan(args, repo_root: Path) -> int:
     ledger = read_ledger(repo_root)
     links = linked_items(ledger)
     typed = {kind: sm.resolve_type(schema, kind, cfg) for kind in dict.fromkeys(p["kind"] for p in selected)}
-    live = [p for p in selected if not refusals and typed[p["kind"]][0] is not None and _refusal(p, schema) is None]
+    live = [p for p in selected
+            if not refusals and _row_type(p, schema, cfg, typed)[0] is not None and _refusal(p, schema) is None]
     unledgered = [p["ref"] for p in live if p["ref"] not in links]
     ledgered_ids = [links[p["ref"]]["work_item"] for p in live if p["ref"] in links]
     try:  # one by-tag query for every ref the ledger does not know, then one batch read of everything it names
@@ -1270,7 +1288,8 @@ def cmd_plan(args, repo_root: Path) -> int:
     except AdoImportError as exc:
         return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
     board = _Board(links, _tag_map(items, unledgered), items, set(missing) & set(ledgered_ids), emails, web_url)
-    pairs = [(p, _plan_row(p, *typed[p["kind"]], schema, refusals[0] if refusals else None, board)) for p in selected]
+    pairs = [(p, _plan_row(p, *_row_type(p, schema, cfg, typed), schema, refusals[0] if refusals else None, board))
+             for p in selected]
     in_sync = sum(1 for _, r in pairs if r["action"] == "in_sync")
     pairs = sorted(((p, r) for p, r in pairs if r["action"] != "in_sync"), key=lambda pr: _kind_order(pr[1]["kind"]))
     creating = {r["ref"] for _, r in pairs if r["action"] == "create"}
@@ -1575,26 +1594,30 @@ def _proposal_lines(props: list[dict]) -> list[str]:
 def _propose_specs(repo_root: Path, cfg: dict, emails: dict[str, str], now: datetime) -> dict:
     """`pull --propose-specs`: the board items under the mirror's paths that this repository has not tagged (the
     `drift` search), as ONE batch file of argument lists under the ignored local folder. `{"path", "counts", "reason"}`:
-    `path` None with a `reason` when the search could not run (not searched) and with none when it found nothing. A
-    search or a read that fails is a reason, never a failure of the pull; nothing is run."""
-    empty = {"path": None, "counts": {"new_spec": 0, "link": 0}, "reason": None}
+    `path` None with a `reason` when the search could not run (not searched), the items could not be read, or the
+    file could not be written; `path` None with no reason when the search found nothing. Honest counting (house
+    rule 2): `counts` is None whenever nothing was measured or what was found was not written -- an integer 0 only
+    after a search (or the read of what it found) that came back empty. A search or a read that fails is a reason,
+    never a failure of the pull; nothing is run."""
+    unmeasured = {"path": None, "counts": None, "reason": None}
     ids, why = _unmapped(repo_root, cfg)
     if ids is None:
-        return {**empty, "reason": why}
+        return {**unmeasured, "reason": why}
     if not ids:
-        return empty
+        return {"path": None, "counts": {"new_spec": 0, "link": 0}, "reason": None}
     try:
         items, _missing = _read_items(repo_root, ids, emails)
     except AdoImportError as exc:
-        return {**empty, "reason": f"not read: {_tidy(exc)}"}
+        return {**unmeasured, "reason": f"not read: {_tidy(exc)}"}
     rows = rc.spec_proposals(list(items.values()), rc.spec_ids(repo_root))
-    if not rows:
-        return {**empty, "reason": "the board did not return those items (deleted, or not visible to this az login)"}
+    if not rows:   # the read ran and the board returned none of them: a measured empty, not a guess
+        return {"path": None, "counts": {"new_spec": 0, "link": 0},
+                "reason": "the board did not return those items (deleted, or not visible to this az login)"}
     try:
         _ensure_local_ignore(repo_root)
         path = rc.write_batch(repo_root, now, rows, _write_json)
     except OSError as exc:
-        return {**empty, "reason": f"not written ({type(exc).__name__})"}
+        return {**unmeasured, "reason": f"not written ({type(exc).__name__})"}
     return {"path": path, "counts": {"new_spec": sum(1 for r in rows if r["action"] == "new_spec"),
                                      "link": sum(1 for r in rows if r["action"] == "link")}, "reason": None}
 
@@ -1716,7 +1739,7 @@ def cmd_link(args, repo_root: Path) -> int:
     if others := _other_refs(item, ref):
         raise Illegal(f"#{wid} already carries another mirror ref ({', '.join(others)}); nothing was changed")
     notes = []
-    type_name = sm.resolve_type(schema, kind, cfg)[0]
+    type_name = _row_type(proj, schema, cfg)[0]
     if type_name is not None and item["type"] != type_name:
         notes.append(f"#{wid} is a {item['type']} but {kind} maps to {type_name}; a later pull will say so")
     append_ledger(repo_root, [_link_event(_stamp(), proj, item, "linked", by)])
@@ -1742,7 +1765,7 @@ def cmd_adopt(args, repo_root: Path) -> int:
     except ValueError as exc:
         raise Illegal(f"the repository's sources do not agree: {_tidy(exc)}") from None
     links = linked_items(read_ledger(repo_root))
-    candidates = [p for p in projs if p["ref"] not in links and sm.resolve_type(schema, p["kind"], cfg)[0] is not None]
+    candidates = [p for p in projs if p["ref"] not in links and _row_type(p, schema, cfg)[0] is not None]
     refs = [p["ref"] for p in candidates]
     items, _missing = _read_items(repo_root, _query_tagged(repo_root, refs), _emails(repo_root))  # one query, one read
     found = _tag_map(items, refs)
@@ -2623,9 +2646,10 @@ def _plan_child(repo_root: Path, route: str, ref: str, kind: str, row: dict, by:
     items, missing = _read_items(repo_root, [wid], _emails(repo_root))   # AdoImportError: exit 1, nothing was started
     if wid in missing:
         raise Illegal(f"#{wid} is gone from the board (deleted, or not visible to this az login): pull again")
-    text = rc.cached_comment_text(cache.load_cache(repo_root, wid), comment_id) if comment_id is not None else None
+    # D52: the cached comment is only ever SHOWN as a suggestion; the resolution is the --reason a person typed
+    comment = rc.cached_comment(cache.load_cache(repo_root, wid), comment_id) if comment_id is not None else None
     return rc.plan_child(route, repo_root=repo_root, ref=ref, proj=proj, remote=items[wid], cfg=cfg, schema=schema,
-                         by=by, reason=reason, comment_text=text)
+                         by=by, reason=reason, comment=comment, comment_id=comment_id)
 
 
 def _settled_words(settled: bool, why: str, take: str, child: dict | None, exit_code) -> str:
@@ -2881,8 +2905,9 @@ def build_parser() -> argparse.ArgumentParser:
                         "(typed by a person, never filled in). With --take ado when the board moved a spec out of "
                         "every sprint: why it leaves the slate")
     p.add_argument("--from-comment", default=None, metavar="ID",
-                   help="With --take ado on a decision: use that cached comment (`pull --discussion` cached it) as the "
-                        "resolution instead of --reason; a comment with an instruction-like line is refused")
+                   help="With --take ado on a decision: show that cached comment (`pull --discussion` cached it) as a "
+                        "suggested resolution for you to type or edit; it is never filled in, so the decision closes "
+                        "only with the --reason you typed, and the ledger keeps the comment's id, never its words")
     return parser
 
 

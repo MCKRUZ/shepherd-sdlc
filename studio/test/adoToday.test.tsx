@@ -14,7 +14,7 @@ import type { AdoVerbRequest } from '../shared/adoVerbArgv'
 import type { AdoVerbResult, ChatActivity, CommandCenter, NeedsYouItem, ProjectStage, ProjectStatus, SourcedBlock, SprintVerbResult } from '../shared/types'
 import { isReason, NOT_PULLED_YET } from '../shared/reasons'
 import { TodayColumn } from '../src/components/today/TodayColumn'
-import { AdoTodayRows, adoTodayRows, NOTHING_WAITING } from '../src/components/today/AdoTodayRows'
+import { AdoTodayRows, adoTodayRows, NOTHING_WAITING, UNMAPPED_NOT_COUNTED } from '../src/components/today/AdoTodayRows'
 import { LifecycleHome } from '../src/components/LifecycleHome'
 import { StageReadinessProvider } from '../src/components/StageReadinessContext'
 import { resetChatTurnStore } from '../src/stores/chatTurnStore'
@@ -40,10 +40,17 @@ const MEASURED = {
   } satisfies AdoSyncView,
 }
 // Hand-written (unverified): a pull that found nothing — by_class is `{}` (a read that found none), not null.
+// A pull classes only the ledgered items: `{}` holds no UNMAPPED_IN_ADO entry because that search never ran.
 const CLEAN = {
   _provenance: 'hand-written (unverified)',
   _command: ['ado_sync.py', 'status', '--json'],
   value: { ...MEASURED.value, by_class: {}, counts: { conflicts: 0, debt: 0, drifted: 0, linked: 5, open: 0, pending: null }, debt: [], hook_line: 'no plan yet · 0 drifted · as of 2026-10-12T09:02Z' } satisfies AdoSyncView,
+}
+// Hand-written (unverified): the same clean pull, with the plugin's OWN zero for the unmapped search.
+const CLEAN_SEARCHED = {
+  _provenance: 'hand-written (unverified)',
+  _command: ['ado_sync.py', 'status', '--json'],
+  value: { ...CLEAN.value, by_class: { UNMAPPED_IN_ADO: 0 } } satisfies AdoSyncView,
 }
 
 const adoBlock = (data: AdoSyncView | null, error: string | null = null): SourcedBlock<AdoSyncView> => block(SOURCE, data, error)
@@ -112,13 +119,28 @@ describe('adoTodayRows: what the plugin measured, in words', () => {
   })
 
   it('a read that found none says so in words, with no digit, and offers no action it could not take', () => {
-    const rows = adoTodayRows(adoBlock(CLEAN.value))
+    const rows = adoTodayRows(adoBlock(CLEAN_SEARCHED.value))
     expect(rows.map((r) => r.text)).toEqual(['nothing changed on the board since the last pull', 'no item on the board is without a spec here'])
     for (const row of rows) {
       expect(row.text).not.toMatch(/\d/)
       expect(row.measured).toBe(true)
       expect(row.reason).toBe(NOTHING_WAITING)
     }
+  })
+
+  it('a by_class with no UNMAPPED_IN_ADO entry is "not counted" — the search never ran, so it is never a zero', () => {
+    const [drift, unmapped] = adoTodayRows(adoBlock(CLEAN.value))
+    expect(drift!.text).toBe('nothing changed on the board since the last pull')
+    expect(drift!.measured).toBe(true)
+    expect(unmapped!.text).toBe(UNMAPPED_NOT_COUNTED)
+    expect(unmapped!.text).not.toMatch(/\d/)
+    expect(unmapped!.text).not.toContain('no item')
+    expect(unmapped!.measured).toBe(false)
+    expect(unmapped!.reason).toBeNull()
+    expect(unmapped!.detail.join('\n')).toContain('ado_sync.py pull --propose-specs')
+    const pulledNotSearched = { ...MEASURED.value, by_class: { ADO_OWNED_CHANGE: 1, CONFLICT: 1 } }
+    expect(adoTodayRows(adoBlock(pulledNotSearched))[1]!.text).toBe(UNMAPPED_NOT_COUNTED)
+    expect(adoTodayRows(adoBlock(pulledNotSearched))[1]!.measured).toBe(false)
   })
 
   it('a pull that measured drift but never classed it keeps the unmapped row as no data, not zero', () => {
@@ -218,11 +240,25 @@ describe('the rows in the Today column', () => {
   })
 
   it('a measured zero disables both actions with "Nothing is waiting here"', () => {
-    const section = mountColumn(withCc({ ado: adoBlock(CLEAN.value) }))
+    const section = mountColumn(withCc({ ado: adoBlock(CLEAN_SEARCHED.value) }))
     for (const button of section.querySelectorAll('button')) {
       expect(button.disabled).toBe(true)
       expect(button.getAttribute('title')).toBe(NOTHING_WAITING)
     }
+  })
+
+  it('a pull that never searched for unmapped items says "not counted" and still shows the line that searches', () => {
+    const section = mountColumn(withCc({ ado: adoBlock(CLEAN.value) }))
+    const row = section.querySelector('[data-ado-row="unmapped"]')!
+    expect(row.querySelector('[data-ado-text]')?.textContent).toBe(UNMAPPED_NOT_COUNTED)
+    expect(row.querySelector('[data-ado-text]')?.textContent ?? '').not.toMatch(/\d/)
+    const propose = within(row as HTMLElement).getByRole('button', { name: 'Propose spec' })
+    expect(propose.hasAttribute('disabled')).toBe(false)
+    expect(propose.getAttribute('title')).not.toBe(NOTHING_WAITING)
+    fireEvent.click(propose)
+    expect(section.querySelector('[data-ado-detail="unmapped"] code')?.textContent).toBe('ado_sync.py pull --propose-specs')
+    expect(section.querySelector('[data-ado-row="drift"] button')!.getAttribute('title')).toBe(NOTHING_WAITING)
+    expect(section.querySelectorAll('[data-write]')).toHaveLength(0)
   })
 
   it('makes no IPC call of its own: opening and closing the rows never reaches the bridge', () => {
