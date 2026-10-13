@@ -75,6 +75,21 @@ CAPABILITIES: dict[str, dict] = {
     "ado-discover": {"script": "ado_sync.py", "argv": ["discover"],
                      "flags": ["--repo", "--state", "--json", "--team", "--refresh"]},
     "ado-validate": {"script": "ado_sync.py", "argv": ["validate"], "flags": ["--repo", "--state", "--json"]},
+    # Its read-only mirror (Fold B2): nothing here writes to the board. `plan` shows what an apply would send,
+    # `status` counts the ledger (writes nothing), `pull` reads the board back (`--discussion` caches the comments
+    # locally), `link` pairs a ref with a work item in the ledger by a named human, `show` prints one item and its
+    # cached discussion as observed content (`--for-agent` withholds lines that read as instructions).
+    "ado-plan": {"script": "ado_sync.py", "argv": ["plan"],
+                 "flags": ["--repo", "--state", "--json", "--kind", "--id", "--sprint", "--all", "--validate",
+                           "--no-comments"]},
+    "ado-status-json": {"script": "ado_sync.py", "argv": ["status"], "flags": ["--repo", "--state", "--json"]},
+    "ado-pull": {"script": "ado_sync.py", "argv": ["pull"], "flags": ["--repo", "--state", "--json", "--id", "--all"]},
+    "ado-link": {"script": "ado_sync.py", "argv": ["link"],
+                 "flags": ["--repo", "--state", "--json", "--work-item", "--by"]},
+    "ado-show": {"script": "ado_sync.py", "argv": ["show"],
+                 "flags": ["--repo", "--state", "--json", "--fetch", "--versions", "--expand", "--for-agent"]},
+    "ado-pull-discussion": {"script": "ado_sync.py", "argv": ["pull"],
+                            "flags": ["--repo", "--state", "--json", "--discussion", "--full"]},
 }
 
 
