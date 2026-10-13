@@ -17,8 +17,11 @@ project and team are reduced to their names, so the only GUIDs in it are the cla
 
 Config keys this module reads (all optional; a missing or wrong-typed one reads as "not set"):
   `types.<kind>`              pin a work item type for a kind ("types.decision: Issue")
-  `states.prefer.<status>`    a state name, or a list tried in order; `states.prefer.<Type>.<status>`
-                              scopes it to one type. Honoured only when the type has that state.
+  `states.<kind>.<status>`    the design's §6.2 shape (templates/ado/_schema.yaml): a state category
+                              name, or `{category, prefer}`. `category` replaces the status rule's
+                              category; `prefer` names a concrete state, honoured only when the type
+                              has that state. `resolve_state` applies the rule of every kind whose
+                              type (`resolve_type`) is the type being resolved.
   `tree.fit.<kind>`           pin outcome / domain / requirement to "item", "area" or "tag"
   `tree.domains`              the domain names, so `fit_levels` can match them to Area Path nodes
                               (the caller fills it from `requirements.md`; this module reads no file)
@@ -76,6 +79,7 @@ DEFAULT_CATEGORY = {"epic": "EpicCategory", "feature": "FeatureCategory", "spec"
 LEVEL_OF = {"requirement": 1, "domain": 2, "outcome": 3}  # portfolio levels above Epic, nearest first
 TAG_FORM = {"requirement": "fr:<id>", "domain": "domain:<slug>", "outcome": "outcome:<slug>"}
 _FIT_MODES = ("item", "area", "tag")
+_LEVELS_UNREAD = "backlog levels were not discovered"  # backlog configuration never read: unknown, not "none"
 _SCHEDULING = "microsoft.vsts.scheduling."
 _BUILTIN_SCHEDULING = ("StoryPoints", "OriginalEstimate", "RemainingWork", "CompletedWork", "Effort", "Size",
                        "DueDate", "TargetDate", "StartDate", "FinishDate")
@@ -391,53 +395,92 @@ def _states_of(schema: dict, type_name: str) -> tuple[str | None, list[dict] | N
     return name, None, False
 
 
-def _preferred(cfg: dict, type_name: str, status: str) -> list[str]:
-    prefer = _dig(cfg, "states", "prefer")
-    if not isinstance(prefer, dict):
+def _state_rule(rule) -> tuple[str | None, str | None]:
+    """`(category, prefer)` from one `states.<kind>.<status>` value: a category name, or
+    `{category, prefer}`. A part that is missing, blank or wrong-typed reads as not set."""
+    if isinstance(rule, dict):
+        rule_category, prefer = rule.get("category"), rule.get("prefer")
+    else:
+        rule_category, prefer = rule, None
+    return (rule_category if isinstance(rule_category, str) and rule_category else None,
+            prefer if isinstance(prefer, str) and prefer else None)
+
+
+def _fold(value) -> str | None:
+    """A state or category name for a case-insensitive match (an unknown category is kept as given, maybe null)."""
+    return value.lower() if isinstance(value, str) else None
+
+
+def _rules_for(schema: dict, name: str, status: str, cfg: dict) -> list[tuple[str, tuple[str | None, str | None]]]:
+    """`[(kind, (category, prefer))]`, in `KINDS` order, for every kind with a `states.<kind>.<status>`
+    rule whose type is `name`: the kind's `types` pin, else its category's default type, else its fit
+    (what `resolve_type` answers)."""
+    states = _dig(cfg, "states")
+    if not isinstance(states, dict):
         return []
-    scoped = prefer.get(type_name)
-    for source in (scoped if isinstance(scoped, dict) else {}, prefer):
-        value = source.get(status)
-        if isinstance(value, str):
-            return [value]
-        if isinstance(value, list):
-            return [v for v in value if isinstance(v, str)]
-    return []
+    found = []
+    for kind in KINDS:
+        rule = _state_rule(_dig(states, kind, status))
+        if rule == (None, None):
+            continue
+        resolved, _ = resolve_type(schema, kind, cfg)
+        if resolved is not None and _type_info(schema, resolved)[0] == name:
+            found.append((kind, rule))
+    return found
 
 
 def resolve_state(schema: dict, type_name: str, status: str, cfg: dict) -> tuple[str | None, str]:
-    """`(state_name, reason)` for a status on a type. `states.prefer` wins when the type has that state;
-    otherwise the rule for the status picks from the state categories (`rule: last-proposed`). What the
-    type cannot express is `(None, why)` — a spec that was merged on a type with no Resolved or
-    Completed state is not given a state it does not have."""
+    """`(state_name, reason)` for a status on a type.
+
+    The config rule is `states.<kind>.<status>` (design §6.2): a category name, or `{category, prefer}`.
+    It applies to this type when the kind's type is this type (`resolve_type`: the `types` pin, else the
+    category's default type, else the fit). `prefer` wins when the type has that state; otherwise the
+    rule's `category` (or, with no rule, the status rule's own, `rule: last-proposed`) picks the state.
+    Two kinds on one type whose rules disagree are `(None, why)`, never a guess: a caller that knows the
+    kind passes `cfg` with `states` narrowed to that kind (still the §6.2 shape). What the type cannot
+    express is `(None, why)` too — a spec that was merged on a type with no Resolved or Completed state
+    is not given a state it does not have."""
     name, states, from_backlog = _states_of(schema, type_name)
     if name is None:
         return None, f"type {type_name!r} is not in the process"
     if not states:
         return None, f"no states were discovered for {name}"
-    by_name = {s["name"].lower(): s["name"] for s in states}
+    rules = _rules_for(schema, name, status, cfg)
+    if len({tuple(part and part.lower() for part in rule) for _, rule in rules}) > 1:
+        keys = " and ".join(f"states.{kind}.{status}" for kind, _ in rules)
+        return None, (f"{keys} apply to {name} and disagree; pass a config whose `states` holds only the kind "
+                      "being resolved")
+    source, (category, prefer) = (f"states.{rules[0][0]}.{status}", rules[0][1]) if rules else (None, (None, None))
     note = ""
-    wanted = _preferred(cfg, name, status) or _preferred(cfg, type_name, status)
-    if wanted:
-        for candidate in wanted:
-            if candidate.lower() in by_name:
-                return by_name[candidate.lower()], f"prefer: {by_name[candidate.lower()]}"
-        note = f"prefer {wanted[0]!r} is not a state of {name}; "
-    chain = STATUS_RULES.get(status)
-    if chain is None:
+    if prefer is not None:
+        hit = next((s for s in states if _fold(s["name"]) == prefer.lower()), None)
+        if hit is not None:
+            reason = f"prefer: {hit['name']} ({source})"
+            if category is not None and _fold(hit["category"]) != category.lower():
+                reason += f"; {hit['name']} is {hit['category']}, not {category}"
+            return hit["name"], reason
+        note = f"prefer {prefer!r} is not a state of {name}; "
+    default = STATUS_RULES.get(status)
+    if category is not None:
+        pick = next((p for c, p in default or () if c.lower() == category.lower()), "first")
+        chain, label = ((category, pick),), source
+    elif default is None:
         return None, note + f"no state rule for status {status!r}"
+    else:
+        chain, label = default, "rule"
     skipped = []
-    for category, pick in chain:
-        pool = [s for s in states if s["category"] == category]
+    for wanted, pick in chain:
+        pool = [s for s in states if _fold(s["category"]) == wanted.lower()]
         if pool:
-            reason = f"rule: {pick}-{category.lower()}"
+            reason = f"{label}: {pick}-{wanted.lower()}"
             if skipped:
                 reason += f" ({name} has no {' or '.join(skipped)} state)"
             if from_backlog:
                 reason += "; states from backlog mapping"
             return (pool[0] if pick == "first" else pool[-1])["name"], note + reason
-        skipped.append(category)
-    return None, note + f"{name} has no {' or '.join(skipped)} state"
+        skipped.append(wanted)
+    missing = f"{name} has no {' or '.join(skipped)} state"
+    return None, note + (f"{missing} ({source})" if category is not None else missing)
 
 
 def field_on_type(schema: dict, type_name: str, ref: str) -> dict | None:
@@ -488,7 +531,7 @@ def _levels_above_epic(schema: dict) -> tuple[list[dict], str | None]:
     """The visible portfolio levels above Epic's, nearest first, and why none can be known."""
     backlog = schema.get("backlog")
     if not backlog:
-        return [], "backlog levels were not discovered"
+        return [], _LEVELS_UNREAD
     portfolio = [lv for lv in backlog["levels"] if lv["kind"] == "portfolio" and not lv["hidden"]]  # top down
     index = next((i for i, lv in enumerate(portfolio) if lv["id"] == EPIC_CATEGORY), None)
     if index is None:
@@ -602,12 +645,39 @@ def fit_levels(schema: dict, cfg: dict) -> dict[str, dict]:
     return fit
 
 
+def _domain_until(entry: dict) -> str:
+    names = entry.get("names") or {}
+    if not names:
+        return "domains ride as `domain:<slug>` tags"
+    matched = sum(1 for v in names.values() if v["mode"] == "area")
+    return (f"domains ride as Area Path nodes where one matches ({matched} of {len(names)}) and as "
+            "`domain:<slug>` tags otherwise")
+
+
+_UNTIL = {"outcome": "outcomes ride as `outcome:<slug>` tags", "requirement": "each FR rides as an `fr:<id>` tag"}
+
+
+def _levels_unread(kinds: list[tuple[str, dict]]) -> str:
+    """The one sentence for tree kinds whose fit waits on backlog levels that were never read: no count
+    of levels (none was taken), only how to have discover read them."""
+    names = ", ".join(kind for kind, _ in kinds)
+    which = "this kind" if len(kinds) == 1 else "these kinds"
+    until = "; ".join(_domain_until(entry) if kind == "domain" else _UNTIL[kind] for kind, entry in kinds)
+    return (f"{names}: the portfolio backlog levels were not discovered (Azure DevOps reports them for a team), so "
+            f"it is not known whether this process has levels above Epic to mirror {which} as board items; name "
+            "a team with `ado_sync.py discover --team <name>` or `team` in the config and run discover again so "
+            f"it can read them; until then {until}.")
+
+
 def recommendations(fit: dict, schema: dict) -> list[str]:
     """One sentence per kind that is not fitted as an item: the addition to the process an
     administrator would make and what the board gains. `[]` when every kind fits. The plugin never
-    makes the addition."""
-    have = len(_levels_above_epic(schema)[0])
-    out = []
+    makes the addition. When the backlog levels were never read (no team), the tree kinds that wait on
+    them share one sentence saying so and naming how to read them — a level count that was never taken
+    is not a 0 to recommend additions from."""
+    above, why = _levels_above_epic(schema)
+    have, unread = len(above), why == _LEVELS_UNREAD
+    out, waiting, at = [], [], None
     for kind, entry in fit.items():
         if entry["mode"] == "item" and entry["type"] is not None:
             continue
@@ -615,23 +685,24 @@ def recommendations(fit: dict, schema: dict) -> list[str]:
         if kind in LEVEL_OF and " pins " in reason.split("; ")[0]:  # a pin the process cannot meet
             out.append(f"{kind}: not fitted as an item ({reason.split('; ')[0]}); fix the cause named there to "
                        "mirror it as a board item.")
+        elif kind in LEVEL_OF and unread:
+            at = len(out) if at is None else at
+            waiting.append((kind, entry))
         elif kind == "outcome":
             out.append("outcome: add a work item type for outcomes (for example Objective) and name it in "
                        "types.outcome, or a third portfolio backlog level above Epic, so each success dimension "
                        "is its own board item; until then outcomes ride as `outcome:<slug>` tags.")
         elif kind == "domain" and have < 2:
-            names = entry.get("names") or {}
             need = ("add two portfolio backlog levels above Epic (the nearer one holds requirements, the next one "
                     "holds domains)" if have == 0 else
                     "add a second portfolio backlog level above Epic (the nearer one holds requirements)")
-            until = (f"until then domains ride as Area Path nodes where one matches "
-                     f"({sum(1 for v in names.values() if v['mode'] == 'area')} of {len(names)}) and as "
-                     "`domain:<slug>` tags otherwise." if names else "until then domains ride as `domain:<slug>` tags.")
-            out.append(f"domain: {need} so each domain is its own board item; {until}")
+            out.append(f"domain: {need} so each domain is its own board item; until then {_domain_until(entry)}.")
         elif kind == "requirement" and have < 1:
             out.append("requirement: add a portfolio backlog level above Epic so each FR is its own board item "
                        "that Epics link to; until then each FR rides as an `fr:<id>` tag.")
         else:
             out.append(f"{kind}: no work item type resolves ({reason}); name one in types.{kind} or add the "
                        "missing backlog level.")
+    if waiting:
+        out.insert(at, _levels_unread(waiting))
     return out

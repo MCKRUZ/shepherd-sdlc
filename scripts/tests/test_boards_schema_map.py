@@ -17,13 +17,16 @@ import re
 from pathlib import Path
 
 import pytest
+import yaml
 
 import ado_schema_map as asm
+from ado_sync_config import validate_config
 from boards_contract import GUID_RE, KINDS, TREE_ORDER
 from ado_map import AdoImportError
 from tests.ado_boards_fixtures import load_wit
 
 MODULE = Path(asm.__file__)
+STARTER = Path(__file__).resolve().parents[2] / "templates" / "ado" / "ado.yaml"  # the config every project starts from
 DOMAINS = ["Intake", "Payments", "Fraud", "Disputes"]  # three of them are Area Path nodes in the Agile fixture
 STATES_OF = (("User Story", "type_states_user_story"), ("Bug", "type_states_bug"), ("Issue", "type_states_issue"))
 FIELDS_OF = (("User Story", "type_fields_user_story"), ("Issue", "type_fields_issue"))
@@ -391,18 +394,105 @@ def test_in_flight_and_deferred_and_what_a_type_cannot_say():
     assert asm.resolve_state(schema, "Issue", "ready", {}) == (None, "no states were discovered for Issue")
 
 
-def test_prefer_wins_over_the_rule_and_a_bad_prefer_falls_back_with_a_note():
+def starter() -> dict:
+    return yaml.safe_load(STARTER.read_text(encoding="utf-8"))
+
+
+def with_states(schema, type_name, *pairs):
+    schema["types"][type_name]["states"] = [{"name": n, "category": c, "order": i} for i, (n, c) in enumerate(pairs)]
+    return schema
+
+
+def test_the_starters_prefer_is_honoured_on_the_spec_type():
+    cfg = starter()
+    assert cfg["states"] == {"spec": {"ready": {"category": "Proposed", "prefer": "Approved"}}}  # design §6.2 shape
+    assert validate_config(cfg, None) == []  # the shape resolve_state reads is the one `config check` passes
+    schema = with_states(agile_schema(), "User Story",
+                         ("New", "Proposed"), ("Approved", "Proposed"), ("Ready", "Proposed"), ("Active", "InProgress"))
+    assert asm.resolve_state(schema, "User Story", "ready", cfg) == ("Approved", "prefer: Approved (states.spec.ready)")
+    assert asm.resolve_state(schema, "User Story", "ready", {}) == ("Ready", "rule: last-proposed")
+    assert asm.resolve_state(schema, "User Story", "draft", cfg) == ("New", "rule: first-proposed")  # no rule for draft
+    assert asm.resolve_state(schema, "Epic", "ready", cfg) == (  # not the spec's type
+        "New", "rule: last-proposed; states from backlog mapping")
+
+
+def test_the_old_states_prefer_shape_is_refused_by_config_check_and_is_not_a_rule():
+    old = {"version": 1, "states": {"prefer": {"ready": "Active"}}}
+    (row,) = validate_config(old, None)
+    assert row["level"] == "refused" and "states.prefer" in row["message"]
+    assert asm.resolve_state(agile_schema(), "User Story", "ready", old) == ("Ready", "rule: last-proposed")
+
+
+def test_a_prefer_the_type_lacks_falls_back_to_the_rules_category_with_a_note():
+    schema = agile_schema()  # User Story: New, Ready (Proposed), Active, Resolved, Closed, Removed — no Approved
+    assert asm.resolve_state(schema, "User Story", "ready", starter()) == (
+        "Ready", "prefer 'Approved' is not a state of User Story; states.spec.ready: last-proposed")
+
+
+def test_prefer_is_matched_case_insensitively_and_a_prefer_outside_its_category_says_so():
     schema = agile_schema()
-    cfg = {"states": {"prefer": {"ready": "active"}}}
-    assert asm.resolve_state(schema, "User Story", "ready", cfg) == ("Active", "prefer: Active")
-    per_type = {"states": {"prefer": {"ready": "Active", "User Story": {"ready": "New"}}}}
-    assert asm.resolve_state(schema, "User Story", "ready", per_type) == ("New", "prefer: New")
-    assert asm.resolve_state(schema, "Bug", "ready", per_type) == ("Active", "prefer: Active")
-    several = {"states": {"prefer": {"ready": ["Waiting", "Ready"]}}}
-    assert asm.resolve_state(schema, "User Story", "ready", several) == ("Ready", "prefer: Ready")
-    bad = {"states": {"prefer": {"ready": "Waiting"}}}
-    state, why = asm.resolve_state(schema, "User Story", "ready", bad)
-    assert state == "Ready" and why == "prefer 'Waiting' is not a state of User Story; rule: last-proposed"
+    cfg = {"states": {"spec": {"ready": {"category": "Proposed", "prefer": "ready"}}}}
+    assert asm.resolve_state(schema, "User Story", "ready", cfg) == ("Ready", "prefer: Ready (states.spec.ready)")
+    off = {"states": {"spec": {"ready": {"category": "Proposed", "prefer": "active"}}}}
+    assert asm.resolve_state(schema, "User Story", "ready", off) == (
+        "Active", "prefer: Active (states.spec.ready); Active is InProgress, not Proposed")
+
+
+def test_a_category_rule_replaces_the_status_rules_category():
+    schema = agile_schema()
+    cfg = {"states": {"spec": {"ready": "InProgress", "merged": {"category": "Completed"}, "parked": "Proposed"}}}
+    assert asm.resolve_state(schema, "User Story", "ready", cfg) == ("Active", "states.spec.ready: first-inprogress")
+    assert asm.resolve_state(schema, "User Story", "merged", {}) == ("Resolved", "rule: first-resolved")
+    assert asm.resolve_state(schema, "User Story", "merged", cfg) == ("Closed", "states.spec.merged: first-completed")
+    assert asm.resolve_state(schema, "User Story", "parked", cfg) == ("New", "states.spec.parked: first-proposed")
+    lower = {"states": {"spec": {"ready": "proposed"}}}  # the status rule's own pick for that category
+    assert asm.resolve_state(schema, "User Story", "ready", lower) == ("Ready", "states.spec.ready: last-proposed")
+
+
+def test_a_category_the_type_lacks_is_not_replaced_by_the_status_rule():
+    schema = agile_schema()
+    cfg = {"types": {"finding": "Bug"}, "states": {"finding": {"merged": "Removed"}}}
+    assert asm.resolve_state(schema, "Bug", "merged", {}) == ("Resolved", "rule: first-resolved")
+    assert asm.resolve_state(schema, "Bug", "merged", cfg) == (None, "Bug has no Removed state (states.finding.merged)")
+
+
+def test_a_rule_applies_to_the_type_its_kind_resolves_to_and_to_no_other():
+    schema = agile_schema(all_states=True)
+    cfg = {"types": {"decision": "Issue"},
+           "states": {"spec": {"ready": "InProgress"}, "decision": {"decided": {"category": "Completed", "prefer": "Closed"}}}}
+    assert asm.resolve_state(schema, "User Story", "ready", cfg)[0] == "Active"  # spec -> RequirementCategory default
+    assert asm.resolve_state(schema, "Epic", "ready", cfg) == ("New", "rule: last-proposed")
+    assert asm.resolve_state(schema, "Issue", "decided", cfg) == ("Closed", "prefer: Closed (states.decision.decided)")
+    moved = {"types": {"spec": "Task"}, "states": {"spec": {"ready": "InProgress"}}}  # the rule follows the pin
+    assert asm.resolve_state(schema, "Task", "ready", moved) == ("Active", "states.spec.ready: first-inprogress")
+    assert asm.resolve_state(schema, "User Story", "ready", moved) == ("Ready", "rule: last-proposed")
+    fitted = {"states": {"requirement": {"ready": "InProgress"}}}  # a tree kind's type comes from the fit
+    assert asm.resolve_state(two_level(), "Initiative", "ready", fitted) == (
+        "Active", "states.requirement.ready: first-inprogress")
+    mapped = {"types": {"spike": "Task"}, "states": {"spike": {"ready": "InProgress"}}}
+    assert asm.resolve_state(agile_schema(), "Task", "ready", mapped) == (
+        "Active", "states.spike.ready: first-inprogress; states from backlog mapping")
+
+
+def test_two_kinds_on_one_type_whose_rules_disagree_are_not_guessed():
+    schema = agile_schema()
+    cfg = {"types": {"decision": "Issue", "question": "Issue"},
+           "states": {"decision": {"open": "Completed"}, "question": {"open": "Proposed"}}}
+    assert asm.resolve_state(schema, "Issue", "open", cfg) == (
+        None, "states.decision.open and states.question.open apply to Issue and disagree; pass a config whose "
+              "`states` holds only the kind being resolved")
+    scoped = {**cfg, "states": {"question": cfg["states"]["question"]}}  # the caller knows the kind
+    assert asm.resolve_state(schema, "Issue", "open", scoped) == ("Active", "states.question.open: first-proposed")
+    agree = {**cfg, "states": {"decision": {"open": "Completed"}, "question": {"open": "completed"}}}
+    assert asm.resolve_state(schema, "Issue", "open", agree) == ("Closed", "states.decision.open: first-completed")
+
+
+@pytest.mark.parametrize("cfg", [
+    {"states": "Proposed"}, {"states": {"spec": "Proposed"}}, {"states": {"spec": {"ready": [1]}}},
+    {"states": {"spec": {"ready": {"category": None, "prefer": 3}}}}, {"states": {"nfr": {"ready": "InProgress"}}}],
+    ids=["states-not-a-map", "kind-not-a-map", "rule-a-list", "rule-wrong-typed", "kind-outside-KINDS"])
+def test_a_wrong_typed_state_rule_reads_as_not_set(cfg):
+    assert asm.resolve_state(agile_schema(), "User Story", "ready", cfg) == ("Ready", "rule: last-proposed")
 
 
 def test_states_fall_back_to_the_backlog_mapping_when_the_type_was_never_read():
@@ -550,6 +640,45 @@ def test_recommendations_scale_with_the_levels_that_already_exist():
         "domain: add a second portfolio backlog level above Epic (the nearer one holds requirements)")
     bare = asm.fit_levels(agile_schema(), {})
     assert asm.recommendations(bare, agile_schema())[1].endswith("until then domains ride as `domain:<slug>` tags.")
+
+
+UNREAD_GOLDEN = (
+    "outcome, domain, requirement: the portfolio backlog levels were not discovered (Azure DevOps reports them for a "
+    "team), so it is not known whether this process has levels above Epic to mirror these kinds as board items; name "
+    "a team with `ado_sync.py discover --team <name>` or `team` in the config and run discover again so it can read "
+    "them; until then outcomes ride as `outcome:<slug>` tags; domains ride as Area Path nodes where one matches (3 of "
+    "4) and as `domain:<slug>` tags otherwise; each FR rides as an `fr:<id>` tag.")
+NUMBERED_ADDITION = re.compile(r"add (two|a second|a) portfolio backlog level|third portfolio backlog level")
+
+
+def test_backlog_levels_never_read_are_one_sentence_and_never_a_count_of_none():
+    schema = agile_schema()
+    schema["backlog"] = None  # no --team, no `team`, no default team: backlogconfiguration was never read
+    sentences = asm.recommendations(asm.fit_levels(schema, {"tree": {"domains": DOMAINS}}), schema)
+    assert sentences == [UNREAD_GOLDEN]
+    read = asm.recommendations(asm.fit_levels(agile_schema(), {"tree": {"domains": DOMAINS}}), agile_schema())
+    assert all(NUMBERED_ADDITION.search(s) for s in read)  # a read that found 0 levels above Epic still counts them
+
+
+def test_backlog_levels_never_read_leave_the_other_sentences_where_they_were():
+    schema = two_level()
+    schema["backlog"] = None
+    fit = asm.fit_levels(schema, {"types": {"outcome": "Objective"}, "tree": {"domains": ["A", "B"]}})
+    (sentence,) = asm.recommendations(fit, schema)  # outcome is an item through its pin; it waits on no level
+    assert sentence.startswith("domain, requirement: the portfolio backlog levels were not discovered")
+    assert "these kinds" in sentence and "discover --team <name>" in sentence and "`team` in the config" in sentence
+    assert not NUMBERED_ADDITION.search(sentence)
+    fit = asm.fit_levels(schema, {"types": {"outcome": "Nope"}})
+    first, second = asm.recommendations(fit, schema)
+    assert first.startswith("outcome: not fitted as an item (types.outcome pins 'Nope'")
+    assert second.startswith("domain, requirement: the portfolio backlog levels were not discovered")
+    assert second.endswith("until then domains ride as `domain:<slug>` tags; each FR rides as an `fr:<id>` tag.")
+    only = asm.recommendations({"requirement": fit["requirement"]}, schema)
+    assert len(only) == 1 and only[0].startswith("requirement: the portfolio backlog levels") and "this kind" in only[0]
+    basic = synthetic_schema("basic")  # no backlog read and no FeatureCategory: the type gap keeps its own sentence
+    sentences = asm.recommendations(asm.fit_levels(basic, {}), basic)
+    assert sentences[0].startswith("outcome, domain, requirement: the portfolio backlog levels were not discovered")
+    assert any(s.startswith("feature: no work item type resolves") for s in sentences[1:])
 
 
 def test_recommendations_are_empty_when_every_kind_fits_as_an_item():
