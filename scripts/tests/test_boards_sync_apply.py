@@ -250,10 +250,12 @@ def item_row(wid: int, tags: str, rev: int = 3) -> dict:
 
 @pytest.fixture
 def two_updates(repo, board, capsys):
-    """Specs 0004 and 0005 are linked to #4521 (rev 7) and #4522 (rev 3), both behind the repository: two update rows."""
+    """Specs 0004 and 0005 are linked to #4521 (rev 7) and #4522 (rev 3), both behind the repository: two update rows.
+    The plan is made `--no-comments`: the mini repo's sprint log carries 0005 twice, so a default plan would also draft
+    two `sprint_carried` comments, and these tests add the comment rows they need themselves."""
     seed(repo, linked(SPEC4, 4521, 7), linked(SPEC5, 4522, 3))
     put_batch(board, board_row(), item_row(4522, "risk:LOW; sdlc:spec:0005; sdlc:status:draft"))
-    doc = plan_doc(repo, capsys, "--kind", "spec", "--id", "0004", "--id", "0005")
+    doc = plan_doc(repo, capsys, "--kind", "spec", "--id", "0004", "--id", "0005", "--no-comments")
     assert [r["action"] for r in doc["rows"]] == ["update", "update"]
     board.calls.clear()
     return doc

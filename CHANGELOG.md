@@ -130,7 +130,8 @@ human runs `posture assisted`, and a plan is sent only when that person types it
   default (`handoff`, `spec_deferred`, `decision_resolved`, `sprint_carried`), each posting a fact and a link,
   never free text, finding text or an address; free text needs a named `pii_reviewed_by`. `plan --no-comments`
   drops them — how to split a plan whose comment is refused or whose `az` identity is not the applier. A ledger
-  line that cannot be appended on `plan` or `show --fetch` is now `DRIFT:` and exit 1.
+  line that cannot be appended on `plan` or `show --fetch` is printed as `DRIFT:` and the exit stays 0 (reads
+  exit 0 always; `pull`, `discussion gc` and every write verb exit 1 on `DRIFT:`).
 - **`/sprd-ado` gains its write section** — posture, `iteration bind`, `comment`, `apply` (with the hash
   confirmation as a HITL gate), `link-pr` — and says where the agent proposes and a named human sends.
   `/sprd-status`, `/sprd-next` and `/sprd-refine` print the board's pending count (`status` or `plan`; they

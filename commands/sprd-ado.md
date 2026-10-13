@@ -56,7 +56,7 @@ the script is the only thing that talks to Azure DevOps, and it never probes wit
    | `config check` | one line per finding in the config | valid / missing, not YAML, wrong type, or a pin the process lacks / refused |
    | `discover [--team T] [--refresh]` | read the board's process, save `.sdlc/ado/schema.json` | saved or reused / any failure to read it (the `host` block is printed) / — |
    | `validate` | every configured kind resolves on the discovered process; prints the fit table | resolvable / gaps / a forbidden field is mapped |
-   | `plan [--no-comments]` | what the board would need to match the repository, and the plan's 12-hex hash; nothing is sent | 0 / `DRIFT:` (the ledger could not be written) / — |
+   | `plan [--no-comments]` | what the board would need to match the repository, and the plan's 12-hex hash; nothing is sent | always 0 (a ledger line that could not be written is printed as `DRIFT:`) |
    | `status` | counts from the ledger; writes nothing | always 0 |
    | `pull` | read the board's copy of the mirrored items into the local ledger and cache | 0 / `DRIFT:` (the ledger could not be written) / — |
    | `drift` | which items disagree between the board and the repository, and how | always 0 |
@@ -123,7 +123,7 @@ the script is the only thing that talks to Azure DevOps, and it never probes wit
    client's administrator **as a list**. The plugin never alters a process, and a fallback fit (a tag instead of an
    item) is not a gap; a pin the process cannot honour is. Exit 2 means a forbidden field is mapped.
 
-4. **`plan` — what the board would need (nothing is sent to the board).**
+4. **`plan` — what the board would need (nothing is sent to the board; exit 0 always).**
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
      --state .sdlc/state.yaml --kind spec --id 0004
@@ -133,9 +133,10 @@ the script is the only thing that talks to Azure DevOps, and it never probes wit
    `--no-comments` leaves comment rows out. Show the fit table and the rows as printed. The plan reads the board and **changes nothing on it**. It does
    write three local things: the plan file `.sdlc/ado/local/plans/<hash>.json` (gitignored; the file `apply` later
    reads), a `planned` line in the ledger, and the one status line the session-start hook shows
-   (`.sdlc/ado/local/hook-status.txt`). A ledger line that cannot be written prints `DRIFT:` and exits 1 — the plan
-   is still shown. If Azure DevOps cannot be reached the plan says `unavailable` and lists no rows — report "could
-   not reach the board", **never** "nothing to do".
+   (`.sdlc/ado/local/hook-status.txt`). A ledger line that cannot be written prints `DRIFT:` on its own line and the
+   plan is still shown, exit 0 like every read — say the `planned` line is missing from the ledger. If Azure DevOps
+   cannot be reached the plan says `unavailable` and lists no rows — report "could not reach the board", **never**
+   "nothing to do".
 
    The plan is also where **comments** are drafted. The events that default to on (`handoff`, `spec_deferred`,
    `decision_resolved`, `sprint_carried`) become comment rows that carry a fact and a link, never free text — each

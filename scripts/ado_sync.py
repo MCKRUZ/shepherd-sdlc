@@ -75,17 +75,14 @@ Exit codes (the kit's verb table)
   validate      0 resolvable | 1 gaps (no config or schema, an unresolvable pin, a kind with no type) |
                 2 a forbidden field is mapped
   plan, status, drift, show
-                0 -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
+                0 always -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
                 no rows, never a failure; so is a ledger that cannot be read or holds a line that is not a ledger
                 line, and a plan file that cannot be written (`unavailable: <reason>`; in `--json`
-                `"unavailable": "<reason>"`). A hook line that fails after the read is printed
-                (`hook line: not written`) and the exit is still 0. 1 for a usage error (a ref
+                `"unavailable": "<reason>"`). A ledger append or hook line that fails after the read is printed
+                (`DRIFT: ...`, `hook line: not written`) and the exit is still 0. 1 only for a usage error (a ref
                 that is not ledgered and no `#id`, a target that is neither, a `--sprint` that is not a sprint
-                id, `--fetch`/`--versions` on a remote that is not Azure DevOps) and for `DRIFT`: house rule 7
-                outranks "reads exit 0" for a verb that appends to the ledger, so a `plan` whose `planned` line
-                could not be appended and a `show --fetch` whose `discussion_pulled` line could not be (the file or
-                the cache it already wrote stays, and what the verb read is still printed) exit 1; an unknown
-                `--kind` is argparse's own usage error (2), the choices being `boards_contract.KINDS`
+                id, `--fetch`/`--versions` on a remote that is not Azure DevOps); an unknown `--kind` is
+                argparse's own usage error (2), the choices being `boards_contract.KINDS`
   pull          0 | 1 `DRIFT` (the ledger append failed) -- and nothing else: an unreadable ledger is `unavailable`
                 (exit 0), and `--full` without `--discussion` implies it
   link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous;
@@ -113,7 +110,7 @@ Exit codes (the kit's verb table)
                 that is not `@handle`, `DRIFT` | 2 an AI `--by`, or the text refused: `max_chars`, `email_in_text`,
                 `event_unknown`, `budget`, `needs_disposition` (ledgered `comment_refused`)
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
-  precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `DRIFT`. Refused and Illegal are
+  precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `pull`'s DRIFT. Refused and Illegal are
   copied from `sprint.py`, not imported.
   `--by` is ledgered as a roster `@handle` when the typed text is, case-insensitively, one person's `handle`, `name`
   or `email` on `.sdlc/team.yaml`; a name that matches nobody is kept as typed (the `sprint.py` precedent).
@@ -200,8 +197,7 @@ class LedgerUnreadable(Illegal):
 
 
 # The verbs that only read the board (`pull` also records what it read): house rule 4, they exit 0 on every path
-# that is not a usage error; house rule 7 outranks it for the ones that append to the ledger (`pull`, `plan`,
-# `show --fetch`): a failed append is `DRIFT` and exit 1.
+# that is not a usage error; `pull` alone may exit 1, and only for `DRIFT`.
 READ_VERBS = ("plan", "status", "pull", "drift", "show")
 # What each read verb's `--json` carries when it is `unavailable`, beside `unavailable` and `reason`.
 UNAVAILABLE_EXTRA: dict[str, dict] = {"plan": {"plan": None, "rows": [], "counts": None},
@@ -1295,7 +1291,7 @@ def cmd_plan(args, repo_root: Path) -> int:
         try:
             append_ledger(repo_root, events)
             ledger = ledger + events
-        except LedgerDrift as exc:  # the plan is still shown, but the record is short: house rule 7, exit 1
+        except LedgerDrift as exc:  # printed, never a failure: plan exits 0 on every path that is not a usage error
             drift = str(exc)
     hook, hook_note = _write_hook_line(repo_root, ledger)
     me = cache.load_me(repo_root)
@@ -1307,7 +1303,7 @@ def cmd_plan(args, repo_root: Path) -> int:
                 "skipped": len(comment_skipped) if planned_comments else None,
                 "refused": sum(1 for r in comment_rows if r["status"] == "refused") if planned_comments else None,
                 "unavailable": comment_why}
-    out = {"ok": drift is None, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
+    out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
            "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
            "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
            "notes": _plan_notes(cfg, ledger, scope["all"], counts, drafts)
@@ -1321,7 +1317,7 @@ def cmd_plan(args, repo_root: Path) -> int:
         lines = _fit_table(fit, resolved) if fit or resolved else []
         text = _plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n")
         print(text if drift is None else f"{text}\n{drift}")  # `DRIFT: ...` leads its line, as in sprint.py
-    return 0 if drift is None else 1
+    return 0
 
 
 # --- status ----------------------------------------------------------------------------------------------------------
@@ -1867,24 +1863,22 @@ def _cfg_or_note(repo_root: Path) -> tuple[dict, str | None]:
                     "not cached")
 
 
-def _keep_discussion(repo_root: Path, ts: str, ref: str, wid: int, doc: dict,
-                     diff: dict) -> tuple[bool, str | None, bool]:
-    """Save a fetched discussion and ledger its `discussion_pulled`. `(saved, problem, drifted)`: a line the model
-    refuses or a cache that cannot be written leaves both unwritten (a note, `show` still exits 0: nothing was
-    appended); an append that fails after the save is the `DRIFT:` sentence and `drifted`, which `show` answers with
-    exit 1 (house rule 7). Either is printed."""
+def _keep_discussion(repo_root: Path, ts: str, ref: str, wid: int, doc: dict, diff: dict) -> tuple[bool, str | None]:
+    """Save a fetched discussion and ledger its `discussion_pulled`. `(saved, problem)`: a line the model refuses or
+    a cache that cannot be written leaves both unwritten; an append that fails after the save is the `DRIFT:`
+    sentence. Either is printed; `show` still exits 0."""
     try:
         event = _event(ts, "discussion_pulled", ref=ref, work_item=wid, comments=len(doc["comments"]),
                        new=len(diff["new"]), edited=len(diff["edited"]), deleted=len(diff["deleted"]),
                        truncated=doc["truncated"])
         cache.save_cache(repo_root, doc)
     except (Illegal, OSError, ValueError) as exc:
-        return False, f"not cached: {_tidy(exc, 160)}", False
+        return False, f"not cached: {_tidy(exc, 160)}"
     try:
         append_ledger(repo_root, [event])
     except LedgerDrift as exc:
-        return True, str(exc), True
-    return True, None, False
+        return True, str(exc)
+    return True, None
 
 
 def cmd_show(args, repo_root: Path) -> int:
@@ -1910,7 +1904,7 @@ def cmd_show(args, repo_root: Path) -> int:
     (cfg, cfg_note), emails, ts = _cfg_or_note(repo_root), _emails(repo_root), _stamp()
     cached = cache.load_cache(repo_root, wid)
     doc, unavailable, fetched, saved = cached, None, False, cached is not None
-    outside, kept, drifted = False, None, False
+    outside, kept = False, None
     if args.fetch:
         try:
             items, missing = _read_items(repo_root, [wid], emails)
@@ -1924,7 +1918,7 @@ def cmd_show(args, repo_root: Path) -> int:
         else:
             fetched, doc = True, fresh
             if not ref.startswith("#") or _bound(items[wid], cfg):
-                saved, kept, drifted = _keep_discussion(repo_root, ts, ref, wid, fresh, _diff)
+                saved, kept = _keep_discussion(repo_root, ts, ref, wid, fresh, _diff)
             else:
                 saved, outside = False, True  # a raw id outside the bound paths is a live print: nothing is kept
     stub = {"work_item_id": wid, "ref": ref}
@@ -1950,12 +1944,12 @@ def cmd_show(args, repo_root: Path) -> int:
         notes.append(kept)  # `not cached: ...`, or the `DRIFT: ...` sentence leading its own line
     if unavailable:
         notes.append(f"unavailable: {unavailable}")
-    out = {"ok": not drifted, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
+    out = {"ok": True, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
            "as_of": doc.get("pulled_at") if isinstance(doc, dict) else None, "unavailable": unavailable,
            "for_agent": bool(args.for_agent), "comment_count": len(comments) if comments is not None else None,
            "rendered": "\n".join([rendered, *extra]), "notes": notes}
     _emit(args, out, "\n".join([rendered, *extra, *notes]))
-    return 1 if drifted else 0
+    return 0
 
 
 def cmd_discussion(args, repo_root: Path) -> int:
@@ -2008,6 +2002,30 @@ APPLY_REFUSAL_WORDS: dict[str, str] = {
     "needs_disposition": "a comment in the plan is for an item the board no longer has or has retyped; reconcile it "
                          "first, or re-plan with --no-comments to apply the field ops",
 }
+
+
+# Why the board could not be asked or did not answer, by a closed word: never `az`'s own words, which can carry a UPN, an
+# e-mail address or a storage-key GUID (house rule 10; spec 0036's Checking Plan: no `az` text in an `apply` or
+# `link-pr` result). `plan` prints the board's words when a person needs them.
+BOARD_FAILURE_WORDS: dict[str, str] = {
+    "not_installed": "the Azure CLI (az) is not installed or not on PATH",
+    "extension_missing": "az has no azure-devops extension: run `az extension add --name azure-devops`",
+    "signed_out": "az is not signed in: run `az login`",
+    "permission": "the signed-in identity may not read or write these work items",
+    "throttled": "the board is rate-limiting this identity; try again later",
+    "not_found": "the board says the organisation, the project or an item does not exist",
+    "unknown": "az could not be asked, failed, or answered something unreadable",
+}
+AZ_CLI_STATES = ("not_installed", "extension_missing", "signed_out")  # the `host_report` states that name a cause
+
+
+def _board_failure(exc: AdoImportError) -> str:
+    """`<fixed sentence> (<word>)` for an `AdoImportError` from the board: the `host_report` CLI state when it names
+    one, else what `ado_wit_map.classify_write_error` reads; anything else is `unknown`. Nothing of the text is kept."""
+    state = host_report.cli_state_from_error("az", str(exc))[0]
+    word = state if state in AZ_CLI_STATES else wm.classify_write_error(str(exc))
+    word = word if word in BOARD_FAILURE_WORDS else "unknown"
+    return f"{BOARD_FAILURE_WORDS[word]} ({word})"
 
 
 def _posture_of(cfg: dict) -> str:
@@ -2151,8 +2169,9 @@ def cmd_apply(args, repo_root: Path) -> int:
                                       today=_now().date())
     except ValueError as exc:  # a malformed row, a ledger that cannot be read, a limit that is not a count: nothing sent
         raise Illegal(_tidy(exc, 300)) from None
-    except AdoImportError as exc:
-        raise Illegal(f"the board could not be read before the first write, so nothing was sent: {_tidy(exc)}") from None
+    except AdoImportError as exc:  # a fixed sentence: the board's own words can name people (house rule 10)
+        raise Illegal(f"the board could not be read before the first write, so nothing was sent: {_board_failure(exc)}; "
+                      "`ado_sync.py plan` shows what the board answers") from None
     return _apply_report(args, confirm, by, result)
 
 
@@ -2173,12 +2192,17 @@ def _pr_arg(text) -> int:
 
 
 def _link_failure(pr: int, wid: int, exc: AdoImportError) -> str:
+    """What a failed link says: fixed sentences by `error_class`, never the board's own words (they can name people).
+    No `error_class` means the error came before `az` was asked (`ado_wit.link_pr`: the remote could not be read)."""
     cls = getattr(exc, "error_class", None)
     if cls == "unknown":
-        return (f"PR {pr} may or may not be linked to #{wid}: the outcome is unknown ({_tidy(exc, 160)}). Look at the "
-                "pull request's work items before running this again; nothing was ledgered.")
-    reason = f" ({cls}): {apply_mod.DETAIL[cls]}" if cls in apply_mod.DETAIL else f": {_tidy(exc, 200)}"
-    return f"PR {pr} was not linked to #{wid}: the board refused it{reason}"
+        return (f"PR {pr} may or may not be linked to #{wid}: the outcome is unknown (a timeout or an answer that "
+                "could not be read). Look at the pull request's work items before running this again; nothing was "
+                "ledgered.")
+    if cls in apply_mod.DETAIL:
+        return f"PR {pr} was not linked to #{wid}: the board refused it ({cls}): {apply_mod.DETAIL[cls]}"
+    return (f"PR {pr} was not linked to #{wid}: nothing was sent and az was not asked, because this clone's Azure "
+            "DevOps remote could not be read; `ado_sync.py discover` prints the host this clone points at")
 
 
 def _pr_linked_on(cfg: dict) -> bool:
@@ -2645,11 +2669,12 @@ def main(argv: list[str] | None = None) -> int:
             return _unavailable(args, repo_root, args.verb, _tidy(exc), host_error=str(exc),
                                 **UNAVAILABLE_EXTRA.get(args.verb, {}))
         return _error(args, str(exc), 1)
-    except LedgerDrift as exc:  # house rule 7: a failed append is exit 1 on every verb that appends
+    except LedgerDrift as exc:  # house rule 7 on every write verb, `pull` and `discussion gc`; the other reads exit 0
+        code = 1 if args.verb not in READ_VERBS or args.verb == "pull" else 0  # pull's DRIFT is its only exit 1
         if args.json:
-            return _error(args, str(exc), 1)
+            return _error(args, str(exc), code)
         print(exc)  # `DRIFT: ...` leads the line, as in sprint.py
-        return 1
+        return code
 
 
 if __name__ == "__main__":

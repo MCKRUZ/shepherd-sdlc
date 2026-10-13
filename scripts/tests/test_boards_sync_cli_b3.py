@@ -1,5 +1,5 @@
 """B3-P4 -- the write verbs of the Azure Boards mirror's CLI (`ado_sync.py`): apply, link-pr, iteration bind, posture,
-comment, and `plan --no-comments` (plus the two B2 read verbs that append to the ledger, which now exit 1 on `DRIFT`).
+comment, and `plan --no-comments` (the B2 read verbs that append to the ledger keep their B2 exit codes on `DRIFT`).
 
 What this pins, and why each line exists (build kit sections 1 K9, 2 house rules 3, 4 and 7, 4 verb table, 5 card
 B3-P4; spec 0036; design D40-D43 and section 7):
@@ -15,10 +15,12 @@ B3-P4; spec 0036; design D40-D43 and section 7):
   * `comment <ref|#id> --message=<text>` writes a ONE-row plan file and nothing else (no az call), exit 0 even under
     `plan-only`; a message with `"`, a newline, `$(`, non-ASCII text or a leading `-` reaches the plan row, and then the
     board's request BODY, byte for byte, and never an az argv element;
-  * a failed ledger append is `DRIFT: ...` and exit 1 on every verb that appends (house rule 7) -- `plan` and
-    `show --fetch` included, which B2 left at 0;
-  * no ledger line, plan file or `--json` result carries an e-mail address or a GUID; every az argv carries
-    `--detect false`; `--help` touches nothing.
+  * a failed ledger append is `DRIFT: ...` and exit 1 on every write verb (house rule 7), and on `pull` and
+    `discussion gc` as in B2; `plan` and `show --fetch` print the `DRIFT:` line and still exit 0 (kit K9 and the
+    verb table: `plan`/`status`/`drift`/`show` exit 0 always -- house rule 4);
+  * no ledger line, plan file or `--json` result carries an e-mail address or a GUID, and no az text reaches an
+    `apply` or `link-pr` result (spec 0036's Checking Plan); every az argv carries `--detect false`; `--help` touches
+    nothing.
 
 Nothing here spawns `az`: `boards_env` forbids it at the seam and `board` stands a `FakeBoardsAz(writes=True)` in for
 `run_az`. The people in the fixtures are fictional; the one address is on example.com.
@@ -47,6 +49,7 @@ import ado_sync
 import ado_sync_model as model
 import ado_transport
 import boards_contract as bc
+from ado_map import AdoImportError
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "ado_sync.py"
@@ -63,6 +66,10 @@ PROJECTION_TAGS = {"data-review:n-a", "eng-review:accepted", "risk:HIGH", "sdlc-
 KIM = "kim.lee" + "@corp.example.com"        # a hostile address, assembled so no address literal is committed (rule 10)
 KIM_DOMAIN = "@kim." + "corp.example.com"    # the `@domain` form, which is refused too
 AI_NAMES = ["Claude", "claude-opus-4", "shepherd:feature-architect", "data-analyst", "Shepherd:sdlc-orchestrator"]
+# What a real az 401/403 prints: a storage-key GUID and a UPN-shaped `<guid>\<address>` (an all-zero GUID: not a real one).
+FAKE_GUID = "00000000-0000-0000-0000-0000000000ff"
+DENIED_AZ = f"ERROR: TF400813: The user '{FAKE_GUID}\\{KIM}' is not authorized to access this resource."
+UNREADABLE_AZ = f"ERROR: the connection closed while {FAKE_GUID}\\{KIM} was waiting for an answer"
 
 # The roster of the test copy: @dev-one signs in to az as the fixtures' person1 (`connection_data`).
 ROSTER = """\
@@ -700,6 +707,30 @@ def test_link_pr_an_az_error_is_exit_1_with_nothing_ledgered_and_the_outcome_sai
     assert code == 1 and "may or may not be linked" in out and events_of(repo, "applied") == []   # unknown: it may have landed
 
 
+def test_link_pr_never_repeats_the_boards_words_so_it_names_no_one(repo, board, capsys):
+    seed(repo, linked(SPEC4, 4521))
+    for stderr, said in ((DENIED_AZ, "(permission)"), (UNREADABLE_AZ, "may or may not be linked")):
+        board.fail["work-item add"] = stderr
+        code, out = link_pr(capsys, repo)
+        assert code == 1 and said in out and stderr not in out and "TF400813" not in out, stderr
+        code, doc = run_json(capsys, "link-pr", "--spec", "0004", "--pr", "12", "--by", "@dev-one", "--repo", repo)
+        assert code == 1 and doc["ok"] is False and said in doc["error"] and stderr not in json.dumps(doc), stderr
+        assert_clean_record(repo, out, json.dumps(doc))
+    assert events_of(repo, "applied") == []
+
+
+def test_link_pr_a_remote_that_cannot_be_read_asks_no_az_and_does_not_echo_the_remote(repo, board, capsys, monkeypatch):
+    seed(repo, linked(SPEC4, 4521))
+
+    def not_azure(root):
+        raise AdoImportError(f"origin is not an Azure DevOps remote (from origin https://{KIM}/{FAKE_GUID}.git)")
+    monkeypatch.setattr(ado_transport, "remote", not_azure)
+    code, out = link_pr(capsys, repo)
+    assert code == 1 and "was not linked" in out and "az was not asked" in out and board.calls == []
+    assert "origin is not" not in out and events_of(repo, "applied") == []
+    assert_clean_record(repo, out)
+
+
 def test_link_pr_twice_is_a_no_op_the_second_time(repo, board, capsys):
     seed(repo, linked(SPEC4, 4521))
     assert link_pr(capsys, repo)[0] == 0
@@ -902,6 +933,25 @@ def test_apply_a_board_that_cannot_be_read_is_exit_1_with_nothing_written(repo, 
     board.fail["workitemsbatch"] = "ERROR: Could not resolve host dev.azure.com"
     code, out = run(capsys, *apply_args(planned["plan"]), "--repo", repo)
     assert code == 1 and board.written() == [] and events_of(repo, "applied") == []
+
+
+@pytest.mark.parametrize("stderr, word", [
+    (DENIED_AZ, "permission"),
+    (f"ERROR: Please run 'az login' to setup account ({KIM}).", "signed_out"),
+    ("The Azure CLI (`az`) is not installed or not on PATH.", "not_installed"),
+    (UNREADABLE_AZ, "unknown"),
+], ids=["denied", "signed_out", "not_installed", "unreadable"])
+def test_apply_a_board_read_failing_before_the_first_write_says_why_in_fixed_words_never_az_s(repo, board, planned,
+                                                                                            capsys, stderr, word):
+    board.fail["workitemsbatch"] = stderr                            # the batch read in front of the first write
+    code, out = run(capsys, *apply_args(planned["plan"]), "--repo", repo)
+    assert code == 1 and "before the first write, so nothing was sent" in out and f"({word})" in out
+    assert stderr not in out and "TF400813" not in out and "connection closed" not in out
+    assert board.written() == [] and events_of(repo, "applied") == []
+    code, doc = run_json(capsys, *apply_args(planned["plan"]), "--repo", repo)
+    assert code == 1 and doc["ok"] is False and doc["exit"] == 1 and f"({word})" in doc["error"]
+    assert stderr not in json.dumps(doc) and "TF400813" not in json.dumps(doc)
+    assert_clean_record(repo, out, json.dumps(doc))                   # no address, no GUID: not in the result, not ledgered
 
 
 def test_apply_in_workflow_mode_uses_the_state_file(repo, board, planned, capsys):
@@ -1261,16 +1311,17 @@ def test_a_message_with_a_control_character_is_cleaned_not_refused(repo, capsys)
     assert "\r" not in doc["row"]["text"] and doc["row"]["text"].endswith("\nnext")
 
 
-# --- DRIFT: a failed ledger append is exit 1 on every verb that appends (house rule 7) ---------------------------
+# --- DRIFT: exit 1 on every write verb, `pull` and `discussion gc`; `plan` and `show --fetch` print it, exit 0 ---------
 
-def test_plan_a_failed_ledger_append_prints_drift_and_exits_1_with_the_plan_still_shown(repo, board, capsys, monkeypatch):
+def test_plan_a_failed_ledger_append_prints_drift_and_still_exits_0_with_the_plan_shown(repo, board, capsys, monkeypatch):
     seed(repo, linked(SPEC4, 4521))
     refuse_ledger_appends(monkeypatch)
     code, out = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
-    assert code == 1 and out.startswith("plan ") and "\nDRIFT: " in out        # the plan is shown; DRIFT leads its line
+    assert code == 0 and out.startswith("plan ") and "\nDRIFT: " in out        # the plan is shown; DRIFT leads its line
     code, doc = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
-    assert code == 1 and doc["ok"] is False and doc["drift"].startswith("DRIFT:") and re.fullmatch(r"[0-9a-f]{12}",
-                                                                                                  doc["plan"])
+    assert code == 0 and doc["ok"] is True and doc["drift"].startswith("DRIFT:") and re.fullmatch(r"[0-9a-f]{12}",
+                                                                                                 doc["plan"])
+    assert (repo / doc["path"]).is_file()                             # the plan file stays: apply can still read it
     allow_ledger_appends(monkeypatch)
     assert [e["event"] for e in ledger(repo)] == ["linked"]
     code, doc = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
@@ -1285,15 +1336,17 @@ def test_plan_that_has_nothing_to_append_never_drifts(repo, board, capsys, monke
     assert code == 0 and doc["plan"] == first["plan"]                 # the same plan is not ledgered twice: no append, no DRIFT
 
 
-def test_show_fetch_a_failed_ledger_append_prints_drift_and_exits_1_with_the_discussion_still_shown(repo, board, capsys,
-                                                                                                  monkeypatch):
+def test_show_fetch_a_failed_ledger_append_prints_drift_and_still_exits_0_with_the_discussion_shown(repo, board, capsys,
+                                                                                                   monkeypatch):
     seed(repo, linked(SPEC4, 4521))
     refuse_ledger_appends(monkeypatch)
     code, out = run(capsys, "show", SPEC4, "--fetch", "--repo", repo)
-    assert code == 1 and "Work item #4521" in out and "\nDRIFT: " in out
+    assert code == 0 and "Work item #4521" in out and "\nDRIFT: " in out
     assert cache.load_cache(repo, 4521) is not None                   # saved; it is the ledger line that is missing
     code, doc = run_json(capsys, "show", SPEC4, "--fetch", "--repo", repo)
-    assert code == 1 and doc["ok"] is False and any(n.startswith("DRIFT:") for n in doc["notes"])
+    assert code == 0 and doc["ok"] is True and any(n.startswith("DRIFT:") for n in doc["notes"])
+    allow_ledger_appends(monkeypatch)
+    assert [e["event"] for e in ledger(repo)] == ["linked"]
 
 
 def test_show_fetch_a_cache_that_cannot_be_saved_is_still_a_note_exit_0(repo, board, capsys, monkeypatch):
