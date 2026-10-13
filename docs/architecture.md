@@ -688,7 +688,9 @@ After initialization, all subsequent operations read from and write to the targe
 **Decided 2026-09-24 by Matt. Revisit only with a reason, not with a request.**
 
 This system has no connector for Jira, Azure Boards, Linear, or any other work tracker, and
-that is a design decision rather than a missing feature.
+that is a design decision rather than a missing feature. (Amended 2026-10-13: still no connector, but a
+provenance-carrying projection is now allowed under three conditions. See "Amendment, 2026-10-13" at the end
+of this section.)
 
 The unit of work is a spec file in the repository. Its live status is read from the pull
 request that its branch opened — which checks ran, who approved, whether it merged. The work
@@ -762,6 +764,32 @@ vitest port so the Python and TypeScript detection rules cannot drift. The contr
 
 The tracker decision above is unchanged: a second code host is a second place to read the pull
 request from, not a second record of the work.
+
+### Amendment, 2026-10-13 — a projection is not a connector
+
+**Decided 2026-10-13 by Matt** (his agreement relayed by @splashthree), for the reasons set out in
+`docs/proposals/ado-boards-mirror.md`. The 2026-09-24 decision is amended, not reversed. It now reads:
+
+> No tracker connector; a provenance-carrying projection is allowed under the three conditions in
+> `docs/proposals/ado-boards-mirror.md` §1.
+
+A connector would make the tracker a second record of the work. A projection does not: the spec file
+stays the unit of work, and the board is a view of it that a team already uses and that the plugin
+keeps in step. Three conditions keep it a view, and any change that breaks one is out of bounds:
+
+1. **Provenance on every write.** A work item the plugin touches carries the `sdlc:<kind>:<id>` tag, a
+   `Hyperlink` to the source file at a commit, and a ledger line with the plan hash, the named human and
+   the executing identity.
+2. **Drift is first-class.** Every board revision the ledger did not produce is detected, classified by
+   who owns the field, and shown; nothing is silently overwritten in either direction.
+3. **The repository stays the unit of work.** `status`, `risk`, `merged` and the spec text are never
+   written from the board; a reverse write goes only through the plugin verb that owns the field, under
+   the same named `--by`.
+
+Scope: Azure DevOps Boards only. Jira, Linear and every other tracker stay out. The mirror is built in
+stages: setup and process discovery first (`ado_sync.py config`, `discover`, `validate`, which touch no
+work item), then a read-only mirror, then writes. The plugin reads and plans by default and writes to a
+board only when the project's `posture` is `assisted` and a named person confirms the plan.
 
 ---
 

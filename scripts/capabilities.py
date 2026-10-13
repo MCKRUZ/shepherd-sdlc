@@ -67,6 +67,14 @@ CAPABILITIES: dict[str, dict] = {
     "findings-json": {"script": "record_findings.py", "argv": ["report"], "flags": ["--json", "--spec"]},
     # Its presence also means `--spec --json` carries `ladder{}`: both landed in the same change.
     "readiness-all": {"script": "spec_readiness.py", "flags": ["--all", "--json"]},
+    # The Azure Boards mirror's setup verbs (docs/proposals/ado-boards-mirror.md). None of them touches a
+    # work item: `config` starts and checks `.sdlc/ado.yaml` (`config init` carries `--force`), `discover`
+    # reads the project's process into `.sdlc/ado/schema.json`, `validate` says whether the config fits it.
+    "ado-config": {"script": "ado_sync.py", "argv": ["config", "init"],
+                   "flags": ["--repo", "--state", "--json", "--force"]},
+    "ado-discover": {"script": "ado_sync.py", "argv": ["discover"],
+                     "flags": ["--repo", "--state", "--json", "--team", "--refresh"]},
+    "ado-validate": {"script": "ado_sync.py", "argv": ["validate"], "flags": ["--repo", "--state", "--json"]},
 }
 
 

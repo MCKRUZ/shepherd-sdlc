@@ -191,5 +191,9 @@ uv run scripts/generate_sprint_report.py --repo /tmp/test --sprint S07 --kind pl
 uv run scripts/generate_sprint_report.py --repo /tmp/test --sprint S07 --kind planning --json
 uv run scripts/sprint.py plan --repo /tmp/test --sprint S07 --json
 uv run scripts/track_specs.py --repo /tmp/test --sprint S07
+uv run scripts/ado_sync.py config init --repo /tmp/test
+uv run scripts/ado_sync.py config check --repo /tmp/test --json
+uv run scripts/ado_sync.py discover --repo /tmp/test --json
+uv run scripts/ado_sync.py validate --repo /tmp/test --json
 uv run --project scripts python -m pytest scripts/tests/ -q
 ```

@@ -1,5 +1,50 @@
 # Changelog
 
+## Unreleased — Azure Boards mirror
+
+This section collects the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`). It carries no
+version heading and no version bump yet; both land with the release that ships the whole mirror.
+
+### Fold B1 — schema, config, transport seam
+
+Setup verbs only: nothing in this Fold reads or writes a work item, and `plan`, `pull` and `apply`
+arrive in later Folds.
+
+- **`scripts/ado_sync.py` — `config init`, `config check`, `discover`, `validate`.** Every verb takes
+  `--state` or `--repo` and `--json`, and `--help` touches no file. Exit codes: `config init` 0 written /
+  1 the config exists (`--force` replaces it); `config check` 0 valid / 1 missing or invalid / 2 refused;
+  `discover` 0 saved / 1 any failed read, with the `host` block still printed; `validate` 0 resolvable /
+  1 gaps / 2 a forbidden field is mapped.
+- **`.sdlc/ado.yaml` starts from `templates/ado/ado.yaml`**, shaped by `templates/ado/_schema.yaml`
+  and checked by `scripts/ado_sync_config.py`. It refuses an unknown key, a field that maps an activity
+  metric (anything under `Microsoft.VSTS.Scheduling.`), free text or full descriptions without a named
+  `pii_reviewed_by`, and a value outside a closed set or range. `config init` also writes
+  `.sdlc/ado/local/.gitignore`, so the local cache never reaches a commit.
+- **`discover` reads the project's process into `.sdlc/ado/schema.json`** with serial `az devops invoke`
+  GETs (`scripts/ado_schema.py`; the mapping is the pure `scripts/ado_schema_map.py`): types, categories,
+  states with their categories, per-type fields including `Custom.*`, the area and iteration trees, link
+  types and the team's backlog levels. What it did not read is `null`, never an empty list. A remote that
+  is not Azure DevOps, a missing `az` or a refused call exits 1 naming the call, and `az` is not spawned a
+  second time to explain it.
+- **`validate` prints the fit table** — where each configured kind lands on the discovered process (a work
+  item type, an Area Path node or a tag) — and, when outcome, domain or requirement does not fit as a work
+  item, the exact additions an administrator would make. A fallback fit is not a gap; a pinned type the process
+  lacks is. The plugin never alters a process.
+- **`ado_transport.invoke_body` and `check_api_version`** are appended below `invoke()`, which, with
+  `az_json` and `run_az`, is unchanged. `invoke_body` sends a JSON body through a private temp file removed
+  on every path, always passes `--detect false`, and refuses an api-version pinned to a preview revision.
+- **`scripts/boards_contract.py`** is the one place for the mirror's enums, regexes, paths, field ownership
+  and REST locations. Every `WIT_ROUTES` row is `verified: False` and every fixture under
+  `scripts/tests/fixtures/code_host/azure_devops/wit/` is `hand-written (unverified)` until a person
+  captures them against a live organisation.
+- **Three capabilities** — `ado-config`, `ado-discover`, `ado-validate` — are declared in
+  `scripts/capabilities.py` and proven by the existing `--help` test.
+- **`docs/architecture.md` §7 amended, 2026-10-13.** The decision "no connector for any work tracker" stands.
+  What it now allows is a provenance-carrying projection of the repository onto Azure Boards, under three
+  conditions: every write is traceable, drift is detected and shown, and the repository stays the unit of
+  work. Decided by Matt (agreement relayed by @splashthree).
+- **Unchanged, deliberately:** the protected core, every existing test and fixture, and the harness payload.
+
 ## 2.0.0 — 2026-10-12
 
 ### Shepherd — the brand update
