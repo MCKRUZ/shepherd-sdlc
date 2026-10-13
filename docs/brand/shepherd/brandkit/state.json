@@ -3,7 +3,7 @@
     {
       "approvalSummary": "Owner approved the brandbook as delivered ('alright - update the frontend. lets go', 2026-10-12).",
       "asset": {
-        "path": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/brandkit/brandbook/shepherd-brand-guidelines-v1.pdf"
+        "path": "docs/brand/shepherd/brandkit/brandbook/shepherd-brand-guidelines-v1.pdf"
       },
       "dependencies": {
         "logoRevision": 1,
@@ -20,7 +20,7 @@
   "logo": {
     "approvalSummary": "Owner-supplied official mark: the owner's chamfered two-tone frame (moss top+right with tab, umber left+bottom) with the owner's two-tone S monogram nested inside, S at 21.5 units with its baseline flush with the tab's bottom edge — the owner chose this exact placement ('1 is the one', 2026-10-12).",
     "asset": {
-      "path": "/Users/Arjun.Malhotra1/Developer/claude-code-sdlc copy/docs/brand/shepherd/mark-a-gate-s.svg"
+      "path": "docs/brand/shepherd/mark-a-gate-s.svg"
     },
     "geometryFingerprint": "14adc92ca4dfd3ffcd59a9221a10ace4d9900388d0ce1121114aa7aad4849e6d",
     "name": "Shepherd gate-S mark",

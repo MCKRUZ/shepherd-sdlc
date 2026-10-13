@@ -22,7 +22,7 @@ existing project migrates its data.
   them; no script or screen parses a marker.
 - **`SHEPHERD_CODE_HOST` is read first; `SDLC_CODE_HOST` is still read.** A shell or pipeline
   that already sets the old name needs no change.
-- **The desktop app is Shepherd** (`appId` `com.splashthree.shepherd`). Its userData folder is
+- **The desktop app is Shepherd** (`appId` `com.mckruz.shepherd`). Its userData folder is
   unchanged, so settings, recent projects, synced objects and local preferences stay where they
   are — no migration code. macOS asks Gatekeeper's first-run and folder-access questions once
   more for the new bundle id; on Windows the new installer sits beside the old app (both share
