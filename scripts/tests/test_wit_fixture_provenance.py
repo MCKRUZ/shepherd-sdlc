@@ -49,13 +49,16 @@ B2_NAMES = frozenset({"workitems_batch", "wiql_by_tag", "wiql_untagged", "update
 # Fold B3 (B3-P0): the write responses, the recent-comments re-list and the service-principal identity.
 B3_NAMES = frozenset({"workitem_create_response", "workitem_update_response", "comment_add_response",
                       "comments_recent", "connection_data_sp"})
+# Fold B5 (B5-P0): one page of the reporting revisions feed (B4 added no fixture).
+B5_NAMES = frozenset({"workitemrevisions"})
 
 
-def test_the_thirty_hand_written_fixtures_exist():
+def test_the_thirty_one_hand_written_fixtures_exist():
     assert sorted(p.stem for p in HAND_WRITTEN_FILES) == sorted(WIT_FIXTURE_NAMES)
-    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES | B3_NAMES
+    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES | B3_NAMES | B5_NAMES
     assert not (B1_NAMES & B2_NAMES or B1_NAMES & B3_NAMES or B2_NAMES & B3_NAMES)
-    assert len(WIT_FIXTURE_NAMES) == 30
+    assert not B5_NAMES & (B1_NAMES | B2_NAMES | B3_NAMES)
+    assert len(WIT_FIXTURE_NAMES) == 31
 
 
 @pytest.mark.parametrize("path", ALL_FILES, ids=_ids)

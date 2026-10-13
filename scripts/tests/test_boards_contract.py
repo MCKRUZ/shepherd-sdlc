@@ -25,6 +25,7 @@ DISCOVERY_ROUTES = {"projects", "type_categories", "types", "type_states", "type
 ITEM_ROUTES = {"workitem_create", "workitem_update", "comments", "comment_versions", "workitemsbatch",
                "updates", "connection_data"}
 ROW_KEYS = {"area", "resource", "route", "method", "api_version", "verified"}
+FEED_ROUTES = {"workitemrevisions"}  # Fold B5 (B5-P0): the reporting revisions feed B5-P2's watermark pull reads
 
 
 def test_imports_only_re_and_typing():
@@ -50,7 +51,7 @@ def test_discipline_agents_equal_the_audit_literal():
 
 
 def test_wit_routes_keys_are_the_discovery_and_item_routes():
-    assert set(bc.WIT_ROUTES) == DISCOVERY_ROUTES | ITEM_ROUTES
+    assert set(bc.WIT_ROUTES) == DISCOVERY_ROUTES | ITEM_ROUTES | FEED_ROUTES
 
 
 @pytest.mark.parametrize("name", sorted(DISCOVERY_ROUTES | ITEM_ROUTES))
@@ -117,7 +118,7 @@ def test_hash_ref_email_and_guid_patterns():
 
 
 def test_kinds_and_tree_order():
-    assert len(bc.KINDS) == 14 and len(set(bc.KINDS)) == 14
+    assert len(bc.KINDS) == 15 and len(set(bc.KINDS)) == 15
     assert bc.TREE_ORDER == ("outcome", "domain", "requirement", "epic", "feature", "spec")
     assert set(bc.TREE_ORDER) <= set(bc.KINDS)
     assert bc.FIT_MODES == ("item", "area", "tag")
@@ -165,3 +166,26 @@ def test_paths_are_repo_relative_under_dot_sdlc():
         assert paths[name].startswith(bc.LOCAL_DIR + "/"), name
     assert bc.CONFIG_FILE == ".sdlc/ado.yaml" and bc.SCHEMA_FILE == ".sdlc/ado/schema.json"
     assert bc.LEDGER == ".sdlc/metrics/ado-sync-log.jsonl"
+
+
+# --- Fold B5 (B5-P0): the reporting revisions feed and the `nfr` kind ---------------------------------------------
+
+def test_the_feed_route_row_is_complete_and_unverified():
+    row = bc.WIT_ROUTES["workitemrevisions"]
+    assert set(row) == ROW_KEYS
+    assert row == {"area": "wit", "resource": "workItemRevisions", "route": ("project",), "method": "GET",
+                   "api_version": ado_transport.API_VERSION, "verified": False}
+    assert row["method"] not in bc.WRITE_METHODS and (row["area"], row["resource"]) not in bc.READ_POSTS
+    assert not re.search(r"-preview", row["api_version"]), "the reporting revisions feed has a GA version"
+
+
+def test_the_feed_route_is_the_only_route_fold_b5_adds():
+    assert set(bc.WIT_ROUTES) - (DISCOVERY_ROUTES | ITEM_ROUTES) == FEED_ROUTES
+    assert list(bc.WIT_ROUTES)[-1] == "workitemrevisions"
+
+
+def test_nfr_is_the_last_kind_and_never_a_parent():
+    assert bc.KINDS[-1] == "nfr" and bc.KINDS.count("nfr") == 1
+    assert bc.KINDS[:-1] == ("outcome", "domain", "epic", "feature", "spec", "spike", "sprint", "decision", "finding",
+                             "lifecycle", "requirement", "rule", "question", "measurement")
+    assert "nfr" not in bc.TREE_ORDER

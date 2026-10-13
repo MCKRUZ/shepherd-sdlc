@@ -626,3 +626,111 @@ def test_a_capture_supersedes_a_hand_written_error_with_no_code_change(tmp_path,
     (tmp_path / "stale_rev.txt").write_text("ERROR: captured words\n", encoding="utf-8")
     assert abf.load_wit_error("stale_rev") == "ERROR: captured words"
     assert abf.load_wit_error("stale_rev", hand_written=True).startswith("ERROR: Test operation failed")
+
+
+# --- Fold B5 (B5-P0): one page of the reporting revisions feed (hand-written (unverified)) ------------------------
+#
+# `GET {project}/_apis/wit/reporting/workItemRevisions` is the watermark feed B5-P2 (`ado_wit_feed.py`) reads: every
+# revision changed since a point, in watermark order, a page at a time. The first call names a `startDateTime`; each
+# later call names only the `continuationToken` the previous page returned (the REST reference says the two cannot be
+# combined), and the page with `isLastBatch: true` hands back the token to store as the next watermark.
+
+FEED = "workitemrevisions"
+FEED_KEY = "GET wit/workItemRevisions"
+
+
+def test_the_feed_page_is_the_default_answer_of_exactly_one_route_key():
+    assert [k for k, v in abf.DEFAULT_WIT_ANSWERS.items() if v == FEED] == [FEED_KEY]
+    assert FEED in abf.WIT_FIXTURE_NAMES
+    assert abf.route_name_of(FEED) == FEED and FEED in bc.WIT_ROUTES
+    assert abf.route_key_boards(_command_of(FEED)[1:]) == FEED_KEY and not abf.is_write_key(FEED_KEY)
+
+
+def test_the_feed_command_is_the_first_page_call_scoped_to_the_project():
+    command = _command_of(FEED)
+    assert command[:3] == ["az", "devops", "invoke"] and "--http-method" not in command
+    assert (command[command.index("--area") + 1], command[command.index("--resource") + 1]) == ("wit", "workItemRevisions")
+    assert abf.route_params(command) == {"project": "Claims"}
+    assert command[command.index("--api-version") + 1] == "7.1"
+    assert command[command.index("--detect") + 1] == "false" and command[command.index("--org") + 1] == ORG
+    q = _query(command)
+    assert "startDateTime" in q and "continuationToken" not in q, "a first page names a start, never a token"
+    assert q["fields"].split(",") == ["System.Id", "System.Rev", "System.WorkItemType", "System.State",
+                                      "System.ChangedDate", "System.Tags"]
+    assert not {"System.AssignedTo", "System.ChangedBy", "System.CreatedBy"} & set(q["fields"].split(","))
+
+
+def test_the_feed_page_is_values_a_token_and_a_last_batch_flag():
+    doc = abf.load_wit(FEED)
+    assert set(doc) == {"values", "nextLink", "continuationToken", "isLastBatch"}
+    assert isinstance(doc["values"], list) and doc["values"]
+    assert isinstance(doc["continuationToken"], str) and doc["continuationToken"]
+    assert doc["isLastBatch"] is True, "one page: the token it returns is the next watermark"
+    assert f"continuationToken={doc['continuationToken']}" in doc["nextLink"]
+    assert doc["nextLink"].endswith("api-version=7.1") and "/_apis/wit/reporting/workItemRevisions?" in doc["nextLink"]
+
+
+def test_each_feed_value_is_one_revision_after_the_start_in_watermark_order():
+    command = _command_of(FEED)
+    start, wanted = _query(command)["startDateTime"], set(_query(command)["fields"].split(","))
+    values = abf.load_wit(FEED)["values"]
+    for v in values:
+        assert set(v) == {"id", "rev", "fields"}
+        assert isinstance(v["id"], int) and isinstance(v["rev"], int)
+        assert (v["fields"]["System.Id"], v["fields"]["System.Rev"]) == (v["id"], v["rev"])
+        assert set(v["fields"]) <= wanted, "only the fields asked for"
+        assert not any(isinstance(x, dict) for x in v["fields"].values()), "no identity reference in the feed"
+        assert v["fields"]["System.ChangedDate"] > start
+    changed = [v["fields"]["System.ChangedDate"] for v in values]
+    assert changed == sorted(changed)
+    pairs = [(v["id"], v["rev"]) for v in values]
+    assert len(pairs) == len(set(pairs))
+    ids = [v["id"] for v in values]
+    assert len(set(ids)) < len(ids), "every revision is listed, not only the latest of each item"
+    for wid in set(ids):
+        revs = [v["rev"] for v in values if v["id"] == wid]
+        assert revs == sorted(revs), wid
+
+
+def test_the_feed_mixes_mirrored_items_with_ones_nobody_mapped():
+    values = abf.load_wit(FEED)["values"]
+    tags = [v["fields"].get("System.Tags") or "" for v in values]
+    assert any("sdlc:spec:0004" in t for t in tags)
+    assert any("sdlc-repo:" not in t for t in tags), "an item the board originated is in the feed too"
+    assert any("System.Tags" not in v["fields"] for v in values), "an untagged item carries no System.Tags"
+    latest_4521 = max((v for v in values if v["id"] == 4521), key=lambda v: v["rev"])
+    batch = next(w for w in abf.load_wit("workitems_batch")["value"] if w and w["id"] == 4521)
+    assert latest_4521["rev"] == batch["rev"] and latest_4521["fields"]["System.State"] == batch["fields"]["System.State"]
+
+
+@pytest.mark.parametrize("query", [
+    ["startDateTime=2026-10-10T00:00:00Z"],
+    ["continuationToken=d2F0ZXJtYXJrLTQ3"],
+    [],
+])
+def test_every_feed_page_call_routes_to_the_page_through_a_read_only_fake(query, tmp_path):
+    call = invoke("wit", "workItemRevisions", "project=Claims")[:-2]
+    if query:
+        call += ["--query-parameters", *query]
+    fake = abf.FakeBoardsAz()
+    assert json.loads(fake([*call, "-o", "json"], tmp_path)) == abf.load_wit(FEED)
+    assert fake.written() == []
+
+
+def test_a_test_may_answer_the_next_page_itself(tmp_path):
+    page2 = {"values": [], "nextLink": "x", "continuationToken": "next", "isLastBatch": True}
+    fake = abf.FakeBoardsAz({f"{FEED_KEY} continuationToken=*": page2})
+    first = invoke("wit", "workItemRevisions", "project=Claims")[:-2] + ["--query-parameters",
+                                                                        "startDateTime=2026-10-10T00:00:00Z"]
+    second = invoke("wit", "workItemRevisions", "project=Claims")[:-2] + ["--query-parameters",
+                                                                         "continuationToken=d2F0ZXJtYXJrLTQ3"]
+    assert json.loads(fake([*first, "-o", "json"], tmp_path)) == abf.load_wit(FEED)
+    assert json.loads(fake([*second, "-o", "json"], tmp_path)) == page2
+
+
+def test_the_feed_page_carries_no_identity_and_no_preview_version():
+    text = abf.wit_path(FEED).read_text(encoding="utf-8")
+    assert "uniqueName" not in text and "displayName" not in text and "@" not in text
+    assert not re.search(r"-preview", text)
+    for guid in re.findall(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", text):
+        assert GUID_ANON.match(guid), guid

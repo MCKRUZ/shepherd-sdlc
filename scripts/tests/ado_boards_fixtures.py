@@ -31,6 +31,12 @@ two value refinements on a query parameter (`GET wit/comments order=desc` is the
 `wit/errors/*.txt`: verbatim `az` error output, the hand-written ones led by one
 `# hand-written (unverified)` line that `load_wit_error()` drops; a capture under
 `wit/captured/errors/` with the same name wins, as `load_wit()` lets a captured document win.
+
+Fold B5 (B5-P0) adds one page of the reporting revisions feed (`GET wit/workItemRevisions` ->
+`workitemrevisions`): every page call, a first one naming `startDateTime` or a later one naming
+only `continuationToken`, gets that page unless a test answers `GET wit/workItemRevisions
+continuationToken=*` itself (the existing any-value refinement), so a paging test builds its own
+next page.
 """
 
 import json
@@ -193,6 +199,8 @@ DEFAULT_WIT_ANSWERS: dict[str, str] = {
     "POST wit/comments": "comment_add_response",
     "GET wit/comments order=desc": "comments_recent",
     "GET core/connectionData connectOptions=0": "connection_data_sp",
+    # Fold B5 (B5-P0): one page of the reporting revisions feed (B5-P2's watermark pull)
+    "GET wit/workItemRevisions": "workitemrevisions",
 }
 WIT_FIXTURE_NAMES: tuple[str, ...] = tuple(sorted(set(DEFAULT_WIT_ANSWERS.values())))
 

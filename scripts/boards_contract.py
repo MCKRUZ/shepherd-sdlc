@@ -26,7 +26,8 @@ import re
 from typing import Final
 
 KINDS: Final = ("outcome", "domain", "epic", "feature", "spec", "spike", "sprint", "decision", "finding",
-                "lifecycle", "requirement", "rule", "question", "measurement")
+                "lifecycle", "requirement", "rule", "question", "measurement",
+                "nfr")  # B5-P0: an NFR is a leaf under its Domain (opt-in), so TREE_ORDER does not name it
 # apply's create order, so every link target exists before the item that points at it
 TREE_ORDER: Final = ("outcome", "domain", "requirement", "epic", "feature", "spec")
 FIT_MODES: Final = ("item", "area", "tag")
@@ -111,4 +112,6 @@ WIT_ROUTES: Final[dict[str, dict]] = {
     "comment_versions": _route("wit", "commentsVersions", ("project", "workItemId", "commentId"), api_version=_PREVIEW),
     # identity
     "connection_data": _route("core", "connectionData", (), api_version=_PREVIEW),
+    # reporting (B5-P0): {project}/_apis/wit/reporting/workItemRevisions, the watermark feed B5-P2 pages through
+    "workitemrevisions": _route("wit", "workItemRevisions", ("project",)),
 }

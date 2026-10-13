@@ -1064,3 +1064,23 @@ def disposition_for_take(cls, take) -> str | None:
     an ORPHAN_IN_REPO row or on a row with nothing to dispose of. The caller refuses that take; it never guesses."""
     disp = TAKE_DISPOSITION.get(take) if isinstance(take, str) else None
     return disp if disp is not None and disp in dispositions_for(cls) else None
+
+
+# === Fold B5 (B5-P0): the breadth kinds. Appended; nothing above this line changed. ================================
+#
+# Fold B5 (spec 0038) projects five more kinds, each opt-in (none is in the starter config's `kinds:`): the lifecycle
+# singleton, NFRs, business rules (`BR-NN`), discovery questions (`Q-NN`) and measurements. Their ownership, read from
+# the design's §6.1 Ownership column:
+#   * lifecycle — S all: `state.yaml` is its whole truth, so it uses `boards_contract.OWNERSHIP` as it is (no row).
+#   * nfr — the row below: the board owns State; Description and AcceptanceCriteria are written once at create and come
+#     back only as `.proposed` text (D32), so both are C. Title and the plugin tags stay S.
+#   * rule, question, measurement — their rows above (B2-P0) already say it: State is the board's, and a rule's
+#     Description is C. They do not move.
+# `nfr` is the last member of `boards_contract.KINDS` (appended by this package); it is a leaf under its Domain, never a
+# parent, so `boards_contract.TREE_ORDER` does not name it.
+
+KIND_OWNERSHIP["nfr"] = {"System.State": "A", "System.Description": "C",
+                         "Microsoft.VSTS.Common.AcceptanceCriteria": "C"}  # C: text -> .proposed (D32)
+
+# The kinds Fold B5 adds sources for, in the order the design's §6.1 lists them; each is opt-in.
+BREADTH_KINDS: Final = ("lifecycle", "nfr", "rule", "question", "measurement")
