@@ -50,7 +50,8 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    > window — start is day 1, so Mon 2026-09-28 ends Fri 2026-10-09; `--end` or `--days` override), the **target** (how many specs to slate — a count of items, never a size or an
    > estimate), and the **mix** by risk tier (e.g. `HIGH:1,MEDIUM:2,LOW:3`; counts sum to at most the
    > target). Offer `--board-ref` for a manual board mapping such as "ADO Iteration 6" — nothing reads
-   > it; the team updates the board by hand.
+   > it; the team updates the board by hand. (A project that mirrors to Azure Boards binds the sprint to its real
+   > iteration with `/sprd-ado iteration bind` once the sprint exists — that writes `.sdlc/ado.yaml`, never this record.)
 
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py new \

@@ -90,6 +90,14 @@ CAPABILITIES: dict[str, dict] = {
                  "flags": ["--repo", "--state", "--json", "--fetch", "--versions", "--expand", "--for-agent"]},
     "ado-pull-discussion": {"script": "ado_sync.py", "argv": ["pull"],
                             "flags": ["--repo", "--state", "--json", "--discussion", "--full"]},
+    # Its write verbs (Fold B3). `apply` is the one verb that sends a plan to the board, and only a named person
+    # (`--by`) who typed the plan's 12-hex hash (`--confirm`) on a clone whose posture is `assisted`; `--limit` caps a
+    # first seed. `comment` only DRAFTS one comment into a plan file, so it is safe on a `plan-only` clone: nothing
+    # is sent until `apply --confirm`. Studio hides the control and says why when a plugin lacks the name.
+    "ado-apply": {"script": "ado_sync.py", "argv": ["apply"],
+                  "flags": ["--repo", "--state", "--json", "--confirm", "--by", "--limit"]},
+    "ado-comment": {"script": "ado_sync.py", "argv": ["comment"],
+                    "flags": ["--repo", "--state", "--json", "--message", "--by", "--mention", "--event"]},
 }
 
 

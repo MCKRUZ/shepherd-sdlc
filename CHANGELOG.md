@@ -92,6 +92,60 @@ in `scripts/ado_wit.py` raises `NotImplementedError("B3")`.
 - **Unchanged, deliberately:** the protected core, the harness payload (the deny-list change lands through
   `sync_kit.py` in a later Fold), and the version.
 
+### Fold B3 — apply + comments write
+
+The mirror can now write to the board, and only as a named person. A clone is still **plan-only** until a
+human runs `posture assisted`, and a plan is sent only when that person types its 12-hex hash.
+
+- **`apply --confirm <12hex> --by <human> [--limit N]`** (`scripts/ado_sync.py`, the engine is
+  `scripts/ado_sync_apply.py`) sends the rows of the plan file a person read — creates, updates and drafted
+  comments — written to the board **as whoever `az` is signed in as**. Exit 0 all applied; exit 1 a failed or
+  deferred row, a stale hash (the plan file was edited after it was planned), a missing plan, or a `DRIFT:`
+  ledger failure; exit 2 the **whole plan refused, nothing sent** — an AI or agent `--by`, posture
+  `plan-only`, an effort field in the plan, a first `--all` seed over `limits.first_seed` without `--limit`,
+  a refused comment inside it, or an `az` identity that is not `--by` (read first whenever a comment is to be
+  sent; a service principal reads as unknown).
+- **Writes are ordered and guarded.** Creates run outcome, domain, requirement, epic, feature, spec, with the
+  parent link in the child's own request; field changes go before comments. Every update opens with `test /rev`,
+  so a board that moved on is a `conflict` row — skipped, ledgered, and the next row still runs. A rule or
+  not-found row continues; a permission refusal, a throttle, an unknown outcome or a ledger failure stops the
+  run and defers the rest. A comment whose outcome is unknown is never retried: the item's recent comments are
+  listed and a match on the text hash is recorded as `recovered`. `--limit` and `limits.writes_per_run` count
+  comments as writes; applying the same plan again skips what is done, so nothing is created or posted twice.
+- **What is never sent.** No `bypassRules`, `suppressNotifications` or `validateOnly`; no delete, comment edit,
+  reaction or attachment; no effort field; nothing under `specs/`. A new argv golden
+  (`scripts/tests/golden/az_write_argv.json`, regenerated only with `GOLDEN_REGEN=1`) asserts the absence over
+  every recorded write and that each carries `--detect false` and no `-preview.<digit>` revision.
+- **`link-pr --spec NNNN --pr N --by`** links a pull request to a spec's work item (one native `az repos pr
+  work-item add`) and ledgers it; refused under `plan-only`. **`iteration bind <SNN> --path P --by`** and
+  **`posture <plan-only|assisted> --by`** edit `.sdlc/ado.yaml` in place (its comments stay) and ledger the
+  change; neither writes to the board, so both work on a plan-only clone. `iteration bind` accepts only a path
+  the discovered process holds.
+- **`comment <ref|#id> --message=<text> [--mention @h] [--event NAME] --by`** drafts one comment into a one-row
+  plan file and sends nothing; sending is always `apply`. Under `plan-only` it still writes the plan and says
+  `apply not offered in this clone`. A refusal (`ai_actor`, `email_in_text`, `max_chars`, `budget`,
+  `event_unknown`, `needs_disposition`, ...) exits 2 and is ledgered without the refused words. A mention is
+  text only and notifies nobody.
+- **`plan` now drafts the event comments** (`scripts/ado_sync_comments.py`): eleven templates, four on by
+  default (`handoff`, `spec_deferred`, `decision_resolved`, `sprint_carried`), each posting a fact and a link,
+  never free text, finding text or an address; free text needs a named `pii_reviewed_by`. `plan --no-comments`
+  drops them — how to split a plan whose comment is refused or whose `az` identity is not the applier. A ledger
+  line that cannot be appended on `plan` or `show --fetch` is now `DRIFT:` and exit 1.
+- **`/sprd-ado` gains its write section** — posture, `iteration bind`, `comment`, `apply` (with the hash
+  confirmation as a HITL gate), `link-pr` — and says where the agent proposes and a named human sends.
+  `/sprd-status`, `/sprd-next` and `/sprd-refine` print the board's pending count (`status` or `plan`; they
+  never apply), and `/sprd-sprint` points a project that mirrors to Azure Boards at `/sprd-ado iteration bind`.
+- **Two capabilities** — `ado-apply` and `ado-comment` — are declared in `scripts/capabilities.py` and proven
+  against each verb's `--help`.
+- **Five more hand-written work-item fixtures** (30 in all, each `hand-written (unverified)` until a person
+  captures them) and four stderr texts under `wit/errors/`, plus spec `0036-ado-boards-apply.md` (HIGH).
+- **The upstream request is written down** (`docs/proposals/ado-boards-kit-issue.md`): `ask` rules on the
+  plugin's write verb lines and `Bash(az boards:*)`, `deny` on the MCP server's `wit_*` write tools, for a person
+  to file at `MCKRUZ/intent-driven-development`. The pack fragment here changes only through `sync_kit.py` once
+  the kit has it.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
+  before the mirror, and the version.
+
 ## 2.0.0 — 2026-10-12
 
 ### Shepherd — the brand update

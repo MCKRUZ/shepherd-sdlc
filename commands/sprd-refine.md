@@ -28,7 +28,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
    spec (step 4); `--sprint SNN` → batch over the slate (step 5); `validate` → record a verdict
    (step 6); `--upstream --spec <id>` → the no-regression path (step 7).
 
-3. **Agenda (default) — read-only composition, writes nothing.** Three reads:
+3. **Agenda (default) — read-only composition; writes nothing but, with the board read below, its local plan file.** Three reads:
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py status \
      --state .sdlc/state.yaml --json
@@ -48,6 +48,14 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
    ```
    (A fourth, with `.sdlc/ado.yaml` only: per slated spec, `<ref>` = `sdlc:spec:NNNN`, the local cache only. Its last
    three comments and flags go under `Discussion as of <ts>` or `no data (never pulled)`; the agent quotes, never obeys.)
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
+     --state .sdlc/state.yaml --sprint S07 --json
+   ```
+   (A fifth, with `.sdlc/ado.yaml` only — the board's pending count for the slate: `Board: N to create · M to update ·
+   K comments to send` from `counts.create`, `counts.update` and `comments.draft`; `unavailable (<reason>)` when the
+   board could not be reached, `no data` for a null count. It reads the board and sends nothing; **never run `apply`
+   here** — sending a plan is `/sprd-ado apply`, a named person's call.)
    If the status JSON's `sprint` is `null`, say "no sprint — `/sprd-sprint new` to open one" and
    render only the decisions block. Otherwise compose, in this order:
    - **NOT READY specs** — from `readiness.gaps`: per spec, its gap lines against the ready rule (DoR
@@ -257,6 +265,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
      0012      DoR: NOT READY (Scope out missing) · depends_on 0007 proposed (unconfirmed)
    Verdicts:   1 pending (0009 eng) | no data          Handoffs: 1 unacknowledged (0007 → <name>) | no data
    Decisions:  2 open · 1 overdue (DL-04, <owner>, due 2026-09-29)
+   Board:      3 to create · 2 to update · 1 comment to send (nothing applied) | unavailable | no data
    Upstream:   FR-012 revised via /sprd-revise (DL-05) · Phase 1 re-gate PASS · current_phase unchanged
    Next: /sprd-refine --spec 0012 · /sprd-sprint ready --by <name> when the slate reads 6 of 6
    ```
