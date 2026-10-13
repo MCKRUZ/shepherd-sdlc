@@ -1,0 +1,248 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "fields",
+  "--route-parameters",
+  "project=Claims",
+  "type=User Story",
+  "--query-parameters",
+  "$expand=allowedValues",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 20,
+  "value": [
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Id",
+    "name": "ID",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+   },
+   {
+    "alwaysRequired": true,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Title",
+    "name": "Title",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Description",
+    "name": "Description",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": "New",
+    "allowedValues": [
+     "New",
+     "Ready",
+     "Active",
+     "Resolved",
+     "Closed",
+     "Removed"
+    ],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.State",
+    "name": "State",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Reason",
+    "name": "Reason",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.AssignedTo",
+    "name": "Assigned To",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.AreaPath",
+    "name": "Area Path",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.IterationPath",
+    "name": "Iteration Path",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Tags",
+    "name": "Tags",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.WorkItemType",
+    "name": "Work Item Type",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.Rev",
+    "name": "Rev",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.History",
+    "name": "History",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.CreatedDate",
+    "name": "Created Date",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "System.ChangedDate",
+    "name": "Changed Date",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Microsoft.VSTS.Common.AcceptanceCriteria",
+    "name": "Acceptance Criteria",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.AcceptanceCriteria"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": 2,
+    "allowedValues": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Microsoft.VSTS.Common.Priority",
+    "name": "Priority",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Microsoft.VSTS.Common.StackRank",
+    "name": "Stack Rank",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": "Business",
+    "allowedValues": [
+     "Architectural",
+     "Business"
+    ],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Microsoft.VSTS.Common.ValueArea",
+    "name": "Value Area",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.ValueArea"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Microsoft.VSTS.Scheduling.StoryPoints",
+    "name": "Story Points",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.StoryPoints"
+   },
+   {
+    "alwaysRequired": false,
+    "defaultValue": null,
+    "allowedValues": [
+     "LOW",
+     "MEDIUM",
+     "HIGH"
+    ],
+    "dependentFields": [],
+    "helpText": null,
+    "referenceName": "Custom.RiskTier",
+    "name": "Risk Tier",
+    "url": "https://dev.azure.com/contoso/_apis/wit/fields/Custom.RiskTier"
+   }
+  ],
+  "continuation_token": null
+ }
+}

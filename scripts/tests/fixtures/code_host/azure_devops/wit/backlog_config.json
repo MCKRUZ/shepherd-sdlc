@@ -1,0 +1,315 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "work",
+  "--resource",
+  "backlogconfiguration",
+  "--route-parameters",
+  "project=Claims",
+  "team=Claims Team",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "backlogFields": {
+   "typeFields": {
+    "Order": "Microsoft.VSTS.Common.StackRank",
+    "Effort": "Microsoft.VSTS.Scheduling.StoryPoints",
+    "RemainingWork": "Microsoft.VSTS.Scheduling.RemainingWork",
+    "Activity": "Microsoft.VSTS.Common.Activity",
+    "ClosedDate": "Microsoft.VSTS.Common.ClosedDate",
+    "Team": "System.AreaPath"
+   }
+  },
+  "bugsBehavior": "asRequirements",
+  "hiddenBacklogs": [],
+  "isBugsBehaviorConfigured": true,
+  "portfolioBacklogs": [
+   {
+    "id": "Microsoft.EpicCategory",
+    "name": "Epics",
+    "rank": 4,
+    "workItemCountLimit": 1000,
+    "addPanelFields": [
+     {
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     }
+    ],
+    "columnFields": [
+     {
+      "columnFieldReference": {
+       "referenceName": "System.WorkItemType",
+       "name": "Work Item Type",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+      },
+      "width": 100
+     },
+     {
+      "columnFieldReference": {
+       "referenceName": "System.Title",
+       "name": "Title",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+      },
+      "width": 400
+     },
+     {
+      "columnFieldReference": {
+       "referenceName": "System.State",
+       "name": "State",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+      },
+      "width": 100
+     }
+    ],
+    "workItemTypes": [
+     {
+      "name": "Epic",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Epic"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Epic",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Epic"
+    },
+    "color": "FF7B00",
+    "isHidden": false,
+    "type": "portfolio"
+   },
+   {
+    "id": "Microsoft.FeatureCategory",
+    "name": "Features",
+    "rank": 3,
+    "workItemCountLimit": 1000,
+    "addPanelFields": [
+     {
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     }
+    ],
+    "columnFields": [
+     {
+      "columnFieldReference": {
+       "referenceName": "System.WorkItemType",
+       "name": "Work Item Type",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+      },
+      "width": 100
+     },
+     {
+      "columnFieldReference": {
+       "referenceName": "System.Title",
+       "name": "Title",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+      },
+      "width": 400
+     },
+     {
+      "columnFieldReference": {
+       "referenceName": "System.State",
+       "name": "State",
+       "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+      },
+      "width": 100
+     }
+    ],
+    "workItemTypes": [
+     {
+      "name": "Feature",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Feature"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Feature",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Feature"
+    },
+    "color": "773B93",
+    "isHidden": false,
+    "type": "portfolio"
+   }
+  ],
+  "requirementBacklog": {
+   "id": "Microsoft.RequirementCategory",
+   "name": "Stories",
+   "rank": 2,
+   "workItemCountLimit": 1000,
+   "addPanelFields": [
+    {
+     "referenceName": "System.Title",
+     "name": "Title",
+     "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+    }
+   ],
+   "columnFields": [
+    {
+     "columnFieldReference": {
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     "width": 100
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     "width": 400
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     "width": 100
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "Microsoft.VSTS.Scheduling.StoryPoints",
+      "name": "Story Points",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.StoryPoints"
+     },
+     "width": 100
+    }
+   ],
+   "workItemTypes": [
+    {
+     "name": "User Story",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/User%20Story"
+    }
+   ],
+   "defaultWorkItemType": {
+    "name": "User Story",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/User%20Story"
+   },
+   "color": "009CCC",
+   "isHidden": false,
+   "type": "requirement"
+  },
+  "taskBacklog": {
+   "id": "Microsoft.TaskCategory",
+   "name": "Tasks",
+   "rank": 1,
+   "workItemCountLimit": 1000,
+   "addPanelFields": [
+    {
+     "referenceName": "System.Title",
+     "name": "Title",
+     "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+    }
+   ],
+   "columnFields": [
+    {
+     "columnFieldReference": {
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     "width": 100
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     "width": 400
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     "width": 100
+    },
+    {
+     "columnFieldReference": {
+      "referenceName": "Microsoft.VSTS.Scheduling.RemainingWork",
+      "name": "Remaining Work",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.RemainingWork"
+     },
+     "width": 100
+    }
+   ],
+   "workItemTypes": [
+    {
+     "name": "Task",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+    }
+   ],
+   "defaultWorkItemType": {
+    "name": "Task",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+   },
+   "color": "F2CB1D",
+   "isHidden": false,
+   "type": "task"
+  },
+  "workItemTypeMappedStates": [
+   {
+    "workItemTypeName": "Epic",
+    "states": {
+     "New": "Proposed",
+     "Active": "InProgress",
+     "Resolved": "Resolved",
+     "Closed": "Completed",
+     "Removed": "Removed"
+    }
+   },
+   {
+    "workItemTypeName": "Feature",
+    "states": {
+     "New": "Proposed",
+     "Active": "InProgress",
+     "Resolved": "Resolved",
+     "Closed": "Completed",
+     "Removed": "Removed"
+    }
+   },
+   {
+    "workItemTypeName": "User Story",
+    "states": {
+     "New": "Proposed",
+     "Ready": "Proposed",
+     "Active": "InProgress",
+     "Resolved": "Resolved",
+     "Closed": "Completed",
+     "Removed": "Removed"
+    }
+   },
+   {
+    "workItemTypeName": "Task",
+    "states": {
+     "New": "Proposed",
+     "Active": "InProgress",
+     "Closed": "Completed",
+     "Removed": "Removed"
+    }
+   },
+   {
+    "workItemTypeName": "Bug",
+    "states": {
+     "New": "Proposed",
+     "Active": "InProgress",
+     "Resolved": "Resolved",
+     "Closed": "Completed"
+    }
+   }
+  ],
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/00000000-0000-0000-0000-000000000021/_apis/work/backlogconfiguration",
+  "continuation_token": null
+ }
+}
