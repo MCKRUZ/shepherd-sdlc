@@ -115,7 +115,7 @@ What the packages create — pinned so cards can be built in parallel:
 # scripts/boards_contract.py  (B1-P0, pure data; imports re, typing only)
 KINDS = ("outcome","domain","epic","feature","spec","spike","sprint","decision","finding","lifecycle","requirement","rule","question","measurement")
 TREE_ORDER = ("outcome","domain","requirement","epic","feature","spec")   # apply's create order so every link target exists first
-FIT_MODES = ("item","area","tag"); FULFILS_REL = "System.LinkTypes.Related"   # epic → FR links; outcome ⟷ domain too (tree.outcome_edge)
+FIT_MODES = ("item","area","tag","unknown"); FULFILS_REL = "System.LinkTypes.Related"   # epic → FR links; outcome ⟷ domain too (tree.outcome_edge)
 TRAILER_TOKEN = "sprd"; HISTORY_TOKEN = "sprd"   # board-visible prose (K27); tags stay "sdlc:"
 DRIFT_CLASSES = ("IN_SYNC","ADO_OWNED_CHANGE","SDLC_OWNED_DRIFT","CONFLICT","DELETED_IN_ADO","ORPHAN_IN_REPO","RETYPED","MOVED","RELATION_DRIFT","UNMAPPED_IN_ADO","NEVER_PUSHED","COMMENT")
 LEDGER_EVENTS = ("discovered","posture","planned","applied","adopted","linked","conflict","refused","observed","drift_seen","reconciled","iteration_bound","commented","comment_refused","discussion_pulled","comment_seen","directive_seen","discussion_gc")
@@ -178,7 +178,7 @@ def resolve_state(schema: dict, type_name: str, status: str, cfg: dict) -> tuple
 def field_on_type(schema: dict, type_name: str, ref: str) -> dict | None
 def transition_allowed(schema: dict, type_name: str, frm: str, to: str) -> bool | None
 def refused_fields(schema: dict) -> frozenset[str]
-def fit_levels(schema: dict, cfg: dict) -> dict[str, dict]   # kind -> {"mode": "item"|"area"|"tag", "type": str|None, "level": int|None, "reason": str}
+def fit_levels(schema: dict, cfg: dict) -> dict[str, dict]   # kind -> {"mode": "item"|"area"|"tag"|"unknown", "type": str|None, "level": int|None, "reason": str}; "unknown" = the backlog levels were never read (no team) — rendered "not discovered", never 0, never a gap
 #   auto: requirement -> portfolio level 1 above Epic, domain -> level 2 (else an Area Path node whose name matches, else tag), outcome -> types.outcome else level 3 else tag;
 #   tree.fit may pin any kind; epic/feature/spec are always "item" on their categories
 def recommendations(fit: dict, schema: dict) -> list[str]    # one sentence per kind not fitted as an item: the process addition an admin would make and what the board gains; [] when all fit
