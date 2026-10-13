@@ -131,4 +131,4 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Shepherd ${{ github.event.inputs.tag || github.ref_name }}
           body_path: notes.md
-          files: artifacts/*
+          files: artifacts/*/*
