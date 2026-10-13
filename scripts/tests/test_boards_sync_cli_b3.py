@@ -1410,3 +1410,46 @@ def test_every_az_argv_a_write_verb_builds_carries_detect_false_and_never_a_forb
         assert "--only-show-errors" not in call and "--repository" not in call
     for key, argv, _body_ in board.sent:
         assert not (key.split(" ")[0] in ("PATCH", "DELETE") and "comments" in key)
+
+
+# --- B4-P1a: the advisory first-seed note agrees with apply's refusal, and the B4 verb-table rows ----------------------
+
+def _applied(action, **extra) -> dict:
+    return {"ts": STAMP, "event": "applied", "ref": SPEC4, "action": action, "work_item": 4521, "rev_after": 8,
+            "plan": "a" * 12, **extra}
+
+
+def test_the_first_seed_note_ignores_an_applied_line_that_is_not_a_create_or_an_update():
+    cfg, counts = {"limits": {"first_seed": 1, "writes_per_run": 50}}, {"create": 3, "update": 0}
+
+    def first(ledger_) -> bool:
+        return any("first seed" in n for n in ado_sync._plan_notes(cfg, ledger_, True, counts))
+    assert first([]) and first([_applied("link_pr")])             # `link-pr` writes an `applied` line and creates nothing
+    assert not first([_applied("create")]) and not first([_applied("update")])
+    assert first([{k: v for k, v in _applied("create").items() if k != "action"}])   # no action: not a create or an update
+    assert not any("first seed" in n for n in ado_sync._plan_notes(cfg, [], False, counts))   # not an --all: no note
+    assert not any("first seed" in n for n in ado_sync._plan_notes(cfg, [], True, {"create": 1, "update": 0}))
+    assert tuple(ado_sync.apply_mod.FIELD_ACTIONS) == ("create", "update")    # the one rule both sides read
+
+
+def test_the_first_seed_note_and_the_apply_refusal_agree_after_a_link_pr_line(repo, board, capsys):
+    set_config(repo, limits={"writes_per_run": 50, "first_seed": 1})
+    seed(repo, _applied("link_pr"))
+    plan = plan_doc(capsys, repo, "--all", "--kind", "spec")
+    assert plan["counts"]["create"] > 1 and any("first seed" in n for n in plan["notes"])
+    board.calls.clear()
+    code, doc = run_json(capsys, *apply_args(plan["plan"]), "--repo", repo)
+    assert code == 2 and doc["refused_reason"] == "first_seed" and board.written() == []
+
+
+def test_the_b4_verb_table_rows_are_in_the_parser():
+    parser = ado_sync.build_parser()
+
+    def flags(*verb):
+        node = parser
+        for word in verb:
+            node = next(a for a in node._actions if getattr(a, "choices", None)).choices[word]
+        return {s for a in node._actions for s in a.option_strings} - {"-h", "--help", "--state", "--repo", "--json"}
+    assert "reconcile" in ado_sync.VERBS and callable(ado_sync.VERBS["reconcile"])
+    assert flags("reconcile") == {"--field", "--take", "--by", "--owner", "--reason", "--from-comment"}
+    assert flags("pull") == {"--id", "--all", "--discussion", "--full", "--propose-specs"}

@@ -547,7 +547,10 @@ def test_plan_notes_a_first_seed_over_the_cap_and_a_plan_over_writes_per_run(rep
     assert out["counts"]["create"] == 3
     out = run_json(capsys, "plan", "--kind", "spec", "--repo", repo)[1]   # not an `--all`: no first-seed note
     assert not any("first_seed" in n for n in out["notes"]) and any("writes_per_run" in n for n in out["notes"])
-    seed(repo, {"ts": STAMP, "event": "applied", "ref": SPEC4, "work_item": 4521, "rev_after": 8, "plan": "a" * 12})
+    # B4-P1a: the seeded line carries the `action` apply writes; a line of another action (`link_pr`) does not end a
+    # first seed, so the guard is the one `ado_sync_apply._first_seed_refusal` applies (pinned in the B3 file)
+    seed(repo, {"ts": STAMP, "event": "applied", "ref": SPEC4, "action": "create", "work_item": 4521, "rev_after": 8,
+                "plan": "a" * 12})
     out = run_json(capsys, "plan", "--all", "--kind", "spec", "--repo", repo)[1]   # seeded once: no first-seed note
     assert not any("first_seed" in n for n in out["notes"])
 

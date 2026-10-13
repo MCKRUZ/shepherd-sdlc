@@ -2,10 +2,11 @@
 
 Azure DevOps Boards is a board the team already uses; this mirror projects the repository's specs, epics and
 features onto it and reads board changes back. Fold B1 shipped the verbs that never touch a work item; Fold B2
-adds the READ verbs; Fold B3 adds the WRITE verbs. The one place the mirror writes to the board is `apply` (through
-`ado_sync_apply`, as the person whose `az` login is active) and `link-pr`; `iteration bind`, `posture` and `comment`
-write only files in this repository. A write verb needs a named human as `--by`, and `apply` and `link-pr` also need
-posture `assisted`.
+adds the READ verbs; Fold B3 adds the WRITE verbs; Fold B4 adds `reconcile`. The one place the mirror writes to the
+board is `apply` (through `ado_sync_apply`, as the person whose `az` login is active) and `link-pr`; `iteration bind`,
+`posture` and `comment` write only files in this repository; `reconcile` records a disposition and, for `--take ado`,
+starts the verb that owns the field (through `ado_sync_reconcile`). A write verb needs a named human as `--by`, and
+`apply` and `link-pr` also need posture `assisted`.
 
   config init [--force]   copy the starter `.sdlc/ado.yaml` in and ignore the local cache folder
   config check            the config's findings, one per line (against the saved schema when there is one)
@@ -18,10 +19,12 @@ posture `assisted`.
                           link, or why it would not), the hash a person echoes to `apply`
   status                  what the ledger says, offline: linked, pending, drifted, as of when -- `no data`
                           where nothing was ever measured, never a zero
-  pull [--id ID] [--all] [--discussion] [--full]
+  pull [--id ID] [--all] [--discussion] [--full] [--propose-specs]
                           read the ledgered items back: record `observed` and `drift_seen`, write the session
-                          hook's one line; `--discussion` caches each item's comments instead (`--full`, which
-                          forgets the comment watermark, implies `--discussion`)
+                          hook's one line, and say under each drift row what a person may do about it;
+                          `--discussion` caches each item's comments instead (`--full`, which forgets the comment
+                          watermark, implies `--discussion`); `--propose-specs` also writes ONE batch file of
+                          proposals (argument lists, nothing run) for the board items nobody has mapped
   drift [--id ID] [--kind K]
                           the same classification as `pull`, printed, and the board items nobody has linked
   link <ref> --work-item N --by H | adopt --all --by H
@@ -41,6 +44,11 @@ posture `assisted`.
                           switch this clone's posture (`.sdlc/ado.yaml` only); `assisted` is what offers `apply`
   comment <ref|#id> --message=TEXT --by H [--mention @h ...] [--event NAME]
                           draft one comment as a one-row plan file; nothing is sent until `apply --confirm`
+  reconcile <ref> --take ado|sdlc|ack|not-drift --by H [--field F] [--owner H] [--reason TEXT] [--from-comment ID]
+                          settle one drift row `pull` recorded: `ado` starts the verb that owns the field (a spec's
+                          assignee: `spec_transition.py assign`; its sprint: `sprint.py slate|unslate`; a decision's
+                          close: `track_decisions.py decide`) and records its exit; `sdlc` keeps the repository's
+                          value (the next `apply` puts it back); `ack` needs `--owner`, `not-drift` a `--reason`
 
 What it reads
   - `.sdlc/ado.yaml` (the config), `.sdlc/ado/schema.json` (what `discover` saved), the repository's own specs,
@@ -53,13 +61,18 @@ What it writes
   - `pull`: ledger `observed` and `drift_seen`, the hook line; `pull --discussion` and `show --fetch`: the local
     discussion cache (`.sdlc/ado/local/discussion/<id>.json`, `me.json`) and ledger `discussion_pulled`,
     `comment_seen`, `directive_seen` -- counts, ids and hashes only, never a comment's text, a name or an address
+  - `pull --propose-specs`: one file under `.sdlc/ado/local/proposals/` (the ignored local folder)
+  - `reconcile`: ledger `reconciled` (the disposition, the child's exit, the child's argument list with every free-text
+    value as `<text>`); `--take ado` also runs the owning verb, which writes its own file (a spec's frontmatter, a
+    sprint record, the decision log)
   - `link`, `adopt`: ledger `linked`; `discussion gc`: deletions under the local folder, ledger `discussion_gc`
   - `apply`: the board (work items it creates or updates, comments it posts), ledger `applied`, `commented`,
     `conflict`, `refused` (written by `ado_sync_apply`); `link-pr`: one relation on the board, ledger `applied`
     (`action: link_pr`, the item's baseline carried); `posture`: `.sdlc/ado.yaml`, ledger `posture`;
     `iteration bind`: `.sdlc/ado.yaml`, ledger `iteration_bound`; `comment`: one plan file, and ledger
     `comment_refused` when the text is refused -- never the board
-  - Nothing else: never `state.yaml`, never a spec. `--help` and an import write nothing.
+  - Nothing else: never `state.yaml`, and no spec, sprint or decision except through the verb that owns it
+    (`reconcile --take ado`). `--help` and an import write nothing.
   The ledger is `.sdlc/metrics/ado-sync-log.jsonl`, append-only, one `json.dumps(event)` per line; a failed
   append prints `DRIFT: ...` and exits 1. A `linked` (or, later, `applied`) line carries `work_item`, `rev_after`
   (the board's revision it was written against), `type` and `projection_hash`: `ado_sync_model.projection_hash` of
@@ -84,7 +97,8 @@ Exit codes (the kit's verb table)
                 id, `--fetch`/`--versions` on a remote that is not Azure DevOps); an unknown `--kind` is
                 argparse's own usage error (2), the choices being `boards_contract.KINDS`
   pull          0 | 1 `DRIFT` (the ledger append failed) -- and nothing else: an unreadable ledger is `unavailable`
-                (exit 0), and `--full` without `--discussion` implies it
+                (exit 0), and `--full` without `--discussion` implies it; a board item the search cannot read is a
+                note, not a failure. 1 also for `--propose-specs` together with `--discussion` (a usage error)
   link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous;
                 the ledger cannot be read; `--by` names two people on the roster
                 | 2 an AI or agent `--by`, an e-mail address that is on nobody's roster entry, or the `AB#` form
@@ -109,6 +123,16 @@ Exit codes (the kit's verb table)
                 to draft because the key was already posted | 1 not ledgered, a message that is empty, a mention
                 that is not `@handle`, `DRIFT` | 2 an AI `--by`, or the text refused: `max_chars`, `email_in_text`,
                 `event_unknown`, `budget`, `needs_disposition` (ledgered `comment_refused`)
+  reconcile     0 settled, or recorded (`--take sdlc` stays open until `apply` lands the field) | 1 no drift row of that
+                  ref and field, a row already settled, a board or schema that cannot answer, an assignee or iteration
+                  path the mirror has no one for, a ledger that cannot be appended to (nothing was started), or the owning
+                  verb failed (ITS exit 1 -- any nonzero exit, even argparse's 2 -- is 1 here, never 2); the failed child
+                  is ledgered and the row stays open
+                | 2 an AI `--by` or `--owner`, `--take ack` without `--owner`, `--take not-drift` without `--reason`, a
+                  take the disposition machine has no word for (DELETED_IN_ADO takes `ack`; ORPHAN_IN_REPO takes none
+                  in this version), `--take ado` on a field the board does not own or that no verb owns (a spec's
+                  State is never taken), a developer change on an in-flight spec, `--take sdlc` on a field the board
+                  owns, a resolution a person did not type or a cached comment that is flagged or holds an address
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
   precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `pull`'s DRIFT. Refused and Illegal are
   copied from `sprint.py`, not imported.
@@ -147,6 +171,7 @@ import ado_sync_apply as apply_mod  # noqa: E402
 import ado_sync_comments as comments_mod  # noqa: E402
 import ado_sync_config as cfgmod  # noqa: E402
 import ado_sync_model as model  # noqa: E402
+import ado_sync_reconcile as rc  # noqa: E402  (the one module that starts the owning verbs; this CLI never does)
 import ado_sync_sources as sources  # noqa: E402
 import ado_sync_sources_tree  # noqa: E402,F401  (registers outcome, domain, requirement and the epic parent)
 import ado_transport  # noqa: E402
@@ -201,7 +226,7 @@ class LedgerUnreadable(Illegal):
 READ_VERBS = ("plan", "status", "pull", "drift", "show")
 # What each read verb's `--json` carries when it is `unavailable`, beside `unavailable` and `reason`.
 UNAVAILABLE_EXTRA: dict[str, dict] = {"plan": {"plan": None, "rows": [], "counts": None},
-                                      "pull": {"items": [], "counts": None},
+                                      "pull": {"items": [], "counts": None, "proposals": []},
                                       "drift": {"items": [], "counts": None}, "show": {}, "status": {}}
 
 
@@ -1171,7 +1196,9 @@ def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, co
     limits = cfg.get("limits") if isinstance(cfg.get("limits"), dict) else {}
     first_seed, per_run = limits.get("first_seed"), limits.get("writes_per_run")
     notes = []
-    never_applied = not any(e.get("event") == "applied" for e in ledger)
+    # a seed is the first only until an item was created or updated here: an `applied` line of another action (`link-pr`
+    # writes one, and creates nothing) leaves the guard in place -- the rule `ado_sync_apply._first_seed_refusal` applies
+    never_applied = not any(e.get("event") == "applied" and e.get("action") in apply_mod.FIELD_ACTIONS for e in ledger)
     if scope_all and never_applied and _is_id(first_seed) and counts["create"] > first_seed:
         notes.append(f"first seed: {_plural(counts['create'], 'create')} is over limits.first_seed ({first_seed}); "
                      "an apply of this plan will need --limit")
@@ -1380,12 +1407,16 @@ def _select_links(links: dict[str, dict], projs: dict[str, dict], ids: list[str]
     return chosen, unmatched
 
 
-def _observe(repo_root: Path, links: dict, refs: list[str], projs: dict, emails: dict) -> list[dict]:
+def _observe(repo_root: Path, links: dict, refs: list[str], projs: dict, emails: dict,
+             remotes: dict | None = None) -> list[dict]:
     """Read the board for the ledgered `refs` (one batch read, then `wit/updates` only for an item whose revision moved
     past the ledger's `rev_after`) and classify each with `ado_sync_model.classify_drift`. An item that cannot be
     classified is a row with `unavailable` set, never a guessed class. An `AdoImportError` from the batch read
-    propagates: nothing was read."""
+    propagates: nothing was read. A caller that passes `remotes` gets the items it read, by work item id, filled in
+    (`pull` says what a person may do about a row from the item's current assignee and iteration; no second read)."""
     items, missing = _read_items(repo_root, [links[r]["work_item"] for r in refs], emails)
+    if remotes is not None:
+        remotes.update(items)
     gone = set(missing)
     results = []
     for ref in refs:
@@ -1532,19 +1563,70 @@ def _drift_events(ts: str, results: list[dict], ledger: list[dict]) -> tuple[lis
     return events, seen
 
 
+def _proposal_lines(props: list[dict]) -> list[str]:
+    """What a person may do about each drift row, as words: `ado_sync_reconcile.proposals` is the design's section 8
+    table, row by row. Nothing here runs anything."""
+    if not props:
+        return []
+    return ["proposals:"] + [f"  {p['ref']}  {p['field'] or '(the item itself)'}  {p['action']}: {p['text']}"
+                             for p in props]
+
+
+def _propose_specs(repo_root: Path, cfg: dict, emails: dict[str, str], now: datetime) -> dict:
+    """`pull --propose-specs`: the board items under the mirror's paths that this repository has not tagged (the
+    `drift` search), as ONE batch file of argument lists under the ignored local folder. `{"path", "counts", "reason"}`:
+    `path` None with a `reason` when the search could not run (not searched) and with none when it found nothing. A
+    search or a read that fails is a reason, never a failure of the pull; nothing is run."""
+    empty = {"path": None, "counts": {"new_spec": 0, "link": 0}, "reason": None}
+    ids, why = _unmapped(repo_root, cfg)
+    if ids is None:
+        return {**empty, "reason": why}
+    if not ids:
+        return empty
+    try:
+        items, _missing = _read_items(repo_root, ids, emails)
+    except AdoImportError as exc:
+        return {**empty, "reason": f"not read: {_tidy(exc)}"}
+    rows = rc.spec_proposals(list(items.values()), rc.spec_ids(repo_root))
+    if not rows:
+        return {**empty, "reason": "the board did not return those items (deleted, or not visible to this az login)"}
+    try:
+        _ensure_local_ignore(repo_root)
+        path = rc.write_batch(repo_root, now, rows, _write_json)
+    except OSError as exc:
+        return {**empty, "reason": f"not written ({type(exc).__name__})"}
+    return {"path": path, "counts": {"new_spec": sum(1 for r in rows if r["action"] == "new_spec"),
+                                     "link": sum(1 for r in rows if r["action"] == "link")}, "reason": None}
+
+
+def _propose_specs_line(found: dict) -> str:
+    counts = found["counts"]
+    if found["path"]:
+        return (f"propose-specs: wrote {found['path']}  ({_plural(counts['new_spec'], 'new spec')}, "
+                f"{_plural(counts['link'], 'link')}; argument lists for a person to run, nothing was run)")
+    if found["reason"]:
+        return f"propose-specs: nothing written - {found['reason']}"
+    return "propose-specs: no untagged board items under the mirror's paths"
+
+
 def cmd_pull(args, repo_root: Path) -> int:
+    if args.propose_specs and (args.discussion or args.full):
+        raise Usage("--propose-specs reads the board's fields and cannot be combined with --discussion or --full, which "
+                    "read its comments: run them one after the other")
     if args.discussion or args.full:  # `--full` forgets the comment watermark, the only one there is: it implies it
         return _pull_discussion(args, repo_root)
     ctx = _drift_context(args, repo_root, "pull")
     if isinstance(ctx, int):
         return ctx
-    _cfg, _schema, projs, links, emails, ledger = ctx
+    cfg, schema, projs, links, emails, ledger = ctx
     refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], None)
+    remotes: dict[int, dict] = {}
     try:
-        results = _observe(repo_root, links, refs, projs, emails)
+        results = _observe(repo_root, links, refs, projs, emails, remotes)
     except AdoImportError as exc:
         return _unavailable(args, repo_root, "pull", _tidy(exc), host_error=str(exc), items=[], counts=None)
-    ts = _stamp()
+    now = _now()
+    ts = _stamp(now)
     events, seen = _drift_events(ts, results, ledger)
     observed = sum(1 for e in events if e["event"] == "observed")
     if not results:
@@ -1552,15 +1634,20 @@ def cmd_pull(args, repo_root: Path) -> int:
     append_ledger(repo_root, events)  # LedgerDrift -> main: `DRIFT: ...`, exit 1 (pull's only exit 1)
     hook, hook_note = _write_hook_line(repo_root, ledger + events)
     notes = [hook_note] if hook_note else []
+    props = rc.proposals(results, projs, remotes, cfg, schema)
     out = {"ok": True, "unavailable": False, "reason": None, "as_of": ts, "items": results,
-           "counts": _class_counts(results), "unmatched_ids": unmatched,
+           "counts": _class_counts(results), "unmatched_ids": unmatched, "proposals": props,
            "recorded": {"observed": observed, "drift_seen": seen}, "hook_line": hook, "notes": notes}
     lines = [f"Azure Boards mirror: pull  (as of {ts})"]
     lines += _drift_lines(results, projs) or ["nothing is linked yet: no ledgered item to read"]
     if unmatched:
         lines.append("no ledgered item matches --id " + ", ".join(unmatched))
+    lines += _proposal_lines(props)
     lines += [f"recorded: {_plural(observed, 'observed line')}, {_plural(seen, 'drift_seen line')}",
               f"hook line: {hook if hook is not None else 'not written'}", *[f"note: {n}" for n in notes]]
+    if args.propose_specs:
+        out["propose_specs"] = _propose_specs(repo_root, cfg, emails, now)
+        lines.append(_propose_specs_line(out["propose_specs"]))
     _emit(args, out, "\n".join(lines))
     return 0
 
@@ -2490,6 +2577,150 @@ def cmd_comment(args, repo_root: Path) -> int:
 
 # --- CLI -------------------------------------------------------------------------------------------------------------
 
+# --- reconcile -------------------------------------------------------------------------------------------------------
+
+def _from_comment_arg(text) -> int | None:
+    if text is None:
+        return None
+    raw = str(text).strip()
+    if not re.fullmatch(r"[0-9]+", raw) or int(raw) < 1:
+        raise Illegal(f"--from-comment {raw!r} is not a comment id (a positive number from the cached discussion)")
+    return int(raw)
+
+
+def _ledger_appendable(repo_root: Path) -> None:
+    """Prove the ledger can take a line BEFORE the owning verb starts: an append that failed afterwards would leave
+    that verb's edit with no record. Nothing is written to it."""
+    path = Path(repo_root) / LEDGER
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "a", encoding="utf-8"):
+            pass
+    except OSError as exc:
+        raise Illegal(f"DRIFT: the ledger cannot be appended to ({LEDGER}: {type(exc).__name__}); nothing was started, "
+                      "so nothing changed. Make the path writable and run it again.") from None
+
+
+def _plan_child(repo_root: Path, route: str, ref: str, kind: str, row: dict, by: str, reason: str | None,
+                comment_id: int | None) -> dict:
+    """The child `--take ado` starts, from the repository's projection and the board's CURRENT item (one batch read: the
+    drift row names the field that moved, not what the board holds now)."""
+    need = _load(repo_root)
+    if isinstance(need, str):
+        raise Illegal(need)
+    cfg, schema = need
+    if kind not in sources.SOURCES:
+        raise Illegal(f"no source reads {kind} yet, so there is nothing in the repository to take the board's change into")
+    try:
+        proj = next((p for p in _projections(repo_root, cfg, schema, [kind]) if p["ref"] == ref), None)
+    except ValueError as exc:
+        raise Illegal(f"the repository's sources do not agree: {_tidy(exc)}") from None
+    if proj is None:
+        raise Illegal(f"{ref} is not in this repository: no {kind} reads as that id")
+    wid = row["work_item"]
+    if not _is_id(wid):
+        raise Illegal("the drift row names no work item: pull again")
+    items, missing = _read_items(repo_root, [wid], _emails(repo_root))   # AdoImportError: exit 1, nothing was started
+    if wid in missing:
+        raise Illegal(f"#{wid} is gone from the board (deleted, or not visible to this az login): pull again")
+    text = rc.cached_comment_text(cache.load_cache(repo_root, wid), comment_id) if comment_id is not None else None
+    return rc.plan_child(route, repo_root=repo_root, ref=ref, proj=proj, remote=items[wid], cfg=cfg, schema=schema,
+                         by=by, reason=reason, comment_text=text)
+
+
+def _settled_words(settled: bool, why: str, take: str, child: dict | None, exit_code) -> str:
+    if settled:
+        return "off the books"
+    if take == "sdlc":
+        return "still open until `apply` writes the field"
+    if child is not None:
+        return ("still open: the child did not run" if exit_code is None
+                else f"still open: the child exited {exit_code}")
+    return f"still open: {why}"
+
+
+def _reconcile(args, repo_root: Path, *, by: str, ref: str, kind: str, owner: str | None, reason: str | None,
+               comment_id: int | None) -> int:
+    take = args.take
+    ledger = read_ledger(repo_root)
+    row = rc.pick_row(rc.drift_rows(ledger), ref, args.field)
+    cls, field = row["class"], row["field"]
+    disposition = rc.disposition_of(cls, take)
+    rc.check_inputs(take, owner, reason)
+    field_owner = row["owner"] or model.ownership_for(kind).get(field or "")
+    notes: list[str] = []
+    route = None
+    if take == "sdlc":
+        rc.check_sdlc(kind, field, field_owner)
+        notes.append("the next `plan` carries the update that puts the repository's value back; `apply` lands it and "
+                     "closes the row")
+    elif take == "ado":
+        route = rc.ado_route(kind, field, field_owner)
+    if comment_id is not None and route != "decide":
+        raise rc.Rejected("Refused: --from-comment is for closing a decision (--take ado on its State); it is not "
+                          "used for anything else.")
+    child = _plan_child(repo_root, route, ref, kind, row, by, reason, comment_id) if route else None
+    ts = _stamp()
+    fields = {"ref": ref, "kind": kind, "work_item": row["work_item"], "field": field, "class": cls,
+              "disposition": disposition, "by": by}
+    if owner:
+        fields["owner"] = owner
+    if reason:
+        fields["reason"] = reason
+    if comment_id is not None:
+        fields["comment_id"] = comment_id
+    if child:
+        fields["child_argv"] = child["shown"]
+        fields["argv_sha"] = rc.argv_sha(child["shown"])
+    if notes:
+        fields["notes"] = notes
+    _event(ts, "reconciled", **fields, **({"child_exit": 0} if child else {}))   # the model refuses an address, first
+    _ledger_appendable(repo_root)
+    result = rc.run_child(child["argv"], child["cwd"]) if child else None
+    if result is not None:
+        fields["child_exit"] = result["exit"]
+    append_ledger(repo_root, [_event(ts, "reconciled", **fields)])   # LedgerDrift -> main: `DRIFT: ...`, exit 1
+    exit_code = result["exit"] if result is not None else None
+    settled, why = model.validate_disposition({**fields, "class": cls})
+    failed = result is not None and exit_code != 0
+    label = field or "the item itself"
+    state = _settled_words(settled, why, take, child, exit_code)
+    out = {"ok": not failed, "ref": ref, "kind": kind, "field": field, "class": cls, "take": take,
+           "disposition": disposition, "by": by, "owner": owner, "settled": settled, "settled_why": state,
+           "child": None if result is None else {"verb": child["verb"], "argv": child["shown"], "exit": exit_code,
+                                                 "stdout": result["stdout"], "stderr": result["stderr"]},
+           "notes": notes}
+    if failed:
+        out["exit"] = 1
+    lines = [f"{'Not reconciled' if failed else 'Reconciled'} {ref} {label} ({cls}): {disposition} by {by}"]
+    if result is not None:
+        shown = json.dumps(child["shown"], ensure_ascii=False)
+        lines.append(f"  child: {shown} -> exit {'none' if exit_code is None else exit_code}")
+        lines += [f"  | {line}" for line in (result["stdout"] + "\n" + result["stderr"]).splitlines() if line.strip()]
+    lines += [f"  settled: {state}"] + [f"  note: {n}" for n in notes]
+    _emit(args, out, "\n".join(lines))
+    return 1 if failed else 0
+
+
+def cmd_reconcile(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    if args.take is None:
+        raise Illegal("--take is required: ado, sdlc, ack or not-drift")
+    ref = args.ref.strip()
+    kind = _kind_of(ref) if REF_RE.fullmatch(ref) else None
+    if kind is None:
+        raise Illegal(f"{ref!r} is not an sdlc:<kind>:<id> ref (sdlc:spec:0004, sdlc:decision:01)")
+    owner = resolve_by(repo_root, args.owner, "--owner") if args.owner is not None else None
+    reason = args.reason.strip() if isinstance(args.reason, str) and args.reason.strip() else None
+    comment_id = _from_comment_arg(args.from_comment)
+    try:
+        return _reconcile(args, repo_root, by=by, ref=ref, kind=kind, owner=owner, reason=reason, comment_id=comment_id)
+    except rc.Rejected as exc:
+        raise Refused(str(exc)) from None
+    except rc.Precondition as exc:
+        raise Illegal(str(exc)) from None
+
+
 BY_HELP = ("A named person, ledgered as the roster @handle when it is one person's handle, name or address on "
            ".sdlc/team.yaml (else as typed); an AI, an agent or an address off the roster is refused (exit 2)")
 
@@ -2552,6 +2783,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Cache each item's comments (locally; ledger counts only) instead of reading its fields")
     p.add_argument("--full", action="store_true",
                    help="Forget the comment watermark and read every comment again; implies --discussion")
+    p.add_argument("--propose-specs", action="store_true",
+                   help="Also write ONE batch file under .sdlc/ado/local/proposals/ of argument lists (new_spec, then "
+                        "link) for the board items nobody has mapped; nothing is run (not with --discussion)")
 
     p = sub.add_parser("drift", parents=[common],
                        help="Classify each ledgered item against the board (advisory; writes nothing)")
@@ -2627,6 +2861,28 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--event", default=None, metavar="NAME",
                    help="Label the comment as one of the comment events (handoff, spec_deferred, ...); "
                         "a name outside that set is refused")
+
+    p = sub.add_parser("reconcile", parents=[common],
+                       help="Settle one drift row `pull` recorded: take the board's value through the verb that owns "
+                            "it (ado), keep the repository's (sdlc), acknowledge it (ack) or say it is not drift")
+    p.add_argument("ref", help="The repository item: sdlc:<kind>:<id>, e.g. sdlc:spec:0004")
+    p.add_argument("--field", default=None, metavar="F",
+                   help="The drifted field as `pull` printed it (System.AssignedTo); leave it out for a row about the "
+                        "item itself (DELETED_IN_ADO, ORPHAN_IN_REPO)")
+    p.add_argument("--take", default=None, choices=list(model.RECONCILE_TAKES),
+                   help="ado: run the verb that owns the field (a spec's assignee or sprint, a decision's close; never "
+                        "a spec's State) | sdlc: keep the repository's value, the next apply puts it back | ack: "
+                        "someone knows (needs --owner) | not-drift: it is not drift (needs --reason)")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+    p.add_argument("--owner", default=None, metavar="HUMAN",
+                   help="With --take ack: the named person who owns the row from here (an AI or an agent is refused)")
+    p.add_argument("--reason", default=None, metavar="TEXT",
+                   help="With --take not-drift: why it is not drift. With --take ado on a decision: what was decided "
+                        "(typed by a person, never filled in). With --take ado when the board moved a spec out of "
+                        "every sprint: why it leaves the slate")
+    p.add_argument("--from-comment", default=None, metavar="ID",
+                   help="With --take ado on a decision: use that cached comment (`pull --discussion` cached it) as the "
+                        "resolution instead of --reason; a comment with an instruction-like line is refused")
     return parser
 
 
@@ -2634,7 +2890,7 @@ VERBS: dict[str, Callable[[argparse.Namespace, Path], int]] = {
     "config": cmd_config, "discover": cmd_discover, "validate": cmd_validate, "plan": cmd_plan,
     "status": cmd_status, "pull": cmd_pull, "drift": cmd_drift, "link": cmd_link, "adopt": cmd_adopt,
     "show": cmd_show, "discussion": cmd_discussion, "apply": cmd_apply, "link-pr": cmd_link_pr,
-    "iteration": cmd_iteration, "posture": cmd_posture, "comment": cmd_comment,
+    "iteration": cmd_iteration, "posture": cmd_posture, "comment": cmd_comment, "reconcile": cmd_reconcile,
 }
 
 
