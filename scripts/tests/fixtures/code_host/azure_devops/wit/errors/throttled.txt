@@ -1,0 +1,2 @@
+# hand-written (unverified)
+ERROR: TF400733: The request was blocked due to exceeding usage of resource 'WorkItemTrackingResource' in namespace 'WorkItemTracking'. Retry-After: 30 (HTTP 429 Too Many Requests)

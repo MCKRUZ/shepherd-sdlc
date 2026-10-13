@@ -1,0 +1,95 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItems",
+  "--route-parameters",
+  "project=Claims",
+  "id=4560",
+  "--http-method",
+  "PATCH",
+  "--in-file",
+  "/tmp/u.json",
+  "--media-type",
+  "application/json-patch+json",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "id": 4560,
+  "rev": 2,
+  "fields": {
+   "System.AreaPath": "Claims",
+   "System.TeamProject": "Claims",
+   "System.IterationPath": "Claims",
+   "System.WorkItemType": "Task",
+   "System.State": "New",
+   "System.Reason": "New",
+   "System.CreatedDate": "2026-10-12T09:00:00.163Z",
+   "System.CreatedBy": {
+    "displayName": "Person 1",
+    "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "id": "00000000-0000-0000-0000-000000000002",
+    "uniqueName": "person1@example.com",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "descriptor": "aad.anonymised-1"
+   },
+   "System.ChangedDate": "2026-10-12T09:01:00.407Z",
+   "System.ChangedBy": {
+    "displayName": "Person 1",
+    "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "id": "00000000-0000-0000-0000-000000000002",
+    "uniqueName": "person1@example.com",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "descriptor": "aad.anonymised-1"
+   },
+   "System.CommentCount": 0,
+   "System.Title": "sdlc probe 2",
+   "Microsoft.VSTS.Common.StateChangeDate": "2026-10-12T09:00:00.163Z",
+   "Microsoft.VSTS.Common.Priority": 2
+  },
+  "_links": {
+   "self": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4560"
+   },
+   "workItemUpdates": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4560/updates"
+   },
+   "workItemRevisions": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4560/revisions"
+   },
+   "workItemComments": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4560/comments"
+   },
+   "html": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_workitems/edit/4560"
+   },
+   "workItemType": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+   },
+   "fields": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/fields"
+   }
+  },
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4560"
+ }
+}

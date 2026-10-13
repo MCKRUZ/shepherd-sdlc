@@ -23,6 +23,14 @@ Same-route fixtures (B2-P0) are told apart by a refined key: a route parameter (
 id=4523`), a query parameter (`GET wit/comments continuationToken=*`) or the WIQL text (`boards
 query sdlc-repo:`). The fake tries those first; a test that re-answers the bare key, and not a
 refinement, gets its own answer for every call on that route.
+
+Fold B3 (B3-P0) adds the write responses (`POST wit/workItems`, `PATCH wit/workItems`, `POST
+wit/comments` — the method alone tells them from the reads, and only `writes=True` answers them),
+two value refinements on a query parameter (`GET wit/comments order=desc` is the recovery re-list,
+`GET core/connectionData connectOptions=0` the service-principal sign-in) and the stderr texts under
+`wit/errors/*.txt`: verbatim `az` error output, the hand-written ones led by one
+`# hand-written (unverified)` line that `load_wit_error()` drops; a capture under
+`wit/captured/errors/` with the same name wins, as `load_wit()` lets a captured document win.
 """
 
 import json
@@ -109,6 +117,9 @@ def query_params(args: list[str]) -> dict[str, str]:
 REFINE_QUERY_PARAMS: tuple[str, ...] = ("continuationToken",)   # key `<route> continuationToken=*` (any value)
 REFINE_ROUTE_PARAMS: tuple[str, ...] = ("id", "workItemId")       # key `<route> id=<value>`
 WIQL_UNTAGGED_NEEDLE = "sdlc-repo:"                               # key `boards query sdlc-repo:`
+# B3-P0: query parameters whose VALUE tells same-route fixtures apart (key `<route> order=desc`), tried after the
+# any-value ones and before the route parameters: the recovery re-list of any item is one fixture.
+REFINE_QUERY_VALUES: tuple[str, ...] = ("order", "connectOptions")
 
 
 def refined_keys(key: str, args: list[str]) -> list[str]:
@@ -118,6 +129,7 @@ def refined_keys(key: str, args: list[str]) -> list[str]:
         out.append(f"{key} {WIQL_UNTAGGED_NEEDLE}")
     query = query_params(args)
     out += [f"{key} {name}=*" for name in REFINE_QUERY_PARAMS if name in query]
+    out += [f"{key} {name}={query[name]}" for name in REFINE_QUERY_VALUES if name in query]  # B3-P0
     route = route_params(args)
     out += [f"{key} {name}={route[name]}" for name in REFINE_ROUTE_PARAMS if name in route]
     return out
@@ -175,6 +187,12 @@ DEFAULT_WIT_ANSWERS: dict[str, str] = {
     "boards query sdlc-repo:": "wiql_untagged",
     "boards work-item show": "workitem_show_relations",
     "account show": "account_show",
+    # Fold B3 (B3-P0): the write responses (answered only by a `writes=True` fake), the re-list, the SP sign-in
+    "POST wit/workItems": "workitem_create_response",
+    "PATCH wit/workItems": "workitem_update_response",
+    "POST wit/comments": "comment_add_response",
+    "GET wit/comments order=desc": "comments_recent",
+    "GET core/connectionData connectOptions=0": "connection_data_sp",
 }
 WIT_FIXTURE_NAMES: tuple[str, ...] = tuple(sorted(set(DEFAULT_WIT_ANSWERS.values())))
 
@@ -186,6 +204,8 @@ def route_name_of(fixture: str) -> str:
             return stem
     renamed = {"workitems_batch": "workitemsbatch", "updates_after_comment": "updates",
                "comment_versions": "comment_versions"}  # B2-P0
+    renamed.update({"workitem_create_response": "workitem_create", "workitem_update_response": "workitem_update",
+                    "comment_add_response": "comments", "connection_data_sp": "connection_data"})  # B3-P0
     if fixture in renamed:
         return renamed[fixture]
     if fixture.startswith("comments_"):
@@ -271,3 +291,30 @@ def az(monkeypatch) -> FakeBoardsAz:
     fake = FakeBoardsAz()
     monkeypatch.setattr(ado_transport, "run_az", fake)
     return fake
+
+
+# --- Fold B3 (B3-P0): the stderr texts a failed write prints ------------------------------------------------------
+
+WIT_ERRORS = WIT / "errors"
+WIT_CAPTURED_ERRORS = WIT_CAPTURED / "errors"
+# error text -> the `ado_wit_map.classify_write_error` class it must read as (and so apply's failure class)
+WIT_ERROR_CLASSES: dict[str, str] = {"stale_rev": "conflict", "rule_violation": "rule", "permission": "permission",
+                                     "throttled": "throttled"}
+WIT_ERROR_NAMES: tuple[str, ...] = tuple(sorted(WIT_ERROR_CLASSES))
+
+
+def wit_error_path(name: str, hand_written: bool = False) -> Path:
+    """`captured/errors/<name>.txt` first (unless `hand_written`), then the hand-written `errors/<name>.txt`."""
+    captured = WIT_CAPTURED_ERRORS / f"{name}.txt"
+    if not hand_written and captured.is_file():
+        return captured
+    return WIT_ERRORS / f"{name}.txt"
+
+
+def load_wit_error(name: str, hand_written: bool = False) -> str:
+    """The stderr text as `ado_transport.run_az` would raise it (stripped): a leading `# hand-written …` or
+    `# captured …` provenance line is dropped, nothing else is."""
+    lines = wit_error_path(name, hand_written).read_text(encoding="utf-8").splitlines()
+    if lines and (lines[0] == "# " + HAND_WRITTEN or lines[0].startswith("# captured ")):
+        lines = lines[1:]
+    return "\n".join(lines).strip()

@@ -633,3 +633,376 @@ def summarize(ledger: list[dict], today) -> dict:
     counts["debt"] = len(doc["debt"])
     doc["hook_line"] = hook_line(counts["pending"], counts["drifted"], doc["as_of"])
     return doc
+
+
+# === Fold B3 (B3-P0): the write path's pure contracts. Appended; nothing above this line changed. ================
+#
+# `apply_plan` (ado_sync_apply.py, B3-P2) reports through `apply_result`. The comment drafter (ado_sync_comments.py,
+# B3-P3) keys every row with `idem_key`, refuses with `comment_refusal` and fingerprints with `text_sha` (its own
+# `idem_key` and `text_sha` are these two). `apply` refuses a whole plan whose comments would post under another
+# name with `identity_refusal`, and the design §7 recovery on an unknown outcome is `recovered_comment`. Pure like
+# the rest: the caller reads the ledger, the board and the config, and hands plain values in.
+
+# --- comment events and idempotency keys ----------------------------------------------------------------------
+
+# The closed set of comment events (design §8a; `comments.events` in templates/ado/ado.yaml and its shape file —
+# pinned by test). A `--event` outside it is refused `event_unknown`.
+COMMENT_EVENTS: Final = ("handoff", "spec_deferred", "decision_resolved", "sprint_carried", "gate_passed",
+                         "verdict_recorded", "finding_disposition", "sprint_dropped", "review_summary", "pr_linked",
+                         "spec_merged")
+AD_HOC: Final = "ad_hoc"  # a person's own `comment --message` with no `--event`: keyed like an event, no template
+
+# event -> (key template, its parts in order). The key is a comment row's identity across plans: a `commented`
+# ledger line carrying it means the event is on the board and is never drafted again. Free text never enters a
+# key: a deferral's reason is reduced to the first 8 hex of its sha256, an ad hoc message to its `text_sha`.
+IDEM_KEY_RULES: Final[dict[str, tuple[str, tuple[str, ...]]]] = {
+    "handoff": ("handoff:{ref}:{ts}", ("ref", "ts")),
+    "spec_deferred": ("deferred:{ref}:{reason}", ("ref", "reason")),
+    "decision_resolved": ("decision:{decision}:decided:{date}", ("decision", "date")),
+    "sprint_carried": ("carried:{ref}:{from_sprint}:{to_sprint}", ("ref", "from_sprint", "to_sprint")),
+    "gate_passed": ("gate:{phase}:{signoff_date}", ("phase", "signoff_date")),
+    "verdict_recorded": ("verdict:{ref}:{lens}:{verdict}:{ts}", ("ref", "lens", "verdict", "ts")),
+    "finding_disposition": ("finding:{fp}:{disposition}", ("fp", "disposition")),
+    "sprint_dropped": ("dropped:{ref}:{sprint}", ("ref", "sprint")),
+    "review_summary": ("review:{ref}:{round}", ("ref", "round")),
+    "pr_linked": ("pr:{ref}:{pr}", ("ref", "pr")),
+    "spec_merged": ("merged:{ref}", ("ref",)),
+    AD_HOC: ("comment:{ref}:{text}", ("ref", "text")),
+}
+TARGET_RE: Final = re.compile(r"^(?:sdlc:[a-z]+:[A-Za-z0-9-]+|#[1-9]\d*)$")  # `comment <ref|#id>`
+_KEY_TOKEN: Final = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:+-]*$")
+_DECISION_ID: Final = re.compile(r"^DL-\d+$")
+_DAY: Final = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_COUNT_TEXT: Final = re.compile(r"^[1-9]\d*$")
+_DAY_PARTS: Final = ("date", "signoff_date")
+_COUNT_PARTS: Final = ("round", "pr")
+
+
+def _is_count(value) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 1
+
+
+def _sha(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8", errors="surrogatepass")).hexdigest()
+
+
+def _key_part(event: str, name: str, value) -> str:
+    if name == "ref":
+        pattern = TARGET_RE if event == AD_HOC else bc.REF_RE
+        if isinstance(value, str) and pattern.fullmatch(value):
+            return value
+        raise ValueError(f"{event}: ref {value!r} is not an sdlc:<kind>:<id> ref"
+                         + (" or a #<work item>" if event == AD_HOC else ""))
+    if name in ("reason", "text"):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{event}: {name} must be non-empty text (it is hashed, never written)")
+        return _sha(value.strip())[:8] if name == "reason" else text_sha(value)
+    if name in _COUNT_PARTS:
+        if _is_count(value) or (isinstance(value, str) and _COUNT_TEXT.fullmatch(value)):
+            return str(int(value))
+        raise ValueError(f"{event}: {name} must be a positive integer, not {value!r}")
+    if name == "decision":
+        pattern, what = _DECISION_ID, "a DL-<n> id"
+    elif name in _DAY_PARTS:
+        pattern, what = _DAY, "a YYYY-MM-DD day"
+    else:
+        pattern, what = _KEY_TOKEN, "one token (letters, digits, ._:+-)"
+    if isinstance(value, str) and pattern.fullmatch(value):
+        return value
+    raise ValueError(f"{event}: {name} {value!r} is not {what}")
+
+
+def idem_key(event: str, **parts) -> str:
+    """The idempotency key of one comment row (design §8a): `handoff:sdlc:spec:0004:2026-10-12T08:14Z`.
+
+    ValueError on an event outside `IDEM_KEY_RULES`, a missing or unexpected part, or a part that is not what its
+    name says: `ref` an `sdlc:<kind>:<id>` ref (an ad hoc comment may also target `#<work item>`), `decision` a
+    `DL-<n>` id, `date`/`signoff_date` a `YYYY-MM-DD` day, `round`/`pr` a positive integer, any other part one
+    token (letters, digits, `._:+-`, no space). `reason` and `text` are hashed — the key never carries what a person
+    wrote — and every key passes `ledger_entry` (no e-mail address, no GUID)."""
+    if event not in IDEM_KEY_RULES:
+        raise ValueError(f"unknown comment event {event!r}; events are COMMENT_EVENTS (or {AD_HOC!r})")
+    template, names = IDEM_KEY_RULES[event]
+    missing = [n for n in names if n not in parts]
+    extra = sorted(set(parts) - set(names))
+    if missing or extra:
+        raise ValueError(f"{event} key takes {', '.join(names)}"
+                         + (f"; missing {', '.join(missing)}" if missing else "")
+                         + (f"; unexpected {', '.join(extra)}" if extra else ""))
+    key = template.format(**{n: _key_part(event, n, parts[n]) for n in names})
+    if bc.EMAIL_RE.search(key) or _GUID_ANYWHERE.search(key):
+        raise ValueError(f"{event}: a key may not carry an e-mail address or a GUID")
+    return key
+
+
+def commented_keys(ledger: list[dict]) -> frozenset[str]:
+    """The idempotency keys already on the board: the `idem_key` of every `commented` line (a recovered post is one
+    too). A `comment_refused` line is not: a refused row may be drafted again once the reason is gone."""
+    return frozenset(e["idem_key"] for e in ledger if isinstance(e, dict) and e.get("event") == "commented"
+                     and isinstance(e.get("idem_key"), str))
+
+
+def budget_used(ledger: list[dict], work_item: int) -> int:
+    """How many plugin comments this clone's ledger has posted on one item (`comments.per_item_budget`). Always an
+    integer — the ledger was read, so 0 is honest. A `claimed` trailer from another clone is never counted."""
+    return sum(1 for e in ledger if isinstance(e, dict) and e.get("event") == "commented"
+               and e.get("work_item") == work_item and not isinstance(e.get("work_item"), bool))
+
+
+# --- the trailer and text_sha ---------------------------------------------------------------------------------
+
+TRAILER_MODES: Final = ("none", "hash", "drafted")       # `comments.trailer` (templates/ado/_schema.yaml, pinned)
+COMMENT_TRANSPORTS: Final = ("comments-api", "history")  # `comments.transport`
+DRAFTED_WORDS: Final = "drafted with Shepherd"           # the `drafted` trailer's board-visible words (brand rule)
+# ` · sprd <12hex>` (K27) or ` · drafted with Shepherd · sprd <12hex>`, at the very end of the last line.
+TRAILER_RE: Final = re.compile(r"[ \t]*·[ \t]*(?:" + re.escape(DRAFTED_WORDS) + r"[ \t]*·[ \t]*)?"
+                               + re.escape(bc.TRAILER_TOKEN) + r"[ \t]+([0-9a-f]{12})[ \t]*\Z")
+
+
+def _normalised(text) -> str:
+    if not isinstance(text, str):
+        raise ValueError(f"comment text must be a str, not {type(text).__name__}")
+    return text.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def with_trailer(body: str, plan: str | None, mode: str) -> str:
+    """The text as posted: `body` with the `mode` trailer appended to its last line — `none` (body only), `hash`
+    (` · sprd <plan>`) or `drafted` (` · drafted with Shepherd · sprd <plan>`). ValueError on another mode or, for
+    a trailed mode, a `plan` that is not 12 lower-case hex."""
+    if mode not in TRAILER_MODES:
+        raise ValueError(f"trailer mode {mode!r} is not one of {', '.join(TRAILER_MODES)}")
+    if not isinstance(body, str):
+        raise ValueError("comment body must be a str")
+    text = body.rstrip()
+    if mode == "none":
+        return text
+    if not (isinstance(plan, str) and bc.HASH_RE.fullmatch(plan)):
+        raise ValueError(f"a {mode} trailer needs the 12-hex plan hash, not {plan!r}")
+    middle = f"{DRAFTED_WORDS} · " if mode == "drafted" else ""
+    return f"{text} · {middle}{bc.TRAILER_TOKEN} {plan}"
+
+
+def strip_trailer(text: str) -> tuple[str, str | None]:
+    """(body, plan hash | None): the text with line endings unified and outer whitespace trimmed, less a plugin
+    trailer at its very end. A `· sprd <hash>` anywhere else is the person's text and stays."""
+    norm = _normalised(text)
+    found = TRAILER_RE.search(norm)
+    if not found:
+        return norm, None
+    return norm[:found.start()].rstrip(), found.group(1)
+
+
+def text_sha(text: str) -> str:
+    """The first 12 hex of sha256 over a comment's BODY: line endings unified, outer whitespace trimmed and a plugin
+    trailer removed first, so a plan row (drafted before its plan hash exists) and the comment the board later lists
+    (trailed with that hash) agree under every trailer mode. Mandatory on every comment row, `trailer: none`
+    included: it is what the recovery re-list matches. (`ado_discussion_map`'s `text_sha` is a different thing — a
+    change detector over the raw text.) ValueError on anything that is not a str."""
+    body, _ = strip_trailer(text)
+    return _sha(body)[:12]
+
+
+# --- comment refusals (boards_contract.COMMENT_REFUSALS) ------------------------------------------------------
+
+NEEDS_DISPOSITION_CLASSES: Final = ("DELETED_IN_ADO", "RETYPED")
+# Every COMMENT_REFUSALS member has exactly one rule (pinned by test): these six are decided while drafting, in this
+# order (the first that applies is the row's refusal); the other three only at apply, where the posture is read and
+# the executing identity is known.
+COMMENT_DRAFT_REFUSALS: Final = ("ai_actor", "event_unknown", "needs_disposition", "email_in_text", "max_chars",
+                                 "budget")
+COMMENT_APPLY_REFUSALS: Final = ("posture", "identity_unknown", "identity_mismatch")
+_ANY_PLAN: Final = "0" * 12  # a trailer is as long for every plan, so the length can be judged before the hash
+
+
+def comment_refusal(text: str, *, by: str, agent_stems: frozenset[str], event: str | None = None, max_chars: int,
+                    trailer: str = "hash", budget_used: int, budget: int, drift_class: str | None = None) -> str | None:
+    """The `COMMENT_DRAFT_REFUSALS` member a drafted comment row is refused for, or None. In order: `ai_actor`
+    (`ai_by` on `--by`), `event_unknown` (an `event` outside `COMMENT_EVENTS`; None is an ad hoc comment),
+    `needs_disposition` (the item is `DELETED_IN_ADO` or `RETYPED`), `email_in_text` (any address — a `@handle` is
+    not one), `max_chars` (the text as posted, trailer included, over `comments.max_chars`), `budget`
+    (`budget_used` already at `comments.per_item_budget`). An empty message is not a refusal but an illegal
+    request (the verb exits 1): ValueError, as for a count that was not counted."""
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("an empty comment is not a refusal: the verb exits 1 (message empty)")
+    if trailer not in TRAILER_MODES:
+        raise ValueError(f"trailer mode {trailer!r} is not one of {', '.join(TRAILER_MODES)}")
+    if not _is_count(max_chars) or not _is_count(budget):
+        raise ValueError("max_chars and budget must be positive integers")
+    if isinstance(budget_used, bool) or not isinstance(budget_used, int) or budget_used < 0:
+        raise ValueError(f"budget_used must be a counted integer (0 or more), not {budget_used!r}")
+    if ai_by(by, agent_stems):
+        return "ai_actor"
+    if event is not None and event not in COMMENT_EVENTS:
+        return "event_unknown"
+    if drift_class in NEEDS_DISPOSITION_CLASSES:
+        return "needs_disposition"
+    if bc.EMAIL_RE.search(text):
+        return "email_in_text"
+    if len(with_trailer(text, _ANY_PLAN, trailer)) > max_chars:
+        return "max_chars"
+    if budget_used >= budget:
+        return "budget"
+    return None
+
+
+# --- the executing identity -------------------------------------------------------------------------------------
+
+SERVICE_PRINCIPAL_DESCRIPTOR: Final = "Microsoft.VisualStudio.Services.Claims.AadServicePrincipal"
+
+
+def executing_identity(connection_data: dict, roster_emails: dict[str, str]) -> dict:
+    """Who `az` is signed in as, from a `connectionData` document: `{"handle", "id", "service_principal"}`.
+
+    `handle` is the roster's `@handle` for the sign-in account (`authenticatedUser.properties.Account`, looked up
+    lower-cased in `roster_emails`, as `validate_team.people_by_email` builds it) or None; `id` the identity id a
+    posted comment's `createdBy.id` is compared with (`me.json`); `service_principal` is True when the descriptor
+    names an AAD service principal, or there is no account and the display name is a client id. The account and
+    the display name are read and dropped. ValueError when there is no `authenticatedUser` object."""
+    user = connection_data.get("authenticatedUser") if isinstance(connection_data, dict) else None
+    if not isinstance(user, dict):
+        raise ValueError("connectionData has no authenticatedUser object")
+    properties = user.get("properties") if isinstance(user.get("properties"), dict) else {}
+    account = properties.get("Account")
+    email = account.get("$value") if isinstance(account, dict) else None
+    handle = None
+    if isinstance(email, str) and email.strip() and isinstance(roster_emails, dict):
+        found = roster_emails.get(email.strip().lower())
+        handle = found if isinstance(found, str) and bc.HANDLE_RE.fullmatch(found) else None
+    ident_id = user.get("id") if isinstance(user.get("id"), str) and user.get("id") else None
+    name = user.get("providerDisplayName")
+    principal = (str(user.get("descriptor") or "").startswith(SERVICE_PRINCIPAL_DESCRIPTOR)
+                 or (email is None and isinstance(name, str) and bool(_GUID_ANYWHERE.fullmatch(name.strip()))))
+    return {"handle": handle, "id": ident_id, "service_principal": principal}
+
+
+def identity_refusal(by_handle: str | None, me_handle: str | None) -> str | None:
+    """`identity_unknown` when either side is not a roster `@handle` (a service principal, an account outside the
+    roster, a `--by` the roster does not know), `identity_mismatch` when they differ (case-insensitive), else None:
+    a comment is confirmed only into the name of the person `az` is signed in as (design §8a, whole plan, exit 2)."""
+    def handle(value):
+        return value.casefold() if isinstance(value, str) and bc.HANDLE_RE.fullmatch(value) else None
+    by, me = handle(by_handle), handle(me_handle)
+    if by is None or me is None:
+        return "identity_unknown"
+    return None if by == me else "identity_mismatch"
+
+
+# --- apply results --------------------------------------------------------------------------------------------
+
+APPLY_RESULT_KEYS: Final = ("applied", "failed", "deferred", "refused_reason", "exit")  # the interface sheet's shape
+APPLY_ACTIONS: Final = ("create", "update", "comment")
+# == ado_wit_map.ERROR_CLASSES (pinned by test; the model imports no ado_* module)
+WRITE_ERROR_CLASSES: Final = ("conflict", "rule", "permission", "throttled", "not_found", "unknown")
+# A failed row's class: what the write's stderr reads as, or one of apply's own two — a posted comment whose
+# `createdBy` is not `--by` (ledgered, row closed), and a write that landed but whose ledger line could not be
+# appended (`DRIFT`).
+FAILURE_CLASSES: Final = (*WRITE_ERROR_CLASSES, "created_by_mismatch", "drift")
+STOP_CLASSES: Final = ("permission", "throttled", "drift")  # the run stops; every later row is deferred `stopped`
+RECOVER_CLASSES: Final = ("unknown",)  # a timeout or an unread non-2xx after a possible commit: re-list, never re-post
+DEFER_REASONS: Final = ("limit", "writes_per_run", "stopped", "parent_failed")
+# Whole-plan refusals (exit 2, nothing sent): the comment vocabulary plus apply's own two.
+APPLY_REFUSALS: Final = (*bc.COMMENT_REFUSALS, "forbidden_field", "first_seed")
+
+
+def _apply_row(part: str, row) -> dict:
+    if not isinstance(row, dict):
+        raise ValueError(f"an {part} row must be a dict")
+    action, ref, wid = row.get("action"), row.get("ref"), row.get("work_item")
+    if action not in APPLY_ACTIONS:
+        raise ValueError(f"{part} row action {action!r} is not one of {', '.join(APPLY_ACTIONS)}")
+    if ref is None:
+        if not (action == "comment" and _is_count(wid)):
+            raise ValueError(f"{part} row: only a comment on a #<work item> may have no ref")
+    elif not (isinstance(ref, str) and bc.REF_RE.fullmatch(ref)):
+        raise ValueError(f"{part} row ref {ref!r} is not an sdlc:<kind>:<id> ref")
+    if "recovered" in row and (action != "comment" or not isinstance(row["recovered"], bool)):
+        raise ValueError(f"{part} row: recovered is a bool on a comment row only")
+    if part == "applied":
+        if not _is_count(wid):
+            raise ValueError(f"applied row work_item must be a positive integer, not {wid!r}")
+        rev = row.get("rev_after")
+        if rev is not None and not _is_count(rev):
+            raise ValueError(f"applied row rev_after must be a positive integer or None, not {rev!r}")
+        if action == "comment":
+            transport = row.get("transport")
+            if transport not in COMMENT_TRANSPORTS:
+                raise ValueError(f"applied comment transport {transport!r} is not one of "
+                                 f"{', '.join(COMMENT_TRANSPORTS)}")
+            if transport == "comments-api" and not _is_count(row.get("comment_id")):
+                raise ValueError("an applied comments-api row carries the comment_id the board answered with")
+    elif part == "failed":
+        if row.get("class") not in FAILURE_CLASSES:
+            raise ValueError(f"failed row class {row.get('class')!r} is not one of FAILURE_CLASSES")
+        if wid is not None and not _is_count(wid):
+            raise ValueError(f"failed row work_item must be a positive integer or None, not {wid!r}")
+    elif row.get("why") not in DEFER_REASONS:
+        raise ValueError(f"deferred row why {row.get('why')!r} is not one of {', '.join(DEFER_REASONS)}")
+    for text in _strings(row):
+        if bc.EMAIL_RE.search(text) or _GUID_ANYWHERE.search(text):
+            raise ValueError(f"an {part} row may not carry an e-mail address or a GUID (never copy az stderr)")
+    return _canon(row)
+
+
+def apply_result(*, applied=(), failed=(), deferred=(), refused_reason: str | None = None) -> dict:
+    """What `apply_plan` returns: exactly `APPLY_RESULT_KEYS`, rows checked and copied, `exit` derived.
+
+    `applied` rows: `{"ref", "action", "work_item", "rev_after"}` (+ a comment's `transport`, `comment_id` on the
+    comments API, `recovered`); `failed` rows: `{"ref", "action", "work_item" | None, "class"}`; `deferred` rows:
+    `{"ref", "action", "why"}`. `ref` is an `sdlc:` ref (None only for a comment on a `#<work item>`). Exit 2 when
+    `refused_reason` (an `APPLY_REFUSALS` member) is set — and then nothing was sent, so `applied` and `failed` must
+    be empty; else 1 when any row failed (a stop, a conflict, a `DRIFT`); else 0 (a row deferred by `--limit` or
+    `writes_per_run` is the person's choice, not a failure). ValueError on a row outside its shape, or any e-mail
+    address or GUID in it: raw `az` stderr can name people and never rides in a result."""
+    if refused_reason is not None and refused_reason not in APPLY_REFUSALS:
+        raise ValueError(f"refused_reason {refused_reason!r} is not one of APPLY_REFUSALS")
+    out = {"applied": [_apply_row("applied", r) for r in applied],
+           "failed": [_apply_row("failed", r) for r in failed],
+           "deferred": [_apply_row("deferred", r) for r in deferred],
+           "refused_reason": refused_reason}
+    if refused_reason is not None and (out["applied"] or out["failed"]):
+        raise ValueError("a refused plan sent nothing: it has no applied or failed row")
+    out["exit"] = 2 if refused_reason is not None else 1 if out["failed"] else 0
+    return out
+
+
+# --- recovery on an unknown outcome (design §7) --------------------------------------------------------------
+
+RECOVERY_WINDOW_MINUTES: Final = 10
+RECENT_COMMENTS_QUERY: Final = {"order": "desc", "$top": "20"}  # the re-list; == wit/comments_recent's `_command`
+
+
+def _instant(ts) -> datetime | None:
+    try:
+        moment = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return moment if moment.tzinfo is not None else None
+
+
+def recovered_comment(want_sha: str, listed: list, me_id: str | None, sent_at: str) -> dict | None:
+    """The comment an unknown-outcome POST already created, or None: the first of `listed` (the raw re-list,
+    `RECENT_COMMENTS_QUERY`, newest first) that is not deleted, was created by `me_id` (`me.json`'s identity id,
+    case-insensitive) within `RECOVERY_WINDOW_MINUTES` of `sent_at`, and whose `text_sha` is `want_sha` (the plan
+    row's). Returns `{"comment_id", "version", "recovered": True}` — ledgered as `commented{recovered: true}`
+    instead of a second POST. None with an unknown `me_id`: authorship that cannot be proved is never claimed.
+    ValueError on a `want_sha` that is not 12 hex or a `sent_at` that is not a zoned ISO time."""
+    if not (isinstance(want_sha, str) and bc.HASH_RE.fullmatch(want_sha)):
+        raise ValueError(f"want_sha must be a 12-hex text_sha, not {want_sha!r}")
+    sent = _instant(sent_at)
+    if sent is None:
+        raise ValueError(f"sent_at must be an ISO time with a zone, not {sent_at!r}")
+    if not isinstance(me_id, str) or not me_id.strip():
+        return None
+    for c in listed if isinstance(listed, list) else []:
+        if not isinstance(c, dict) or c.get("isDeleted") is True:
+            continue
+        cid = c["id"] if "id" in c else c.get("commentId")
+        author = c.get("createdBy").get("id") if isinstance(c.get("createdBy"), dict) else None
+        made = _instant(c.get("createdDate"))
+        if (not _is_count(cid) or not isinstance(author, str) or author.casefold() != me_id.strip().casefold()
+                or made is None or abs((made - sent).total_seconds()) > RECOVERY_WINDOW_MINUTES * 60):
+            continue
+        if isinstance(c.get("text"), str) and text_sha(c["text"]) == want_sha:
+            version = c.get("version")
+            return {"comment_id": cid, "version": version if _is_count(version) else None, "recovered": True}
+    return None

@@ -1,0 +1,2 @@
+# hand-written (unverified)
+ERROR: TF401320: Rule Error for field Component. Error code: Required, InvalidEmpty. (HTTP 400 Bad Request)

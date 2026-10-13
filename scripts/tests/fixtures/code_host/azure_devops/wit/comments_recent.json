@@ -1,0 +1,151 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "comments",
+  "--route-parameters",
+  "project=Claims",
+  "workItemId=4521",
+  "--query-parameters",
+  "order=desc",
+  "$top=20",
+  "--api-version",
+  "7.1-preview",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "totalCount": 3,
+  "count": 3,
+  "comments": [
+   {
+    "workItemId": 4521,
+    "id": 504,
+    "version": 1,
+    "text": "probe from sdlc · sprd 000000000000",
+    "renderedText": "<p>probe from sdlc · sprd 000000000000</p>",
+    "format": "markdown",
+    "createdBy": {
+     "displayName": "Person 1",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000002",
+     "uniqueName": "person1@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "descriptor": "aad.anonymised-1"
+    },
+    "createdDate": "2026-10-12T09:05:00Z",
+    "modifiedBy": {
+     "displayName": "Person 1",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000002",
+     "uniqueName": "person1@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "descriptor": "aad.anonymised-1"
+    },
+    "modifiedDate": "2026-10-12T09:05:00Z",
+    "isDeleted": false,
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/comments/504"
+   },
+   {
+    "workItemId": 4521,
+    "id": 502,
+    "version": 2,
+    "text": "<div><a href=\"#\" data-vss-mention=\"version:2.0,00000000-0000-0000-0000-000000000002\">@Person 1</a> yes, a resubmit inside 24 hours is a duplicate; see the Acceptance Checks.</div>",
+    "format": "html",
+    "createdBy": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    },
+    "createdDate": "2026-10-09T09:15:00Z",
+    "modifiedBy": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    },
+    "modifiedDate": "2026-10-09T09:40:00Z",
+    "isDeleted": false,
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/comments/502",
+    "mentions": [
+     {
+      "artifactId": "4521",
+      "artifactType": "Person",
+      "commentId": 502,
+      "targetId": "00000000-0000-0000-0000-000000000002"
+     }
+    ]
+   },
+   {
+    "workItemId": 4521,
+    "id": 501,
+    "version": 1,
+    "text": "<div>Does the 409 also cover a resubmit after a timeout?</div>",
+    "format": "html",
+    "createdBy": {
+     "displayName": "Person 3",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000004",
+     "uniqueName": "person3@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+     "descriptor": "aad.anonymised-3"
+    },
+    "createdDate": "2026-10-09T08:00:00Z",
+    "modifiedBy": {
+     "displayName": "Person 3",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000004",
+     "uniqueName": "person3@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+     "descriptor": "aad.anonymised-3"
+    },
+    "modifiedDate": "2026-10-09T08:00:00Z",
+    "isDeleted": false,
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/comments/501"
+   }
+  ],
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/comments"
+ }
+}

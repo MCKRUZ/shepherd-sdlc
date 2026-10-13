@@ -46,12 +46,16 @@ B1_NAMES = frozenset({"projects", "type_categories", "types", "type_states_user_
 # Fold B2 (B2-P0): the item, drift and discussion reads.
 B2_NAMES = frozenset({"workitems_batch", "wiql_by_tag", "wiql_untagged", "updates", "workitem_show_relations",
                       "comments", "comments_page2", "comment_versions", "comments_hostile", "updates_after_comment"})
+# Fold B3 (B3-P0): the write responses, the recent-comments re-list and the service-principal identity.
+B3_NAMES = frozenset({"workitem_create_response", "workitem_update_response", "comment_add_response",
+                      "comments_recent", "connection_data_sp"})
 
 
-def test_the_twenty_five_hand_written_fixtures_exist():
+def test_the_thirty_hand_written_fixtures_exist():
     assert sorted(p.stem for p in HAND_WRITTEN_FILES) == sorted(WIT_FIXTURE_NAMES)
-    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES and not B1_NAMES & B2_NAMES
-    assert len(WIT_FIXTURE_NAMES) == 25
+    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES | B3_NAMES
+    assert not (B1_NAMES & B2_NAMES or B1_NAMES & B3_NAMES or B2_NAMES & B3_NAMES)
+    assert len(WIT_FIXTURE_NAMES) == 30
 
 
 @pytest.mark.parametrize("path", ALL_FILES, ids=_ids)
@@ -111,3 +115,41 @@ def test_hand_written_wit_fixtures_still_in_use_are_listed_not_hidden(capsys):
         if synthetic:
             print(f"[boards] {len(synthetic)} synthetic process fixture(s) (hand-written by design): " + ", ".join(synthetic))
     assert set(still) <= set(WIT_FIXTURE_NAMES)
+
+
+# --- Fold B3 (B3-P0): the stderr texts under wit/errors/ (and, after B0, wit/captured/errors/) -------------------
+
+from tests.ado_boards_fixtures import WIT_ERROR_NAMES  # noqa: E402
+
+HAND_WRITTEN_ERRORS = sorted((WIT / "errors").glob("*.txt"))
+CAPTURED_ERRORS = sorted((WIT_CAPTURED / "errors").glob("*.txt"))
+CAPTURED_LINE_RE = re.compile(r"^# captured \d{4}-\d{2}-\d{2} .+")
+
+
+def test_the_four_hand_written_error_texts_exist():
+    assert sorted(p.stem for p in HAND_WRITTEN_ERRORS) == sorted(WIT_ERROR_NAMES)
+    assert set(WIT_ERROR_NAMES) == {"stale_rev", "rule_violation", "permission", "throttled"}
+
+
+@pytest.mark.parametrize("path", HAND_WRITTEN_ERRORS, ids=_ids)
+def test_a_hand_written_error_text_says_so_on_its_first_line(path):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert lines[0] == "# " + HAND_WRITTEN, path.name
+    assert [ln for ln in lines[1:] if ln.strip()], f"{path.name}: no stderr after the provenance line"
+    assert not any(ln.startswith("#") for ln in lines[1:]), path.name
+
+
+@pytest.mark.parametrize("path", CAPTURED_ERRORS, ids=_ids)
+def test_a_captured_error_text_is_verbatim_or_says_when_it_was_captured(path):
+    first = path.read_text(encoding="utf-8").splitlines()[:1]
+    assert not first or not first[0].startswith("#") or CAPTURED_LINE_RE.match(first[0]), path.name
+
+
+@pytest.mark.parametrize("path", HAND_WRITTEN_ERRORS + CAPTURED_ERRORS, ids=_ids)
+def test_no_error_text_carries_an_obvious_real_identity(path):
+    text = path.read_text(encoding="utf-8")
+    emails = set(EMAIL_RE.findall(text))
+    assert all(e.endswith("@example.com") for e in emails), f"{path.name}: {emails}"
+    guids = set(GUID_RE.findall(text))
+    assert all(ANON_GUID_RE.match(g) for g in guids), f"{path.name}: not anonymised: {sorted(guids)}"
+    assert not re.search(r"-preview\.\d", text), f"{path.name}: a revisioned preview api-version"

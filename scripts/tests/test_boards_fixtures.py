@@ -149,7 +149,7 @@ def test_each_fixture_command_routes_to_its_own_default_answer(name, tmp_path):
     """A fixture's `_command` is the call it answers; the router must send that call back to it."""
     command = json.loads(abf.wit_path(name).read_text(encoding="utf-8"))["_command"]
     assert command[0] == "az"
-    out = abf.FakeBoardsAz()([*command[1:], "-o", "json"], tmp_path)
+    out = abf.FakeBoardsAz(writes=abf.is_write_key(abf.route_key_boards(command[1:])))([*command[1:], "-o", "json"], tmp_path)
     assert json.loads(out) == abf.load_wit(name)
 
 
@@ -445,3 +445,184 @@ def test_b2_identities_are_anonymised(name):
     for ident in _identities(abf.load_wit(name)):
         assert ident["uniqueName"].endswith("@example.com"), name
         assert GUID_ANON.match(ident["id"]), name
+
+
+# --- Fold B3 (B3-P0): the write responses, the recent-comments re-list, the service principal ------------------
+
+B3_WRITES = {"workitem_create_response": "POST wit/workItems", "workitem_update_response": "PATCH wit/workItems",
+             "comment_add_response": "POST wit/comments"}
+B3_READS = {"comments_recent": "GET wit/comments order=desc", "connection_data_sp": "GET core/connectionData connectOptions=0"}
+B3_NAMES = {*B3_WRITES, *B3_READS}
+
+
+def test_each_fixture_is_the_default_answer_of_exactly_one_route_key():
+    from collections import Counter
+    assert all(n == 1 for n in Counter(abf.DEFAULT_WIT_ANSWERS.values()).values())
+    assert B3_NAMES <= set(abf.WIT_FIXTURE_NAMES)
+    for name, key in {**B3_WRITES, **B3_READS}.items():
+        assert abf.DEFAULT_WIT_ANSWERS[key] == name
+
+
+@pytest.mark.parametrize("name", sorted(B3_WRITES))
+def test_a_read_only_fake_refuses_every_b3_write_fixture_command(name, tmp_path):
+    command = _command_of(name)
+    assert abf.is_write_key(abf.route_key_boards(command[1:])) and abf.route_key_boards(command[1:]) == B3_WRITES[name]
+    with pytest.raises(AssertionError, match=f"^unexpected az write: {B3_WRITES[name]}$"):
+        abf.FakeBoardsAz()([*command[1:], "-o", "json"], tmp_path)
+
+
+@pytest.mark.parametrize("name", sorted(B3_READS))
+def test_the_b3_reads_pass_a_read_only_fake(name, tmp_path):
+    fake = abf.FakeBoardsAz()
+    assert json.loads(fake([*_command_of(name)[1:], "-o", "json"], tmp_path)) == abf.load_wit(name)
+    assert fake.written() == []
+
+
+def _body_flags(command):
+    return {f: command[command.index(f) + 1] for f in ("--http-method", "--media-type", "--api-version") if f in command}
+
+
+def test_b3_commands_are_the_runbook_s_write_probes():
+    create = _command_of("workitem_create_response")
+    assert _body_flags(create) == {"--http-method": "POST", "--media-type": "application/json-patch+json",
+                                   "--api-version": "7.1"}
+    assert abf.route_params(create) == {"project": "Claims", "type": "$Task"} and "--in-file" in create
+    update = _command_of("workitem_update_response")
+    assert _body_flags(update) == {"--http-method": "PATCH", "--media-type": "application/json-patch+json",
+                                   "--api-version": "7.1"}
+    assert abf.route_params(update) == {"project": "Claims", "id": "4560"} and "--in-file" in update
+    post = _command_of("comment_add_response")
+    assert _body_flags(post) == {"--http-method": "POST", "--media-type": "application/json", "--api-version": "7.1-preview"}
+    assert abf.route_params(post) == {"project": "Claims", "workItemId": "4521"} and "--in-file" in post
+    assert _query(post) == {"format": "markdown"}
+    recent = _command_of("comments_recent")
+    assert _query(recent) == {"order": "desc", "$top": "20"} and abf.route_params(recent)["workItemId"] == "4521"
+    assert recent[recent.index("--api-version") + 1] == "7.1-preview" and "--http-method" not in recent
+    sp = _command_of("connection_data_sp")
+    assert _query(sp) == {"connectOptions": "0"} and sp[sp.index("--api-version") + 1] == "7.1-preview"
+    for name in B3_NAMES:
+        command = _command_of(name)
+        assert command[:3] == ["az", "devops", "invoke"] and command[command.index("--org") + 1] == ORG
+
+
+@pytest.mark.parametrize("call, name", [
+    (invoke("wit", "workItems", "project=Claims", "type=$User Story", method="POST"), "workitem_create_response"),
+    (invoke("wit", "workItems", "project=Claims", "id=4521", method="PATCH"), "workitem_update_response"),
+    (invoke("wit", "comments", "project=Claims", "workItemId=4521", method="POST"), "comment_add_response"),
+    ([*invoke("wit", "comments", "project=Claims", "workItemId=4521")[:-2], "--query-parameters", "order=desc",
+      "$top=20", "-o", "json"], "comments_recent"),
+    ([*invoke("wit", "comments", "project=Claims", "workItemId=4524")[:-2], "--query-parameters", "order=desc",
+      "$top=20", "-o", "json"], "comments_recent"),
+    ([*invoke("wit", "comments", "project=Claims", "workItemId=4521")[:-2], "--query-parameters", "order=asc",
+      "$top=200", "includeDeleted=true", "-o", "json"], "comments"),
+    (invoke("core", "connectionData", ""), "connection_data"),
+    ([*invoke("core", "connectionData", "")[:-2], "--query-parameters", "connectOptions=0", "-o", "json"],
+     "connection_data_sp"),
+])
+def test_b3_same_route_fixtures_resolve_by_method_and_query_refinements(call, name, tmp_path):
+    assert json.loads(abf.FakeBoardsAz(writes=True)(call, tmp_path)) == abf.load_wit(name)
+
+
+def test_a_re_answered_bare_comments_key_also_answers_the_recent_re_list(tmp_path):
+    recent = [*invoke("wit", "comments", "project=Claims", "workItemId=4521")[:-2], "--query-parameters", "order=desc",
+              "$top=20", "-o", "json"]
+    assert json.loads(abf.FakeBoardsAz({"GET wit/comments": {"mine": 1}})(recent, tmp_path)) == {"mine": 1}
+    mine = abf.FakeBoardsAz({"GET wit/comments order=desc": {"recent": 1}})
+    assert json.loads(mine(recent, tmp_path)) == {"recent": 1}
+    sp = abf.FakeBoardsAz({"GET core/connectionData": "connection_data_sp"})
+    assert json.loads(sp(invoke("core", "connectionData", ""), tmp_path)) == abf.load_wit("connection_data_sp")
+
+
+@pytest.mark.parametrize("name, route", [
+    ("workitem_create_response", "workitem_create"), ("workitem_update_response", "workitem_update"),
+    ("comment_add_response", "comments"), ("comments_recent", "comments"), ("connection_data_sp", "connection_data"),
+])
+def test_route_name_of_maps_each_b3_fixture_to_its_wit_routes_row(name, route):
+    assert abf.route_name_of(name) == route and route in bc.WIT_ROUTES
+
+
+# --- Fold B3 response shapes (hand-written (unverified); the B0 capture corrects them) -------------------------
+
+def test_the_create_and_update_responses_are_one_work_item_a_revision_apart():
+    created, updated = abf.load_wit("workitem_create_response"), abf.load_wit("workitem_update_response")
+    for doc in (created, updated):
+        assert {"id", "rev", "fields", "_links", "url"} <= set(doc)
+        assert isinstance(doc["id"], int) and isinstance(doc["rev"], int)
+        assert doc["_links"]["self"]["href"].endswith(f"/_apis/wit/workItems/{doc['id']}")
+        assert doc["url"].endswith(f"/_apis/wit/workItems/{doc['id']}")
+        assert {"System.WorkItemType", "System.State", "System.Title", "System.AreaPath"} <= set(doc["fields"])
+        assert not any(ref.startswith("Microsoft.VSTS.Scheduling.") for ref in doc["fields"])
+    assert (created["rev"], updated["id"], updated["rev"]) == (1, created["id"], created["rev"] + 1)
+    assert created["fields"]["System.WorkItemType"] == "Task" and created["fields"]["System.State"] == "New"
+    assert created["fields"]["System.Title"] == 'sdlc probe & "quote" ✓'
+    assert updated["fields"]["System.Title"] == "sdlc probe 2"
+    assert updated["fields"]["System.ChangedDate"] > created["fields"]["System.ChangedDate"]
+
+
+def test_the_comment_post_answers_with_an_id_a_version_and_its_author():
+    doc = abf.load_wit("comment_add_response")
+    assert {"id", "workItemId", "version", "text", "format", "createdBy", "createdDate"} <= set(doc)
+    assert (doc["workItemId"], doc["version"], doc["format"], doc["isDeleted"]) == (4521, 1, "markdown", False)
+    assert doc["text"] == "probe from sdlc · sprd 000000000000"
+    me = abf.load_wit("connection_data")["authenticatedUser"]["id"]
+    assert doc["createdBy"]["id"] == me
+    assert doc["id"] not in {c["id"] for c in abf.load_wit("comments")["comments"] + abf.load_wit("comments_page2")["comments"]}
+
+
+def test_the_recent_re_list_is_newest_first_and_starts_with_the_post():
+    doc, posted = abf.load_wit("comments_recent"), abf.load_wit("comment_add_response")
+    assert {"totalCount", "count", "comments"} <= set(doc) and doc["count"] == len(doc["comments"]) <= 20
+    assert "continuationToken" not in doc
+    ids = [c["id"] for c in doc["comments"]]
+    assert ids == sorted(ids, reverse=True)
+    dates = [c["createdDate"] for c in doc["comments"]]
+    assert dates == sorted(dates, reverse=True)
+    assert not any(c["isDeleted"] for c in doc["comments"])  # includeDeleted is not asked for on the re-list
+    first = doc["comments"][0]
+    assert (first["id"], first["text"], first["createdBy"]["id"]) == (posted["id"], posted["text"], posted["createdBy"]["id"])
+    assert set(ids[1:]) <= {c["id"] for c in abf.load_wit("comments")["comments"]}
+
+
+def test_the_service_principal_has_no_account_and_a_client_id_for_a_name():
+    sp = abf.load_wit("connection_data_sp")["authenticatedUser"]
+    assert "Account" not in (sp.get("properties") or {})
+    assert GUID_ANON.match(sp["providerDisplayName"])
+    assert sp["descriptor"].startswith("Microsoft.VisualStudio.Services.Claims.AadServicePrincipal;")
+    person = abf.load_wit("connection_data")["authenticatedUser"]
+    assert sp["id"] != person["id"] and "Account" in person["properties"]
+
+
+@pytest.mark.parametrize("name", sorted(B3_NAMES))
+def test_b3_identities_are_anonymised(name):
+    for ident in _identities(abf.load_wit(name)):
+        assert ident["uniqueName"].endswith("@example.com"), name
+        assert GUID_ANON.match(ident["id"]), name
+
+
+# --- Fold B3 stderr texts ------------------------------------------------------------------------------------
+
+def test_the_error_loader_drops_the_provenance_line_only():
+    for name in abf.WIT_ERROR_NAMES:
+        raw = abf.wit_error_path(name).read_text(encoding="utf-8")
+        assert raw.splitlines()[0] == "# " + abf.HAND_WRITTEN
+        text = abf.load_wit_error(name)
+        assert text == "\n".join(raw.splitlines()[1:]).strip() and text.startswith("ERROR: ")
+        assert not text.startswith("#")
+
+
+@pytest.mark.parametrize("name, needles", [
+    ("stale_rev", ("412", "/rev", "Value: 1")),
+    ("rule_violation", ("TF401320", "Rule Error for field")),
+    ("permission", ("TF401027", "VS403")),
+    ("throttled", ("TF400733", "Retry-After")),
+])
+def test_each_error_text_says_what_its_card_row_says(name, needles):
+    text = abf.load_wit_error(name)
+    assert all(n in text for n in needles), (name, needles)
+
+
+def test_a_capture_supersedes_a_hand_written_error_with_no_code_change(tmp_path, monkeypatch):
+    monkeypatch.setattr(abf, "WIT_CAPTURED_ERRORS", tmp_path)
+    (tmp_path / "stale_rev.txt").write_text("ERROR: captured words\n", encoding="utf-8")
+    assert abf.load_wit_error("stale_rev") == "ERROR: captured words"
+    assert abf.load_wit_error("stale_rev", hand_written=True).startswith("ERROR: Test operation failed")
