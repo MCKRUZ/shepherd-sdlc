@@ -261,7 +261,7 @@ def format_report(result: dict) -> str:
         if result["ready"]
         else f"NOT READY — {result['blocking_count']} document(s) still need work."
     )
-    lines.append("ADVISORY — this reports; /sdlc-gate and /sdlc-next decide (exit 0).")
+    lines.append("ADVISORY — this reports; /sprd-gate and /sprd-next decide (exit 0).")
     return "\n".join(lines)
 
 

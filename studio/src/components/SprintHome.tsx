@@ -42,7 +42,7 @@ export interface SprintHomeProps {
   onHandOff?: (row: BoardRow) => void
   /** The "New sprint" primary with no sprint: the host's VerbDialog on the `new` verb. */
   onNewSprint: () => void
-  /** SDLC Studio's own record of Claude's work this session (drafts, proposals), or null. */
+  /** Shepherd's own record of Claude's work this session (drafts, proposals), or null. */
   claudeLine?: string | null
   /** The spec the host just handed off with exit 0 — the baton plays once the refreshed read holds it. */
   handedOff?: string | null

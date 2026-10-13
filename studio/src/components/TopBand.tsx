@@ -1,5 +1,5 @@
 // The top band (togo-command-center.md §1, visual §4 "Shell"): 48 px on `surface-0` with a
-// `line-1` hairline — the SDLC Studio mark and the project name as ONE button that leans out to the
+// `line-1` hairline — the Shepherd mark and the project name as ONE button that leans out to the
 // lifecycle home, the omnibar trigger (a `<button>` styled as a field, never an `<input>` at
 // rest — the palette overlay owns the input while open), the needs-you chip, the sync chip, and
 // the project-wide controls: Console (⌘J, `aria-pressed`), Appearance (a disclosure holding the
@@ -17,8 +17,8 @@ import type { ProjectStatus, SyncState } from '../../shared/types'
 import { targetForHome, type Area, type NavTarget } from '../../shared/nav'
 import { NOTHING_NEEDS_YOU } from '../../shared/reasons'
 import { DensityToggle, DisabledReason, Icon, Kbd, MotionToggle, ThemeToggle, Tooltip, VisuallyHidden, cn, disabledReasonProps } from '../ui'
-import { TogoMark } from './brand/TogoMark'
-import { PRODUCT_NAME } from './brand/TogoWordmark'
+import { ShepherdMark } from './brand/ShepherdMark'
+import { PRODUCT_NAME } from './brand/ShepherdWordmark'
 import { OverflowMenu, type OverflowActions } from './OverflowMenu'
 import { SyncChip } from './SyncChip'
 
@@ -71,7 +71,7 @@ export const TopBand = memo(function TopBand({
       <div data-topband="" data-testid="top-band" data-presentation="" className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b border-line-1 bg-steer-bg px-4 py-1">
         <h1 className="min-w-0 shrink text-sm font-semibold leading-5 text-ink-1">
           <span className="flex max-w-[20rem] items-center gap-2.5 py-1 pl-1 pr-2">
-            <TogoMark className="h-6 w-6 shrink-0 text-accent-600" />
+            <ShepherdMark frameOnly className="h-6 w-6 shrink-0" />
             <VisuallyHidden>{`${PRODUCT_NAME} · `}</VisuallyHidden>
             <span className="truncate">{status.project_name}</span>
           </span>
@@ -92,7 +92,7 @@ export const TopBand = memo(function TopBand({
           title={status.profile_id}
           className="flex max-w-[16rem] items-center gap-2.5 rounded-lg py-1 pl-1 pr-2 text-left transition-colors hover:bg-surface-2"
         >
-          <TogoMark className="h-6 w-6 shrink-0 text-accent-600" />
+          <ShepherdMark frameOnly className="h-6 w-6 shrink-0" />
           <VisuallyHidden>{`${PRODUCT_NAME} · `}</VisuallyHidden>
           <span className="truncate">{status.project_name}</span>
         </button>

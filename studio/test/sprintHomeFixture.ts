@@ -74,7 +74,7 @@ export const SPRINT: SprintView = {
 export const NO_SPRINT: SprintView = {
   ...SPRINT, sprint: null, slate: [], readiness: { ready: 0, total: 0, gaps: [] }, verdictsPending: [], handoffsOpen: [], mix: {},
   mixWarnings: [], wip: { inFlight: null, cap: null }, buildOrder: [], nextUp: null, decisions: null, carriedIn: [], hasData: false,
-  note: 'No sprint — open one with /sdlc-sprint new.',
+  note: 'No sprint — open one with /sprd-sprint new.',
 }
 
 export const ROSTER: ProjectSettings['roster'] = {
@@ -151,11 +151,11 @@ export const EMPTY_CC: CommandCenter = {
   sprint: block('sprint.py status --json', NO_SPRINT),
   sprints: block('sprint.py list --json', { sprints: [], active: null, count: 0 }),
   board: block<Board & { warnings: string[] }>('spec_status.py --all --json', { rows: [], codeHostAvailable: false, error: 'gh not found', teamLimits: null, warnings: [] }),
-  decisions: block('track_decisions.py --json', null, 'no decision-log'),
-  findings: block('record_findings.py report --json', null, 'no ledger'),
-  scorecard: block('scorecard.py report --json', null, 'no events'),
-  roster: block('project_settings.py --json', null, 'no roster'),
-  log: block('sprint.py log --json', null, 'lacks sprint-log'),
+  decisions: block<DecisionsView>('track_decisions.py --json', null, 'no decision-log'),
+  findings: block<FindingsView>('record_findings.py report --json', null, 'no ledger'),
+  scorecard: block<Scorecard>('scorecard.py report --json', null, 'no events'),
+  roster: block<ProjectSettings['roster']>('project_settings.py --json', null, 'no roster'),
+  log: block<SprintLogView>('sprint.py log --json', null, 'lacks sprint-log'),
   needsYou: [],
   needsYouReason: 'sign in or type your name to see what needs you',
   sinceYesterday: [],

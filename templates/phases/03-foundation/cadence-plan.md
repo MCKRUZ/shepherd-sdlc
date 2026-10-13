@@ -13,7 +13,7 @@
 | Intent triage | 60 min | refinement | Stories → ready specs; risk tiers assigned; decision lists answered |
 | Retro+ | 60 min | retro | Every escaped bug answered with "which check should have caught it?"; harness backlog |
 | Setup review | 30–60 min | (new) | Versioned harness changes merged; Setup Owner's deputy reviews |
-| Cross-functional review (Mon/Wed/Fri) | 30 min | (new) | Sprint slate readiness, verdicts, decisions — which slated specs are NOT READY and why, which Engineering/Data verdicts are pending and for how long, which decision-log items are overdue (`/sdlc-refine` renders the agenda) |
+| Cross-functional review (Mon/Wed/Fri) | 30 min | (new) | Sprint slate readiness, verdicts, decisions — which slated specs are NOT READY and why, which Engineering/Data verdicts are pending and for how long, which decision-log items are overdue (`/sprd-refine` renders the agenda) |
 
 ## Client cadence
 - Biweekly 45-min steering: live demo in dev + outcome scorecard + decision list + gate status.
@@ -24,7 +24,7 @@
 - **WIP cap:** no Orchestrator runs more than **[2]** concurrent agent streams. The cap is enforced **globally**, across every sprint and every spec in flight, by `track_specs --wip-cap` — a sprint's slate is a commitment window over the backlog order, never a second WIP budget.
 - **Review-wait tripwire:** halt new streams when median review wait exceeds **[one working day]**.
 - Security-review wait is tracked **separately** (it clears slower and would hide in an average).
-- **Sprint length:** [10 business days] — the commitment window `/sdlc-sprint new` defaults to; `end` is the last business day of a window this many business days long, `start` counted as day 1 (Mon 2026-09-28 → Fri 2026-10-09).
+- **Sprint length:** [10 business days] — the commitment window `/sprd-sprint new` defaults to; `end` is the last business day of a window this many business days long, `start` counted as day 1 (Mon 2026-09-28 → Fri 2026-10-09).
 - **Review-turnaround target:** [not set] (per lane — Engineering and Data; the sprint agenda flags verdicts waiting beyond it, and reads "no target set" when this line is left blank).
 
 These two numbers are the project-wide default. A project with teams of very different sizes can

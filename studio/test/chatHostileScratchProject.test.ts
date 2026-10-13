@@ -75,7 +75,7 @@ describe('the hostile-scratch-project isolation proof', () => {
         prompt: 'Reply with exactly the word OK. Do not read any files. Do not call any tool.',
         projectPath: dir,
         pluginRoot: dir, // worst case: even if the hostile dir were ALSO the plugin root
-        pluginName: 'claude-code-sdlc',
+        pluginName: 'shepherd',
         stageId: '0',
         stageDisplay: 'Discovery',
         mcpConfig: join(dir, 'mcp-config.json'),
@@ -100,7 +100,7 @@ describe('the hostile-scratch-project isolation proof', () => {
     const { dir } = plantHostileProject()
     try {
       const prompt = buildSystemPrompt({
-        projectPath: dir, pluginRoot: dir, pluginName: 'claude-code-sdlc',
+        projectPath: dir, pluginRoot: dir, pluginName: 'shepherd',
         stageId: '0', stageDisplay: 'Discovery',
       })
       expect(prompt).not.toContain(SENTINEL)
@@ -127,7 +127,7 @@ describe('the hostile-scratch-project isolation proof', () => {
           prompt: 'Reply with exactly the word OK. Do not read any files. Do not call any tool.',
           projectPath: dir,
           pluginRoot: dir,
-          pluginName: 'claude-code-sdlc',
+          pluginName: 'shepherd',
           stageId: '0',
           stageDisplay: 'Discovery',
           mcpConfig: mcpConfigFile,

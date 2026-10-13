@@ -29,7 +29,7 @@ const BASE = {
 }
 
 const DATA = {
-  id: 'data', label: 'Data contract', command: 'sdlc-data', kind: 'create', optional: true,
+  id: 'data', label: 'Data contract', command: 'sprd-data', kind: 'create', optional: true,
   creates: ['.sdlc/artifacts/02-design/data/data-contract.md'], after: [], status: 'available', reason: null,
 }
 

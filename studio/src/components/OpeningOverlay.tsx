@@ -5,7 +5,7 @@ import { useStudioGSAP } from '../motion/useStudioGSAP'
 import { motion } from '../motion/motion'
 import { MOTION_DURATIONS, MOTION_EASES } from '../motion/contract'
 import { contextFrom, openingOverlay } from '../motion/choreo'
-import { TogoMark } from './brand/TogoMark'
+import { S_CENTRE, ShepherdMark } from './brand/ShepherdMark'
 
 /** Shown while a project is being opened — or any other action that reads or writes through the
  * plugin and can take several seconds, where nothing on screen otherwise looks like it did
@@ -65,23 +65,30 @@ export function OpeningOverlay({
   }, [])
 
   // Choreography #16: root fades in (150 ms), card settles (220 ms), then the mark draws in —
-  // bar grows from its centre, the disc's outline is traced, the disc fills — ≈ 0.74 s, under
-  // the 0.9 s ceremony cap. ONCE, at mount. In MODE=test and with motion off the stub applies the
-  // end state at once: a filled, static mark. The explicit `dependencies: []` is the intent
-  // spelled out: this component re-renders every 250 ms for its clock, and nothing may replay.
+  // the two frame halves are traced as outlines, the frame fills as the trace hands over, then
+  // the S settles into its seat on the tab — ≈ 0.76 s, under the 0.9 s ceremony cap. ONCE, at
+  // mount. In MODE=test and with motion off the stub applies the end state at once: a filled,
+  // static mark. The explicit `dependencies: []` is the intent spelled out: this component
+  // re-renders every 250 ms for its clock, and nothing may replay.
   useStudioGSAP((g) => {
     const root = rootRef.current
     const card = cardRef.current
     if (!root) return
     const ctx = contextFrom(root, { enabled: motion.enabled(), reduced: motion.reduced() }, { durations: MOTION_DURATIONS, eases: MOTION_EASES })
     openingOverlay.play(ctx, { root, card })
-    const bar = card?.querySelector('[data-mark-bar]')
-    const disc = card?.querySelector('[data-mark-disc]')
-    if (!bar || !disc) return
+    const frame = card?.querySelector('[data-mark-frame]')
+    const s = card?.querySelector('[data-mark-s]')
+    if (!frame || !s) return
+    const halves = frame.querySelectorAll(':scope > path')
     const tl = g.timeline()
-    tl.fromTo(bar, { scaleX: 0 }, { scaleX: 1, duration: 0.22, ease: 'expo.out' }, 0.05)
-    tl.to(disc, { attr: { 'stroke-dashoffset': 0 }, duration: 0.48, ease: 'expo.out' }, 0.18)
-    tl.to(disc, { attr: { 'fill-opacity': 1 }, duration: 0.16, ease: 'power2.out' }, 0.58)
+    // Trace: both halves at once, each in its own tone.
+    tl.to(halves, { attr: { 'stroke-dashoffset': 0 }, duration: 0.42, ease: 'expo.out' }, 0.05)
+    // Fill: the group's fill-opacity carries the tones and, in Depth, the overlay with them; the
+    // stroke fades as the fill lands so the resting frame is never fatter than drawn.
+    tl.to(frame, { attr: { 'fill-opacity': 1 }, duration: 0.16, ease: 'power2.out' }, 0.40)
+    tl.to(halves, { attr: { 'stroke-opacity': 0 }, duration: 0.16, ease: 'power2.out' }, 0.40)
+    // The S arrives last, scaling from its own centre (`svgOrigin` is in the mark's 64 units).
+    tl.fromTo(s, { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, svgOrigin: `${S_CENTRE.x} ${S_CENTRE.y}`, duration: 0.24, ease: 'expo.out' }, 0.52)
   }, { scope: rootRef, dependencies: [] })
 
   return (
@@ -92,16 +99,17 @@ export function OpeningOverlay({
       aria-modal="true"
       aria-busy="true"
       aria-label={title ?? `Opening ${projectName}`}
-      className="fixed inset-0 z-50 flex cursor-progress items-center justify-center bg-slate-900/40 backdrop-blur-[1px]"
+      className="fixed inset-0 z-50 flex cursor-progress items-center justify-center bg-scrim backdrop-blur-[1px]"
     >
       <div
         ref={cardRef}
         tabIndex={-1}
         className="w-[320px] rounded-[20px] border border-line-1 bg-surface-1 p-6 text-center shadow-3 outline-none"
       >
-        {/* 48 px Depth (brand §4): the card is one of the mark's three hero homes. The draw-in
-            traces the outline with the same gradient before filling it. */}
-        <TogoMark draw variant="depth" className="mx-auto h-12 w-12" />
+        {/* 48 px Depth (brand §4): the card is one of the mark's hero homes. The draw-in traces
+            the frame halves in their own tones, fills them (Depth arriving with the fill), then
+            seats the S. */}
+        <ShepherdMark draw variant="depth" className="mx-auto h-12 w-12" />
         <p className="mt-4 text-sm font-medium text-ink-1">{title ?? `Opening ${projectName}…`}</p>
         <p className="mt-1 text-xs text-ink-3">{subtitle ?? 'Reading the project through the plugin.'}</p>
         {/* The ring's `animate-spin` keeps the "still working" signal while the mark rests;

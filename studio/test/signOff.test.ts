@@ -2,9 +2,9 @@
  *
  * Until now the only thing in Studio that called the plugin's real phase-advance step was the
  * Build-declare-complete flow — every other phase (Discovery → Requirements, and on) still
- * needed `/sdlc-next` in Claude Code. This is the general version: check the gates, confirm
+ * needed `/sprd-next` in Claude Code. This is the general version: check the gates, confirm
  * every judgement question is ticked, write and validate a condensed "frozen layer" summary of
- * the phase, snapshot the artifact record, then advance — same order `/sdlc-next` follows,
+ * the phase, snapshot the artifact record, then advance — same order `/sprd-next` follows,
  * because it is the same plugin underneath and nothing here gets to disagree with it.
  *
  * Tested against a real git remote, same as `deferReachesTheRepo.test.ts` and
@@ -241,7 +241,7 @@ describe('setAsideLayer — pure file moves, no subprocess (studio-improvements 
     expect(existsSync(layer)).toBe(false)
   })
 
-  it('keeps the previous layer under /sdlc-next\'s own name, dated', () => {
+  it('keeps the previous layer under /sprd-next\'s own name, dated', () => {
     const layer = join(dir(), 'phase0-discovery.md')
     writeFileSync(layer, 'reviewed')
     const aside = setAsideLayer(layer, new Date('2026-10-05T12:00:00Z'))

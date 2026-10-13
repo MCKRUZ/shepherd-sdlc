@@ -258,7 +258,7 @@ function DocumentPanelHeader({
   editDisabled: boolean
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line-1 pb-3">
       <div className="min-w-0">
         <BackLink label="← Back to Workflow" onClick={onBack} className="font-medium" />
         <h3 className="mt-0.5 truncate text-sm font-semibold text-ink-1">{title}</h3>

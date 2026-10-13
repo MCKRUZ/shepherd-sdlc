@@ -1,5 +1,5 @@
 # Review Report — Phase 2: Design
-<!-- Written by the multi-reviewer agent (/sdlc-review) to .sdlc/artifacts/{NN}-{phase}/review-report.md -->
+<!-- Written by the multi-reviewer agent (/sprd-review) to .sdlc/artifacts/{NN}-{phase}/review-report.md -->
 
 **Mode:** council
 **Date:** 2026-09-30T14:05:00Z

@@ -87,10 +87,10 @@ Define the data structures:
 - Key fields and types
 - Persistence strategy
 
-### Step 6a: Data Contract, Readiness and Lineage (conditional — `/sdlc-data`)
+### Step 6a: Data Contract, Readiness and Lineage (conditional — `/sprd-data`)
 
 **Trigger:** the feature reads or writes customer or personal data, or depends on data nobody has
-checked is actually there. When it applies, run `/sdlc-data`: the `data-analyst` agent interviews,
+checked is actually there. When it applies, run `/sprd-data`: the `data-analyst` agent interviews,
 then drafts under `data/`: `data-contract.md` (every field, with an explicit **PII?** column),
 `data-readiness.md` (availability / completeness / quality — advisory), and `lineage-audit.md`
 (source → transform → sink, with retention and audit points).
@@ -126,10 +126,10 @@ paths, and what the Build loop's HIGH-risk tier is calibrated against.
 > agent proposes the map, a human accepts it. An unreviewed guarded-path list means the security
 > gate protects whatever Claude guessed was sensitive.
 
-### Step 7a: Experience — Journey, Surface Layout, Interaction Contract (conditional — `/sdlc-experience`)
+### Step 7a: Experience — Journey, Surface Layout, Interaction Contract (conditional — `/sprd-experience`)
 
 **Trigger:** the feature has a customer surface — a screen, a voice line, a chat thread. When it
-applies, run `/sdlc-experience` after the architecture is chosen (the surface layout depends on it).
+applies, run `/sprd-experience` after the architecture is chosen (the surface layout depends on it).
 It routes by channel: `ag-ui` to the `visual-designer`, `voice` / `chat` to the
 `conversation-designer`. The designer drafts under `experience/`: `user-journey.md` (including
 abandon, failure and dead-end paths), `surface-layout.md` (screens, or a turn-by-turn script, or a
@@ -137,11 +137,11 @@ message flow), and `channel-interaction-spec.md` — the contract the surface an
 co-authored with Engineering where it is an event or API contract.
 
 > **HITL GATE:** Design proposes; a named human signs the journey and the interaction contract, with
-> Engineering co-signing the contract. At Build, `/sdlc-channel` binds each surface spec to its one
+> Engineering co-signing the contract. At Build, `/sprd-channel` binds each surface spec to its one
 > channel and injects the channel's acceptance dimensions from this contract as concrete checks.
 
 Discipline sign-offs are recorded at the phase advance beside the phase's own signature
-(`/sdlc-next` captures them as `Discipline:Section:Name`).
+(`/sprd-next` captures them as `Discipline:Section:Name`).
 
 ### Step 8: Generate Architecture Diagrams
 
@@ -176,7 +176,7 @@ Review and complete `phase3-handoff.md` (generated in Step 3). Ensure it contain
 - Risks identified during design
 
 ### Step 10: Generate Phase Report
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/02-design-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/02-design-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
 
 ## Artifact Specifications
 
@@ -355,7 +355,7 @@ owner, or removed.
 > **Optional by design.** Its absence does not by itself mean the phase went badly, so the gate
 > does not block on it — but the approver is asked about it at sign-off. Write it when the work
 > happens; a receipt written later from memory is worth less than no receipt at all.
-### `data/data-contract.md`, `data/data-readiness.md`, `data/lineage-audit.md` (OPTIONAL — conditional, `/sdlc-data`)
+### `data/data-contract.md`, `data/data-readiness.md`, `data/lineage-audit.md` (OPTIONAL — conditional, `/sprd-data`)
 
 The Data seat's three artifacts. The contract must carry a PII column on every field; the readiness
 assessment flags gaps as `DL-NN` references; the lineage names retention and audit points.
@@ -364,12 +364,12 @@ assessment flags gaps as `DL-NN` references; the lineage names retention and aud
 > report says so. The gate does not block on it — the approver is asked at sign-off whether the
 > trigger applied and, if it did, whether the artifact exists and its owner signed.
 
-### `experience/user-journey.md`, `experience/surface-layout.md`, `experience/channel-interaction-spec.md` (OPTIONAL — conditional, `/sdlc-experience`)
+### `experience/user-journey.md`, `experience/surface-layout.md`, `experience/channel-interaction-spec.md` (OPTIONAL — conditional, `/sprd-experience`)
 
 The Design seat's three artifacts for one channel-bound surface. The journey must include failure
 paths; the layout is channel-adaptive; the interaction spec lists each of the channel's acceptance
 dimensions with the contract element and the concrete acceptance check that will be injected into
-the spec at `/sdlc-channel`.
+the spec at `/sprd-channel`.
 
 > **Conditional by design.** Required when its trigger applies; absent otherwise, and the phase
 > report says so. The gate does not block on it — the approver is asked at sign-off whether the
@@ -395,9 +395,9 @@ the spec at `/sdlc-channel`.
       advance
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/02-design-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/02-design-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Guidance
 - A good design doc lets a new developer understand the system without asking questions.
@@ -409,7 +409,7 @@ To regenerate at any time: `/sdlc-phase-report`
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (no artifacts yet)
 - "What are the key architectural drivers — what matters most: performance, maintainability, time-to-market?"

@@ -1,6 +1,6 @@
 ---
 name: conversation-designer
-description: Design-discipline agent for conversational surfaces (the voice and chat channels) — authors the user journey, surface layout (turn-script or message-flow), and the voice/chat interaction contract. Runs standalone, as the /sdlc-experience designer for voice/chat, or as the /sdlc-review Design lens (Phase 2).
+description: Design-discipline agent for conversational surfaces (the voice and chat channels) — authors the user journey, surface layout (turn-script or message-flow), and the voice/chat interaction contract. Runs standalone, as the /sprd-experience designer for voice/chat, or as the /sprd-review Design lens (Phase 2).
 tools:
   - Read
   - Write
@@ -19,8 +19,8 @@ the **channel interaction spec** — the turn / barge-in / readback contract for
 escalation contract for chat.
 
 You interview coach-style, drafting as answers arrive. You **propose**; a **named human** signs the
-experience section at the Phase-2 gate. This is the *author* beat between `/sdlc-feature` (decompose)
-and `/sdlc-channel` (bind): the interaction spec you author is what `/sdlc-channel` reads to inject the
+experience section at the Phase-2 gate. This is the *author* beat between `/sprd-feature` (decompose)
+and `/sprd-channel` (bind): the interaction spec you author is what `/sprd-channel` reads to inject the
 channel's acceptance dimensions into the spec's existing `## Acceptance Checks`.
 
 ## Your Responsibilities
@@ -46,7 +46,7 @@ channel's acceptance dimensions into the spec's existing `## Acceptance Checks`.
 3. **Route dead-ends; serve as the Design review lens:**
    - Open a decision-log item for any conversation dead-end or unresolved experience choice — with a
      named owner and a 2-business-day clock. You raise it; a named human decides it.
-   - When composed by `/sdlc-review`, apply the **Design lens** (category slug `design-gap`): is the
+   - When composed by `/sprd-review`, apply the **Design lens** (category slug `design-gap`): is the
      conversation fully specified — turns, dead-ends, and a **fallback-to-human reachable at every turn**
      — and do the interaction-spec rows map to concrete acceptance checks? Advisory findings only.
 
@@ -71,7 +71,7 @@ conversation-designer ▸ Where and how is escalation to a human offered, and wh
 
 ### Workflow mode (inside a Phase 2 project)
 1. Read the target spec's `channel:` field or the `feature-brief.md` row to confirm this is a `voice` or
-   `chat` surface; if it is `ag-ui`, hand back to `/sdlc-experience` (it routes to the `visual-designer`).
+   `chat` surface; if it is `ag-ui`, hand back to `/sprd-experience` (it routes to the `visual-designer`).
 2. Read `channels/voice.yaml` or `channels/chat.yaml` for the dimensions and contract; read any
    `non-functional-requirements.md` for the NFRs to cite.
 3. Draft the three artifacts into `.sdlc/artifacts/02-design/experience/`.
@@ -109,5 +109,5 @@ conversation-designer ▸ Where and how is escalation to a human offered, and wh
   at the Phase-2 gate (captured in state) and answers every decision-log item.
 - **Persona stays in the experience layer.** Journeys and scripts are (channel × persona)-aware, but
   persona is never a spec field — only `channel:` lands on the spec.
-- **Author, then bind.** You produce the artifacts; `/sdlc-channel` injects them. You never edit the spec
+- **Author, then bind.** You produce the artifacts; `/sprd-channel` injects them. You never edit the spec
   yourself and never touch the protected core. These artifacts are optional; gates never demand them.

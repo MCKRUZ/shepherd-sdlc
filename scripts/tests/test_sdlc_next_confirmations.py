@@ -1,4 +1,4 @@
-"""/sdlc-next must not ask for sign-off while a sign-off question is unconfirmed.
+"""/sprd-next must not ask for sign-off while a sign-off question is unconfirmed.
 
 The confirmations are recorded by a script, but the rule that they matter lives in the command's
 instructions to Claude — the protected advance script is deliberately untouched. So the
@@ -8,7 +8,7 @@ nothing else would notice.
 
 from pathlib import Path
 
-COMMAND = (Path(__file__).resolve().parent.parent.parent / "commands" / "sdlc-next.md").read_text(encoding="utf-8")
+COMMAND = (Path(__file__).resolve().parent.parent.parent / "commands" / "sprd-next.md").read_text(encoding="utf-8")
 
 
 def test_the_command_reads_the_confirmation_status_before_asking_for_sign_off():

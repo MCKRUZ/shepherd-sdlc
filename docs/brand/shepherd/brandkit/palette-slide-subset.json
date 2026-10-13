@@ -1,0 +1,33 @@
+{
+  "approval_summary": "Brandbook palette SLIDE subset (template holds five swatches): sand as the slide ground, moss, umber, wheat and spring; bark text and lake stay in palette.json; the full 7-colour palette is restored to state right after the build.",
+  "palette": {
+    "colors": [
+      {
+        "hex": "#F5EFE4",
+        "name": "Warm sand",
+        "role": "background"
+      },
+      {
+        "hex": "#3F6B35",
+        "name": "Moss",
+        "role": "primary"
+      },
+      {
+        "hex": "#5E452A",
+        "name": "Umber",
+        "role": "support"
+      },
+      {
+        "hex": "#D9C7A3",
+        "name": "Wheat",
+        "role": "accent"
+      },
+      {
+        "hex": "#9DC58E",
+        "name": "Spring",
+        "role": "accent"
+      }
+    ],
+    "gradients": []
+  }
+}

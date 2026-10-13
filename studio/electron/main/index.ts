@@ -15,6 +15,7 @@ import { setGhBinary, setGitBinary } from './git'
 import { setAzBinary } from './az'
 import { invalidateCodeHost, resolveCodeHost } from './codeHost'
 import { HOSTS } from '../../shared/codeHostModel'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import { forgetTypedActor } from './typedActor'
 import { initSettingsPath, loadSettings, recordRecentProject, saveSettings, type Settings } from './settings'
 import { hasSdlcProject, listAvailableProfiles, openProject, previewSetup, runPluginScript, runSetup } from './project'
@@ -198,7 +199,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:openProject', async (_event, projectPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { hasProject: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { hasProject: false, error: PLUGIN_NOT_FOUND }
     // Spec 0009: pull immediately before a document opens — the closest existing entry
     // point in spec 0008's shell is opening the project itself; best-effort, since a
     // project with no remote configured yet (or offline) must still open.
@@ -231,13 +232,13 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:previewSetup', async (_event, projectPath: string, profileId: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { error: PLUGIN_NOT_FOUND }
     return previewSetup(scriptsDir, projectPath, profileId)
   })
 
   ipcMain.handle('studio:runSetup', async (_event, projectPath: string, profileId: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
     const result = await runSetup(scriptsDir, projectPath, profileId)
     if (result.ok) {
       recordRecentProject(projectPath, path.basename(projectPath))
@@ -265,7 +266,7 @@ function registerIpcHandlers() {
       throw new Error(`The code host must be one of ${HOSTS.join(', ')}.`)
     }
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) throw new Error('claude-code-sdlc plugin scripts not found')
+    if (!scriptsDir) throw new Error(PLUGIN_NOT_FOUND)
     const entry = await runPluginScript(scriptsDir, 'set_setting.py', ['--repo', projectPath, '--json', 'code-host', '--host', host])
     let parsed: { ok?: unknown; refusal?: { message?: unknown } } = {}
     try { parsed = JSON.parse(rawStdout(entry)) } catch { parsed = {} }
@@ -281,7 +282,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:pull', async (_event, projectPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, mergedFiles: [], clashes: [], arrivedChanges: [], entries: [], error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, mergedFiles: [], clashes: [], arrivedChanges: [], entries: [], error: PLUGIN_NOT_FOUND }
     return pull(projectPath, scriptsDir)
   })
 
@@ -289,7 +290,7 @@ function registerIpcHandlers() {
     'studio:resolveClash',
     async (_event, projectPath: string, filePath: string, sectionKey: string, choice: ClashChoice, combinedText?: string) => {
       const scriptsDir = await resolvePluginScriptsDir()
-      if (!scriptsDir) return { ok: false, fileFullyResolved: false, error: 'claude-code-sdlc plugin scripts not found' }
+      if (!scriptsDir) return { ok: false, fileFullyResolved: false, error: PLUGIN_NOT_FOUND }
       return resolveClash(projectPath, scriptsDir, filePath, sectionKey, choice, combinedText)
     },
   )
@@ -301,7 +302,7 @@ function registerIpcHandlers() {
       options?: { actor?: string; onlyPath?: string },
     ) => {
       const scriptsDir = await resolvePluginScriptsDir()
-      if (!scriptsDir) return { ok: false, entries: [], error: 'claude-code-sdlc plugin scripts not found' }
+      if (!scriptsDir) return { ok: false, entries: [], error: PLUGIN_NOT_FOUND }
       return save(projectPath, scriptsDir, changeNote, options ?? {})
     },
   )
@@ -324,7 +325,7 @@ function registerIpcHandlers() {
       return {
         ok: false, stageId: '', name: '', display: '', isCurrent: false, documents: [], findings: [],
         judgement: [], signOff: { status: 'unknown', signedOffBy: null, completedAt: null },
-        ready: false, error: 'claude-code-sdlc plugin scripts not found',
+        ready: false, error: PLUGIN_NOT_FOUND,
       }
     }
     return getStageReadiness(projectPath, scriptsDir, stageId)
@@ -333,7 +334,7 @@ function registerIpcHandlers() {
   ipcMain.handle('studio:gatherPipelineEvidence', async (_event, projectPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
     if (!scriptsDir) {
-      return { ok: false, error: 'claude-code-sdlc plugin scripts not found', rails: [], proofsNeeded: [] }
+      return { ok: false, error: PLUGIN_NOT_FOUND, rails: [], proofsNeeded: [] }
     }
     // The host decides which CLI's history is read and whose protection sentence is said
     // (code-host-providers §6.2); resolveCodeHost is memoised, so this is a cache read.
@@ -351,7 +352,7 @@ function registerIpcHandlers() {
     'studio:setJudgementConfirmation',
     async (_event, projectPath: string, stageId: string, questionId: string, confirmed: boolean, actor: string) => {
       const scriptsDir = await resolvePluginScriptsDir()
-      if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+      if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
       return setJudgementConfirmation(projectPath, scriptsDir, stageId, questionId, confirmed, actor)
     },
   )
@@ -364,7 +365,7 @@ function registerIpcHandlers() {
     ) => {
       const scriptsDir = await resolvePluginScriptsDir()
       if (!scriptsDir) {
-        return { ok: false, stage: 'plugin' as const, error: 'claude-code-sdlc plugin scripts not found' }
+        return { ok: false, stage: 'plugin' as const, error: PLUGIN_NOT_FOUND }
       }
       const claudePath = loadSettings().claudePathOverride ?? 'claude'
       return signOffStage(projectPath, scriptsDir, claudePath, stageId, signedBy, disciplineSignoffs)
@@ -373,7 +374,7 @@ function registerIpcHandlers() {
 
   const noScripts = (relPath: string) => ({
     ok: false, path: relPath, shaped: false, warnings: [], sections: [],
-    error: 'claude-code-sdlc plugin scripts not found',
+    error: PLUGIN_NOT_FOUND,
   })
 
   // The ONE place Studio writes outside a project folder, and only to a location a person
@@ -406,7 +407,7 @@ function registerIpcHandlers() {
     if (!scriptsDir) {
       return {
         ok: false, stage: null, documents: [],
-        error: 'claude-code-sdlc plugin scripts not found',
+        error: PLUGIN_NOT_FOUND,
       }
     }
     return getFoundationSummary(projectPath, scriptsDir)
@@ -418,7 +419,7 @@ function registerIpcHandlers() {
       // Never "can sign in" when that could not be determined — reporting a gate as working
       // when it is unknown is the direction that gets somebody merged without a review.
       return { ok: false, repo: null, configured: [], gates_can_sign_in: false,
-               detail: 'claude-code-sdlc plugin scripts not found' }
+               detail: PLUGIN_NOT_FOUND }
     }
     return getGateAuth(projectPath, scriptsDir)
   })
@@ -448,7 +449,7 @@ function registerIpcHandlers() {
     if (!scriptsDir) {
       return {
         ok: false, guide_source: null, gates: [], unexpected: [], bypass_ledgers: [],
-        error: 'claude-code-sdlc plugin scripts not found',
+        error: PLUGIN_NOT_FOUND,
       }
     }
     return getGateInventory(projectPath, scriptsDir)
@@ -464,7 +465,7 @@ function registerIpcHandlers() {
           check: 'report',
           question: 'Is this project wired up?',
           state: 'unknown' as const,
-          detail: 'claude-code-sdlc plugin scripts not found',
+          detail: PLUGIN_NOT_FOUND,
         }],
       }
     }
@@ -476,7 +477,7 @@ function registerIpcHandlers() {
     if (!scriptsDir) {
       return { ok: false, fixed_rules: [],
                roster: { file: '.sdlc/team.yaml', present: false, teams: [], people: [],
-                         errors: ['claude-code-sdlc plugin scripts not found'] },
+                         errors: [PLUGIN_NOT_FOUND] },
                wip_limits: { file: '', present: false, errors: [], teams: [] },
                approval: { file: '.sdlc/approval-settings.yaml', present: false, errors: [], stages: [] } }
     }
@@ -485,7 +486,7 @@ function registerIpcHandlers() {
 
   const noPluginSetting = {
     ok: false,
-    refusal: { kind: 'other', message: 'claude-code-sdlc plugin scripts not found' },
+    refusal: { kind: 'other', message: PLUGIN_NOT_FOUND },
   }
 
   ipcMain.handle(
@@ -527,7 +528,7 @@ function registerIpcHandlers() {
         return {
           ok: false, can_declare: false,
           blockers: [{ kind: 'unreadable', count: 1,
-                       message: 'claude-code-sdlc plugin scripts not found' }],
+                       message: PLUGIN_NOT_FOUND }],
           unfinished: [], deferred: [], teamless: [], teams_in_list: [],
           totals: { specs: 0, unfinished: 0, deferred: 0 },
         }
@@ -560,7 +561,7 @@ function registerIpcHandlers() {
     async (_event, projectPath: string, declaredBy: string) => {
       const scriptsDir = await resolvePluginScriptsDir()
       if (!scriptsDir) {
-        return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+        return { ok: false, error: PLUGIN_NOT_FOUND }
       }
       return advanceAfterDeclaration(projectPath, scriptsDir, declaredBy)
     },
@@ -575,7 +576,7 @@ function registerIpcHandlers() {
     ) => {
       const scriptsDir = await resolvePluginScriptsDir()
       if (!scriptsDir) {
-        return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+        return { ok: false, error: PLUGIN_NOT_FOUND }
       }
       return generateHandoffReport(projectPath, scriptsDir, options ?? {})
     },
@@ -585,7 +586,7 @@ function registerIpcHandlers() {
     const scriptsDir = await resolvePluginScriptsDir()
     if (!scriptsDir) {
       return { rows: [], codeHostAvailable: false, teamLimits: null,
-               error: 'claude-code-sdlc plugin scripts not found' }
+               error: PLUGIN_NOT_FOUND }
     }
     return getBoard(projectPath, scriptsDir)
   })
@@ -593,13 +594,13 @@ function registerIpcHandlers() {
   ipcMain.handle('studio:getSpecReadiness', async (_event, projectPath: string, specPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
     if (!scriptsDir) {
-      return { ok: false, error: 'claude-code-sdlc plugin scripts not found', ready: false,
+      return { ok: false, error: PLUGIN_NOT_FOUND, ready: false,
                spec: '', risk: '', status: '', blocking: [], advisory: [], passed: [] }
     }
     return getSpecReadiness(projectPath, scriptsDir, specPath)
   })
 
-  const noPlugin = { ok: false, refusal: { kind: 'other', message: 'claude-code-sdlc plugin scripts not found' } }
+  const noPlugin = { ok: false, refusal: { kind: 'other', message: PLUGIN_NOT_FOUND } }
 
   ipcMain.handle('studio:markSpecReady', async (_event, projectPath: string, specPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
@@ -620,7 +621,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:getSpecStatus', async (_event, projectPath: string, specPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
     return getSpecStatus(projectPath, scriptsDir, specPath)
   })
 
@@ -630,7 +631,7 @@ function registerIpcHandlers() {
       const scriptsDir = await resolvePluginScriptsDir()
       if (!scriptsDir) {
         return { ok: false, refusal: { kind: 'other' as const,
-                 message: 'claude-code-sdlc plugin scripts not found' } }
+                 message: PLUGIN_NOT_FOUND } }
       }
       // A hand-off moves a spec to in-flight on the code host: the host block goes too.
       invalidateCommandCenter(projectPath, 'all')
@@ -643,7 +644,7 @@ function registerIpcHandlers() {
   // the closed argv table. `track_decisions.py --json` rejecting is passed through as an IPC
   // error rather than an all-zero view.
 
-  const noPluginBlock = (source: string) => ({ source, fetchedAt: new Date().toISOString(), ok: false, data: null, error: 'claude-code-sdlc plugin scripts not found' })
+  const noPluginBlock = (source: string) => ({ source, fetchedAt: new Date().toISOString(), ok: false, data: null, error: PLUGIN_NOT_FOUND })
 
   ipcMain.handle('studio:getCommandCenter', async (_event, projectPath: string, since?: SinceWindow, refresh?: boolean) => {
     const scriptsDir = await resolvePluginScriptsDir()
@@ -655,7 +656,7 @@ function registerIpcHandlers() {
         sprint: b('sprint.py status --json'), sprints: b('sprint.py list --json'), board: b('spec_status.py --all --json + track_specs.py --json'),
         decisions: b('track_decisions.py --json'), findings: b('record_findings.py report --json'), scorecard: b('scorecard.py report --json'),
         roster: b('project_settings.py --json'), log: b('sprint.py log --json'),
-        needsYou: [], needsYouReason: 'claude-code-sdlc plugin scripts not found', sinceYesterday: [], since: window,
+        needsYou: [], needsYouReason: PLUGIN_NOT_FOUND, sinceYesterday: [], since: window,
       }
     }
     return getCommandCenter(projectPath, scriptsDir, window, { refresh: refresh === true })
@@ -663,7 +664,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:getSlateProposal', async (_event, projectPath: string, sprintId: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) throw new Error('claude-code-sdlc plugin scripts not found')
+    if (!scriptsDir) throw new Error(PLUGIN_NOT_FOUND)
     const r = await getSlateProposal(projectPath, scriptsDir, sprintId)
     if (!r.ok) throw new Error(r.error)
     return r.data
@@ -671,7 +672,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:getSpecCard', async (_event, projectPath: string, specPath: string, developer?: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) throw new Error('claude-code-sdlc plugin scripts not found')
+    if (!scriptsDir) throw new Error(PLUGIN_NOT_FOUND)
     return getSpecCard(projectPath, scriptsDir, specPath, developer)
   })
 
@@ -683,14 +684,14 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:getDecisions', async (_event, projectPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) throw new Error('claude-code-sdlc plugin scripts not found')
+    if (!scriptsDir) throw new Error(PLUGIN_NOT_FOUND)
     return getDecisions(projectPath, scriptsDir)
   })
 
   ipcMain.handle('studio:runSprintVerb', async (_event, projectPath: string, request: SprintVerbRequest) => {
     const scriptsDir = await resolvePluginScriptsDir()
     if (!scriptsDir) {
-      return { ok: false, exitCode: null, refused: false, stdout: '', stderr: 'claude-code-sdlc plugin scripts not found', argv: [], verb: request?.verb ?? 'slate' }
+      return { ok: false, exitCode: null, refused: false, stdout: '', stderr: PLUGIN_NOT_FOUND, argv: [], verb: request?.verb ?? 'slate' }
     }
     const actor = await resolveActor(projectPath, scriptsDir)
     return runSprintVerb(projectPath, scriptsDir, request, actor)
@@ -698,13 +699,13 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:openDecision', async (_event, projectPath: string, decision: string, owner?: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, stderr: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, stderr: PLUGIN_NOT_FOUND }
     return openDecision(projectPath, scriptsDir, decision, owner, await resolveActor(projectPath, scriptsDir))
   })
 
   ipcMain.handle('studio:decideDecision', async (_event, projectPath: string, id: string, resolution: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, stderr: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, stderr: PLUGIN_NOT_FOUND }
     return decideDecision(projectPath, scriptsDir, id, resolution, await resolveActor(projectPath, scriptsDir))
   })
 
@@ -755,7 +756,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:nextNumber', async (_event, projectPath: string, relPath: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
     return nextNumber(projectPath, scriptsDir, relPath)
   })
 
@@ -771,20 +772,20 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:getVersionText', async (_event, projectPath: string, relPath: string, ref: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
     return getVersionText(projectPath, scriptsDir, relPath, ref)
   })
 
   ipcMain.handle('studio:diffVersions', async (_event, projectPath: string, relPath: string, a: string, b: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
     return diffVersions(projectPath, scriptsDir, relPath, a, b)
   })
 
   ipcMain.handle('studio:previewRestore', async (_event, projectPath: string, relPath: string, ref: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
     if (!scriptsDir) {
-      return { ok: false, diffHash: '', diff: '', needsSignOffAck: false, error: 'claude-code-sdlc plugin scripts not found' }
+      return { ok: false, diffHash: '', diff: '', needsSignOffAck: false, error: PLUGIN_NOT_FOUND }
     }
     return previewRestore(projectPath, scriptsDir, relPath, ref)
   })
@@ -793,7 +794,7 @@ function registerIpcHandlers() {
     'studio:confirmRestore',
     async (_event, projectPath: string, relPath: string, ref: string, actor: string, diffHash: string, ackSignOff: boolean) => {
       const scriptsDir = await resolvePluginScriptsDir()
-      if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+      if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
       return confirmRestore(projectPath, scriptsDir, relPath, ref, actor, diffHash, ackSignOff)
     },
   )
@@ -802,7 +803,7 @@ function registerIpcHandlers() {
     'studio:draftField',
     async (_event, projectPath: string, relPath: string, sectionKey: string, label: string, guidance: string) => {
       const scriptsDir = await resolvePluginScriptsDir()
-      if (!scriptsDir) return { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+      if (!scriptsDir) return { ok: false, error: PLUGIN_NOT_FOUND }
       const doc = await openDocument(projectPath, scriptsDir, relPath)
       const section = doc.sections.find((s) => s.key === sectionKey)
       const settings = loadSettings()
@@ -872,7 +873,7 @@ function registerIpcHandlers() {
 
   ipcMain.handle('studio:ensureChatStarted', async (_event, projectPath: string, stageId: string) => {
     const scriptsDir = await resolvePluginScriptsDir()
-    if (!scriptsDir) return { ok: false, state: readChatState(projectPath, stageId), error: 'claude-code-sdlc plugin scripts not found' }
+    if (!scriptsDir) return { ok: false, state: readChatState(projectPath, stageId), error: PLUGIN_NOT_FOUND }
     // The caller-side gate named in the spec ("a stage that has at least one document not yet
     // started") lives HERE, in the one place that decides it, rather than duplicated in the
     // renderer — ipcEnsureChatStarted's own contract is only "have we already greeted". This
@@ -882,13 +883,13 @@ function registerIpcHandlers() {
     const hasUnstarted = readiness.documents.some((d) => !d.exists)
     if (!hasUnstarted) return { ok: true, state: readChatState(projectPath, stageId) }
     const ctx = await chatContext(projectPath, stageId, readiness.display || stageId)
-    if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: 'claude-code-sdlc plugin scripts not found' }
+    if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: PLUGIN_NOT_FOUND }
     return ipcEnsureChatStarted(ctx)
   })
 
   ipcMain.handle('studio:sendChatMessage', async (_event, projectPath: string, stageId: string, text: string) => {
     const ctx = await chatContext(projectPath, stageId)
-    if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: 'claude-code-sdlc plugin scripts not found' }
+    if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: PLUGIN_NOT_FOUND }
     return ipcSendChatMessage(ctx, text)
   })
 
@@ -896,7 +897,7 @@ function registerIpcHandlers() {
     'studio:answerChatQuestion',
     async (_event, projectPath: string, stageId: string, questionId: string, optionLabel: string) => {
       const ctx = await chatContext(projectPath, stageId)
-      if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: 'claude-code-sdlc plugin scripts not found' }
+      if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: PLUGIN_NOT_FOUND }
       return ipcAnswerChatQuestion(ctx, questionId, optionLabel)
     },
   )
@@ -908,7 +909,7 @@ function registerIpcHandlers() {
       outcome: DraftOutcome, finalValue: string, actor: string,
     ) => {
       const ctx = await chatContext(projectPath, stageId)
-      if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: 'claude-code-sdlc plugin scripts not found' }
+      if (!ctx) return { ok: false, state: readChatState(projectPath, stageId), error: PLUGIN_NOT_FOUND }
       return ipcResolveChatProposal(ctx, proposalId, outcome, finalValue, actor)
     },
   )
@@ -943,7 +944,7 @@ async function createWindow() {
   const areas = screen.getAllDisplays().map((d) => d.workArea)
   const bounds = fitSavedBounds(readSavedBounds(userData), areas) ?? firstOpenBounds(screen.getPrimaryDisplay().workArea)
   win = new BrowserWindow({
-    title: 'SDLC Studio',
+    title: 'Shepherd',
     ...bounds,
     minWidth: MIN_WIDTH,
     minHeight: MIN_HEIGHT,

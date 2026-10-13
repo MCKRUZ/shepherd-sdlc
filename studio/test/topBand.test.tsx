@@ -33,7 +33,7 @@ describe('TopBand', () => {
   it('names the project in the one h1, with the product spoken before it; the button leans to the lifecycle home', () => {
     const { props } = mount()
     const h1 = screen.getByRole('heading', { level: 1 })
-    expect(h1.textContent).toBe('SDLC Studio · acme-claims')
+    expect(h1.textContent).toBe('Shepherd · acme-claims')
     fireEvent.click(within(h1).getByRole('button'))
     expect(props.onNavigate).toHaveBeenCalledWith({ area: 'documents', stageId: '3' })
     expect(document.querySelectorAll('input')).toHaveLength(0)
@@ -125,7 +125,7 @@ describe('TopBand in steering mode (fixer round)', () => {
   it('the presentation variant keeps the one h1 and offers only "Leave steering (Esc)" — no omnibar, no needs-you chip, no console, no settings, no menu', () => {
     const onLeave = vi.fn()
     mount({ presentation: { onLeave }, needsYou: { count: 1, reason: null } })
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('SDLC Studio · acme-claims')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Shepherd · acme-claims')
     expect(document.querySelector('[data-topband][data-presentation]')).not.toBeNull()
     expect(screen.queryByRole('button', { name: /^Search/ })).toBeNull()
     expect(screen.queryByTestId('needs-you-chip')).toBeNull()

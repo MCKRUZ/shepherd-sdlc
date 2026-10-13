@@ -300,7 +300,7 @@ test.describe('[spec 0011] the Build board in the real window', () => {
     test('the gates screen names which guide describes them', async () => {
       await page.getByRole('button', { name: 'Checks and gates' }).click()
       await expect(page.getByRole('heading', { name: 'Checks and gates' })).toBeVisible({ timeout: 30_000 })
-      await expect(page.getByText(/Studio does not\s+describe the gates itself/)).toBeVisible()
+      await expect(page.getByText(/Shepherd does not\s+describe the gates itself/)).toBeVisible()
     })
 
     test('a gate the playbook ships but this project lacks is not shown as protecting anything', async () => {

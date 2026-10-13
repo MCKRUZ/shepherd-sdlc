@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { ToolingReport, ToolStatus } from '../../shared/types'
 import { WORDING } from '../../shared/codeHostModel'
+import { PLUGIN_DISPLAY_NAME } from '../../shared/pluginId'
 import { BUTTON_BASE, BUTTON_SIZE, BUTTON_VARIANT, Button, Card, EYEBROW_CLASS, Field, Icon, Input, Notice, cn } from '../ui'
 import { useStudioGSAP } from '../motion/useStudioGSAP'
 import { listStagger } from '../motion/choreo'
@@ -27,13 +28,13 @@ const INSTALL_LINKS: Record<ToolKey, string> = {
 const LABELS: Record<ToolKey, string> = {
   claude: 'Claude Code',
   uv: 'uv (the script runner)',
-  pluginScripts: 'the claude-code-sdlc plugin',
+  pluginScripts: `the ${PLUGIN_DISPLAY_NAME} plugin`,
   git: 'git',
   gh: 'the GitHub CLI (gh)',
   az: 'the Azure CLI (az)',
 }
 
-/** One missing tool: the probe's own error, the install page, and a way to point SDLC Studio at a
+/** One missing tool: the probe's own error, the install page, and a way to point Shepherd at a
  * copy it did not find. "Use this" carries no `disabledReason` — the hidden reason text would
  * join the button's accessible name, and an e2e locates it by the exact name. */
 function IssueRow({
@@ -111,7 +112,7 @@ function CliRow({
   )
 }
 
-/** Shown before any project when a REQUIRED tool is missing. Nothing is installed by SDLC Studio;
+/** Shown before any project when a REQUIRED tool is missing. Nothing is installed by Shepherd;
  * the person installs it or points at it. The code-host CLIs are listed too, as facts with
  * the same override inputs, but a project opens without them (code-host providers, D4). */
 export function ToolingIssues({
@@ -138,9 +139,9 @@ export function ToolingIssues({
   return (
     <EntryShell>
       <Card className="mx-auto w-full max-w-lg space-y-3 rounded-4 p-6 shadow-2">
-        <h1 className="text-lg text-ink-1">Before SDLC Studio can open a project</h1>
+        <h1 className="text-lg text-ink-1">Before Shepherd can open a project</h1>
         <p className="text-sm text-ink-3">
-          SDLC Studio needs these on this machine — nothing gets installed automatically.
+          Shepherd needs these on this machine — nothing gets installed automatically.
         </p>
         <div ref={listRef} className="space-y-4">
           <section aria-labelledby="tooling-required-title" className="space-y-3">

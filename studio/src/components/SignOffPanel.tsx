@@ -19,7 +19,7 @@ interface Opening {
 
 const ROW_INPUT = 'rounded-lg px-2 py-1 text-xs'
 
-/** One optional Discipline / Section / Name row — the same triple `/sdlc-next` offers to
+/** One optional Discipline / Section / Name row — the same triple `/sprd-next` offers to
  * capture. All-empty rows are dropped before the call, so leaving this untouched is exactly
  * "no sign-offs", byte-identical to not offering the feature at all. */
 function DisciplineRow({
@@ -108,7 +108,7 @@ function SuccessCard({ success, cardRef, tickRef, seamRef }: {
 }
 
 /** Signs off the current stage and advances the phase — the window's own version of
- * `/sdlc-next`. Shown only when there is something to offer: the stage is the project's
+ * `/sprd-next`. Shown only when there is something to offer: the stage is the project's
  * current one, every required document is complete, and every judgement question is already
  * confirmed (`SignOffQuestions`' own job, above this). Everything this does — checking the
  * gates, drafting and validating the frozen-layer summary, snapshotting the artifact record,
@@ -257,7 +257,7 @@ export function SignOffPanel({
       <h3 className="text-sm font-medium text-ink-1">Sign off {readiness.display}</h3>
       <p className="mt-1 text-sm text-ink-2">
         Checks the gates, drafts and validates a summary of this phase, and advances — the same
-        thing <code className="rounded bg-surface-2 px-1 text-xs">/sdlc-next</code> does.
+        thing <code className="rounded bg-surface-2 px-1 text-xs">/sprd-next</code> does.
       </p>
 
       <label className="mt-3 block text-xs font-medium text-ink-2">

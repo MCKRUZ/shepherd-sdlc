@@ -21,7 +21,7 @@ const ARTIFACTS_PREFIX = '.sdlc/artifacts/'
  * would read as instruction. Every template-made document already fits this. */
 const SAFE_PATH = /^[A-Za-z0-9._/-]+$/
 
-/** The words each mode is called by in the prompt: the flag names `/sdlc-review` itself uses. */
+/** The words each mode is called by in the prompt: the flag names `/sprd-review` itself uses. */
 export const REVIEW_MODES: Readonly<Record<ReviewMode, string>> = {
   council: 'council',
   adversarial: 'adversarial',
@@ -120,7 +120,7 @@ function enhancePrompt(projectPath: string, document: string): string {
 
 function reviewPrompt(projectPath: string, pluginRoot: string, stage: StageFolder, mode: ReviewMode): string {
   return `Review the documents of the ${stage.display} stage in ${join(projectPath, ARTIFACTS_PREFIX, stage.slug)} `
-    + `in ${REVIEW_MODES[mode]} mode, exactly as the /sdlc-review command (read ${join(pluginRoot, 'commands', 'sdlc-review.md')}) `
+    + `in ${REVIEW_MODES[mode]} mode, exactly as the /sprd-review command (read ${join(pluginRoot, 'commands', 'sprd-review.md')}) `
     + `describes, including the machine-readable ## Gate Results table. ${NO_SAVING} `
     + 'Reply with ONLY the complete markdown text of review-report.md.'
 }
@@ -130,12 +130,12 @@ function reviewPrompt(projectPath: string, pluginRoot: string, stage: StageFolde
 function checkDocument(projectPath: string, document: unknown): Refusal | string {
   if (typeof document !== 'string' || !document) return refuse('Choose a document to summarise.')
   const rel = document.replace(/\\/g, '/')
-  if (rel.includes('..')) return refuse('That path is not one Studio can summarise.')
+  if (rel.includes('..')) return refuse('That path is not one Shepherd can summarise.')
   if (!rel.startsWith(ARTIFACTS_PREFIX) || !SAFE_PATH.test(rel)) {
-    return refuse('Studio only summarises documents under .sdlc/artifacts/ whose names use letters, numbers, dots, dashes and underscores.')
+    return refuse('Shepherd only summarises documents under .sdlc/artifacts/ whose names use letters, numbers, dots, dashes and underscores.')
   }
   if (!rel.endsWith('.md') || rel.endsWith('.narrative.md')) {
-    return refuse('Studio summarises markdown documents, and a summary is not itself summarised.')
+    return refuse('Shepherd summarises markdown documents, and a summary is not itself summarised.')
   }
   try {
     const full = resolveProjectDocument(projectPath, rel)
@@ -180,7 +180,7 @@ function planReview(projectPath: string, scriptsDir: string, request: DraftReque
     return refuse('Choose a review mode: council, adversarial, edge cases or all.')
   }
   const stage = stageFolder(scriptsDir, stageId)
-  if (!stage || !/^[A-Za-z0-9-]+$/.test(stage.slug)) return refuse('That is not a stage Studio can review.')
+  if (!stage || !/^[A-Za-z0-9-]+$/.test(stage.slug)) return refuse('That is not a stage Shepherd can review.')
   if (!hasDocumentsToReview(join(projectPath, ARTIFACTS_PREFIX, stage.slug))) {
     return refuse(`There are no ${stage.display} documents to review yet.`)
   }
@@ -196,9 +196,9 @@ export function planDraft(projectPath: string, scriptsDir: string, request: unkn
   if (typeof projectPath !== 'string' || !hasSdlcProject(projectPath)) return refuse('Open a project first.')
   const req = request as Partial<DraftRequest> | null
   if (typeof req !== 'object' || req === null || typeof req.kind !== 'string' || !Object.hasOwn(AGENT_BY_KIND, req.kind)) {
-    return refuse('That is not a job Studio can run.')
+    return refuse('That is not a job Shepherd can run.')
   }
-  if (typeof req.stageId !== 'string' || !STAGE_ID.test(req.stageId)) return refuse('That is not a stage Studio can draft for.')
+  if (typeof req.stageId !== 'string' || !STAGE_ID.test(req.stageId)) return refuse('That is not a stage Shepherd can draft for.')
   const full = req as DraftRequest
   return full.kind === 'enhance'
     ? planEnhance(projectPath, full, full.stageId)

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { join } from 'node:path'
+import type { IpcMain } from 'electron'
 
 vi.mock('../electron/main/project', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../electron/main/project')>()),
@@ -12,6 +13,7 @@ import { entry, FAILURES, json, PLUGIN_CANDIDATES, PROJECT, SCRIPTS, withCandida
 
 const run = vi.mocked(runPluginScript)
 const STATE = join(PROJECT, '.sdlc', 'state.yaml')
+type IpcHandler = Parameters<IpcMain['handle']>[1]
 
 describe('getBriefCandidates', () => {
   beforeEach(() => { run.mockReset() })
@@ -87,7 +89,7 @@ describe('getBriefCandidates', () => {
 
 describe('registerBriefHandlers', () => {
   const handlers = new Map<string, (...args: unknown[]) => unknown>()
-  const ipc = { handle: (channel: string, fn: (...args: unknown[]) => unknown) => { handlers.set(channel, fn) } }
+  const ipc = { handle: (channel: string, fn: IpcHandler) => { handlers.set(channel, fn as (...args: unknown[]) => unknown) } }
   beforeEach(() => { run.mockReset(); handlers.clear() })
 
   it('registers the two channels the preload exposes', () => {
@@ -97,7 +99,7 @@ describe('registerBriefHandlers', () => {
 
   it('answers "plugin scripts not found" for both when the plugin cannot be located, and starts nothing', async () => {
     registerBriefHandlers(ipc, async () => null)
-    const none = { ok: false, error: 'claude-code-sdlc plugin scripts not found' }
+    const none = { ok: false, error: 'Shepherd plugin scripts not found' }
     expect(await handlers.get('studio:getBriefCandidates')!({}, PROJECT)).toEqual(none)
     expect(await handlers.get('studio:buildBrief')!({}, PROJECT, {})).toEqual(none)
     expect(run).not.toHaveBeenCalled()

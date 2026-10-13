@@ -84,12 +84,12 @@ describe('missingClaudeFlags', () => {
 
 describe('every argv builder stays inside the declared contract', () => {
   const chat = buildChatArgs({
-    prompt: 'hello', projectPath: 'C:/fake/project', pluginRoot: 'C:/fake/plugin', pluginName: 'claude-code-sdlc',
+    prompt: 'hello', projectPath: 'C:/fake/project', pluginRoot: 'C:/fake/plugin', pluginName: 'shepherd',
     stageId: '1', stageDisplay: 'Requirements', mcpConfig: 'C:/fake/mcp-config.json', resume: false,
     sessionId: '11111111-1111-1111-1111-111111111111',
   }).args
   const chatResumed = buildChatArgs({
-    prompt: 'hello', projectPath: 'C:/fake/project', pluginRoot: 'C:/fake/plugin', pluginName: 'claude-code-sdlc',
+    prompt: 'hello', projectPath: 'C:/fake/project', pluginRoot: 'C:/fake/plugin', pluginName: 'shepherd',
     stageId: '1', stageDisplay: 'Requirements', mcpConfig: 'C:/fake/mcp-config.json', resume: true,
     sessionId: '11111111-1111-1111-1111-111111111111',
   }).args

@@ -44,3 +44,6 @@ desktop.ini
 
 # Do not ignore .sdlc/ — it's part of the plugin's test data
 # Target projects will have their own .gitignore
+
+# Coverage database — binary SQLite with absolute paths; never committed.
+scripts/.coverage

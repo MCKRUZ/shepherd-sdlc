@@ -6,8 +6,8 @@
 import type { HTMLAttributes } from 'react'
 import { cn } from '../../../ui/cn'
 import { EYEBROW_CLASS } from '../../../ui/Eyebrow'
-import { DEPTH_MIN_PX, TogoMark } from '../TogoMark'
-import { TogoWordmark } from '../TogoWordmark'
+import { DEPTH_MIN_PX, ShepherdMark } from '../ShepherdMark'
+import { ShepherdWordmark } from '../ShepherdWordmark'
 
 export const STEERING_LOCKUP_LABEL = 'Steering'
 /** `h-12` = 48 px — exactly the Depth floor; the lockup never renders the mark smaller. */
@@ -18,9 +18,9 @@ export interface SteeringLockupProps extends Omit<HTMLAttributes<HTMLDivElement>
 export function SteeringLockup({ className, ...rest }: SteeringLockupProps) {
   return (
     <div className={cn('flex items-center gap-4', className)} data-steering-lockup="" {...rest}>
-      <TogoMark variant="depth" className="h-12 w-12 shrink-0" />
+      <ShepherdMark variant="depth" className="h-12 w-12 shrink-0" />
       <div className="flex flex-col">
-        <TogoWordmark className="text-xl text-ink-1" />
+        <ShepherdWordmark className="text-xl text-ink-1" />
         <span className={EYEBROW_CLASS}>{STEERING_LOCKUP_LABEL}</span>
       </div>
     </div>

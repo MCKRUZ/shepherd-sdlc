@@ -1,9 +1,10 @@
 """Which code host this repository is on, and which CLI talks to it (code-host providers, Wave 1).
 
 Two axes, never merged: the CODE HOST (where the pull requests live — the `origin` remote, with
-`--host` / `SDLC_CODE_HOST` / `.sdlc/code-host.yaml` ahead of it) and the CI PLATFORM (where the
-pipelines live — the harness manifest, exactly as `doctor.installed_platform()` reads it; a
-ten-line twin here so the diagnostic module is not imported, and a test pins that they agree).
+`--host` / `SHEPHERD_CODE_HOST` (the pre-2.0 `SDLC_CODE_HOST` is still read) / `.sdlc/code-host.yaml`
+ahead of it) and the CI PLATFORM (where the pipelines live — the harness manifest, exactly as
+`doctor.installed_platform()` reads it; a ten-line twin here so the diagnostic module is not
+imported, and a test pins that they agree).
 
 `host: none` deliberately falls through to `gh`: every repository that exists today keeps the
 behaviour it has, and the gh error becomes the familiar `code_host_available: false`.
@@ -37,7 +38,10 @@ CodeHostError = GitHubImportError  # new code reads naturally; old `except` clau
 
 HOSTS = ("github", "azure-devops", "none")
 CLI_STATES = ("available", "not_installed", "extension_missing", "signed_out", "unknown")
-ENV_VAR = "SDLC_CODE_HOST"
+CODE_HOST_ENV = "SHEPHERD_CODE_HOST"
+LEGACY_CODE_HOST_ENV = "SDLC_CODE_HOST"  # the pre-2.0 name — still read, after the new one (code_host_env)
+CODE_HOST_ENV_VARS = (CODE_HOST_ENV, LEGACY_CODE_HOST_ENV)
+ENV_VAR = CODE_HOST_ENV  # the name the `env` source is labelled with; kept for the callers and tests that import it
 CODE_HOST_FILE = ".sdlc/code-host.yaml"
 AZ_ENV = {"AZURE_EXTENSION_USE_DYNAMIC_INSTALL": "no", "AZURE_CORE_COLLECT_TELEMETRY": "no"}
 
@@ -103,6 +107,18 @@ def _remote_from_file(settings: dict) -> RemoteInfo | None:
                       f"https://dev.azure.com/{org}", f"https://dev.azure.com/{org}/{project}/_git/{repo}")
 
 
+def code_host_env(environ=None) -> tuple[str, str | None]:
+    """(name, value) of the first code-host variable that holds a value: `SHEPHERD_CODE_HOST` wins,
+    `SDLC_CODE_HOST` — the pre-2.0 name, already in shells and CI — is read when it does not. An
+    empty value counts as unset, as it always did. Neither set → (CODE_HOST_ENV, None)."""
+    environ = os.environ if environ is None else environ
+    for name in CODE_HOST_ENV_VARS:
+        value = environ.get(name)
+        if value:
+            return name, value
+    return CODE_HOST_ENV, None
+
+
 def detect_host(repo_root, override: str | None = None) -> Detection:
     """Precedence: flag → env → .sdlc/code-host.yaml → origin remote → manifest tie-breaker → none."""
     repo_root = Path(repo_root)
@@ -115,11 +131,11 @@ def detect_host(repo_root, override: str | None = None) -> Detection:
             raise ValueError(f"--host must be one of {', '.join(HOSTS)} (got {override!r})")
         return Detection(override, "flag", remote, f"--host {override}")
 
-    env_value = os.environ.get(ENV_VAR)
+    env_name, env_value = code_host_env()
     if env_value:
         if env_value in HOSTS:
-            return Detection(env_value, "env", remote, f"{ENV_VAR}={env_value}")
-        notes.append(f"{ENV_VAR}={env_value!r} ignored: not one of {', '.join(HOSTS)}")
+            return Detection(env_value, "env", remote, f"{env_name}={env_value}")
+        notes.append(f"{env_name}={env_value!r} ignored: not one of {', '.join(HOSTS)}")
 
     settings, file_error = read_code_host_file(repo_root)
     if settings:

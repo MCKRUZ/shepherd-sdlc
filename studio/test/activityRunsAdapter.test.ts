@@ -399,7 +399,7 @@ describe('registerActivityRunHandlers', () => {
     ])
 
     const call = (channel: string, ...args: unknown[]) => (handlers.get(channel) as (...a: unknown[]) => Promise<unknown>)({}, ...args)
-    const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+    const NO_PLUGIN = 'Shepherd plugin scripts not found'
     expect(await call('studio:exportPhaseReport', 'p', '0', false)).toEqual({ ok: false, error: NO_PLUGIN, reports: [] })
     expect(await call('studio:runIntake', 'p')).toMatchObject({ ok: false, error: NO_PLUGIN, documents: [] })
     expect(await call('studio:getNarrativeCoverage', 'p', '0')).toMatchObject({ ok: false, error: NO_PLUGIN, total: 0 })

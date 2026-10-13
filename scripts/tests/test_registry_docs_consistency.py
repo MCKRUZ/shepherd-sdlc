@@ -114,7 +114,7 @@ def test_phase_reports_use_the_registry_slug_convention():
     Three conventions were in use at once: the phase bodies wrote `phase09-report.html`, the
     registry's optional lists said `phase9-report.html`, and `docs/commands.md` documented
     `<slug>-report.html` — so `03-foundation.md` alone used both padded and unpadded forms.
-    `commands/sdlc-gate.md` pre-checks the visual report by slug, so a team following the phase
+    `commands/sprd-gate.md` pre-checks the visual report by slug, so a team following the phase
     body wrote a file the gate then failed to find.
 
     The slug wins because it is what `generate_phase_report.py` is invoked with and the only form
@@ -143,9 +143,9 @@ def test_phase_reports_use_the_registry_slug_convention():
 def test_every_shipped_command_appears_in_the_command_reference():
     """A command nobody can find might as well not ship.
 
-    `/sdlc-spike` and `/sdlc-doctor` both shipped and were absent from `docs/commands.md`
+    `/sprd-spike` and `/sprd-doctor` both shipped and were absent from `docs/commands.md`
     entirely — not in the contents, the overview table, or the additional-commands table. Spikes
-    are a first-class part of the method and `/sdlc-doctor` is the single most useful command for
+    are a first-class part of the method and `/sprd-doctor` is the single most useful command for
     a first-time setup, so a reader working from the reference would conclude neither existed and
     do the work by hand.
     """

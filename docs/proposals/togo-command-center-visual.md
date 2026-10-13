@@ -12,15 +12,15 @@ Rules: (a) every row below is a `--color-*` custom property on `:root` in `token
 
 | Token (`--color-…`) | Light | Dark | Means / where it may be used |
 |---|---|---|---|
-| `lane` | `#eef2f7` | `#0e1727` | the four lane wells and the planning backlog column ground |
-| `lane-header` | `#e9eef5` | `#121c2f` | the sticky lane header band (paints opaque when stuck) |
-| `lane-line` | `#dce3ec` | `#1b2639` | the hairline under a lane header and between lane and ground |
-| `card-lit` | `#1a99a3` (accent-500) | `#22a3ad` (accent-500) | the 1 px edge a card gains when "In the room" lights a person; also the `data-lit` edge on a Refining row |
-| `baton` | `#0e7c86` (accent-600) | `#22a3ad` (accent-500) | the baton glyph body and its slide trail (2 px) |
-| `baton-bg` | `#d3f3f3` (accent-100) | `#0c363b` (accent-100) | the baton's resting slot on the Building→Checking edge |
-| `baton-ink` | `#0b6470` | `#6fd1d4` | the "0006 → Sam · 2 business days" text on `baton-bg` |
-| `you-ring` | `#0e7c86` | `#6fd1d4` | the 2 px ring (after a 2 px `surface-1` gap) on the signed-in person's initials, nowhere else |
-| `strip-lit` | alias `stage-signed-fill` | alias | the strip's lit rail = signed-off count (same fact, same colour as the Spine) |
+| `lane` | `#efeae1` | `#1c1915` | the four lane wells and the planning backlog column ground |
+| `lane-header` | `#e9e3d9` | `#25211c` | the sticky lane header band (paints opaque when stuck) |
+| `lane-line` | `#d9d1c4` | `#2e2923` | the hairline under a lane header and between lane and ground |
+| `card-lit` | `#4f8545` (accent-500) | `#6fa55f` (accent-500) | the 1 px edge a card gains when "In the room" lights a person; also the `data-lit` edge on a Refining row |
+| `baton` | `#3f6b35` (accent-600) | `#6fa55f` (accent-500) | the baton glyph body and its slide trail (2 px) |
+| `baton-bg` | `#e3eddd` (accent-100) | `#243f20` (accent-100) | the baton's resting slot on the Building→Checking edge |
+| `baton-ink` | `#3f6b35` | `#9dc58e` | the "0006 → Sam · 2 business days" text on `baton-bg` |
+| `you-ring` | `#3f6b35` | `#9dc58e` | the 2 px ring (after a 2 px `surface-1` gap) on the signed-in person's initials, nowhere else |
+| `strip-lit` | `#15803d` (stage-signed-ink) | `#34d399` | the strip's lit rail = signed-off count (same fact as the Spine; light takes the signed INK step — the fill is 2.88:1 on the sand canvas) |
 | `strip-unlit` | alias `line-2` | alias | the rail beyond the last signed station |
 | `strip-viewing` | alias `stage-current-fill` | alias | the ring on the station carrying `data-viewing`; the current station's pulse |
 | `today-act-bg` / `-ink` / `-line` | alias `stage-current-bg/-ink/-line` | alias | "needs you" items (the accent wash) — only an item in `needsYou[]` |
@@ -28,8 +28,8 @@ Rules: (a) every row below is a `--color-*` custom property on `:root` in `token
 | `today-late-bg` / `-ink` / `-line` | alias `status-error-bg/-ink/-line` | alias | the plugin's `overdue:true` on a decision; a refusal (exit 2) |
 | `plan-backlog` | alias `lane` | alias | planning left column ground |
 | `plan-slate` | alias `surface-1` | alias | planning middle column — the commitment is the brightest surface |
-| `plan-says` | `#edfafa` (accent-50) | `#0a2a2e` (accent-50) | planning right column — the plugin's own voice wears the lightest accent wash |
-| `plan-says-line` | `#a7e6e7` (accent-200) | `#0f4a50` (accent-200) | its hairline |
+| `plan-says` | `#f3f7f0` (accent-50) | `#192d17` (accent-50) | planning right column — the plugin's own voice wears the lightest accent wash |
+| `plan-says-line` | `#c7e0bc` (accent-200) | `#2f5229` (accent-200) | its hairline |
 | `rung-pass` | alias `status-ok-fill` | alias | a rung whose host conclusion is success |
 | `rung-fail` | alias `status-error-fill` | alias | a rung whose host conclusion is failure (carries `waiting_on` as its reason) |
 | `rung-pending` | `#0369a1` (status-running-ink) | `#38bdf8` (status-running-fill) | pending / queued / in progress from the host (light uses the ink step: the fill is 2.77:1 on white) |
@@ -41,8 +41,8 @@ Rules: (a) every row below is a `--color-*` custom property on `:root` in `token
 | `ledger-accepted-bg` / `-ink` | alias `stage-signed-bg/-ink` | alias | ACCEPTED_RISK signed by a person |
 | `ledger-postponed-bg` / `-ink` | alias `stage-later-bg/-ink` | alias | POSTPONED |
 | `ledger-offbooks` | alias `status-error-fill` | alias | a 1 px outline + the words "off the books" when the plugin says `off_books:true` — the chip keeps its disposition colour |
-| `steer-bg` | `#ffffff` | `#070c16` | steering mode's ground (one step beyond `surface-0` so the room goes dark) |
-| `steer-tile` | `#f8fafc` | `#111a2b` | a steering tile |
+| `steer-bg` | `#ffffff` | `#0e0c0a` | steering mode's ground (one step beyond `surface-0` so the room goes dark) |
+| `steer-tile` | `#f5efe4` | `#1c1915` | a steering tile |
 | `steer-tile-line` | alias `line-1` | alias | its hairline |
 | `steer-number-ink` | alias `ink-1` | alias | the number |
 | `steer-label-ink` | alias `ink-2` | alias | the measure's name — `ink-2`, not `ink-3`, because the screen is read from across a room |
@@ -50,33 +50,32 @@ Rules: (a) every row below is a `--color-*` custom property on `:root` in `token
 
 Cards keep the existing tokens and gain no new ones: surface `surface-1`, raised/popover `surface-raised`, hover edge `line-2` (`Card interactive`), focus `--ring`. The TopBand and the strip sit on `surface-0` with a `line-1` hairline below. Risk chips keep `CHIP_TONE` (`HIGH` = `error`, `MEDIUM` = `warn`, `LOW` = `neutral`) and status words keep the `spec-*` tones.
 
-**Contrast, measured** (WCAG 2.x, the `tokenContrast.test` formula; script in the scratchpad `cc-contrast.mjs`; text floor 4.5:1, UI floor 3:1):
+**Contrast, measured** — re-measured 2026-10-12 for the Shepherd palette (Furrow); the Tōgō figures live in git history (WCAG 2.x, the `tokenContrast.test` formula; script in the scratchpad `cc-contrast.mjs`; text floor 4.5:1, UI floor 3:1):
 
 | Pair | Light | Dark | Floor |
 |---|---|---|---|
-| `ink-1` on `lane` | #0b1120/#eef2f7 **16.75** | #e6edf7/#0e1727 **15.23** | 4.5 |
-| `ink-2` on `lane` | 9.21 | 10.07 | 4.5 |
-| `ink-3` on `lane` | #5d6c84/#eef2f7 **4.74** | #8392aa/#0e1727 **5.69** | 4.5 |
-| `ink-3` (eyebrow) on `lane-header` | #5d6c84/#e9eef5 **4.57** | #8392aa/#121c2f **5.40** | 4.5 |
-| `ink-1` on `lane-header` | 16.15 | 14.46 | 4.5 |
-| `accent-text` on `lane` | #0b6470/#eef2f7 **6.08** | #6fd1d4/#0e1727 **10.04** | 4.5 |
-| `card-lit` on `surface-1` / on `lane` | 3.43 / 3.05 | 5.73 / 5.90 | 3 |
-| `baton` on `lane` / on `surface-1` | 4.40 / 4.95 | 5.90 / 5.73 | 3 |
-| `baton-ink` on `baton-bg` | #0b6470/#d3f3f3 **5.82** | #6fd1d4/#0c363b **7.31** | 4.5 |
-| `you-ring` on `surface-1` / `lane` / `surface-raised` | 4.95 / 4.40 / 4.95 | 9.74 / 10.04 / 8.31 | 3 |
-| `strip-lit` on `surface-0` | #16a34a/#f8fafc **3.15** | #34d399/#0b1120 **9.79** | 3 |
-| `strip-viewing` on `surface-0` | 4.73 | 6.20 | 3 |
-| `today-act-ink` on `today-act-bg` | #0b6470/#edfafa **6.40** | #6fd1d4/#0c363b **7.31** | 4.5 |
+| `ink-1` on `lane` | #1c1915/#efeae1 **14.61** | #f5efe4/#1c1915 **15.30** | 4.5 |
+| `ink-2` on `lane` | 9.91 | 11.56 | 4.5 |
+| `ink-3` on `lane` | #6b625a/#efeae1 **4.98** | #a69d94/#1c1915 **6.56** | 4.5 |
+| `ink-3` (eyebrow) on `lane-header` | #6b625a/#e9e3d9 **4.67** | #a69d94/#25211c **6.00** | 4.5 |
+| `ink-1` on `lane-header` | 13.72 | 13.98 | 4.5 |
+| `accent-text` on `lane` | #3f6b35/#efeae1 **5.21** | #9dc58e/#1c1915 **9.01** | 4.5 |
+| `card-lit` on `surface-1` / on `lane` | 4.40 / 3.67 | 6.02 / 6.02 | 3 |
+| `baton` on `lane` / on `surface-1` | 5.21 / 6.24 | 6.02 / 6.02 | 3 |
+| `baton-ink` on `baton-bg` | #3f6b35/#e3eddd **5.18** | #9dc58e/#243f20 **5.98** | 4.5 |
+| `you-ring` on `surface-1` / `lane` / `surface-raised` | 6.24 / 5.21 / 6.24 | 9.01 / 9.01 / 7.42 | 3 |
+| `strip-lit` on `surface-0` | #15803d/#f5efe4 **4.38** | #34d399/#14120f **9.73** | 3 |
+| `strip-viewing` on `surface-0` | 5.45 | 9.63 | 3 |
+| `today-act-ink` on `today-act-bg` | #3f6b35/#f3f7f0 **5.76** | #9dc58e/#243f20 **5.98** | 4.5 |
 | `today-wait-ink` on `-bg` · `today-late-ink` on `-bg` | 4.84 · 5.91 | 11.23 · 9.32 | 4.5 |
-| `ink-2` / `ink-3` / `accent-text` on `plan-says` | 9.69 / 4.98 / 6.40 | 8.52 / 4.81 / 8.49 | 4.5 |
-| `rung-pass` / `rung-fail` / `rung-pending` on `surface-1` | 3.30 / 4.83 / 5.93 | 9.99 / 6.29 / 8.13 | 3 |
-| `ledger-postponed-ink` on `-bg` (the tightest chip) | #64748b/#f8fafc **4.55** | #7c8a9a/#111a2b **4.94** | 4.5 |
+| `ink-2` / `ink-3` / `accent-text` on `plan-says` | 10.95 / 5.50 / 5.76 | 9.70 / 5.51 / 7.56 | 4.5 |
+| `rung-pass` / `rung-fail` / `rung-pending` on `surface-1` | 3.30 / 4.83 / 5.93 | 10.05 / 6.33 / 8.17 | 3 |
+| `ledger-postponed-ink` on `-bg` (the tightest chip) | #6b625a/#f5efe4 **5.21** | #a69d94/#1c1915 **6.56** | 4.5 |
 | `ledger-fixed/-accepted-ink` on `-bg` | 4.79 | 10.96 | 4.5 |
-| `ink-1` / `ink-2` on `steer-bg` | 18.83 / 10.35 | 16.61 / 10.99 | 4.5 |
-| `ink-1` / `ink-2` / `ink-3` on `steer-tile` | 18.00 / 9.90 / 5.09 | 14.77 / 9.77 / 5.52 | 4.5 |
-| Figure tones `accent-500` on `accent-200` (decoration, `aria-hidden`) | 2.47 — not text | 3.27 | — |
-
-Every text pair ≥ 4.5:1 and every UI pair ≥ 3:1 in both themes. `rung-none` (`ink-4`) is 2.45:1 on purpose: it is decoration beside the words "no data". P0 adds the pairs with a hex in the first column to `PAIRS` in `tokenContrast.test.ts`.
+| `ink-1` / `ink-2` on `steer-bg` | 17.51 / 11.87 | 17.06 / 12.89 | 4.5 |
+| `ink-1` / `ink-2` / `ink-3` on `steer-tile` | 15.30 / 10.37 / 5.21 | 15.30 / 11.56 / 6.56 | 4.5 |
+| Figure tones `accent-500` on `accent-200` (decoration, `aria-hidden`) | 3.10 — not text | 3.06 | — |
+Every text pair ≥ 4.5:1 and every UI pair ≥ 3:1 in both themes. `rung-none` (`ink-4`) is 2.67:1 on purpose: it is decoration beside the words "no data". P0 adds the pairs with a hex in the first column to `PAIRS` in `tokenContrast.test.ts`.
 
 ## 3. Type scale additions (`type.css`, inside the existing `@theme`)
 

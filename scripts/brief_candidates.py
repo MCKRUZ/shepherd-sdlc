@@ -5,7 +5,7 @@ the document registry that `build` selects from. A selection form shows exactly 
 so the two cannot disagree about what an entry is. Nothing is written, and the limits come from the
 script's constants rather than being retyped anywhere.
 
-`recommended` is the `/sdlc-brief` curation step's own rule and nothing more: a contradiction whose severity
+`recommended` is the `/sprd-brief` curation step's own rule and nothing more: a contradiction whose severity
 blocks the outcome or shapes the design is pre-ticked; the person changes it.
 
 A missing or empty input is reported as `has_data: false` with a note saying what to run next. It is never an
@@ -24,7 +24,7 @@ INPUTS = (
      "run the document analysis first"),
     ("questions", "question-list.md", wb.parse_questions, "Q-NN questions", "run the document analysis first"),
     ("registry", "document-registry.md", wb.parse_registry, "DOC-NNN documents",
-     "run /sdlc-intake --registry first"),
+     "run /sprd-intake --registry first"),
 )
 
 

@@ -1,0 +1,67 @@
+{
+  "reviews": [
+    {
+      "stage": "palette",
+      "name": "Furrow",
+      "premise": "Moss and umber as a pair, not a hierarchy: moss does the acting (buttons, focus, the mark's stroke), umber does the holding (headers, rules, the mark's ground). Warmer sand than Pasture; lake steps back to information only.",
+      "keywords": ["paired", "warm", "worked"],
+      "palette": [
+        {"hex": "#3F6B35", "name": "Moss — action"},
+        {"hex": "#5E452A", "name": "Umber — structure"},
+        {"hex": "#2F5D7C", "name": "Lake — information"},
+        {"hex": "#D9C7A3", "name": "Wheat — light accent"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F5EFE4", "name": "Warm sand — background"}
+      ],
+      "logo_ideas": [
+        "A moss crook standing in an umber field — two colours, one object",
+        "A fold arc in umber over three moss discs",
+        "An umber hill with one moss point above it"
+      ],
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "palette",
+      "name": "Olive Field",
+      "premise": "One blended primary that sits between green and brown — an olive that reads as living earth rather than either parent. Umber and moss become its shadow and highlight, so the whole palette is one hue family with lake as the single cool note.",
+      "keywords": ["blended", "singular", "mature"],
+      "palette": [
+        {"hex": "#54632C", "name": "Olive — primary"},
+        {"hex": "#3F6B35", "name": "Moss — highlight"},
+        {"hex": "#5E452A", "name": "Umber — shadow"},
+        {"hex": "#2F5D7C", "name": "Lake — information"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F5EFE4", "name": "Warm sand — background"}
+      ],
+      "logo_ideas": [
+        "A single-stroke olive crook, lit moss on one edge and umber on the other",
+        "A fold arc whose gradient runs moss to umber across the discs",
+        "A horizon drawn as one olive band with a moss point above"
+      ],
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    },
+    {
+      "stage": "palette",
+      "name": "Hearth",
+      "premise": "Umber carries the structure and the mark; moss appears only where something is alive and moving — focus, the active lane, the in-flight spec. Brown is the room, green is the signal.",
+      "keywords": ["sheltered", "quiet", "signal"],
+      "palette": [
+        {"hex": "#5E452A", "name": "Umber — primary"},
+        {"hex": "#3F6B35", "name": "Moss — signal"},
+        {"hex": "#2F5D7C", "name": "Lake — information"},
+        {"hex": "#B8936A", "name": "Clay — light accent"},
+        {"hex": "#1C1915", "name": "Bark — text"},
+        {"hex": "#F5EFE4", "name": "Warm sand — background"}
+      ],
+      "logo_ideas": [
+        "An umber crook with a single moss disc held in the hook",
+        "An umber gate — two posts and a bar — with one moss post",
+        "An umber cairn of three stones, the top one moss"
+      ],
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    }
+  ]
+}

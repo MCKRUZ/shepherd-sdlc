@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<!--
+  TEMPLATE. Edit this file, not shepherd-user-guide.html.
+  `{{shot:<name>}}` markers become base64 JPEG data URIs when docs/guide/build-user-guide.mjs runs:
+    node docs/guide/build-user-guide.mjs            # reads studio/test/screenshots/observatory-v30-<name>.png
+    SHOT_PREFIX=observatory-v13 node docs/guide/build-user-guide.mjs
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Using the Shepherd desktop app — a user guide</title>
+<style>
+:root{
+  --accent-50:#F3F7F0;--accent-100:#E3EDDD;--accent-200:#C7E0BC;--accent-300:#9DC58E;--accent-400:#6FA55F;
+  --accent-500:#4F8545;--accent-600:#3F6B35;--accent-700:#2F5229;--accent-800:#243F20;--accent-900:#192D17;
+  --fill:#3F6B35;--accent-text:#3F6B35;--focus:#3F6B35;--tint:#F3F7F0;
+  --umber:#5E452A;--lake:#2F5D7C;--wheat:#D9C7A3;
+  --ink-1:#1C1915;--ink-2:#3D3630;--ink-3:#6B625A;--ink-4:#A69D94;
+  --surface-0:#F5EFE4;--surface-1:#FFFFFF;--surface-2:#EFEAE1;--surface-3:#E9E3D9;
+  --signed:#16A34A;--warn:#D97706;--error:#DC2626;--running:#0EA5E9;
+  --line:rgba(28,25,21,.14);
+  --font-ui:"Inter Variable",Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:"JetBrains Mono Variable","JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --accent-text:#9DC58E;--focus:#9DC58E;--tint:#243F20;
+  --ink-1:#F5EFE4;--ink-2:#D9D1C4;--ink-3:#A69D94;--ink-4:#6B625A;
+  --surface-0:#14120F;--surface-1:#1C1915;--surface-2:#25211C;--surface-3:#2E2923;
+  --line:rgba(245,239,228,.14);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --accent-text:#9DC58E;--focus:#9DC58E;--tint:#243F20;
+    --ink-1:#F5EFE4;--ink-2:#D9D1C4;--ink-3:#A69D94;--ink-4:#6B625A;
+    --surface-0:#14120F;--surface-1:#1C1915;--surface-2:#25211C;--surface-3:#2E2923;
+    --line:rgba(245,239,228,.14);
+  }
+}
+*{box-sizing:border-box}
+html{background:var(--surface-0);color:var(--ink-1);font-family:var(--font-ui);font-size:14px;line-height:20px;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;padding:48px 24px 96px}
+main{max-width:880px;margin:0 auto}
+a{color:var(--accent-text);text-decoration:none;border-bottom:1px solid transparent}
+a:hover{border-bottom-color:currentColor}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:2px}
+h1,h2,h3{font-weight:600;letter-spacing:-0.01em;margin:0}
+h1{font-size:28px;line-height:34px;letter-spacing:-0.02em;font-weight:650}
+h2{font-size:22px;line-height:28px;letter-spacing:-0.015em;margin-top:64px;padding-top:24px;border-top:1px solid var(--line)}
+h3{font-size:15px;line-height:20px;letter-spacing:-0.005em;margin-top:32px}
+p{margin:12px 0;max-width:72ch}
+ul,ol{margin:12px 0;padding-left:22px;max-width:72ch}
+li{margin:4px 0}
+code,kbd,pre{font-family:var(--font-mono);font-size:12px;line-height:16px;font-weight:450}
+code{background:var(--surface-2);padding:1px 5px;border-radius:4px}
+kbd{display:inline-block;min-width:20px;text-align:center;padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:var(--surface-1);color:var(--ink-1);font-size:11.5px}
+pre{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:12px 14px;overflow-x:auto;margin:12px 0;break-inside:avoid;white-space:pre}
+pre code{background:none;padding:0}
+pre .c{color:var(--ink-3)}
+header{position:relative;display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid var(--line)}
+header .lockup{width:320px;max-width:100%;height:auto;flex:0 0 auto}
+header .lockup .wordmark{fill:var(--ink-1)}
+header>div{min-width:0;flex:1 1 320px;padding-right:200px}
+.meta{color:var(--ink-3);font-size:12px;line-height:16px;margin-top:8px}
+.eyebrow{font-size:10.5px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;color:var(--ink-3)}
+.theme{position:absolute;right:0;top:-8px;display:inline-flex;gap:2px;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface-1)}
+.theme button{font:inherit;font-size:11.5px;line-height:16px;padding:3px 10px;border:0;border-radius:999px;background:transparent;color:var(--ink-3);cursor:pointer}
+.theme button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink-1);font-weight:600}
+nav.toc{margin-top:24px}
+nav.toc ol{columns:2;column-gap:32px;padding-left:20px;max-width:none}
+nav.toc li{break-inside:avoid}
+nav.toc a{color:var(--ink-2)}
+nav.toc a[aria-current="true"]{color:var(--accent-text);font-weight:600}
+table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13px;line-height:18px;break-inside:avoid}
+th,td{text-align:left;vertical-align:top;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--ink-2);font-size:12px;line-height:16px}
+th.group{padding-top:14px;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.see{border-left:2px solid var(--accent-600);background:var(--tint);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;max-width:none;font-size:13px;line-height:18px}
+.see b{display:block;font-size:10.5px;line-height:14px;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-text);margin-bottom:4px}
+.see p{margin:6px 0;max-width:none}
+.see pre{background:var(--surface-1);margin:8px 0 2px}
+.note{border-left:2px solid var(--ink-4);padding:4px 0 4px 14px;color:var(--ink-2);margin:16px 0;max-width:72ch}
+.warn{border-left-color:var(--warn)}
+.legend{font-style:normal;display:block;border-left:2px solid var(--line);padding:4px 0 4px 14px;color:var(--ink-2);margin:12px 0;max-width:72ch}
+figure.shot{margin:20px 0;max-width:none;break-inside:avoid}
+figure.shot img{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface-1)}
+figure.shot figcaption{margin-top:8px;font-size:12px;line-height:16px;color:var(--ink-3);max-width:72ch}
+.panes{display:grid;grid-template-columns:220px 1fr 240px;gap:4px;margin:16px 0;font-size:11px;line-height:14px}
+.panes div{border:1px solid var(--line);border-radius:6px;padding:10px 8px;background:var(--surface-1);min-height:72px}
+.panes .id{display:block;font-family:var(--font-mono);font-weight:600;color:var(--accent-text);margin-bottom:3px}
+.panes .main{background:var(--tint);border-color:var(--accent-600)}
+.steps{counter-reset:s;padding-left:0;list-style:none;max-width:none}
+.steps>li{position:relative;padding-left:32px;margin:10px 0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;border:1px solid var(--accent-600);color:var(--accent-text);font-size:11px;line-height:20px;text-align:center;font-weight:600}
+footer{margin-top:72px;padding-top:20px;border-top:1px solid var(--line);color:var(--ink-3);font-size:12px;line-height:16px}
+.layout{display:block}
+@media (min-width:1180px){
+  main{max-width:1180px}
+  .layout{display:grid;grid-template-columns:220px minmax(0,880px);column-gap:56px;align-items:start}
+  nav.toc{position:sticky;top:24px;margin-top:64px;max-height:calc(100vh - 48px);overflow:auto;padding-right:8px}
+  nav.toc ol{columns:1}
+  nav.toc li{margin:6px 0;font-size:13px;line-height:18px}
+  article{min-width:0}
+  article h2:first-of-type{margin-top:0;padding-top:64px;border-top:0}
+}
+@media (max-width:700px){
+  .panes{grid-template-columns:1fr}
+  .theme{position:static;margin-top:8px}
+  header>div{padding-right:0}
+}
+@page{margin:16mm}
+@media print{
+  html{background:#fff;color:#000;font-size:12px;line-height:17px}
+  body{padding:0}
+  .layout{display:block}
+  h2{break-after:avoid;margin-top:36px}
+  pre{white-space:pre-wrap;word-break:break-word}
+  table,pre,.see,figure.shot{break-inside:avoid}
+  figure.shot img{max-width:100%;border-color:#ccc}
+  a{color:inherit}
+  nav.toc,.theme{display:none}
+}
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <svg class="lockup" viewBox="0 0 320 64" role="img" aria-label="Shepherd" xmlns="http://www.w3.org/2000/svg">
+    <!-- The Shepherd mark (docs/brand/shepherd/mark-a-gate-s.svg): the two-tone frame — moss top and right with the tab, umber left and bottom — and the two-tone S resting on the tab. -->
+    <path fill="#3F6B35" d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+    <path fill="#5E452A" d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+    <path fill="#3F6B35" d="M21.03 27.33 A8.75 8.75 0 0 1 28.57 23.00 L36.53 23.00 A2.57 2.57 0 0 1 39.11 25.57 L39.11 28.47 A3.99 3.99 0 0 1 35.89 32.38 A34.59 34.59 0 0 0 27.04 30.09 A20.79 20.79 0 0 1 23.18 29.25 A3.57 3.57 0 0 1 21.03 27.33 Z"/>
+    <path fill="#5E452A" d="M20.49 28.76 A6.34 6.34 0 0 0 24.22 32.45 A31.17 31.17 0 0 0 31.50 34.18 A16.51 16.51 0 0 1 36.65 35.64 A4.18 4.18 0 0 1 38.74 40.99 A5.54 5.54 0 0 1 33.58 44.50 L21.94 44.50 A1.75 1.75 0 0 1 20.20 42.75 L20.14 41.16 A3.08 3.08 0 0 1 20.67 39.39 A3.85 3.85 0 0 1 23.83 37.74 L25.64 37.74 A6.81 6.81 0 0 1 20.49 28.76 Z"/>
+    <!-- the wordmark: "shepherd" in Saira Variable 600, lowercase, −0.01em, outlined (no live text) — docs/brand/shepherd/lockup.svg, verbatim; the fill follows the theme through .wordmark -->
+    <g class="wordmark" fill="#1C1915" data-wordmark="shepherd" data-face="Saira Variable 600" data-tracking="-0.01em">
+      <path data-glyph="s" d="M90.26 46.38Q88.79 46.38 87.07 46.29Q85.36 46.19 83.72 46.05Q82.08 45.9 80.77 45.71V40.89Q81.47 40.94 82.47 41.03Q83.47 41.13 84.61 41.17Q85.74 41.22 86.85 41.27Q87.95 41.31 88.9 41.31Q91.13 41.31 92.11 41.1Q93.09 40.88 93.37 40.33Q93.65 39.77 93.65 38.87Q93.65 37.87 93.47 37.43Q93.29 36.99 92.75 36.83Q92.21 36.67 91.05 36.53L85.34 35.81Q83.06 35.53 81.92 34.62Q80.78 33.71 80.39 32.17Q80 30.64 80 28.51Q80 26.04 80.74 24.57Q81.47 23.1 82.79 22.35Q84.11 21.61 85.95 21.37Q87.79 21.14 89.96 21.14Q91.4 21.14 92.95 21.23Q94.5 21.33 95.91 21.49Q97.33 21.66 98.3 21.89V26.67Q97.16 26.53 95.82 26.44Q94.49 26.35 93.19 26.28Q91.89 26.21 90.87 26.21Q89.05 26.21 87.98 26.34Q86.92 26.47 86.48 26.95Q86.03 27.44 86.03 28.54Q86.03 29.41 86.17 29.86Q86.31 30.3 86.8 30.48Q87.3 30.66 88.35 30.8L94.53 31.55Q96.23 31.74 97.37 32.32Q98.51 32.89 99.07 34.35Q99.64 35.8 99.64 38.72Q99.64 41.23 99 42.76Q98.35 44.29 97.1 45.08Q95.85 45.87 94.13 46.13Q92.41 46.38 90.26 46.38Z"/>
+      <path data-glyph="h" d="M104.75 46V10.34H111.11V24.42H111.46Q112.12 23.25 113.12 22.54Q114.11 21.82 115.5 21.5Q116.88 21.18 118.67 21.18Q121.19 21.18 122.73 21.78Q124.26 22.38 125.06 23.59Q125.86 24.79 126.14 26.57Q126.42 28.34 126.42 30.69V46H120.06V33.05Q120.06 30.81 119.93 29.51Q119.8 28.22 119.37 27.61Q118.93 27 118.07 26.82Q117.21 26.65 115.76 26.65Q114.22 26.65 113.27 27.01Q112.33 27.37 111.87 28.17Q111.41 28.97 111.26 30.24Q111.11 31.52 111.11 33.34V46Z"/>
+      <path data-glyph="e" d="M143.63 46.38Q140.38 46.38 138.22 45.95Q136.06 45.51 134.78 44.58Q133.49 43.64 132.86 42.17Q132.23 40.71 132.05 38.62Q131.86 36.54 131.86 33.81Q131.86 30.52 132.21 28.12Q132.56 25.72 133.64 24.17Q134.73 22.62 136.99 21.88Q139.25 21.14 143.07 21.14Q146.12 21.14 148.05 21.61Q149.98 22.08 151.1 23.05Q152.22 24.02 152.73 25.53Q153.24 27.03 153.38 29.1Q153.52 31.18 153.52 33.81V35.68H138.22Q138.22 37.52 138.39 38.63Q138.55 39.75 139.2 40.33Q139.86 40.91 141.26 41.11Q142.66 41.31 145.12 41.31Q146.14 41.31 147.42 41.26Q148.7 41.21 150.06 41.1Q151.43 40.99 152.56 40.89V45.63Q151.52 45.84 150 46.01Q148.48 46.19 146.82 46.28Q145.16 46.38 143.63 46.38ZM147.47 32.49V31.77Q147.47 29.87 147.26 28.74Q147.05 27.61 146.54 27.04Q146.03 26.47 145.16 26.3Q144.29 26.12 142.99 26.12Q141.4 26.12 140.47 26.34Q139.54 26.56 139.06 27.17Q138.57 27.78 138.4 28.89Q138.22 29.99 138.22 31.77H148.33Z"/>
+      <path data-glyph="p" d="M158.99 55.55V21.52H164.93L165.12 24.59H165.48Q166.24 23.17 167.4 22.41Q168.55 21.66 169.94 21.4Q171.33 21.14 172.75 21.14Q175 21.14 176.6 21.73Q178.2 22.32 179.2 23.76Q180.19 25.19 180.67 27.62Q181.14 30.04 181.14 33.71Q181.14 37.37 180.69 39.81Q180.23 42.26 179.26 43.7Q178.28 45.14 176.72 45.76Q175.15 46.38 172.9 46.38Q171.33 46.38 169.97 46.12Q168.61 45.87 167.55 45.21Q166.48 44.54 165.7 43.3H165.35V55.55ZM170.02 40.88Q171.63 40.88 172.58 40.66Q173.52 40.44 173.98 39.74Q174.44 39.03 174.6 37.61Q174.75 36.2 174.75 33.76Q174.75 31.32 174.6 29.88Q174.44 28.45 173.98 27.74Q173.52 27.04 172.58 26.82Q171.63 26.6 170.02 26.6Q168.33 26.6 167.4 27.06Q166.47 27.52 165.99 28.46Q165.56 29.33 165.46 30.67Q165.35 32.01 165.35 33.76Q165.35 35.56 165.46 36.84Q165.56 38.12 165.94 39.01Q166.43 40 167.38 40.44Q168.33 40.88 170.02 40.88Z"/>
+      <path data-glyph="h" d="M186.59 46V10.34H192.95V24.42H193.3Q193.96 23.25 194.96 22.54Q195.95 21.82 197.34 21.5Q198.72 21.18 200.51 21.18Q203.03 21.18 204.57 21.78Q206.1 22.38 206.9 23.59Q207.7 24.79 207.98 26.57Q208.26 28.34 208.26 30.69V46H201.9V33.05Q201.9 30.81 201.77 29.51Q201.64 28.22 201.21 27.61Q200.77 27 199.91 26.82Q199.05 26.65 197.6 26.65Q196.06 26.65 195.11 27.01Q194.17 27.37 193.71 28.17Q193.25 28.97 193.1 30.24Q192.95 31.52 192.95 33.34V46Z"/>
+      <path data-glyph="e" d="M225.47 46.38Q222.22 46.38 220.06 45.95Q217.9 45.51 216.62 44.58Q215.33 43.64 214.7 42.17Q214.07 40.71 213.89 38.62Q213.7 36.54 213.7 33.81Q213.7 30.52 214.05 28.12Q214.4 25.72 215.48 24.17Q216.57 22.62 218.83 21.88Q221.09 21.14 224.91 21.14Q227.96 21.14 229.89 21.61Q231.82 22.08 232.94 23.05Q234.06 24.02 234.57 25.53Q235.08 27.03 235.22 29.1Q235.36 31.18 235.36 33.81V35.68H220.06Q220.06 37.52 220.23 38.63Q220.39 39.75 221.04 40.33Q221.7 40.91 223.1 41.11Q224.5 41.31 226.96 41.31Q227.98 41.31 229.26 41.26Q230.54 41.21 231.9 41.1Q233.27 40.99 234.4 40.89V45.63Q233.36 45.84 231.84 46.01Q230.32 46.19 228.66 46.28Q227 46.38 225.47 46.38ZM229.31 32.49V31.77Q229.31 29.87 229.1 28.74Q228.89 27.61 228.38 27.04Q227.87 26.47 227 26.3Q226.13 26.12 224.83 26.12Q223.24 26.12 222.31 26.34Q221.38 26.56 220.9 27.17Q220.41 27.78 220.24 28.89Q220.06 29.99 220.06 31.77H230.17Z"/>
+      <path data-glyph="r" d="M240.83 46V21.52H246.77L246.96 25.77H247.36Q247.99 23.91 249.08 22.91Q250.16 21.91 251.7 21.52Q253.24 21.14 255.2 21.14V27.19Q252.08 27.19 250.33 28.06Q248.59 28.92 247.89 30.89Q247.19 32.86 247.19 36.21V46Z"/>
+      <path data-glyph="d" d="M266.58 46.38Q264.33 46.38 262.73 45.79Q261.13 45.2 260.13 43.76Q259.14 42.33 258.67 39.9Q258.19 37.48 258.19 33.81Q258.19 30.15 258.65 27.7Q259.1 25.25 260.08 23.81Q261.05 22.38 262.62 21.76Q264.18 21.14 266.44 21.14Q268.01 21.14 269.37 21.4Q270.72 21.65 271.81 22.31Q272.9 22.97 273.63 24.22H273.98V10.34H280.34V46H274.4L274.21 42.97H273.85Q273.13 44.39 271.95 45.13Q270.78 45.86 269.39 46.12Q268.01 46.38 266.58 46.38ZM269.31 40.92Q271.06 40.92 272.01 40.46Q272.95 40 273.38 38.97Q273.77 38.04 273.88 36.75Q273.98 35.45 273.98 33.76Q273.98 32.03 273.88 30.78Q273.78 29.53 273.39 28.66Q272.96 27.57 272.01 27.11Q271.06 26.64 269.31 26.64Q267.71 26.64 266.76 26.86Q265.81 27.08 265.35 27.78Q264.89 28.49 264.74 29.91Q264.58 31.32 264.58 33.76Q264.58 36.2 264.74 37.64Q264.89 39.07 265.35 39.78Q265.81 40.48 266.76 40.7Q267.71 40.92 269.31 40.92Z"/>
+    </g>
+  </svg>
+  <div>
+    <div class="eyebrow">User guide</div>
+    <h1>Using the Shepherd desktop app — a user guide</h1>
+    <p class="meta">Shepherd — plugin 2.0.0 (the command center: sprint home, planning, spec card, close, steering; sprint layer, Observatory, code-host providers). For anyone who opens a project in the desktop app: what each screen shows, what each control does, and what the app will refuse to pretend. Companion to <i>Stand up Shepherd</i>, which covers installation and the command line. Every label below was read from the app's source on 2026-10-06.</p>
+  </div>
+  <div class="theme" role="group" aria-label="Theme for this page">
+    <button type="button" data-theme-choice="system" aria-pressed="true">System</button>
+    <button type="button" data-theme-choice="light" aria-pressed="false">Light</button>
+    <button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Contents">
+  <div class="eyebrow">Contents</div>
+  <ol>
+    <li><a href="#welcome">Welcome and opening a project</a></li>
+    <li><a href="#panes">The shell: band, strip, stage area, chat</a></li>
+    <li><a href="#sprint-home">The sprint home</a></li>
+    <li><a href="#omnibar">The omnibar</a></li>
+    <li><a href="#planning">Sprint planning</a></li>
+    <li><a href="#spec-card">The spec card</a></li>
+    <li><a href="#stage">A stage home (the lifecycle home)</a></li>
+    <li><a href="#build">The Build Loop's other views</a></li>
+    <li><a href="#spec">A spec page</a></li>
+    <li><a href="#host">Working with the code host</a></li>
+    <li><a href="#keys">Command palette and keyboard</a></li>
+    <li><a href="#settings">Appearance, Settings and about the mark</a></li>
+    <li><a href="#console">The Console</a></li>
+    <li><a href="#honesty">Honesty rules the app follows</a></li>
+    <li><a href="#trouble">Troubleshooting</a></li>
+  </ol>
+</nav>
+
+<article>
+
+<!-- 1 ------------------------------------------------------------------ -->
+<h2 id="welcome">1. Welcome and opening a project</h2>
+<p>Shepherd is the desktop front end for the <code>shepherd</code> plugin. It never reimplements plugin logic: everything it shows is read through the plugin's own scripts, and everything it changes goes through them too. This guide is about the window. The plugin and the slash commands are covered by the setup guide beside this one.</p>
+
+<p>On launch the window reads <i>Loading…</i> while it probes the tools it depends on. If a required one is missing it stops at the tooling screen described in <a href="#trouble">§15</a>; otherwise it opens on Welcome. The code-host CLIs are never required to open a project.</p>
+
+<figure class="shot">
+  <img src="{{shot:welcome}}" width="1200" height="750" loading="lazy" alt="The Welcome screen: the Shepherd mark and name on the left with the tagline “The delivery instrument”, two buttons New project… and Open folder…, a ⌘K hint, and a Recent list on the right holding one project. A System / Light / Dark pill sits in the top-right corner.">
+  <figcaption>Welcome. The mark and the name appear together here once. The Recent card lists up to six projects; hovering a row shows its full path and when it was last opened.</figcaption>
+</figure>
+
+<table>
+  <tr><th style="width:190px">On the Welcome screen</th><th>What it does</th></tr>
+  <tr><td><i>New project…</i></td><td>Opens the <i>New project</i> screen: a <i>Project name</i>, a <i>Location</i> chosen with <i>Choose location…</i> (remembered for next time), and a preview line, <i>Will create: &lt;path&gt;</i>. <i>Create project</i> makes the folder, starts version tracking in it, and continues into the same set-up wizard an existing folder goes through. You never leave the app to make a folder first.</td></tr>
+  <tr><td><i>Open folder…</i></td><td>A folder picker. A folder that already holds <code>.sdlc/</code> opens as a project. One that does not goes to <i>Set up a project here</i>: pick a <i>Playbook</i> (a plugin profile), read the <i>This will create</i> list of directories and files the plugin previews, and press <i>Set up project</i>. If the folder already has a project the wizard says so and creates nothing.</td></tr>
+  <tr><td><i>Recent</i></td><td>Projects you have created or opened, newest first. Empty, it reads "No recent projects".</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>K</kbd> hint</td><td>"⌘K searches and jumps once a project is open." The palette already works here, with only its actions group: <i>New project…</i>, <i>Open folder…</i>, the appearance toggles and the shortcuts help.</td></tr>
+  <tr><td>System / Light / Dark pill</td><td>The theme, as window chrome. The same three words appear in Settings › Appearance.</td></tr>
+</table>
+
+<p>Opening a project reads it through the plugin and can take seconds. A card covers the window for that time, <i>Opening &lt;project&gt;…</i> with the subtitle "Reading the project through the plugin." and a running clock, so nothing underneath can be clicked twice. The same card appears for any long plugin-backed action, such as signing off a stage. An error before a project is open is a sticky toast; inside a project it is a banner at the top of the screen, left in place so it can be re-read. A project whose code-host CLI is not ready opens all the same, with an amber banner saying what that costs (<a href="#host">§10</a>); <i>Dismiss</i> hides it for the session.</p>
+
+<!-- 2 ------------------------------------------------------------------ -->
+<h2 id="panes">2. The shell: band, strip, stage area, chat</h2>
+<p>Once a project is open, every screen shares one frame: a thin <b>band</b> across the top, the <b>lifecycle strip</b> under it, the stage area beneath, the chat panel on the right, and a console that docks along the bottom when opened. There is no sidebar. On a narrow window the panes stack vertically.</p>
+
+<div class="panes" role="img" aria-label="Three columns: the band and strip, the stage area, the chat panel">
+  <div><span class="id">Band · strip</span>Mark and project name · the omnibar trigger (⌘K · a spec id, a verb, or a place) · needs you · sync chip · Console, Appearance, Settings, … · nine stations on a lit rail, Build Loop naming the sprint</div>
+  <div class="main"><span class="id">Stage area</span>The sprint home, planning, a spec card, the lifecycle home, a document, the Board, How it is going, Closing, a spec page, steering mode or Settings — whatever the strip, the omnibar or the palette opened last</div>
+  <div><span class="id">Chat</span>A Claude Code session scoped to the stage you are viewing, with its proposed writes shown as cards you accept or discard</div>
+</div>
+
+<h3>The band</h3>
+<p>Left to right: the mark and the project's name as one button (it leans out to the lifecycle home; the playbook id is its tooltip); the <b>omnibar trigger</b>, a button drawn as a field reading <i>⌘K · a spec id, a verb, or a place</i> (<a href="#omnibar">§4</a>) — never a text box at rest, so nothing on the shell takes typing until you ask; the <b>needs you</b> chip, which is the length of the list the app addressed to you by exact handle (<i>needs you · 2</i>, or the words <i>nothing needs you</i>; signed out it is disabled and says <i>sign in or type your name to see what needs you</i>); the sync chip; and <i>Console</i>, <i>Appearance</i>, <i>Settings</i> and a <i>…</i> menu holding <i>Chat</i>, <i>Keyboard shortcuts</i>, <i>Steering mode</i>, <i>New project…</i> and <i>Open folder…</i>.</p>
+<h3>The lifecycle strip</h3>
+<p>The strip is the only navigation: the nine stages as stations on one rail, drawn as plain SVG. The lit part of the rail counts finished stages — signed off, or completed with no name recorded — never time. Each station is a button whose description reads the stage's own line; the station whose home you are looking at wears the accent ring. Build Loop reads <i>Build Loop · S08 · 8th sprint</i> when the plugin lists the sprint, <i>Build Loop · S08</i> when it only knows the id, and <i>Build Loop</i> alone with no sprint; selecting it unfolds Build's views — <i>Home</i>, <i>Planning</i>, <i>Board</i>, <i>How it is going</i>, <i>Closing</i>, <i>Documents</i>. Exactly one entry on the strip is marked as the current page.</p>
+<table>
+  <tr><th style="width:190px">Station</th><th>Meaning</th><th>Its description</th></tr>
+  <tr><td>Filled ring on the lit rail</td><td>Signed off by a named person, or completed with no name recorded — two facts that never read alike.</td><td><i>Signed off · &lt;name&gt;</i> or <i>Completed · no name recorded</i></td></tr>
+  <tr><td>Ring with a dot</td><td>The current stage. It breathes three times when the screen opens, then rests.</td><td><i>In progress</i></td></tr>
+  <tr><td>Dashed ring</td><td>Later</td><td><i>Not started</i>. Build Loop reads <i>Specs, checks and close-out</i> instead, because specs can be built before the plugin marks Build as reached.</td></tr>
+  <tr><td>Looped ring</td><td>Build Loop — drawn as a loop because Build is continuous; its label names the sprint.</td><td>as above</td></tr>
+</table>
+<p>Hovering a station lights the same station on the Lifecycle graph of a stage home, so the strip and the graph are one fact. <i>Appearance</i> is a disclosure with the Theme, Density and Animations toggles. The sync chip is a status, not a control; hover it for the detail.</p>
+<p><b>Two homes.</b> A project in the Build loop opens on the <b>sprint home</b> (<a href="#sprint-home">§3</a>) when the installed plugin knows sprints (<code>sprint-status</code>); every other project — and a Build project on an older plugin, whose Build station then says <i>sprint home arrives with a newer plugin: lacks sprint-status</i> — opens on the <b>lifecycle home</b> (<a href="#stage">§7</a>). The choice is made once, when the project opens, never on a timer; <kbd>g</kbd> <kbd>s</kbd> and <kbd>g</kbd> <kbd>l</kbd> switch between them.</p>
+<table>
+  <tr><th style="width:230px">Sync chip reads</th><th>Meaning</th></tr>
+  <tr><td><i>Synced 2m ago</i> / <i>Not synced yet</i></td><td>Quiet: grey text, green dot. Nothing is wrong.</td></tr>
+  <tr><td><i>Pulling…</i> / <i>Saving…</i></td><td>Reading the repository for changes made elsewhere / writing yours to it.</td></tr>
+  <tr><td><i>Waiting for checks</i></td><td>The code host is still running its checks on a saved change.</td></tr>
+  <tr><td><i>Waiting for &lt;approver&gt;</i></td><td>Change approval is on for this stage; the documents merge once the named person approves.</td></tr>
+  <tr><td><i>N sections need your input</i></td><td>The same section changed here and in the repository. The clash screen opens by itself and offers your version, theirs, or a combined draft.</td></tr>
+  <tr><td><i>Sync error</i></td><td>The message is in the hover card and in the Console.</td></tr>
+</table>
+
+<h3>The stage area</h3>
+<p>Whatever is open: a stage home (<a href="#stage">§7</a>), a document, one of the Build screens (<a href="#build">§8</a>), a spec (<a href="#spec">§9</a>) or Settings (<a href="#settings">§12</a>). Each screen keeps its title and primary controls pinned at the top while it scrolls. <kbd>Esc</kbd> goes back one level when there is something behind the screen, and never discards an unsaved edit.</p>
+
+<h3>The chat panel</h3>
+<p>The header says <i>Chat</i> and, underneath, what it can see: <i>Helping with: &lt;document&gt;</i> when the stage's workflow has a current document, otherwise <i>Can see: &lt;project&gt;, &lt;phase&gt;.</i> It runs a real, multi-turn Claude Code session against the project, scoped to the stage you are viewing; switching stages switches conversations. Before it is ready, a three-step checklist shows what it is waiting on: <i>Connecting to Claude Code</i>, <i>Reading &lt;project&gt;</i>, <i>Loading &lt;document&gt;</i>.</p>
+<ul>
+  <li><b>Your words stay as typed.</b> The assistant's replies are rendered as markdown with raw HTML dropped, links never clickable and images never fetched.</li>
+  <li><b>Structured questions arrive as pills</b> inside the reply. Pick one, or type anything else as the next ordinary turn; the box is never gated on an open question.</li>
+  <li><b>A proposed write is a card</b>, <i>Proposed write — &lt;document&gt; — &lt;section&gt; — &lt;field&gt;</i>, with <i>Accept</i>, <i>Edit</i> and <i>Discard</i>. Nothing is written to the document until you accept. A discarded draft is still recorded under your name in the plugin's draft ledger. While a card is open the composer reminds you: "A proposal above is waiting on you."</li>
+  <li><b>The chat does not open documents.</b> It writes into fields of the document it is helping with, once you accept; to read or edit a document yourself, open it from the Workflow or Documents tab. The Workflow tab's <i>Talk it through</i> activity sends one turn through this same panel.</li>
+  <li><kbd>Enter</kbd> sends, <kbd>Shift</kbd><kbd>Enter</kbd> adds a line. The <i>Stop</i> button is drawn disabled with its reason — there is no cancel verb for a turn yet.</li>
+  <li><kbd>⌘</kbd><kbd>\</kbd> hides the panel without losing the conversation or a half-typed message; <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> focuses the composer. Drag the panel's left edge to resize it (280 px minimum; double-click the edge to return to 380 px).</li>
+</ul>
+<p>If Claude Code could not start, the panel says so where the conversation would be, "The assistant could not start.", with the reason, and invites you to type a message to try again or open a document to edit it directly. When the installed Claude Code lacks a flag the app needs, the composer is disabled and its placeholder is the sentence saying which flag and how to update.</p>
+
+<!-- 3 ------------------------------------------------------------------ -->
+<h2 id="sprint-home">3. The sprint home</h2>
+<p>The command center. A project in the Build loop lands here, and <i>Home</i> under Build Loop (<kbd>g</kbd> <kbd>s</kbd>) returns to it. Everything on it is a field of <code>sprint.py status --json</code>, <code>spec_status.py --all --json</code>, <code>track_decisions.py --json</code>, <code>record_findings.py report --json</code>, <code>scorecard.py report --json</code>, <code>project_settings.py --json</code> and <code>sprint.py log --json</code>, read once by the app's main process into one document whose every block names its source and the time it was read. The window computes no status of its own; a value the plugin did not give reads <i>no data</i>.</p>
+<figure class="shot">
+  <img src="{{shot:sprint-home}}" width="1200" height="750" loading="lazy" alt="The sprint home in the light theme. Under the band and the strip, the header reads S07 — Adjusters file without a phone call with the state chip planning, the dates, target 6 specs, WIP 2 of cap not set, mix chips and a business-day bar. Four lane wells — Ready, Building, Checking, Merged — hold spec cards with id, risk chip, name and people rings; a baton slot on the Building–Checking edge reads 0003 → @sam-k. On the right the Today column lists Needs you, Team is waiting on and Since yesterday. Below: In the room, Refining for the sprint after S07, and How it is going.">
+  <figcaption>The sprint home. Four lanes are the loop; the Today column says what needs you; the room says who holds what. Nothing here is the window's opinion.</figcaption>
+</figure>
+<table>
+  <tr><th style="width:190px">Zone</th><th>Reads</th></tr>
+  <tr><td>Header</td><td><i>S07 — &lt;goal&gt;</i>, the state chip (<i>planning</i>, <i>ready</i>, <i>closed</i>), <i>start → end</i>, <i>target 6 specs</i>, <i>WIP 2 of 4</i> or <i>2 in flight · cap not set</i>, the mix chips, then the <b>business-day bar</b>: one segment per business day of the sprint, the elapsed ones filled, today marked, the rest outlined — drawn only when the plugin gave all three numbers, else the sentence <i>dates unreadable — no bar</i>. With no sprint the header is the plugin's own note and one primary <i>New sprint</i>.</td></tr>
+  <tr><td><i>Mine</i> / <i>Team</i> / <i>All</i></td><td>A view filter over the lanes, never a count. <i>Mine</i> needs a signed-in or typed name; <i>Team</i> needs a roster that knows you. Each is disabled with its reason otherwise.</td></tr>
+  <tr><td>Four lanes</td><td>A partition of the slate: <b>Ready</b> is <code>status: ready</code> with the Definition of Ready met — the spec the plugin named next up carries <i>next up · deps merged · pull →</i>; <b>Building</b> is in flight with no verdict pending; <b>Checking</b> is in flight with a verdict pending or a pull request waiting on review, its wait shown in business days and amber only when the plugin's wait passes a day or its alarm; <b>Merged</b> is merged. A slated spec that fits none is listed under <i>Slated, not in a lane</i> with its raw status and DoR — nothing is forced into a lane. A card is three lines: the id and risk chip, the name, the people as initials in rings (only you wear the accent ring) with the pull request number, its checks and the plugin's waiting-on sentence. Without a code host the cards drop their pull-request facts and say why in the host's own sentence.</td></tr>
+  <tr><td>The baton</td><td>On the Building→Checking edge: one slot per open hand-off from <code>handoffs_open[]</code>, <i>0006 → Sam · 2 business days</i>. <kbd>↵</kbd> or a click acknowledges it (<code>sprint.py ack</code>, recorded against you); after the plugin answers 0 and the screen has re-read, the baton slides across.</td></tr>
+  <tr><td>Today</td><td><i>Needs you</i> first — hand-offs to you, pull requests waiting on you, decision clocks you own (overdue first), tiers of your specs to confirm — each with one action: <i>Ack</i>, <i>Open PR</i>, <i>Decide</i>, <i>Confirm</i>. Then <i>Team is waiting on</i>: the pending verdicts, each with its lane and wait — a verdict has a lane, not a person, so it is never called yours. Then <i>Since yesterday</i>: the sprint ledger's lines as written, merged pull requests and recorded decisions, each tagged with where it came from, over a window you pick (1 or 3 business days) — the window is a filter, not a figure. Then <i>Claude's work</i>, one line of the app's own record, labelled as such. <i>Standup notes</i> is present and disabled with its reason.</td></tr>
+  <tr><td>In the room</td><td>The roster in roster order; under each person, one dot per lane for the specs they hold. Dots, never digits — presence is fine, totals are not. Hovering or focusing a person lights their cards.</td></tr>
+  <tr><td>Refining</td><td>Candidates for the next sprint — specs at <code>ready</code> or <code>draft</code> with no sprint — each with the checker's DoR verdict and its gap lines verbatim, the risk chip, <i>Confirm</i> for the tier when the plugin offers it, <code>depends_on</code>, and <i>refine in place →</i>, which opens the spec card (<a href="#spec-card">§6</a>). A deferred spec shows its recorded reason or says the reason is recorded in the spec — never a blank.</td></tr>
+  <tr><td>How it is going</td><td>The steering scorecard's numbers: accepted as-is, review wait, security review wait on its own line, rework, sent back, escaped bugs, deployments, lead time, change failure, time to recover. <i>no data</i> where nothing was recorded; a count of zero recorded events reads <i>none recorded in this window</i>; <i>window is a label only</i>.</td></tr>
+</table>
+<p>Below the lanes the <b>Dependency constellation</b> keeps its Graph surface, and the slate table — Spec · Name · Risk · Type · Status · DoR · Eng · Data · Next owner · Depends on, with the <i>Readiness</i>, <i>Verdicts pending</i>, <i>Handoffs open</i>, <i>Next up</i>, <i>Dependency gaps</i>, <i>Decisions</i> and <i>Carried in</i> cards and the <i>Planning page</i> / <i>Refresh</i> / <i>Review page</i> buttons — is its Table twin, exactly as before.</p>
+<p><b>Keys in the lanes.</b> With focus inside the board, <kbd>j</kbd> / <kbd>k</kbd> move across the cards in reading order, <kbd>↵</kbd> opens the card in place, <kbd>h</kbd> opens the hand-off dialog for it, <kbd>v</kbd> the verdict dialog, <kbd>Esc</kbd> clears. The verdict dialog offers <i>accepted</i>, <i>returned</i>, <i>pending</i> (and <i>n-a</i> on the data lane only, with a required reason); on a spec you built it shows a note — <i>you built this — the verdict is someone else's</i> — rather than a greyed button, because the rule is the plugin's, not the window's. There is no <i>Approve</i> anywhere: the non-author approval belongs to the code host.</p>
+<h3>The cockpit</h3>
+<p>The four lanes and the Today column are one <b>cockpit</b>: from 1240 px of width the home gives them the whole first screen — the four wells in one row, Today as a 300 px rail on the right — and sizes that row to the window, so every lane is visible without scrolling at 1440×900 and the wells and the rail end on one line 24 px above the fold. Cards scroll <i>inside</i> a lane; the window itself never scrolls (only the stage area does). What sits under the fold — In the room, Refining, How it is going, the constellation — begins a clear step below, never cut on the edge. Under 1240 px Today becomes a compact strip above the lanes, capped at 120 px with a fade that says "more below"; narrower still, the lanes wrap. The chat starts <b>collapsed</b> to a 40 px rail on the sprint home and on planning so the lanes get the width; the band's <i>Chat</i> button, the <i>…</i> menu row or <kbd>⌘</kbd><kbd>\</kbd> open it, and the app remembers your choice per screen on this machine. The business-day bar spans the header; a mix short of its target is a measured gap in the header's amber chip, not an error.</p>
+<h3>Keyboard and the omnibar</h3>
+<p>The cockpit is built to be driven without the mouse. <kbd>⌘</kbd><kbd>K</kbd> opens the omnibar over whatever is showing (<a href="#omnibar">§4</a>): a spec id opens its card, a verb — <code>verdict 0002 accepted</code>, <code>hand 0006 to Sam</code> — previews the exact <code>sprint.py</code> line and opens its dialog, a place name jumps there. Inside the lanes <kbd>j</kbd> / <kbd>k</kbd> / <kbd>↵</kbd> / <kbd>h</kbd> / <kbd>v</kbd> do the work; <kbd>g</kbd> <kbd>p</kbd> goes to planning and <kbd>g</kbd> <kbd>s</kbd> back; <kbd>g</kbd> <kbd>t</kbd> is steering mode; <kbd>⌘</kbd><kbd>\</kbd> unfolds the chat and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> unfolds it and puts the cursor in the composer. <kbd>Esc</kbd> always closes the innermost thing first — a menu, a hover card, a dialog, the palette — and after a verb has run, focus returns to the card you acted on only once the refreshed read has arrived, so what you see under the cursor is the plugin's answer, not a guess. The full table is in <a href="#keys">§11</a>.</p>
+<figure class="shot">
+  <img src="{{shot:sprint-home-dark}}" width="1200" height="750" loading="lazy" alt="The same sprint home in the dark theme: deep bark ground, the four lane wells slightly lighter, cards lit by a rim, the one moss accent on the needs-you items and the viewed station.">
+  <figcaption>The same screen in dark. One accent means "where you are / what is yours" and nothing else; a chip is tinted only by a plugin field.</figcaption>
+</figure>
+
+<!-- 4 ------------------------------------------------------------------ -->
+<h2 id="omnibar">4. The omnibar</h2>
+<figure class="shot">
+  <img src="{{shot:omnibar}}" width="1200" height="750" loading="lazy" alt="The command palette open over the sprint home with the words verdict 0003 accepted typed; the first row, under a Verbs heading, reads Run: sprint.py verdict --spec 0003 --lane eng --verdict accepted --by followed by the signed-in handle.">
+  <figcaption>Plain words become the exact line the plugin will be asked to run. Enter opens a dialog; nothing runs until Confirm.</figcaption>
+</figure>
+<p><kbd>⌘</kbd><kbd>K</kbd>, or the band's trigger, opens the palette. Besides the groups below (<a href="#keys">§11</a>) it understands a small grammar, resolved only against the specs on the board and the people on the roster — free text never reaches a command line:</p>
+<table>
+  <tr><th style="width:260px">You type</th><th>It offers</th></tr>
+  <tr><td><code>pull 0005</code></td><td>The hand-off flow for a slated READY spec; <code>sprint.py slate</code> for one not yet slated — the dialog says which and offers the other.</td></tr>
+  <tr><td><code>verdict 0002 accepted</code> · <code>… returned eng</code> · <code>… n-a data because …</code></td><td><code>sprint.py verdict</code>. The eng lane never offers <i>n-a</i>; <i>n-a</i> needs a reason.</td></tr>
+  <tr><td><code>hand 0006 to Sam</code> · <code>ack 0006</code></td><td><code>sprint.py handoff</code> / <code>ack</code>. A name is resolved to a roster handle only when it names exactly one person; two Sams, or a stranger, is a visible gap — the dialog shows a roster picker and its Confirm stays disabled with the reason — never a guess.</td></tr>
+  <tr><td><code>defer 0003 because …</code> · <code>defer 0003 to S08 because …</code> · <code>unslate 0004 because …</code></td><td><code>spec_transition.py defer</code> (leave the Build loop) · <code>sprint.py carry</code> (a later sprint; on a plugin without <code>sprint-carry</code> the dialog offers unslate-then-slate, "two ledger lines, not atomic") · <code>sprint.py unslate</code>.</td></tr>
+  <tr><td><code>decide DL-02 …</code> · <code>decision …</code> · <code>confirm tier 0007</code></td><td><code>track_decisions.py decide</code> / <code>open</code> (you as owner, a two-business-day clock) · <code>spec_transition.py confirm-tier</code>.</td></tr>
+  <tr><td><code>ready S08</code> · <code>close S07</code> · <code>new sprint</code></td><td><code>sprint.py ready</code> · the close screen (<a href="#build">§8</a>) · <code>sprint.py new</code> with its fields.</td></tr>
+</table>
+<p>The dialog shows the exact line, who it is recorded against and where that identity came from (the roster, the code host, or a name typed for this session), the preconditions the plugin will check, and one <i>Confirm</i>. The answer is the plugin's own stdout and stderr, word for word, under <b>Done</b> (exit 0), <b>Not done</b> (exit 1) or <b>Refused by the plugin</b> (exit 2). Nothing on screen moves until the exit code and a fresh read have both arrived. With nobody signed in the Confirm is disabled — <i>Sign in or type your name — the plugin records who is accountable</i> — and the typed-name form opens in the dialog. A verb the installed plugin lacks is present and disabled: <i>arrives with a newer plugin: lacks &lt;capability&gt;</i>.</p>
+
+<!-- 5 ------------------------------------------------------------------ -->
+<h2 id="planning">5. Sprint planning</h2>
+<figure class="shot">
+  <img src="{{shot:planning}}" width="1200" height="750" loading="lazy" alt="Sprint planning: the header S07 with its facts and an Edit goal button; a Slate / Proposal toggle over the constellation; three columns — Refined backlog on the left with candidate rows showing DoR state and Add to slate; The slate in the middle with numbered rows and Builder / Checker pickers and a risk-mix meter; What the plugin says on the right with Definition of Ready, Dependency order, Mix, The plugin proposes with Apply proposal, and Commit the sprint.">
+  <figcaption>Planning. The slate is the brightest column because it is the commitment; the right column wears the lightest accent wash because it is the plugin's own voice.</figcaption>
+</figure>
+<p><i>Planning</i> under Build Loop (<kbd>g</kbd> <kbd>p</kbd>). The header is the sprint home's, with <i>Edit goal</i> (<code>sprint.py edit</code>, recorded against you; disabled with its reason on an older plugin) and <i>Edit target · mix · dates</i> present and disabled — those are set at <code>sprint new</code>. <i>Carried in</i> lists what the last sprint's close carried here, with each reason.</p>
+<ul>
+  <li><b>Refined backlog</b> — the candidates, READY first, then by status, then by id; each row shows its DoR state and gap lines, risk chip, tier confirmation, <code>depends_on</code> and owner. <i>Add to slate</i> is enabled for every candidate, drafts included: the plugin, not the window, lists the gaps when the sprint is readied. <i>refine in place →</i> opens the spec card; <i>Confirm</i> confirms the tier.</li>
+  <li><b>The slate</b> — the slated specs in the plugin's build order (<code>build_order[]</code>; rows the plugin did not order sit under <i>order not given</i>), each with <i>Builder</i> and <i>Checker</i> pickers over the roster (<code>spec_transition.py assign</code>; the no-self-check rule is the plugin's refusal, shown as it comes), a <i>Security signer</i> picker on HIGH rows that is always disabled with its reason (no frontmatter field exists for it yet), the HIGH rungs quoted from the checking ladder — <i>security pass — blocks</i>, <i>named human sign-off in the PR</i> — and <i>Remove from slate</i> with a reason. The <i>Risk mix</i> meter is three bars, actual over target, beside last sprint's.</li>
+  <li><b>What the plugin says</b> — the readiness gaps, dependency-order gaps and mix warnings verbatim; <i>The plugin proposes</i>, the deterministic id-order fill from <code>sprint.py slate --json</code>, with <i>Apply proposal</i> (one <code>slate</code> for the whole set, previewed in the dialog) and <i>Claude proposes a reasoned slate</i> disabled with its reason; and <b>Commit the sprint</b>, a dialog that first lists the lines it will run, then runs <code>slate</code> (only if the set changed) → <code>ready</code> → <code>plan</code> → opens the planning page → one decision per unconfirmed tier when the plugin can confirm tiers, stopping at the first non-zero exit and showing each step's answer. Over the target, it asks for the <code>--override</code> reason.</li>
+</ul>
+<p>The <i>Slate</i> / <i>Proposal</i> toggle above the columns switches the constellation between the committed set, drawn in build order, and the proposed set, drawn with no order and the caption <i>order arrives when the slate is committed</i>.</p>
+
+<!-- 6 ------------------------------------------------------------------ -->
+<h2 id="spec-card">6. The spec card</h2>
+<figure class="shot">
+  <img src="{{shot:spec-card}}" width="1200" height="750" loading="lazy" alt="A spec card opened over the sprint home for 0006 — payments ledger: a back link, the id and name, facts chips (HIGH, draft, Owns it, path, no PR yet); three columns — Intent · Definition of Ready with the Risk tier and Still needed / Worth a look / Passing groups and the Scope; the Checking ladder with rungs on a rail, each with its state and source; and the Findings ledger; a sticky foot reading one spec · one branch · one PR with a disabled Hand off button.">
+  <figcaption>The spec card: the IDD loop whole. The ladder's discs take their colour only from the code host's conclusions; the Hand off button says, in the plugin's words, why it is not yet allowed.</figcaption>
+</figure>
+<p>A lane card (<kbd>↵</kbd> or click) or a Refining row's <i>refine in place →</i> opens the spec card in place; <kbd>Esc</kbd> or <i>← Back to the board</i> returns and hands focus back to whatever opened it. One read, <code>getSpecCard</code>, runs <code>spec_readiness.py --spec --json</code> (with the ladder), <code>spec_status.py --spec --json</code>, <code>record_findings.py report --json --spec</code>, <code>check_channel.py --json</code> when a channel is bound, and <code>handoff.py --check</code> when a developer is named; each block names its source.</p>
+<table>
+  <tr><th style="width:190px">Zone</th><th>Reads</th></tr>
+  <tr><td>Header</td><td>Id and name, the risk and status chips, the channel and team, <i>Owns it</i> / <i>Builds it</i> / <i>Checks it</i> as rings, the path, the pull request or <i>no PR yet</i>, the review verdicts.</td></tr>
+  <tr><td>Intent · Definition of Ready</td><td>The <i>Risk tier</i> with <i>Confirm</i> (when the plugin can) and the existing raise / lower controls — raising is free, lowering asks for the name it is recorded against — under the fixed sentence <i>Raising a tier adds rungs for free; lowering is recorded against whoever decided</i> and the spec's own <i>Why this tier</i> note. Then <i>Still needed</i>, <i>Worth a look</i> and <i>Passing</i>, the checker's messages verbatim; <i>Claude proposes a rewrite</i> on an advisory is present and disabled with its reason. Then <i>Scope</i> — In, Out and <code>harness_context</code> read from the document itself — and the channel's acceptance dimensions when one is bound, or <i>no channel bound</i>.</td></tr>
+  <tr><td>Checking ladder</td><td>The rungs the plugin requires for this tier, as written — <i>CI (build/test/lint/coverage) — blocks</i>, <i>grader — runs, advises</i>, <i>correctness — blocks on a defect</i>, <i>security pass — blocks</i> at HIGH or on a gated path, <i>non-author approval — required</i>, <i>named human sign-off in the PR</i> — each joined by a fixed table to one host field (the checks, the grader's verdicts, the security review, the approvals). A disc is green, red or blue only from the host's own conclusion; a rung with nothing to read is a hollow ring beside <i>no data</i>, and correctness is always that. The failing rung carries the plugin's waiting-on sentence. <i>gated path: not declared</i> when the spec does not say.</td></tr>
+  <tr><td>Findings</td><td><i>Findings touching this spec's scope paths</i>: each with the plugin's disposition word (OPEN, FIXED, SPLIT, ACCEPTED_RISK, POSTPONED), <i>off the books</i> when the plugin says so, <i>seen N times across reports</i>, and the count the plugin could not attribute. <i>Promote to a permanent check</i> is present and disabled with its reason.</td></tr>
+  <tr><td>Hand off</td><td>The foot: <i>one spec · one branch · one PR</i> and the <i>Hand off</i> button, enabled only when <code>handoff.py --check</code> says the hand-off would go through and otherwise disabled with that script's refusal, character for character (<i>Spec is not ready …</i>, <i>… is not on this project</i>, <i>… already checking this change</i>, <i>… at its limit</i>). On an older plugin without the dry run the button is enabled and the live refusal lands after, in the plugin's words.</td></tr>
+</table>
+
+<!-- 7 ------------------------------------------------------------------ -->
+<h2 id="stage">7. A stage home (the lifecycle home)</h2>
+<p>Selecting a station on the strip (or <kbd>[</kbd> / <kbd>]</kbd>, or <kbd>g</kbd> then a digit) opens the lifecycle home for that stage: the Lifecycle band, the stage's title and description, three tabs, and — beside them on a wide window, above them otherwise — the same Today column as the sprint home with two groups of its own: <i>Claude is working the &lt;stage&gt;</i>, the app's own record of the chat's activity, labelled as such, and <i>Decisions this week</i>, every open decision with its owner and clock, red only when the plugin says <i>overdue</i>; with no decision log it reads <i>no data — no decision-log</i>. Leaning into the Build station adds <i>Go to the sprint home →</i>. Opening a different stage, or a different project, always lands on <i>Workflow</i>.</p>
+<figure class="shot">
+  <img src="{{shot:lifecycle-home}}" width="1200" height="750" loading="lazy" alt="The lifecycle home leaned into the Build Loop station: the Today band — Go to the sprint home, Needs you, Claude is working the Build Loop, Decisions this week — above the Lifecycle graph with the Build station ringed, the stage title and the Workflow tab.">
+  <figcaption>The lifecycle home on the Build station. Decisions for Data, Design and Bizreq live here too; the sprint home is one lean-in away.</figcaption>
+</figure>
+
+<figure class="shot">
+  <img src="{{shot:stage-light}}" width="1200" height="750" loading="lazy" alt="A stage home for Phase 0: Discovery in the light theme. Above the title, the Lifecycle graph shows nine stations on a rail grouped Foundation, Build, Ship, Close, with the first station marked now. Below are the tabs Workflow, Documents, Guide; the Workflow tab lists constitution.md as Current and four locked documents, with a live panel on the right reading Not started yet.">
+  <figcaption>A stage home on Phase 0. The rail is unlit because nothing is finished yet; the first station carries the <i>now</i> plate. The Workflow tab shows one step per required document, in the stage's declared order, with the current step's real file beside it.</figcaption>
+</figure>
+
+<h3>The Lifecycle graph</h3>
+<p>The band above the title is a figure with a <i>Graph</i> / <i>Table</i> toggle and a chevron that collapses it; the collapsed state is remembered on this machine. Its caption is the legend, and the legend is exact:</p>
+<blockquote class="legend">Nine stages in the plugin's order; the lit rail counts finished stages — signed off, or completed with no name recorded. Height and depth carry no meaning.</blockquote>
+<ul>
+  <li>The rail is lit from the start to the last signed-off station, flat from there to the current station, and dashed beyond it. Lit length is a count of finished stages, never time; stations are equally spaced because time is not a length. There is no gradient between stations, because the plugin reports no progress between them.</li>
+  <li>The current station pulses three times when the screen opens and then stops. The Build station is drawn as a loop, because Build is continuous.</li>
+  <li>Hovering a station, or its plate, expands the plate: the stage's name; its state (<i>Signed off</i>, <i>Completed</i>, <i>Current</i>, <i>Later</i>); <i>Signed off by &lt;name&gt;</i> or <i>no name recorded</i>; <i>Entered</i> and <i>Completed</i> dates for stages that have been reached; <i>N artifacts</i>; and for Build, its five views. Activating a plate goes to that stage, exactly as its station on the strip does.</li>
+  <li>The Table is a list of the same nine rows — Stage · State · Signed off by · Entered · Completed · Artifacts — grouped the same way, with a <i>Now</i> badge on the current row. It is the real content, not a fallback, and it is what renders when hardware graphics are unavailable or the figure is narrower than 640 px.</li>
+  <li>A partial arc on the current station shows <i>complete of total</i> documents, and only when both numbers are known. Nothing is drawn from a guess.</li>
+</ul>
+
+<figure class="shot">
+  <img src="{{shot:stage-dark-hover}}" width="1200" height="750" loading="lazy" alt="The same stage home in the dark theme. The Phase 2: Design station on the strip is hovered and the matching station on the Lifecycle graph has expanded its plate, reading Later, 0 artifacts, Open.">
+  <figcaption>Dark theme, with a strip station hovered: the Design station's plate expands to show its state and artifact count. A later stage carries no dates and no estimate.</figcaption>
+</figure>
+
+<h3>Workflow, Documents, Guide</h3>
+<table>
+  <tr><th style="width:120px">Tab</th><th>Shows</th></tr>
+  <tr><td><i>Workflow</i> (<kbd>1</kbd>)</td><td>One step per required document, in the stage's own order, then a <i>Sign-off</i> step. Each step is <i>Complete</i>, <i>Current</i> or <i>Locked</i>; the status comes from the same readiness read the Documents tab uses. The right-hand panel shows the current document's real content, re-read every two seconds while this tab is visible, with <i>← Back to Workflow</i>, <i>Previous</i>, <i>Next</i> and <i>Edit</i> above it. Before the file exists it reads "Not started yet — this will appear here as soon as it is created." Under the steps, <i>Also in this stage</i> lists the optional activities the plugin declares for the stage, each with one control: <i>Create</i> to start documents from their templates, a check to run, <i>Talk it through</i> to send a turn to the chat, or <i>Open</i> for a panel such as the phase report, intake, review or the Build sprint summary. A blocked activity shows the plugin's reason instead of a control. On Foundation, a <i>Pipeline evidence</i> panel also appears (below).</td></tr>
+  <tr><td><i>Documents</i> (<kbd>2</kbd>)</td><td>The files in the stage's <code>.sdlc/artifacts/&lt;slug&gt;/</code> with a chip each: <i>Not started</i>, <i>N to fill</i>, or <i>Complete</i>. A row opens the document; a folder is listed but cannot be opened as one document. <i>What is missing</i> lists every unfilled field as a sentence (<i>&lt;field&gt; in &lt;section&gt; — &lt;document&gt;</i>) with the plugin's reason; choosing one opens the document scrolled to that field, marked "You were sent here to fill in &lt;field&gt;." Then the sign-off questions, and a banner: "Every required document is present and complete." or "N document(s) still need work before this stage can be signed off.", followed by <i>Signed off by &lt;name&gt;.</i> once it is.</td></tr>
+  <tr><td><i>Guide</i> (<kbd>3</kbd>)</td><td>The plugin's phase definition for this stage, rendered as markdown, and <i>Everything you can do in this stage</i>: every activity the plugin declares with its slash command, including the ones the Workflow tab draws no control for. A stage with no definition file says "No guidance file for this stage".</td></tr>
+</table>
+
+<aside class="see"><b>Pipeline evidence (Foundation only)</b>
+<p>Foundation closes only when the delivery rails are proven, not merely present. <i>Gather pipeline evidence</i> reads the code host's own run history (it can take up to a minute; a clock counts) and reports each rail as <i>Proven</i>, <i>Ran, never caught anything</i>, <i>Never fired</i>, <i>Broken</i> or <i>No data</i> — the last drawn dashed, because it is the absence of a reading, not a bad one. A rail with no data shows no run count at all. <i>Not yet proven</i> lists what would prove each remaining rail; each of those opens a real pull request, so they are listed here and never run from here. <i>Open pipeline-proof.md</i> opens the document the gather wrote. Read-only: nothing is opened, merged or changed.</p>
+</aside>
+
+<h3>Reading and editing a document</h3>
+<p>A document opens with its file name, description and repository path at the top, and two buttons: <i>History</i> and <i>Edit</i>. Outside edit mode nothing that changes content is on the screen — not disabled, absent. <i>Edit</i> is disabled, with the reason in its tooltip, when the document has no shape the plugin knows ("This document has no shape, so its fields cannot be edited here."); such a document is shown as plain text, and the notice says nothing is hidden.</p>
+<ul>
+  <li>Sections are cards; each field is a term and its value. An unfilled field reads <i>Empty</i>; a field the shape declares but the document lacks reads <i>Not in this document.</i></li>
+  <li>In edit mode every field gets an editor with <i>Save field</i> (or <kbd>⌘</kbd><kbd>S</kbd> for the editor that has focus) and <i>Revert</i>, plus a button that asks Claude for a draft. The draft arrives as a card, "Claude's draft — review before accepting", with <i>Use this</i> and <i>Discard</i>; it is a proposal until you use it. A saved field shows a toast naming the field, and the stage's readiness is re-read.</li>
+  <li>Documents with numbered sections gain an add control, only in edit mode, that shows the number it will use before anything is created: <i>Add FR-013</i>. While the plugin is working it out the button says so rather than guessing.</li>
+  <li>A notice, <i>Changed since you last looked</i>, lists who changed what and why since your last visit. Opening the document does not clear it; <i>Mark as seen</i> does.</li>
+  <li><i>History</i> lists every saved version with who saved it and why, compares any version with the latest, and offers <i>Restore</i>. A restore is preview-then-confirm — you see the exact diff and confirm that diff — and it adds a version rather than removing any, which is why the confirmation says <i>Restore as a new version</i>. It is recorded against a signed-in person.</li>
+  <li><kbd>Alt</kbd><kbd>↑</kbd> / <kbd>Alt</kbd><kbd>↓</kbd> step to the previous or next document of the stage; <i>← Back to the stage</i> returns to the home.</li>
+</ul>
+
+<h3>Signing off a stage</h3>
+<p>The sign-off step shows <i>Questions for whoever signs this off</i>: a checkbox per question and, beside it, a pre-check of what the app could see — <i>Looks done</i>, <i>Not yet</i>, or <i>Needs your judgement</i>. A pre-check never ticks a box. Only a signed-in, named person can tick one, and each confirmation is recorded as <i>Confirmed by &lt;name&gt; · &lt;time&gt;</i>; the count reads <i>n of m confirmed</i>.</p>
+<p>The sign-off card itself appears only when all three hold: this is the project's current stage, every required document is complete, and every question is confirmed. It is titled <i>Sign off &lt;stage&gt;</i>, carries a <i>Signed by</i> field prefilled with your name, and an optional list of discipline sign-offs (Discipline / Section / Signed by, the same triple <code>/sprd-next</code> offers). <i>Sign off and advance</i> does what <code>/sprd-next</code> does: checks the seven gates, drafts and validates the phase summary, snapshots the artifact record, and advances.</p>
+<ul>
+  <li><b>It fails closed.</b> A refusal is shown in the plugin's own words, whole, naming the gate or step it stopped at; the button becomes <i>Try again</i>. Nothing is advanced until the plugin says yes.</li>
+  <li><b>On success</b> the card reads <i>Signed off — moved from Phase X to Phase Y</i>, a toast and a live-region announcement record <i>Phase X signed off · by &lt;name&gt;</i>, and the Lifecycle rail plays a short ceremony to the stage just signed. The end state equals a cold reload.</li>
+  <li><b><i>Completed</i> versus <i>Signed off</i>.</b> The plugin's state records only that a stage's status is completed; the name is recorded separately. A finished stage is called <i>Signed off</i> only when a name is on it. One finished without a name reads <i>Completed · no name recorded</i>, on the strip, on the graph and in the table alike.</li>
+  <li>If the installed Claude Code lacks a flag the app emits, the button is off and the reason is printed beside it: drafting the phase summary is a model call that would fail after the gates passed.</li>
+</ul>
+<p>Build Loop is the exception. Its home shows a card, <i>Build ends from Closing</i>, with a <i>Go to Closing</i> button: Build is declared complete from Build › Closing once every spec is decided and each team has confirmed its list (<a href="#closing">§4</a>), and the generic sign-off is refused for it.</p>
+
+<!-- 8 ------------------------------------------------------------------ -->
+<h2 id="build">8. The Build Loop's other views</h2>
+<p>Selecting <i>Build Loop</i> on the strip unfolds its six views — <i>Home</i> (<a href="#sprint-home">§3</a>), <i>Planning</i> (<a href="#planning">§5</a>), <i>Board</i>, <i>How it is going</i>, <i>Closing</i>, <i>Documents</i> — reachable with <kbd>g</kbd> then <kbd>s</kbd> / <kbd>p</kbd> / <kbd>b</kbd> / <kbd>h</kbd> / <kbd>c</kbd> / <kbd>d</kbd>. Every number on these screens is the plugin's. The app computes no status of its own, and a value the plugin reports as null reads <i>no data</i>, never 0.</p>
+
+<h3>Board</h3>
+<figure class="shot">
+  <img src="{{shot:board-list}}" width="1200" height="750" loading="lazy" alt="The Board: heading Build, 6 specs, a Refresh button; an amber notice Showing what the spec files say; a team chip claims · 1 in flight · no limit set; a filter row with Needs me, I own, I'm building, I check, Everything, a Search box, All teams, Any risk, Any status, No grouping, and a List / Graph toggle; then six spec rows with id, name, owner, team, sprint chip, risk chip and status.">
+  <figcaption>The Board with <i>Everything</i> selected. The host could not be reached, so the notice says the rows come from the spec files alone; every row is still listed, because an empty board would be a different claim.</figcaption>
+</figure>
+<p>The heading counts the specs (<i>6 specs · 4 shown</i> when a filter narrows them). The board is fetched once; every view, filter, search and grouping below is applied to what is already in memory, so switching tabs never re-reads the repository. <i>Refresh</i> re-reads.</p>
+<table>
+  <tr><th style="width:190px">Control</th><th>Does</th></tr>
+  <tr><td>Role views</td><td><i>Needs me</i> (the default), <i>I own</i>, <i>I'm building</i>, <i>I check</i>, <i>Everything</i>. "Needs me" means the pull request names you, the sprint hand-off names you as next, or the spec has no pull request yet and you own it. Being the checker of something still in CI is not waiting on you. Merged work waits on nobody.</td></tr>
+  <tr><td>Search</td><td>Matches id, title, name, owner, developer, checker, team, sprint and next owner.</td></tr>
+  <tr><td>Team · Risk · Status</td><td><i>All teams</i> / the teams found; <i>Any risk</i> / LOW, MEDIUM, HIGH; <i>Any status</i> / draft, ready, in-flight, merged, deferred.</td></tr>
+  <tr><td>Grouping</td><td><i>No grouping</i>, or by sprint, team or person (the developer, else the owner, else <i>unassigned</i>). Catch-all groups sort last.</td></tr>
+  <tr><td><i>List</i> / <i>Graph</i></td><td>The same filtered rows as a list or as the Dependency constellation. The Board opens on List every time; the Graph is a second view, never a remembered default. A dependency outside the current filter is a ghost body labelled <i>not shown</i>.</td></tr>
+</table>
+<p>A row shows the spec id, its title, who <i>owns</i>, <i>builds</i>, <i>checks</i> and is <i>next on</i> it (your own handle reads <i>you</i>), the team, a sprint chip, the risk chip, and where it is: the pull request's waiting-on sentence, or the spec file's status when there is no pull request. <i>last moved 3d ago</i> is measured from the pull request's last update; two days or more reads <i>overdue</i>, unless the pull request is merged or closed. Hovering a row shows the row's own facts in a card, nothing aggregated. <kbd>↑</kbd> / <kbd>↓</kbd> move between rows; a row opens the spec page (<a href="#spec">§9</a>).</p>
+<p>Above the filters, one chip per team reads <i>&lt;team&gt; · 2 in flight / 3</i>, with <i>at limit</i>, <i>over limit</i>, <i>no limit set</i>, and the longest current review wait with <i>OVER ALARM</i> when the plugin says so. Amber is a notice. When the code host cannot be reached the board shows what the spec files say, under the notice <i>Showing what the spec files say.</i>, with the host's own message behind <i>Show the host's message</i>. Signed out, <i>Needs me</i> cannot say what is waiting on you and says so rather than showing a clean slate.</p>
+
+<h3>The slate (the sprint home's Table twin)</h3>
+<p>What the Sprint screen used to be is now the sprint home's Table twin, below the lanes (<a href="#sprint-home">§3</a>): <code>sprint.py status --json</code> drawn as it is — the slate table where a <i>NOT READY</i> cell opens to the checker's own lines and a spec id opens the spec card, then the <i>Readiness</i>, <i>Verdicts pending</i>, <i>Handoffs open</i>, <i>Next up</i>, <i>Dependency gaps</i>, <i>Decisions</i> and <i>Carried in</i> cards, and <i>Planning page</i> / <i>Refresh</i> / <i>Review page</i>, which write the sprint's HTML page through the plugin into <code>.sdlc/reports/</code> and open it ("Reports stay on this computer; they are not shared with the team"). An empty slate is <i>no data</i>, not 0 of 0.</p>
+
+<h3>How it is going</h3>
+<p>Three read-only views behind one switch: <i>What Build inherited</i>, <i>How Build is going</i>, <i>Checks and gates</i>.</p>
+<ul>
+  <li><b>What Build inherited</b> lists what Foundation delivered, read from the documents themselves — each with its path and section headings — and, under <i>Not delivered</i>, each expected document that does not exist. A missing document is shown, saying so, rather than dropped from the list.</li>
+  <li><b>How Build is going</b> is the steering scorecard over a 14, 30 or 90 day window. Tiles: <i>Accepted as-is</i>, <i>Rework or revert</i>, <i>Sent back</i>, <i>Review wait (median)</i>, and <i>Security review wait (median)</i> on its own full-width row so a slow security review is never hidden inside an average. Then <i>Review-wait alarms by team</i> against the project's own thresholds; <i>Delivery</i> (deployments, lead time, change failure rate, time to recover); <i>Bugs that got through</i>, each with the check that should have caught it and the proposed fix; and <i>Not measured here, on purpose</i>: velocity, story points, pull-request counts and lines of code, which the plugin refuses to record at all. Every number is computed by the plugin from recorded events; the app does no arithmetic of its own. A measure with nothing recorded reads <i>no data</i> with the sentence saying what would produce some; a window with nothing at all says "No data in the last N days." once, as an empty record, not a score of zero. A scorecard that could not be read is a warning about the tool, never an all-zero card. <i>Export for a meeting</i> writes exactly what is on screen to a markdown file.</li>
+  <li><b>Checks and gates</b> lists every check a change must pass, described by the project's own rails guide so this screen and the pipelines cannot disagree: the gates installed here, the ones the playbook ships but this project does not run, local gates that cannot be confirmed from the repository, this project's own additions, and the ledgers that record sanctioned ways past a gate. It says whether the list was checked against the playbook's copy or only reports what the project says about itself.</li>
+</ul>
+
+<h3 id="closing">Closing</h3>
+<figure class="shot">
+  <img src="{{shot:review}}" width="1200" height="750" loading="lazy" alt="The close screen for S07: the header with a Close the sprint button; Outcomes tiles from the scorecard; Kept · merged listing the merged spec; Open · carry or drop, with a reason, each open spec with Carry / Drop; Decisions with the open clocks and a Decide control.">
+  <figcaption>Closing a sprint is a screen: outcomes, kept, open specs each carried or dropped with a reason. The plugin's exit-1 text names an undecided spec by id; the window never greys the button on its own count.</figcaption>
+</figure>
+<p>While a sprint is active, the <b>close screen</b> sits above the declaration: the sprint's header with <i>Close the sprint</i>; <i>Outcomes</i>, the scorecard's fields (<i>no data</i> where nothing was recorded); <i>Kept · merged</i>; <i>Open</i>, each spec with <i>Carry</i> or <i>Drop</i>, a required reason, and — for a carry — the <i>Carry to</i> picker over the sprints that are not closed (one target for every carried spec, because <code>sprint.py close</code> takes one <code>--carry-to</code>) or <i>create S09 first →</i>, which opens <code>new</code>; and <i>Decisions</i>, the open clocks with <i>Decide</i>. <i>Close the sprint</i> opens a dialog with the exact line — one <code>--carry</code> or <code>--drop</code> per decided spec — and its Confirm; an undecided spec comes back as the plugin's own sentence naming it. On exit 0 the review page is written and opened.</p>
+<p><i>Declaring Build finished</i>, beneath it, is the one screen where somebody says "we are done" in writing with their name on it. The heading counts the backlog: <i>N specs in the backlog · n still undecided · m deferred</i>. Until it can be declared, one amber notice lists what blocks it in the plugin's words: unfinished specs gathered by team with their status, risk and developer and a <i>needs a decision</i> chip where the plugin says so, each with a <i>Defer</i> control; and each team whose lead has not yet confirmed its list, with a <i>Confirm this team's list</i> control that needs the lead's handle. Deferring asks "Why was this not built?" in your own words; <i>Start from a suggestion</i> offers an opening phrase but never pre-fills it. <i>Deferred, and why</i> lists what was deferred with each reason, and a deferral with no reason says so.</p>
+<p><i>Declare Build complete</i> stays visible while it would be refused — pressing it shows why — and needs a signed-in name. After a declaration the screen produces the hand-over document through the plugin's generator (and offers to replace one that already exists rather than overwriting it), then offers <i>Move to the next stage</i>, the separate act that runs the stage's gate checks and writes the declaration, the name and the time into the project's own record. A refusal shows the gate output whole. A project whose Build was declared earlier opens straight on <i>Build is declared complete</i>, read from the record: <i>Signed off by &lt;name&gt; on &lt;date&gt;</i>, or "No name was recorded against this declaration". Build does not reopen; late work rides the loop one spec at a time.</p>
+
+<h3>Documents</h3>
+<p>Build's own stage home with its documents (<code>.sdlc/artifacts/build/</code>): the same Workflow, Documents and Guide tabs as any other stage, minus the sign-off.</p>
+
+<h3>Steering mode</h3>
+<figure class="shot">
+  <img src="{{shot:steering}}" width="1200" height="750" loading="lazy" alt="Steering mode in the dark theme: a near-black bark ground, the Shepherd mark in its Depth gradient beside the word Steering and the sprint id, a Leave steering button, then large tiles — Accepted as-is, Rework or revert, Sent back, Review wait, Security review wait, Deployments and the rest — each with a 56-pixel number or the words no data and its scorecard field named beneath.">
+  <figcaption>The committee's room: the standard's numbers at reading-from-across-the-room size, every one naming its field. No chat, no console, nothing to click that writes.</figcaption>
+</figure>
+<p><kbd>g</kbd> <kbd>t</kbd>, or <i>Steering mode</i> in the band's <i>…</i> menu, is the read-only view of "How it is going" for a steering committee: the chat and the console are hidden, the omnibar's verbs withdrawn, and the screen holds no control that writes. Each tile is one field of <code>scorecard.py report --window-days 14 --json</code>, named beneath its number; <i>no data</i> never animates or tints; the window is a label only. <i>Open the review page</i> opens the active sprint's review; each <code>.narrative.md</code> companion the plugin reports present opens read-only. <kbd>Esc</kbd> leaves, back to the screen you came from.</p>
+
+<!-- 9 ------------------------------------------------------------------ -->
+<h2 id="spec">9. A spec page</h2>
+<p>The Board opens a spec as this page; the sprint home and planning open the spec card instead (<a href="#spec-card">§6</a>). The two share their words — <i>Owns it</i>, <i>Builds it</i>, <i>Checks it</i>, <i>← Back to the board</i> — and the same raise / lower controls for the tier. The page's <i>Sprint decisions</i> slots (hand off, acknowledge, remove from the slate) open the omnibar's dialog with the line pre-filled.</p>
+<figure class="shot">
+  <img src="{{shot:spec-view}}" width="1200" height="750" loading="lazy" alt="A spec page for 0001 — duplicate-claim-409. A back link to the board, the title and the spec path; a card with Owns it @priya-n, Builds it nobody, Checks it nobody, Risk HIGH; an amber notice headed 4 things still needed before this can be handed off with a Still needed list; a Risk tier card with LOW, MEDIUM, HIGH and the sentence Raising a tier is free. Lowering one is recorded against whoever decided it; a Worth a look card; a collapsed 7 checks already passing disclosure; an amber notice Could not reach the code host; and an inset Sprint decisions card with four disabled buttons.">
+  <figcaption>A spec that is not yet ready. The <i>Still needed</i> list is the plugin's readiness checker, verbatim — the same checker the hand-off command runs, so the panel and the refusal cannot disagree.</figcaption>
+</figure>
+<p>A spec opens from a Board row, a slate row, a constellation plate or the palette's <code>#</code> group. Its order is deliberate: who, then is it ready, then where is it, then what checked it, then what you cannot do yet.</p>
+<ol class="steps">
+  <li><b>Who.</b> <i>Owns it</i>, <i>Builds it</i>, <i>Checks it</i>, <i>Risk</i>. An empty role reads <i>nobody</i>. The checker is never the same person as the developer; the plugin refuses that at hand-off.</li>
+  <li><b>Readiness</b> (shown while the spec is not yet in flight or merged). Ready, the card reads <i>Ready to hand off.</i> with a <i>Hand off</i> button. Not ready, one amber notice reads <i>N things still needed before this can be handed off.</i> and lists them under <i>Still needed</i>. A <i>draft</i> spec also offers <i>Mark ready</i>, which is shown even when it will be refused — the refusal comes back with its reasons, and hiding the button would hide the rule.</li>
+  <li><b>Risk tier.</b> LOW / MEDIUM / HIGH, with the sentence "Raising a tier is free. Lowering one is recorded against whoever decided it." Lowering is refused until a name is given in the field that appears, "Who authorised lowering this tier? Written into the spec." The name is never pre-filled or remembered: each downgrade is a deliberate act with somebody's name on it.</li>
+  <li><b>Worth a look.</b> Advisory findings, chiefly the vague-line lint on acceptance checks. "These do not stop a hand-off. A flagged acceptance check is a hint that two people could build different things from it — whether that is true is a judgement, not a pattern match."</li>
+  <li><b>N checks already passing</b>, behind a disclosure.</li>
+  <li><b>The pull request</b>, read from the code host (<i>Reading the pull request on GitHub…</i> or <i>… on Azure DevOps…</i>). No pull request yet reads "No pull request yet. This spec has not been handed to anyone." with the branch name. With one: <i>Open</i>, <i>Merged</i> or <i>Closed without merging</i>, its number, <i>Open on the code host</i> (the only link out, because the checking happens there), and the plugin's waiting-on sentence. Then one card: <i>Checks</i> with a dot and chip per check (running, success, or the host's conclusion; a completed check with no conclusion is <i>unknown</i>, never red); <i>The grader</i> with its per-check verdicts and the line "The grader advises. It never blocks a change on its own." (a grader that ran but could not be read is said plainly, in amber, and is not a pass); <i>Security review</i> when the tier requires one; <i>Approvals</i> by name and date. When the host cannot be reached the notice reads <i>Could not reach the code host.</i> and <i>The spec file itself says &lt;status&gt;.</i> — a claim about the app, never "not started", which would be a claim about the work.</li>
+  <li><b>Sprint decisions.</b> <i>Verdict</i>, <i>Pass next action</i>, <i>Acknowledge</i>, <i>Mark ready</i> are drawn disabled with the reason: these arrive with the plugin's sprint write verbs. Until then they are recorded with <code>/sprd-sprint</code> and <code>/sprd-refine</code>.</li>
+</ol>
+
+<h3>The hand-off dialog</h3>
+<p><i>Hand off &lt;id&gt;</i> replaces the spec page inline. It restates the three roles, then asks for the <i>Developer</i> as an <code>@handle</code>; the hand-off command checks the handle against the roster. The dialog enforces nothing itself: it asks the plugin and shows the answer. A refusal is headed in plain language from its kind — <i>This spec is not ready to hand off yet</i>, <i>That person is not on this project</i>, <i>That person is already checking this change</i>, <i>That team is at its limit</i> — with the plugin's message underneath. Only after a team-at-limit refusal does a reason field appear, "Why are you going past the limit? This is written into the record.", and the button becomes <i>Hand off anyway</i>. Success reads <i>Handed off</i> (or <i>Already with a developer</i>) with the developer, the checker, the branch and <i>Pull request opened.</i>; <i>Back to the board</i> returns to a re-read board. If the branch and commit were made but the host could not be told, an amber notice says so and asks you to assign it by hand. Typed text in this dialog counts as unsaved work: <kbd>Esc</kbd> stops here.</p>
+
+<!-- 10 ------------------------------------------------------------------ -->
+<h2 id="host">10. Working with the code host</h2>
+<p>The repository chooses its host by its <code>origin</code> remote: a GitHub remote means the GitHub CLI (<code>gh</code>); a <code>dev.azure.com</code>, <code>*.visualstudio.com</code> or <code>ssh.dev.azure.com</code> remote means the Azure CLI (<code>az</code>) with its <code>azure-devops</code> extension. A pin in <code>.sdlc/code-host.yaml</code> or the <code>SHEPHERD_CODE_HOST</code> environment variable (or <code>SDLC_CODE_HOST</code>, the pre-2.0 name, still read) overrides the remote; an unrecognised remote is host <i>none</i>, where pull-request features are off and <code>gh</code> is tried as before. The app probes the CLI's state once per poll interval; it never guesses "not signed in" when a probe did not run.</p>
+<p>Settings › Repository shows what was detected: a <i>Code host</i> row, <i>GitHub</i> or <i>Azure DevOps</i> with where that came from (the origin remote, the pin file, or the environment variable); a <i>CLI</i> row that reads <i>az — signed in as sam@corp.com (roster: @sam-k)</i>, <i>gh — typed for this session: Sam K</i>, <i>gh — sign-in not checked yet</i>, or the reason it cannot say; and the other CLI as <i>not needed for this repository</i>. In edit mode, <i>Pin the code host</i> (GitHub / Azure DevOps / none) writes <code>.sdlc/code-host.yaml</code> through the plugin's own <code>set_setting.py code-host</code>; the file travels with the clone and is read ahead of the remote.</p>
+<table>
+  <tr><th style="width:50%">Works without a signed-in CLI</th><th>Needs the host, and says why when it is off</th></tr>
+  <tr><td>Opening the project. Every stage home, document, edit, history and restore. Signing off a stage. The Board, read from the spec files. The Sprint. How it is going. Closing. Settings. The hand-off's local half: the branch, the spec's frontmatter, the push.</td><td>Live pull-request status on the Board and the spec page ("Live pull-request status needs the GitHub CLI" / "… the Azure CLI"). Assigning the hand-off on the host ("The hand-off completes locally; assigning on GitHub needs gh"). Pipeline evidence. Reading or setting the gate credential. Saving when the branch is protected and a pull request must be opened. The <i>Signed in as</i> row in Settings, which then reads <i>unavailable (…)</i>.</td></tr>
+</table>
+<p>When the CLI the repository needs is missing, lacks its extension or is signed out, the project still opens and an amber banner at the top of the project area carries one sentence saying so; <i>Dismiss</i> hides it for the session, and each affected control repeats the reason where it sits, in its tooltip and for assistive technology. The wording is fixed per situation, so the banner, the Settings row and the control agree:</p>
+<table>
+  <tr><th style="width:260px">Situation</th><th>Wording</th></tr>
+  <tr><td>Azure DevOps repository, <code>az</code> missing</td><td>"This project's repository is on Azure DevOps. The Azure CLI (az) wasn't found; the GitHub CLI isn't needed for this project."</td></tr>
+  <tr><td><code>az</code> found, extension missing</td><td>"The Azure CLI (az) was found, but the azure-devops extension isn't: run <code>az extension add --name azure-devops</code>."</td></tr>
+  <tr><td><code>az</code> signed out / PAT only</td><td>"Not signed in — run <code>az login</code>." / "Signed in with a PAT only; Azure DevOps cannot say who you are."</td></tr>
+  <tr><td>GitHub repository, <code>gh</code> missing / signed out</td><td>"This project's repository is on GitHub. The GitHub CLI (gh) wasn't found; the Azure CLI isn't needed for this project." / "Not signed in — run <code>gh auth login</code>."</td></tr>
+  <tr><td>Origin is neither</td><td>"This folder's origin is not GitHub or Azure DevOps; pull-request features are off (gh was tried, as before)."</td></tr>
+</table>
+
+<h3>Signing in, and who the app thinks you are</h3>
+<p>Sign in outside the app — <code>gh auth login</code>, or <code>az login</code> after <code>az extension add --name azure-devops</code> — then press <i>Refresh</i> on the screen you are on. Your identity is resolved in order of trust: the roster handle that matches the signed-in identity (a GitHub login is the handle; an Azure DevOps sign-in identity matches a person's <code>email:</code> in <code>.sdlc/team.yaml</code>, and nothing else), else the identity itself. It is shown in Settings › Repository as <i>Signed in as</i>, and it is the name every sign-off, confirmation, restore, draft decision and save is recorded under.</p>
+<p><b>The typed-name fallback.</b> Only when the host cannot say who you are — signed out, or Azure DevOps with a PAT alone — does the app offer <i>Sign in as a typed name</i> — under <i>Signed in as</i> in Settings › Repository, and in the hand-off dialog. The name must be 2 to 80 characters on one line, and a name that reads as an AI or automation is refused with the reason. It is held for this session only, never saved to disk; the connection records its source as <i>typed</i>, and the app's own commits carry the suffix <code>(typed name)</code>. The moment the host can identify you the typed name is forgotten, and offering one while the host already knows you is refused: "GitHub already identifies you as &lt;login&gt;; a typed name is only for when it cannot."</p>
+
+<!-- 11 ------------------------------------------------------------------ -->
+<h2 id="keys">11. Command palette and keyboard</h2>
+<figure class="shot">
+  <img src="{{shot:palette}}" width="1200" height="750" loading="lazy" alt="The command palette open over the Board: a search field containing the word sprint with an Esc keycap, one result under a BUILD heading reading Go to Sprint, and a footer row of keycaps: up and down move, Enter open, Esc close.">
+  <figcaption>The command palette. Results are grouped; a typed prefix narrows to one group. Every row navigates or toggles a preference; none writes to the project.</figcaption>
+</figure>
+<p><kbd>⌘</kbd><kbd>K</kbd> (or <kbd>/</kbd> outside a text field, or the band's omnibar trigger) opens the palette with the placeholder <i>Search or jump to…</i>. A phrase the omnibar grammar understands (<a href="#omnibar">§4</a>) puts its <b>Verbs</b> row first. Groups, in order: <b>Stages</b> (<i>Go to Phase 2: Design</i>, with its state), <b>Build</b> (the five views), <b>Specs</b> (<i>Open spec 0007 — &lt;title&gt;</i>; until the Board or Sprint has been opened once the group holds a single row, <i>Open the Board once to index specs</i>), <b>Documents</b> (the viewed stage's documents and each <i>What is missing</i> item), <b>Settings</b> (one row per section: Repository, Gate approvals, Connection, People, Build limits, Change approval, Tooling, Fixed rules, Appearance), <b>Actions</b>, and <b>Recent</b> for the rows you picked last. Prefixes filter: <code>&gt;</code> actions, <code>#</code> specs, <code>/</code> documents, <code>@</code> stages. <kbd>↑</kbd> <kbd>↓</kbd> move, <kbd>Tab</kbd> jumps between groups, <kbd>Enter</kbd> opens, <kbd>Esc</kbd> closes.</p>
+<p>The actions group names what will happen, not just what it is about: <i>Theme: Light → Dark</i>, <i>Toggle density: comfortable → compact</i>, <i>Animations: Auto → On</i>, <i>Toggle console</i>, <i>Toggle chat panel</i>, <i>Collapse or expand the Spine</i> (on a stage home), <i>Graph or Table for the visible scene</i> (on a stage home or the Sprint), <i>Refresh this screen</i> ("Re-reads what this screen shows; changes nothing"), <i>Copy project path</i>, <i>Keyboard shortcuts</i>, <i>Back</i>, and on Welcome <i>New project…</i> and <i>Open folder…</i>. The palette has no people search and never executes a write.</p>
+
+<h3>Keyboard shortcuts</h3>
+<p><kbd>⌘</kbd> is <kbd>Ctrl</kbd> on Windows and Linux. A two-key sequence (<kbd>g</kbd> then <kbd>b</kbd>) must be completed within 800 ms. Single keys are ignored while you are typing in a field; the shortcuts marked † fire there too. <kbd>⌘</kbd><kbd>/</kbd> or <kbd>?</kbd> opens the <i>Keyboard shortcuts</i> help, which renders this same table from the app's own map.</p>
+<table>
+  <tr><th style="width:230px">Keys</th><th>Does</th></tr>
+  <tr><th class="group" colspan="2">Everywhere</th></tr>
+  <tr><td><kbd>⌘</kbd><kbd>K</kbd> † or <kbd>/</kbd></td><td>Command palette</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>/</kbd> † or <kbd>?</kbd></td><td>Keyboard shortcuts</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> †</td><td>Cycle theme: system → light → dark</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>M</kbd> †</td><td>Toggle animations</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd> †</td><td>Toggle density</td></tr>
+  <tr><th class="group" colspan="2">In a project</th></tr>
+  <tr><td><kbd>⌘</kbd><kbd>J</kbd> †</td><td>Toggle console</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> †</td><td>Focus the chat composer</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>,</kbd> †</td><td>Settings</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>\</kbd> †</td><td>Toggle the chat panel</td></tr>
+  <tr><td><kbd>g</kbd> then <kbd>s</kbd> / <kbd>l</kbd></td><td>Go to the sprint home / the lifecycle home</td></tr>
+  <tr><td><kbd>g</kbd> then <kbd>p</kbd> / <kbd>b</kbd> / <kbd>h</kbd> / <kbd>c</kbd> / <kbd>d</kbd></td><td>Go to Planning / the Board / How it is going / Closing / the Build documents</td></tr>
+  <tr><td><kbd>g</kbd> then <kbd>t</kbd></td><td>Steering mode (<kbd>Esc</kbd> leaves)</td></tr>
+  <tr><td><kbd>g</kbd> then <kbd>0</kbd>…<kbd>9</kbd>, <kbd>g</kbd> then <kbd>.</kbd></td><td>Go to Phase 0–9, or Close</td></tr>
+  <tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>Previous stage / next stage (the ends are ends; no wrap)</td></tr>
+  <tr><th class="group" colspan="2">In the lanes (focus inside the sprint home's board)</th></tr>
+  <tr><td><kbd>j</kbd> / <kbd>k</kbd></td><td>Previous / next card, across the four lanes in reading order</td></tr>
+  <tr><td><kbd>↵</kbd> / <kbd>h</kbd> / <kbd>v</kbd> / <kbd>Esc</kbd></td><td>Open the spec card / the hand-off dialog / the verdict dialog / clear</td></tr>
+  <tr><th class="group" colspan="2">On a stage</th></tr>
+  <tr><td><kbd>1</kbd> / <kbd>2</kbd> / <kbd>3</kbd></td><td>Workflow tab / Documents tab / Guide tab</td></tr>
+  <tr><th class="group" colspan="2">In a document</th></tr>
+  <tr><td><kbd>Alt</kbd><kbd>↑</kbd> / <kbd>Alt</kbd><kbd>↓</kbd></td><td>Previous document / next document</td></tr>
+  <tr><td><kbd>⌘</kbd><kbd>S</kbd> †</td><td>Save the open field</td></tr>
+  <tr><th class="group" colspan="2">Always</th></tr>
+  <tr><td><kbd>Esc</kbd></td><td>Closes the innermost thing: a dialog, the palette, a hover card; then clears a 3D hover or the Board search; then goes back one screen. It never discards an unsaved edit: an open field editor, a hand-off form with text in it, or an unanswered proposal counts as dirty and Esc stops there.</td></tr>
+</table>
+<p><kbd>⌘</kbd><kbd>W</kbd>, <kbd>⌘</kbd><kbd>Q</kbd>, <kbd>⌘</kbd><kbd>R</kbd>, <kbd>⌘</kbd><kbd>1</kbd>–<kbd>9</kbd> and the F-keys are deliberately unbound: Electron and the operating system own them.</p>
+
+<!-- 12 ------------------------------------------------------------------ -->
+<h2 id="settings">12. Appearance, Settings and about the mark</h2>
+<figure class="shot">
+  <img src="{{shot:settings}}" width="1200" height="750" loading="lazy" alt="The Settings screen scrolled to its lower sections: Tooling on this machine with the Claude Code version and the plugin scripts path; Appearance with Theme System / Light / Dark, Density Comfortable / Compact, Animations Auto / On / Off and Visuals Graph / Table; and the inset card Fixed here — change these in the playbook, not the project, listing rules with where each is enforced.">
+  <figcaption>Settings. Every section names the file it is stored in; the two sections that are not project files — Tooling on this machine and Appearance — say so.</figcaption>
+</figure>
+
+<h3>Appearance</h3>
+<p>Four preferences of this machine, kept by Shepherd rather than in the project. They do not travel with the repository and change nothing about the work. The first three also sit under the band's <i>Appearance</i> button, and each takes effect without a reload.</p>
+<table>
+  <tr><th style="width:120px">Preference</th><th style="width:220px">Options</th><th>Notes</th></tr>
+  <tr><td>Theme</td><td>System / Light / Dark</td><td>System follows the operating system. Dark remaps every colour ramp at once. Also <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd>.</td></tr>
+  <tr><td>Density</td><td>Comfortable / Compact</td><td>Compact tightens the vertical rhythm; the band, the strip and the chat keep their size. The Lifecycle band is 168 px comfortable, 120 px compact. Also <kbd>⌘</kbd><kbd>⇧</kbd><kbd>L</kbd>.</td></tr>
+  <tr><td>Animations</td><td>Auto / On / Off</td><td>Auto follows the operating system's reduced-motion setting. On is an opt-in that overrides it. Off turns every animation off; ceremonies and counters then show their end state at once. Also <kbd>⌘</kbd><kbd>⇧</kbd><kbd>M</kbd>.</td></tr>
+  <tr><td>Visuals</td><td>Graph / Table</td><td>Which surface the Sprint constellation opens on. The table and the graph show the same data.</td></tr>
+</table>
+
+<h3>About the mark</h3>
+<figure class="shot">
+  <img src="{{shot:welcome-dark}}" width="1200" height="750" loading="lazy" alt="The Welcome screen in the dark theme: the Shepherd mark at hero size in its moss Depth gradient beside the name, the tagline, the two buttons, and the Recent card on the right over a faint field of dots gathered behind the title.">
+  <figcaption>Welcome in dark. The hero mark is the one place on this screen the gradient appears; the dock icon is the same tile, and the small mark in the band stays solid.</figcaption>
+</figure>
+<p>Shepherd's mark is the gate: a chamfered two-tone frame — the moss half on top and the right, with a tab that reaches in; the umber half on the left and the bottom — and a two-tone S nested inside it, its baseline resting on the tab. The two colours never change between themes. Below 48 px the S would be noise, so in the band, on the small lockup of the pre-project screens and in every list the mark is the frame alone, flat, at 24 px. Four places show its <i>Depth</i> treatment — the same mark with one light-to-dark moss gradient laid over its silhouette at 30 % opacity: the Welcome hero (56 px), the card that covers the window while a project opens (48 px), the app icon in the dock, taskbar and Finder (from 64 px; at 16 and 32 px the icon is the flat tile, the frame alone on sand), and the steering-mode title lockup (48 px). The gradient follows the theme — darker on light, luminous on dark — and never carries meaning: it is not a status, not a state, and never appears on a control, a chip, a data row or behind text. There is no About dialog yet; the version and the plugin driving the session are under Settings › <i>Tooling on this machine</i>. The brand guide itself is <code>docs/brand/shepherd/brandbook.html</code>.</p>
+
+<h3>Settings</h3>
+<p>"Every setting here is stored in the project itself, not in Shepherd — so it travels with the repository and changes like any other file." Each section names the file it lives in. A section whose file does not exist says "This project has not set this up. Nothing is wrong — the file simply does not exist yet."; a file that exists but could not be read cleanly is a different answer, shown as a warning with the lines that failed. Nothing changes until <i>Edit</i> is on, and the controls are absent rather than greyed outside it. A change is written by the plugin, which validates before it writes, so a refusal means the file is untouched; the changed files are then listed under <i>Changed here, not yet in the repository</i> with a required <i>Why did this change?</i> that becomes the commit message, and <i>Save to the repository</i> commits them under your name.</p>
+<table>
+  <tr><th style="width:190px">Section</th><th>Lives</th><th>Shows</th></tr>
+  <tr><td>Repository</td><td>the project folder; the pin in <code>.sdlc/code-host.yaml</code></td><td>The repository the origin points at (or "no remote configured"), the branch, <i>Signed in as</i> (with the typed-name form when the host cannot identify you), <i>Default branch protected</i> as yes / no / could not tell — a best guess from the host's settings; what decides is whether a direct push is refused — then <i>Code host</i>, <i>CLI</i> and the other CLI's <i>not needed for this repository</i> (<a href="#host">§10</a>). In edit mode, <i>Pin the code host</i>. The app reads and writes the project's documents and specs and never writes your code.</td></tr>
+  <tr><td>How the review gates sign in</td><td>on the code host, encrypted</td><td>The correctness, security and grader checks run on the host, so they need their own credential: <i>My Claude subscription</i> (a token from <code>claude setup-token</code>; no per-pull-request charge) or <i>An API key</i> (metered). The field is a password field, cleared the moment it is submitted; the screen can say whether one is set and nothing more. Until one is, the correctness and security reviews fail closed on the pull requests they review. Editable without edit mode, because nothing here is a project file.</td></tr>
+  <tr><td>Connection checks</td><td>—</td><td>The plugin's connection report, one row per question with yes / no / could not tell. "Could not tell" is its own answer and sends you somewhere different from "no".</td></tr>
+  <tr><td>People and teams</td><td><code>.sdlc/team.yaml</code></td><td>One row per person: name, handle, team, a <i>lead</i> chip, the roles they may hold and the stages they may sign off. Nothing is summed across people. Adding someone grants no access; the app never invites anyone or changes repository permissions.</td></tr>
+  <tr><td>Build limits</td><td>the cadence plan</td><td>Per team, <i>in flight / limit</i> with <i>at limit</i> or <i>over limit</i>, and the review-wait and security-review-wait alarms when the plugin says they are sounding. The limit is editable in edit mode.</td></tr>
+  <tr><td>Change approval</td><td>the project's approval file</td><td>Per stage, <i>no approval needed</i> or <i>needs &lt;approver&gt;</i>, with the approver chosen from the roster. Where approval is on, changing a signed-off document saves to its own branch and asks that person; everyone else keeps seeing the signed-off version until they approve.</td></tr>
+  <tr><td>Tooling on this machine</td><td>this machine</td><td>Which Claude Code was found and whether it accepts every flag the app uses, and which plugin <code>scripts/</code> folder is driving this session with its version and origin: the checkout beside the app, the plugin cache, or the path set in the app.</td></tr>
+  <tr><td>Appearance</td><td>this machine</td><td>The four preferences above.</td></tr>
+  <tr><td>Fixed here — change these in the playbook, not the project</td><td>the plugin</td><td>Rules this screen cannot change, each with where it is actually enforced: <i>Nobody checks their own work.</i> (<code>handoff.py</code> refuses a developer who is also the spec's checker); <i>Lowering a risk tier is recorded against whoever decided it.</i> (<code>spec_transition.py</code> refuses to lower a tier without a named person, and writes that name into the spec); <i>A high-risk change needs a security pass and a named sign-off.</i> (<code>risk_model.py</code> sets the checking ladder by tier; <code>check_spec.py</code> refuses a spec whose Checking Plan is shallower than its tier requires); <i>A spec cannot be handed off until it is ready.</i> (<code>handoff.py</code> runs the full Definition of Ready and refuses on any failure).</td></tr>
+</table>
+<p>The screen ends with "Notifications and project details are not built yet."</p>
+
+<!-- 13 ------------------------------------------------------------------ -->
+<h2 id="console">13. The Console</h2>
+<p><kbd>⌘</kbd><kbd>J</kbd>, the band's <i>Console</i>, or the palette's <i>Toggle console</i> docks the Console along the bottom of the window. It records every command the app ran on your behalf — each plugin script through <code>uv</code>, each <code>git</code>, <code>gh</code> and <code>az</code> call — and it is where the logs are. Nothing is hidden from either view; the two views are two readings of the same rows.</p>
+<table>
+  <tr><th style="width:120px">View</th><th>A row reads</th></tr>
+  <tr><td><i>Plain</i></td><td>One sentence: <i>Ran check_gates.py — finished in 1.2s.</i>, <i>Checked for changes — finished in 0.4s.</i>, <i>Opened a pull request — finished in 2.1s.</i>, <i>Checked who is signed in …</i>, or <i>&lt;name&gt; failed after 0.9s.</i> A command still running reads <i>… — still running…</i></td></tr>
+  <tr><td><i>Technical</i></td><td>The command and its full arguments in monospace, and the working directory.</td></tr>
+</table>
+<p>Every row carries a status dot, the start time, the duration and the working directory, and a chip: <i>OK</i>, <i>EXIT &lt;code&gt;</i>, or <i>RUNNING</i> for a command whose exit code does not exist yet. Expanding a row shows its stdout and, on a dark red ground, its stderr. Drag the top edge to resize the dock (the height is remembered; double-click it to reset; <kbd>↑</kbd> <kbd>↓</kbd> <kbd>Home</kbd> <kbd>End</kbd> work on the handle). Empty, it reads "Nothing has run yet."</p>
+
+<!-- 14 ------------------------------------------------------------------ -->
+<h2 id="honesty">14. Honesty rules the app follows</h2>
+<ul>
+  <li><b>The lit rail counts finished stages.</b> Signed off, or completed with no name recorded. Never time, never a percentage of the way to the next station.</li>
+  <li><b>No status is computed in the window.</b> Readiness, verdicts, build order, alarms and scorecard figures are the plugin's. The only thing the app works out is "is this waiting on me", a comparison of handles the plugin supplied.</li>
+  <li><b>"no data" over zero.</b> A value the plugin did not measure reads <i>no data</i> with the sentence saying what would produce some. Nobody-has-merged-anything and everything-was-rejected are opposite situations; a 0 would show them identically.</li>
+  <li><b>No activity metrics.</b> Velocity, story points, pull-request counts and lines of code are not shown anywhere, and the plugin refuses to record them. Nothing is totalled per person.</li>
+  <li><b>Disabled controls always say why.</b> The reason is in the tooltip and read to assistive technology. A control that is hidden rather than disabled is hidden because it would be refused — and the refusal, when you reach it, is the plugin's own words.</li>
+  <li><b>Amber is a notice, not an error.</b> NOT READY, a team at its limit, a dependency gap and a review over its alarm are amber. Red is reserved for hard failures: an unreachable host, a refusal, a non-zero exit, stderr.</li>
+  <li><b>Named humans.</b> Every sign-off, confirmation, restore, declaration and save is recorded under a signed-in or typed name, and a name that reads as an AI is refused.</li>
+  <li><b>Prose stays prose.</b> The plugin's sentences — dependency gaps, waiting-on lines, blocking reasons — are shown as text and never turned into geometry or colour.</li>
+  <li><b>The plugin is the only source of truth.</b> The window never runs a script of its own accord and never joins two sources into a status: the main process reads one document per project, each block naming the script it came from and when, and every write is one line from a closed table — <code>sprint.py &lt;verb&gt; … --by &lt;you&gt;</code> — shown before it runs and answered in the plugin's own words under <i>Done</i>, <i>Not done</i> or <i>Refused by the plugin</i>. Nothing on screen moves until the exit code and a fresh read have both arrived.</li>
+  <li><b>Presence, never totals.</b> <i>In the room</i> shows dots per lane, not counts per person; <i>needs you</i> is the length of a list addressed to you, not a score.</li>
+</ul>
+
+<!-- 15 ------------------------------------------------------------------ -->
+<h2 id="trouble">15. Troubleshooting</h2>
+<table>
+  <tr><th style="width:240px">Symptom</th><th>What it means</th><th>Do</th></tr>
+  <tr><td>A screen headed "Before Shepherd can open a project" with amber rows, "&lt;tool&gt; wasn't found."</td><td>At first open the app probes four required tools — Claude Code, uv (the script runner), the <code>shepherd</code> plugin's <code>scripts/</code> folder, and git — and one is missing from PATH. Under <i>Required</i>, each missing one is a row. Under <i>Code-host CLIs</i>, the GitHub CLI (gh) and the Azure CLI (az) are listed as found or not found with the line "Optional — needed when a project's repository is on GitHub / Azure DevOps. You can open a project without it." Neither ever blocks.</td><td>Each row has the probe's own error, an <i>Install instructions</i> link, and a path field with <i>Use this</i> to point the app at a copy it did not find (<i>Path to the binary</i>, or <i>Path to the plugin's scripts/ folder</i>). Nothing is installed by the app.</td></tr>
+  <tr><td>An amber banner across the top of the project, "This project's repository is on …"</td><td>The project opened, but the CLI its host needs is missing, lacks its extension, or is signed out (<a href="#host">§10</a>). Everything local works; the pull-request features are off, each saying why.</td><td>Install or sign in to that CLI, then <i>Refresh</i>; or <i>Dismiss</i> the banner for this session. If the origin is not GitHub or Azure DevOps and should be, pin the host in Settings › Repository (edit mode).</td></tr>
+  <tr><td>Which plugin is the app running?</td><td>Unpackaged, it prefers the <code>scripts/</code> folder beside the app when it carries <code>capabilities.py</code>, then the newest marketplace-cached plugin under <code>~/.claude/plugins/cache/</code>, then a path set in the app.</td><td>Settings › <i>Tooling on this machine</i> shows the path, the version and the origin.</td></tr>
+  <tr><td>"Claude Code &lt;version&gt; lacks &lt;flags&gt; — update with <code>claude update</code>"</td><td>The installed CLI predates a flag the app emits. The project stays readable; only the model controls — chat, drafts, sign-off — are off, each with this sentence as its reason.</td><td><code>claude update</code>, then reopen the project.</td></tr>
+  <tr><td>A document notice says the installed SDLC plugin is older than this version of the app</td><td>An older plugin reads and saves every document correctly but cannot offer every editable field; some sections show as plain text.</td><td><code>claude plugin update</code> in a terminal, then reopen the document.</td></tr>
+  <tr><td>Sign-off questions cannot be ticked</td><td>Confirmations are recorded against a person and nobody is signed in — or the plugin is too old to keep confirmations.</td><td>Sign in to the code host (<a href="#host">§10</a>) and press <i>Refresh</i>; or update the plugin.</td></tr>
+  <tr><td>"Showing what the spec files say." / "Could not reach the code host."</td><td>The host's CLI is missing, lacks its extension, or is signed out; the reason sentence from <a href="#host">§10</a> is underneath, the host's own message behind <i>Show the host's message</i>.</td><td>Install or sign in to the CLI the repository needs, then <i>Refresh</i>. Everything local keeps working meanwhile.</td></tr>
+  <tr><td>A graph shows a list instead</td><td>"Showing this as a list; hardware graphics are unavailable here." — WebGL is unavailable, or the figure is narrower than 640 px ("Widen the window to at least 640 px to show the graph."), or the canvas crashed ("The graph could not be drawn; showing the list instead."), or the slate holds more than 400 specs.</td><td>Nothing is lost; the list is the same data. Prefer it by default with Settings › Appearance › Visuals → Table. A driver crash costs the drawing and nothing else.</td></tr>
+  <tr><td>Nothing animates</td><td>Animations is <i>Auto</i> and the operating system asks for reduced motion, or it is <i>Off</i>.</td><td>Leave it; every ceremony and counter shows its end state at once. To opt in regardless, Settings › Appearance › Animations → On, or <kbd>⌘</kbd><kbd>⇧</kbd><kbd>M</kbd>.</td></tr>
+  <tr><td>The app is light when the system is dark</td><td>Theme is set to Light, not System.</td><td>Settings › Appearance › Theme → System, or <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> to cycle.</td></tr>
+  <tr><td>The palette's Specs group says "Open the Board once to index specs"</td><td>The palette indexes what the Board or the Sprint already fetched; it never reads the repository on its own.</td><td>Open the Board once; the <code>#</code> rows fill in.</td></tr>
+  <tr><td>"N sections need your input" and a clash screen</td><td>The same section changed here and in the repository.</td><td>Choose your version, theirs, or ask for a combined draft and review it. The screen returns when every clash is resolved.</td></tr>
+  <tr><td>Where are the logs?</td><td>Every command the app ran is in the Console.</td><td><kbd>⌘</kbd><kbd>J</kbd>; switch to <i>Technical</i> for the full command line and expand a row for its output.</td></tr>
+</table>
+
+</article>
+</div>
+
+<footer>
+  <p>Shepherd — plugin 2.0.0 (the command center: sprint home, planning, spec card, close, steering; sprint layer, Observatory, code-host providers).</p>
+  <p>Labels, sentences and behaviour were read from <code>studio/src</code>, <code>studio/shared</code> and <code>studio/electron/main</code> on 2026-10-06; screenshots are the <code>observatory-v30</code> captures in <code>studio/test/screenshots</code>, taken against a sample project with the code host unreachable. Your project's names, counts and dates will differ.</p>
+</footer>
+
+</main>
+<script>
+(function () {
+  var KEY = 'shepherd-guide.theme';
+  var root = document.documentElement;
+  var buttons = document.querySelectorAll('[data-theme-choice]');
+  function apply(choice) {
+    if (choice === 'light' || choice === 'dark') root.setAttribute('data-theme', choice);
+    else { root.removeAttribute('data-theme'); choice = 'system'; }
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute('aria-pressed', buttons[i].getAttribute('data-theme-choice') === choice ? 'true' : 'false');
+    }
+  }
+  var stored = null;
+  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  apply(stored);
+  for (var i = 0; i < buttons.length; i++) {
+    buttons[i].addEventListener('click', function () {
+      var choice = this.getAttribute('data-theme-choice');
+      apply(choice);
+      try { if (choice === 'system') localStorage.removeItem(KEY); else localStorage.setItem(KEY, choice); } catch (e) {}
+    });
+  }
+  if (!('IntersectionObserver' in window)) return;
+  var links = {};
+  var anchors = document.querySelectorAll('nav.toc a[href^="#"]');
+  for (var j = 0; j < anchors.length; j++) links[anchors[j].getAttribute('href').slice(1)] = anchors[j];
+  var current = null;
+  var observer = new IntersectionObserver(function (entries) {
+    for (var k = 0; k < entries.length; k++) {
+      if (!entries[k].isIntersecting) continue;
+      var id = entries[k].target.id;
+      if (!links[id] || id === current) continue;
+      if (current && links[current]) links[current].removeAttribute('aria-current');
+      links[id].setAttribute('aria-current', 'true');
+      current = id;
+    }
+  }, { rootMargin: '-10% 0px -70% 0px' });
+  var headings = document.querySelectorAll('article h2[id]');
+  for (var m = 0; m < headings.length; m++) observer.observe(headings[m]);
+})();
+</script>
+</body>
+</html>

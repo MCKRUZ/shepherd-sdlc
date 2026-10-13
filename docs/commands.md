@@ -1,27 +1,27 @@
 # Slash Commands Reference
 
-Comprehensive documentation for all slash commands provided by the claude-code-sdlc plugin. These commands orchestrate the full Software Development Lifecycle within Claude Code, managing phase transitions, gate validation, reporting, and process auditing.
+Comprehensive documentation for all slash commands provided by the Shepherd plugin. These commands orchestrate the full Software Development Lifecycle within Claude Code, managing phase transitions, gate validation, reporting, and process auditing.
 
 ---
 
 ## Table of Contents
 
 - [Command Overview Table](#command-overview-table)
-- [/sdlc-setup -- Interactive Setup Wizard](#sdlc-setup----interactive-setup-wizard)
-- [/sdlc -- Phase Guidance](#sdlc----phase-guidance)
-- [/sdlc-status -- Progress Dashboard](#sdlc-status----progress-dashboard)
-- [/sdlc-gate -- Exit Criteria Check](#sdlc-gate----exit-criteria-check)
-- [/sdlc-next -- Advance to Next Phase](#sdlc-next----advance-to-next-phase)
-- [/sdlc-phase-report -- Generate Phase HTML Report](#sdlc-phase-report----generate-phase-html-report)
-- [/sdlc-audit -- Gate Effectiveness Analysis](#sdlc-audit----gate-effectiveness-analysis)
-- [/sdlc-enhance -- Narrative Companions](#sdlc-enhance----narrative-companions)
-- [/sdlc-coach -- Interactive Phase Coaching](#sdlc-coach----interactive-phase-coaching)
-- [/sdlc-review -- Multi-Perspective Review](#sdlc-review----multi-perspective-review)
-- [/sdlc-intake -- Document Corpus Intake](#sdlc-intake----document-corpus-intake)
-- [/sdlc-brief -- Discovery Workshop Brief](#sdlc-brief----discovery-workshop-brief)
-- [/sdlc-spec -- Author a Ready Spec](#sdlc-spec----author-a-ready-spec)
-- [/sdlc-sprint -- Sprint Board](#sdlc-sprint----sprint-board)
-- [/sdlc-refine -- Refinement Agenda](#sdlc-refine----refinement-agenda)
+- [/sprd-setup -- Interactive Setup Wizard](#sprd-setup----interactive-setup-wizard)
+- [/sprd -- Phase Guidance](#sprd----phase-guidance)
+- [/sprd-status -- Progress Dashboard](#sprd-status----progress-dashboard)
+- [/sprd-gate -- Exit Criteria Check](#sprd-gate----exit-criteria-check)
+- [/sprd-next -- Advance to Next Phase](#sprd-next----advance-to-next-phase)
+- [/sprd-phase-report -- Generate Phase HTML Report](#sprd-phase-report----generate-phase-html-report)
+- [/sprd-audit -- Gate Effectiveness Analysis](#sprd-audit----gate-effectiveness-analysis)
+- [/sprd-enhance -- Narrative Companions](#sprd-enhance----narrative-companions)
+- [/sprd-coach -- Interactive Phase Coaching](#sprd-coach----interactive-phase-coaching)
+- [/sprd-review -- Multi-Perspective Review](#sprd-review----multi-perspective-review)
+- [/sprd-intake -- Document Corpus Intake](#sprd-intake----document-corpus-intake)
+- [/sprd-brief -- Discovery Workshop Brief](#sprd-brief----discovery-workshop-brief)
+- [/sprd-spec -- Author a Ready Spec](#sprd-spec----author-a-ready-spec)
+- [/sprd-sprint -- Sprint Board](#sprd-sprint----sprint-board)
+- [/sprd-refine -- Refinement Agenda](#sprd-refine----refinement-agenda)
 - [Additional Commands (summaries)](#additional-commands-summaries)
 - [Command Interaction Flow](#command-interaction-flow)
 - [Python Script Invocation](#python-script-invocation)
@@ -33,33 +33,33 @@ Comprehensive documentation for all slash commands provided by the claude-code-s
 
 | Command | Purpose | Modifies State | Typical Usage |
 |---------|---------|:--------------:|---------------|
-| `/sdlc-setup` | Initialize SDLC for a project | Yes -- creates `.sdlc/` | Once per project, at the very start |
-| `/sdlc` | Show current phase guidance | No | Start of each work session |
-| `/sdlc-status` | Display progress dashboard | No | Anytime -- quick status check |
-| `/sdlc-gate` | Run 7-gate exit criteria check | Yes -- records `gate_results` | Before attempting to advance phases |
-| `/sdlc-next` | Run gates + advance phase | Yes -- advances `current_phase` | When ready to move to the next phase |
-| `/sdlc-phase-report` | Generate HTML report | No | Stakeholder reviews, documentation |
-| `/sdlc-audit` | Analyze gate effectiveness | No | After 3-4+ completed phases |
-| `/sdlc-enhance` | Generate stakeholder narrative companions | No | Before stakeholder reviews and phase transitions |
-| `/sdlc-coach` | Adaptive coaching dialogue for the current phase | No | When you want guided conversation instead of the step list |
-| `/sdlc-review` | Multi-perspective artifact review (council / adversarial / edge-cases) | No | Before `/sdlc-gate` on design-heavy phases (2, 3, build) |
-| `/sdlc-intake` | Catalog + summarize the document corpus | Writes intake summaries/registry | Phase 0 Step 0c, when the profile has a `documentation` section; also runs standalone via `--docs` |
-| `/sdlc-brief` | Analyze intake corpus + draft workshop brief | No | Phase 0 Step 0d, before a stakeholder workshop; also runs standalone via `--docs` |
-| `/sdlc-spec` | Author a ready spec (scaffold → DoR → human risk tier) | Writes `specs/NNNN-name.md`; logs spec metrics | The Build-loop Intent beat, before building any change; also runs standalone via `--repo` |
-| `/sdlc-sprint` | Sprint board — slate a count of specs by risk-tier mix, ready the sprint (DoR + Eng/Data verdicts), show build order and next-up, close with kept / carried / dropped | Writes `.sdlc/sprints/SNN.md`, the five optional spec sprint keys, `sprint-log.jsonl`, sprint pages; **never `state.yaml`** | Any phase where specs exist; daily `status`, `ready` at sprint planning, `close` on the last day; also standalone via `--repo` |
-| `/sdlc-refine` | Refinement agenda and per-spec refinement for the sprint's slate; records Eng/Data verdicts; routes upstream fixes without regressing a phase | Writes spec bodies via `/sdlc-spec`, `eng_review`/`data_review` keys, `DL-NN` decisions; **never `state.yaml`** | The Mon/Wed/Fri cross-functional review and the weekly Intent triage; also standalone via `--repo` |
-| `/sdlc-handoff` | Hand a ready spec to a developer in one step | Writes the branch + `status`/`developer` frontmatter commit; assigns on the code host (GitHub via `gh`, Azure DevOps via `az` — chosen by the `origin` remote) | The Build-loop Delegate beat, right after `/sdlc-spec`; also runs standalone via `--repo` |
-| `/sdlc-spec-status` | Report a spec's status read from its pull request, on GitHub or Azure DevOps | Writes `status: merged` on the default branch, once, when the PR has actually merged (`--all` never writes) | The Build-loop Discern beat, to see where a change is and who it's waiting on; also runs standalone via `--repo` |
-| `/sdlc-spike` | Open a bounded spike for a question nobody can answer yet | Writes `spikes/NNNN-name.md` | When a story fails the Definition of Ready because the ground truth is unknown, not because the spec is badly written |
-| `/sdlc-doctor` | Day-1 environment check — proves the installed harness can actually run here; pack-aware, checks `gh` on GitHub installs and `az` on Azure DevOps installs, never the other (the PR-facing commands pick their CLI from the `origin` remote instead) | No | After `/sdlc-setup`, when onboarding a second developer, and any time a gate behaves inexplicably |
+| `/sprd-setup` | Initialize SDLC for a project | Yes -- creates `.sdlc/` | Once per project, at the very start |
+| `/sprd` | Show current phase guidance | No | Start of each work session |
+| `/sprd-status` | Display progress dashboard | No | Anytime -- quick status check |
+| `/sprd-gate` | Run 7-gate exit criteria check | Yes -- records `gate_results` | Before attempting to advance phases |
+| `/sprd-next` | Run gates + advance phase | Yes -- advances `current_phase` | When ready to move to the next phase |
+| `/sprd-phase-report` | Generate HTML report | No | Stakeholder reviews, documentation |
+| `/sprd-audit` | Analyze gate effectiveness | No | After 3-4+ completed phases |
+| `/sprd-enhance` | Generate stakeholder narrative companions | No | Before stakeholder reviews and phase transitions |
+| `/sprd-coach` | Adaptive coaching dialogue for the current phase | No | When you want guided conversation instead of the step list |
+| `/sprd-review` | Multi-perspective artifact review (council / adversarial / edge-cases) | No | Before `/sprd-gate` on design-heavy phases (2, 3, build) |
+| `/sprd-intake` | Catalog + summarize the document corpus | Writes intake summaries/registry | Phase 0 Step 0c, when the profile has a `documentation` section; also runs standalone via `--docs` |
+| `/sprd-brief` | Analyze intake corpus + draft workshop brief | No | Phase 0 Step 0d, before a stakeholder workshop; also runs standalone via `--docs` |
+| `/sprd-spec` | Author a ready spec (scaffold → DoR → human risk tier) | Writes `specs/NNNN-name.md`; logs spec metrics | The Build-loop Intent beat, before building any change; also runs standalone via `--repo` |
+| `/sprd-sprint` | Sprint board — slate a count of specs by risk-tier mix, ready the sprint (DoR + Eng/Data verdicts), show build order and next-up, close with kept / carried / dropped | Writes `.sdlc/sprints/SNN.md`, the five optional spec sprint keys, `sprint-log.jsonl`, sprint pages; **never `state.yaml`** | Any phase where specs exist; daily `status`, `ready` at sprint planning, `close` on the last day; also standalone via `--repo` |
+| `/sprd-refine` | Refinement agenda and per-spec refinement for the sprint's slate; records Eng/Data verdicts; routes upstream fixes without regressing a phase | Writes spec bodies via `/sprd-spec`, `eng_review`/`data_review` keys, `DL-NN` decisions; **never `state.yaml`** | The Mon/Wed/Fri cross-functional review and the weekly Intent triage; also standalone via `--repo` |
+| `/sprd-handoff` | Hand a ready spec to a developer in one step | Writes the branch + `status`/`developer` frontmatter commit; assigns on the code host (GitHub via `gh`, Azure DevOps via `az` — chosen by the `origin` remote) | The Build-loop Delegate beat, right after `/sprd-spec`; also runs standalone via `--repo` |
+| `/sprd-spec-status` | Report a spec's status read from its pull request, on GitHub or Azure DevOps | Writes `status: merged` on the default branch, once, when the PR has actually merged (`--all` never writes) | The Build-loop Discern beat, to see where a change is and who it's waiting on; also runs standalone via `--repo` |
+| `/sprd-spike` | Open a bounded spike for a question nobody can answer yet | Writes `spikes/NNNN-name.md` | When a story fails the Definition of Ready because the ground truth is unknown, not because the spec is badly written |
+| `/sprd-doctor` | Day-1 environment check — proves the installed harness can actually run here; pack-aware, checks `gh` on GitHub installs and `az` on Azure DevOps installs, never the other (the PR-facing commands pick their CLI from the `origin` remote instead) | No | After `/sprd-setup`, when onboarding a second developer, and any time a gate behaves inexplicably |
 
 ---
 
-## /sdlc-setup -- Interactive Setup Wizard
+## /sprd-setup -- Interactive Setup Wizard
 
 ### What It Does
 
-Initializes the SDLC lifecycle management structure for a target project. This is the first command to run and is required before any other `/sdlc-*` command will function. It creates the `.sdlc/` directory, selects and validates a profile, and configures the project's `CLAUDE.md` with SDLC context.
+Initializes the SDLC lifecycle management structure for a target project. This is the first command to run and is required before any other `/sprd-*` command will function. It creates the `.sdlc/` directory, selects and validates a profile, and configures the project's `CLAUDE.md` with SDLC context.
 
 ### Arguments
 
@@ -68,7 +68,7 @@ None. The command is fully interactive.
 ### Internal Flow
 
 **Step 1: Check Existing Setup**
-The command looks for `.sdlc/state.yaml` in the current directory. If it already exists, the user is warned that SDLC is already initialized and presented with two options: view status via `/sdlc-status`, or re-initialize (destructive, requires explicit confirmation).
+The command looks for `.sdlc/state.yaml` in the current directory. If it already exists, the user is warned that SDLC is already initialized and presented with two options: view status via `/sprd-status`, or re-initialize (destructive, requires explicit confirmation).
 
 **Step 2: Profile Selection**
 Available profiles are listed from the plugin's `profiles/` directory (excluding `_schema.yaml`). Current built-in profiles:
@@ -115,10 +115,10 @@ Phase: 0 -- Discovery (active)
 Artifacts: .sdlc/artifacts/00-discovery/
 
 Next steps:
-1. Run /sdlc to see Phase 0 guidance
+1. Run /sprd to see Phase 0 guidance
 2. Create your problem statement in .sdlc/artifacts/00-discovery/problem-statement.md
-3. Run /sdlc-gate when ready to check exit criteria
-4. Run /sdlc-next to advance to Phase 1
+3. Run /sprd-gate when ready to check exit criteria
+4. Run /sprd-next to advance to Phase 1
 ```
 
 **Step 7: Post-Init Validation**
@@ -153,7 +153,7 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/val
 
 ---
 
-## /sdlc -- Phase Guidance
+## /sprd -- Phase Guidance
 
 ### What It Does
 
@@ -164,11 +164,11 @@ Displays actionable guidance for the current (or specified) SDLC phase. This is 
 | Argument | Description |
 |----------|-------------|
 | *(none)* | Show guidance for the current phase |
-| `<phase-number>` | Show guidance for a specific phase (e.g., `/sdlc 3`) |
+| `<phase-number>` | Show guidance for a specific phase (e.g., `/sprd 3`) |
 
 ### Internal Flow
 
-1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sdlc-setup`.
+1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sprd-setup`.
 2. **Read state:** Extract `current_phase` (or use the argument-specified phase).
 3. **Load phase definition:** Read the corresponding `phases/XX-phasename.md` file from the plugin.
 4. **Load profile:** Read `.sdlc/profile.yaml` for stack and quality configuration.
@@ -196,9 +196,9 @@ Displays actionable guidance for the current (or specified) SDLC phase. This is 
 
 **Quick Commands** -- Reminder block:
 ```
-/sdlc-gate    -- Check if exit criteria are met
-/sdlc-next    -- Advance to next phase (runs gate check)
-/sdlc-status  -- View full progress dashboard
+/sprd-gate    -- Check if exit criteria are met
+/sprd-next    -- Advance to next phase (runs gate check)
+/sprd-status  -- View full progress dashboard
 ```
 
 **Compliance Callout** -- If the active profile includes compliance frameworks (e.g., SOC 2), any compliance-specific requirements for the phase are highlighted.
@@ -215,7 +215,7 @@ None. This command is purely informational.
 
 ---
 
-## /sdlc-status -- Progress Dashboard
+## /sprd-status -- Progress Dashboard
 
 ### What It Does
 
@@ -227,7 +227,7 @@ None.
 
 ### Internal Flow
 
-1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sdlc-setup`.
+1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sprd-setup`.
 2. **Read state:** Load current phase, all phase statuses, and transition history.
 3. **Generate dashboard:** Execute:
    ```bash
@@ -240,8 +240,8 @@ None.
    - Phase table with status indicators, artifact counts, and timestamps.
    - Recent transition history (if any phase transitions have occurred).
 5. **Suggest next action** based on current status:
-   - Phase is `active`: suggest `/sdlc` for guidance.
-   - All gates would pass: suggest `/sdlc-next` to advance.
+   - Phase is `active`: suggest `/sprd` for guidance.
+   - All gates would pass: suggest `/sprd-next` to advance.
    - Artifacts are missing: list what is needed.
 6. **Sprint line (additive, 1.6.0):** read `sprint.py status --json` and print one line — `Sprint S07 (ends 2026-10-09): 6 slated · 4 ready · 1 verdict pending · 2 handoffs unacknowledged` — skipped silently when the view's `sprint` is `null` (no sprint exists). Read-only; it never changes the dashboard's phase table.
 
@@ -262,11 +262,11 @@ None. This command is purely informational.
 
 ---
 
-## /sdlc-gate -- Exit Criteria Check
+## /sprd-gate -- Exit Criteria Check
 
 ### What It Does
 
-Runs the 7-gate validation system against the current (or specified) phase to determine readiness for advancement. Generates an HTML report and opens it in the default browser. Records gate results in state but does NOT advance the phase -- that is exclusively `/sdlc-next`'s responsibility.
+Runs the 7-gate validation system against the current (or specified) phase to determine readiness for advancement. Generates an HTML report and opens it in the default browser. Records gate results in state but does NOT advance the phase -- that is exclusively `/sprd-next`'s responsibility.
 
 ### The 7-Gate System
 
@@ -295,11 +295,11 @@ Each gate also has a severity level:
 | Argument | Description |
 |----------|-------------|
 | *(none)* | Check the current phase |
-| `<phase-number>` | Check a specific phase (e.g., `/sdlc-gate 2`) |
+| `<phase-number>` | Check a specific phase (e.g., `/sprd-gate 2`) |
 
 ### Internal Flow
 
-1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sdlc-setup`.
+1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sprd-setup`.
 2. **Read state:** Determine the current phase (or use the argument-specified phase).
 3. **Run gate checks:**
    ```bash
@@ -317,7 +317,7 @@ Each gate also has a severity level:
 7. **Summarize** with counts of passed/failed/manual checks and an overall verdict:
    - **BLOCKED** -- Any MUST gate failed. Lists specific blockers with remediation suggestions.
    - **REVIEW NEEDED** -- Only manual checks remain. Reminds user to share the HTML report for stakeholder sign-off.
-   - **READY** -- All gates pass. Suggests running `/sdlc-next` to advance.
+   - **READY** -- All gates pass. Suggests running `/sprd-next` to advance.
 8. **Update state:** Record gate results in `.sdlc/state.yaml` under the current phase's `gate_results` field.
 
 ### State Changes
@@ -335,11 +335,11 @@ Each gate also has a severity level:
 
 ### Important Distinction
 
-This command is **read-only with respect to phase transitions**. It records gate results but never changes `current_phase`. To actually advance, use `/sdlc-next`.
+This command is **read-only with respect to phase transitions**. It records gate results but never changes `current_phase`. To actually advance, use `/sprd-next`.
 
 ---
 
-## /sdlc-next -- Advance to Next Phase
+## /sprd-next -- Advance to Next Phase
 
 ### What It Does
 
@@ -458,7 +458,7 @@ When the terminal phase (Phase C: Close & Transfer) passes its close gate, the p
 
 ---
 
-## /sdlc-phase-report -- Generate Phase HTML Report
+## /sprd-phase-report -- Generate Phase HTML Report
 
 ### What It Does
 
@@ -474,7 +474,7 @@ Renders all artifacts for a specified phase (or all phases) into a self-containe
 
 ### Internal Flow
 
-1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sdlc-setup`.
+1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sprd-setup`.
 2. **Determine target phase:** Use `current_phase` from state if no argument provided; validate the phase id against the registry.
 3. **Run report generator:**
 
@@ -526,7 +526,7 @@ None. This command generates files but does not modify `state.yaml`.
 
 ---
 
-## /sdlc-audit -- Gate Effectiveness Analysis
+## /sprd-audit -- Gate Effectiveness Analysis
 
 ### What It Does
 
@@ -541,7 +541,7 @@ Analyzes gate pass/fail patterns across all completed phases to identify which g
 
 ### Internal Flow
 
-1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sdlc-setup`.
+1. **Locate state:** Read `.sdlc/state.yaml`. If missing, instruct user to run `/sprd-setup`.
 2. **Read state:** Extract `gate_results` from every completed phase.
 3. **Run audit analysis:**
    ```bash
@@ -578,7 +578,7 @@ None. This command is purely analytical and never modifies state.
 
 ---
 
-## /sdlc-enhance -- Narrative Companions
+## /sprd-enhance -- Narrative Companions
 
 ### What It Does
 
@@ -593,7 +593,7 @@ Generates stakeholder-friendly `.narrative.md` companions for the current phase'
 
 ### State Changes
 
-None. Narratives are optional — `/sdlc-gate` does not require them. The technical artifact remains the source of truth.
+None. Narratives are optional — `/sprd-gate` does not require them. The technical artifact remains the source of truth.
 
 ### When to Use
 
@@ -601,11 +601,11 @@ Before stakeholder reviews, steering meetings, and phase transitions.
 
 ---
 
-## /sdlc-coach -- Interactive Phase Coaching
+## /sprd-coach -- Interactive Phase Coaching
 
 ### What It Does
 
-Starts or continues an adaptive coaching dialogue for the current phase instead of the rigid step list. Assesses artifact state (none / partial / complete), then opens in the matching mode: diagnostic questions to begin, gap-targeted questions mid-phase, or a ready-check that points to `/sdlc-gate`. After each significant exchange it updates the relevant artifact so progress survives the session — the conversation is ephemeral, the artifacts are the record.
+Starts or continues an adaptive coaching dialogue for the current phase instead of the rigid step list. Assesses artifact state (none / partial / complete), then opens in the matching mode: diagnostic questions to begin, gap-targeted questions mid-phase, or a ready-check that points to `/sprd-gate`. After each significant exchange it updates the relevant artifact so progress survives the session — the conversation is ephemeral, the artifacts are the record.
 
 ### Arguments
 
@@ -617,11 +617,11 @@ None directly; artifacts in `.sdlc/artifacts/{NN}-{phase-name}/` are created or 
 
 ### When to Use
 
-When the user prefers guided conversation, is new to the methodology, or is stuck mid-phase. For the step list, use `/sdlc`.
+When the user prefers guided conversation, is new to the methodology, or is stuck mid-phase. For the step list, use `/sprd`.
 
 ---
 
-## /sdlc-review -- Multi-Perspective Review
+## /sprd-review -- Multi-Perspective Review
 
 ### What It Does
 
@@ -635,7 +635,7 @@ Spawns the `multi-reviewer` agent against the current phase's artifacts in one o
 
 ### State Changes
 
-None. Findings are advisory and do not block gates, but CRITICAL/HIGH findings usually predict gate failures — address them before `/sdlc-gate`.
+None. Findings are advisory and do not block gates, but CRITICAL/HIGH findings usually predict gate failures — address them before `/sprd-gate`.
 
 ### When to Use
 
@@ -643,7 +643,7 @@ Phase 2 with `--council`, Phase 3 (Foundation) with `--edge-cases`, the Build Lo
 
 ---
 
-## /sdlc-intake -- Document Corpus Intake
+## /sprd-intake -- Document Corpus Intake
 
 ### What It Does
 
@@ -667,11 +667,11 @@ Writes `.sdlc/context/intake/` (catalog, summaries, index) and
 ### When to Use
 
 Phase 0 Step 0c, when the profile has a `documentation` section and the client provided
-external documents. Prerequisite for `/sdlc-brief`.
+external documents. Prerequisite for `/sprd-brief`.
 
 ---
 
-## /sdlc-brief -- Discovery Workshop Brief
+## /sprd-brief -- Discovery Workshop Brief
 
 ### What It Does
 
@@ -694,7 +694,7 @@ Phase 0 Step 0d, after document intake, before a multi-stakeholder workshop. Sta
 
 ---
 
-## /sdlc-spec -- Author a Ready Spec
+## /sprd-spec -- Author a Ready Spec
 
 ### What It Does
 
@@ -726,19 +726,19 @@ The Build loop's Intent beat — before building any change. A spec that `check_
 
 ---
 
-## /sdlc-sprint -- Sprint Board
+## /sprd-sprint -- Sprint Board
 
 ### What It Does
 
 Gives the spec backlog a two-week **commitment window** without a second backlog, a reordering, or a gate. A named human types a sprint id (`S07`), slates a *count* of specs (`target`) by a **mix of work** — risk tiers, the axis that sets checking depth — and the command shows the slate's readiness every day, **readies** the sprint once every slated spec clears the Definition of Ready and its independent Engineering and Data verdicts, and **closes** it with kept / carried / dropped, each carry or drop with a name and a reason. The command owns `scripts/sprint.py`; users never call the script by hand.
 
-The layer is additive and advisory. `sprint.py` exits 0 on every read; `ready` and `close` check only the slate (DoR + verdicts + dependency gaps), never G1–G7; nothing is ever written to `state.yaml`; `close` never suggests advancing (leaving Build stays a human, release-scoped declaration). Refinement runs in **any phase** where specs exist — neither this command nor `/sdlc-refine` reads `current_phase` to decide whether it may run.
+The layer is additive and advisory. `sprint.py` exits 0 on every read; `ready` and `close` check only the slate (DoR + verdicts + dependency gaps), never G1–G7; nothing is ever written to `state.yaml`; `close` never suggests advancing (leaving Build stays a human, release-scoped declaration). Refinement runs in **any phase** where specs exist — neither this command nor `/sprd-refine` reads `current_phase` to decide whether it may run.
 
 Different verbs belong to different points in the two-week rhythm:
 
 | Moment | Verbs | Who |
 |---|---|---|
-| Setting up the next sprint (current sprint's last week) | `new`, `slate`, `unslate` | Product proposes and confirms the slate; `/sdlc-refine --sprint` drives the slated specs to READY |
+| Setting up the next sprint (current sprint's last week) | `new`, `slate`, `unslate` | Product proposes and confirms the slate; `/sprd-refine --sprint` drives the slated specs to READY |
 | Sprint planning meeting (day 0) | `ready` → writes the **sprint-planning page**; `plan` re-renders it on demand | a named human readies it; the team walks the page |
 | Every day (the flow check) | `status` *(default)* | anyone |
 | Whenever work changes hands | `handoff`, `ack` | the recorder and the recipient |
@@ -754,7 +754,7 @@ Different verbs belong to different points in the two-week rhythm:
 | `slate` | `--sprint S07 --by NAME --spec ID [--spec ID …] [--override --reason R]` | Writes `sprint: "S07"` on each confirmed spec. Over target → exit 1 unless `--override --reason` (recorded); mix breach → warning; a `depends_on` pointing outside the slate at an unmerged spec → warning |
 | `unslate` | `[--sprint S07] --spec ID --by NAME --reason R` | Removes a spec from the slate (`sprint: ""`), reason recorded |
 | `handoff` / `ack` | `--spec ID --to NAME --by NAME [--note …]` / `--spec ID --by NAME` | Assign-and-acknowledge: sets / clears `next_owner`; `status` lists unacknowledged handoffs with age. `ack` by someone other than `next_owner` warns, never fails |
-| `verdict` | `--spec ID --lane eng\|data --verdict accepted\|returned\|pending\|n-a --by NAME [--reason R]` | Records the independent Engineering or Data verdict (`eng_review` / `data_review`). `n-a` is legal for `--lane data` only and only with `--reason`. Usually reached through `/sdlc-refine validate` |
+| `verdict` | `--spec ID --lane eng\|data --verdict accepted\|returned\|pending\|n-a --by NAME [--reason R]` | Records the independent Engineering or Data verdict (`eng_review` / `data_review`). `n-a` is legal for `--lane data` only and only with `--reason`. Usually reached through `/sprd-refine validate` |
 | `ready` | `[--sprint S07] --by NAME` | Requires every slated spec: `check_spec` READY, `status: ready`, `eng_review: accepted`, `data_review: accepted \| n-a`, and a dependency graph with no cycle and nothing pointing outside the slate at an unmerged spec; else exit 1 listing the gaps per spec. On success sets `state: ready`, `readied_by`, writes `.sdlc/reports/sprint-S07-planning.html` |
 | `plan` | `[--sprint S07] [--output PATH]` | Renders (or re-renders) the planning page on demand — before `ready` to run the meeting from a draft that still shows the gaps, or after a late change |
 | `close` | `[--sprint S07] --by NAME [--carry-to S08] [--carry SPEC=REASON …] [--drop SPEC=REASON …]` | kept = `status: merged`; every other slated spec must appear in exactly one `--carry` or `--drop` with a reason, else exit 1 naming the undecided. Carried specs move `sprint:` to `--carry-to`; dropped get `sprint: ""`. Writes `## Close`, sets `state: closed`, `closed_by`, renders `sprint-S07-review.html` |
@@ -766,8 +766,8 @@ Different verbs belong to different points in the two-week rhythm:
 1. **Resolve mode and repo root** (workflow: `--state`, repo root = parent of `.sdlc/`; standalone: `--repo`).
 2. **`new`** — validate the id (`^S\d{2,}$`), dates, target and mix (HITL: goal, dates, target and mix confirmed), render `templates/phases/build/sprint.md` into `.sdlc/sprints/SNN.md`, append `sprint_new` to the ledger.
 3. **`slate`** — run the proposal (`sprint.py slate --sprint S07 [--json]`), present it, and stop at an `AskUserQuestion` gate: the human confirms or edits the set. Then run the confirm form with `--by <name> --spec …`. Each spec's frontmatter gains the five keys (`sprint`, `next_owner`, `eng_review`, `data_review`, `depends_on`) on first touch, inserted after `status:`; the body bytes and `check_spec`'s verdict are unchanged.
-4. **`status`** (daily) — read-only; pairs with `/sdlc-refine` (no args) for the refinement agenda.
-5. **`ready`** — run `sprint.py ready --by <name>`; on exit 1 show the gap list per spec and route each gap to `/sdlc-refine --spec` (DoR), `/sdlc-refine validate` (verdicts) or `/sdlc-spec --spec` (status flip). On success the planning page is written and linked from `.sdlc/reports/index.html` (an idempotent block between `<!-- sprints:start -->` and `<!-- sprints:end -->`).
+4. **`status`** (daily) — read-only; pairs with `/sprd-refine` (no args) for the refinement agenda.
+5. **`ready`** — run `sprint.py ready --by <name>`; on exit 1 show the gap list per spec and route each gap to `/sprd-refine --spec` (DoR), `/sprd-refine validate` (verdicts) or `/sprd-spec --spec` (status flip). On success the planning page is written and linked from `.sdlc/reports/index.html` (an idempotent block between `<!-- sprints:start -->` and `<!-- sprints:end -->`).
 6. **`close`** — derive kept vs open; ask per open spec: carry (to `--carry-to`) or drop, each with a reason and the named human; run `sprint.py close …`; the review page is written.
 
 ```bash
@@ -775,7 +775,7 @@ Different verbs belong to different points in the two-week rhythm:
 uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py slate --state .sdlc/state.yaml --sprint S07
 uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py slate --state .sdlc/state.yaml --sprint S07 --by "Pod Lead" --spec 0007 --spec 0009
 
-# The daily view (text, or the JSON /sdlc-status and /sdlc-refine read)
+# The daily view (text, or the JSON /sprd-status and /sprd-refine read)
 uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py status --state .sdlc/state.yaml --json
 
 # Ready, then close
@@ -819,15 +819,15 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/spr
 
 ### Metrics Policy
 
-Shown (this sprint only; "no data" when empty): slated / ready / not-ready counts, kept / carried / dropped with names and reasons, pending verdicts and unacknowledged handoffs with business-day age, mix actual vs target, WIP vs cap, carry-over recurrence per spec (in `/sdlc-retro`, the only cross-sprint number), overdue `DL-NN` decisions. Refused or never computed: velocity, story points, estimates, effort, hours, PR count, LOC, any per-person aggregation, "% complete" as a sprint number, fabricated zeros. See `references/sprint-model.md`.
+Shown (this sprint only; "no data" when empty): slated / ready / not-ready counts, kept / carried / dropped with names and reasons, pending verdicts and unacknowledged handoffs with business-day age, mix actual vs target, WIP vs cap, carry-over recurrence per spec (in `/sprd-retro`, the only cross-sprint number), overdue `DL-NN` decisions. Refused or never computed: velocity, story points, estimates, effort, hours, PR count, LOC, any per-person aggregation, "% complete" as a sprint number, fabricated zeros. See `references/sprint-model.md`.
 
 ---
 
-## /sdlc-refine -- Refinement Agenda
+## /sprd-refine -- Refinement Agenda
 
 ### What It Does
 
-Refines **the sprint's specs** — the Mon/Wed/Fri cross-functional review and the weekly Intent triage, made executable. With no arguments it renders the **agenda**: which slated specs are NOT READY and why, vague-line hits, which Engineering/Data verdicts are pending and for how many business days, unacknowledged handoffs, and which `DL-NN` decisions are overdue on their 2-business-day clock. Pointed at one spec it runs the DoR, proposes fixes to vague lines, surfaces silent decisions, proposes the risk tier and `depends_on`, and hands the edit to `/sdlc-spec --spec`. It records the independent Engineering and Data **verdicts** that `/sdlc-sprint ready` requires, and it routes a gap that lives in a Phase 1 or 2 artifact through the existing no-regression path so the engagement never "goes backwards".
+Refines **the sprint's specs** — the Mon/Wed/Fri cross-functional review and the weekly Intent triage, made executable. With no arguments it renders the **agenda**: which slated specs are NOT READY and why, vague-line hits, which Engineering/Data verdicts are pending and for how many business days, unacknowledged handoffs, and which `DL-NN` decisions are overdue on their 2-business-day clock. Pointed at one spec it runs the DoR, proposes fixes to vague lines, surfaces silent decisions, proposes the risk tier and `depends_on`, and hands the edit to `/sprd-spec --spec`. It records the independent Engineering and Data **verdicts** that `/sprd-sprint ready` requires, and it routes a gap that lives in a Phase 1 or 2 artifact through the existing no-regression path so the engagement never "goes backwards".
 
 It never approves anything itself, never assigns a tier, never answers a decision, and never edits `check_spec.py`.
 
@@ -836,19 +836,19 @@ It never approves anything itself, never assigns a tier, never answers a decisio
 | Form | Does | HITL |
 |---|---|---|
 | *(no args)* | The agenda for the current sprint, composed read-only from `sprint.py status --json` and `track_decisions.py --json`; "next review: Wed" when the cadence plan states the review days | none |
-| `--spec <id \| path>` | Refine one spec: `check_spec.py` (+ `check_channel.py` when a channel is bound), propose fixes to vague lines, surface silent decisions to the spec's Decision List or to `.sdlc/decision-log.md` as `DL-NN` (owner + 2-day clock), propose the risk tier, propose `depends_on` when the spec's Scope or Delegation Plan names files, contracts or ids another slated spec introduces, then hand the edit to `/sdlc-spec --spec` | tier confirmed; dependencies confirmed; decisions owned by a named human; `status: ready` flipped only after READY and a human's yes |
+| `--spec <id \| path>` | Refine one spec: `check_spec.py` (+ `check_channel.py` when a channel is bound), propose fixes to vague lines, surface silent decisions to the spec's Decision List or to `.sdlc/decision-log.md` as `DL-NN` (owner + 2-day clock), propose the risk tier, propose `depends_on` when the spec's Scope or Delegation Plan names files, contracts or ids another slated spec introduces, then hand the edit to `/sprd-spec --spec` | tier confirmed; dependencies confirmed; decisions owned by a named human; `status: ready` flipped only after READY and a human's yes |
 | `--sprint S07` | **Batch mode:** load the Phase 0–2 context once (constitution, frozen layers, `requirements.md`, `epics.md`, `business-rules.md`, `design-doc.md`, `adr-registry.md`, `api-contracts.md`, `data/data-contract.md`, `risk-tier-map.md`) and check every slated spec against it — mechanically (DoR, `source:` ids resolve, cited upstream artifacts not stale via `audit_artifacts.py report --json` (a `source` artifact in the stale list is a gap), tier vs `risk-tier-map.md`, channel dimensions) and by judgment (the `multi-reviewer` lenses fanned out across specs). One agenda, then fixes one spec at a time | as above, per spec |
 | `validate --spec N --lane eng\|data --verdict accepted\|returned\|n-a --by <name> [--reason]` | Records the independent verdict (`sprint.py verdict`). `returned` sends the spec back to refinement with the reason; `n-a` is allowed only from Data and only with a reason | the named lead |
 | `--upstream --spec N` | The no-regression path: pick the upstream artifact (`FR-…`, `BR-…`, `ADR-…`), edit it **in place** (human-confirmed diff), record it with `audit_artifacts.py record --event revised`, re-gate that phase with `check_gates.py --phase N` as information, **regenerate that phase's layer** (recorded as `refreshed`), then the spec re-enters refinement. A `DL-NN` is opened only for a product decision or a Phase 0 change. `current_phase` never moves | which artifact; the diff; who made it |
-| `--repo <path>` | Standalone, same degradation as `/sdlc-sprint` (no `.sdlc/` needed; missing engagement context noted) | — |
+| `--repo <path>` | Standalone, same degradation as `/sprd-sprint` (no `.sdlc/` needed; missing engagement context noted) | — |
 
 ### Internal Flow
 
 1. **Resolve mode and the sprint** (active sprint by default; `--sprint` to name one).
 2. **Agenda** — read `sprint.py status --json` (readiness gaps, `verdicts_pending`, `handoffs_open`, `dependency_gaps`, `decisions`) and render the agenda; nothing is written.
-3. **Per spec** — run the DoR, walk each finding with the human, write through `/sdlc-spec --spec`, re-run until READY; then ask for the `status: ready` flip.
+3. **Per spec** — run the DoR, walk each finding with the human, write through `/sprd-spec --spec`, re-run until READY; then ask for the `status: ready` flip.
 4. **Verdicts** — `validate` records `eng_review` / `data_review` by name; both lanes may run in parallel, before anyone builds.
-5. **Upstream** — when the gap is upstream, stop and route via `/sdlc-revise` + `check_gates.py --phase N` instead of editing the spec around it.
+5. **Upstream** — when the gap is upstream, stop and route via `/sprd-revise` + `check_gates.py --phase N` instead of editing the spec around it.
 
 ```bash
 # The agenda's two read-only sources
@@ -861,7 +861,7 @@ uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/spr
 
 ### State Changes
 
-Writes spec bodies only through `/sdlc-spec --spec`; writes `eng_review` / `data_review` (and the `verdict` ledger line) through `sprint.py`; appends `DL-NN` items to `.sdlc/decision-log.md`. The `--upstream` path writes through `/sdlc-revise` and re-gates with `check_gates.py --phase N` (which records that phase's `gate_results`), but never moves `current_phase`. Never writes `state.yaml` itself.
+Writes spec bodies only through `/sprd-spec --spec`; writes `eng_review` / `data_review` (and the `verdict` ledger line) through `sprint.py`; appends `DL-NN` items to `.sdlc/decision-log.md`. The `--upstream` path writes through `/sprd-revise` and re-gates with `check_gates.py --phase N` (which records that phase's `gate_results`), but never moves `current_phase`. Never writes `state.yaml` itself.
 
 ### Python Scripts Called
 
@@ -879,7 +879,7 @@ Writes spec bodies only through `/sdlc-spec --spec`; writes `eng_review` / `data
 
 | Situation | Behaviour |
 |---|---|
-| No sprint exists | the agenda says so ("no data") and offers `/sdlc-sprint new`; exit 0 |
+| No sprint exists | the agenda says so ("no data") and offers `/sprd-sprint new`; exit 0 |
 | Spec not found | exit 1 from `check_spec.py` / `sprint.py`; the command names the path tried |
 | `validate --verdict n-a` on the `eng` lane, or without `--reason` | refused (exit 1) — Data may be not-applicable, Engineering may not |
 | `--by` reads as an AI actor | refused (exit 2) — verdicts carry a human's name |
@@ -894,23 +894,23 @@ One line each; see `commands/<name>.md` for the complete instructions.
 
 | Command | What it does |
 |---|---|
-| `/sdlc-handoff` | Hand a ready spec to a developer in one step — branch, `status`/`developer` frontmatter commit, code-host assignment (+ review request to the checker; on Azure DevOps the checker becomes a required reviewer through their roster `email:`, and a missing one is an `assignment_error` with the PR still opened), optionally starting Claude Code on the branch in plan mode. Refuses (repository untouched) unless the spec is ready, the developer is in the roster and isn't the spec's own checker, and the team is under its WIP limit |
-| `/sdlc-spec-status` | Report a spec's status read from its pull request — checks, whether the grader ran and its verdict, whether a required security review passed, approvals, merge, and who the change is waiting on in one line. Reads GitHub through `gh` or Azure DevOps through `az`, whichever the repository's remote is on (`--host` overrides for one run). No PR yet or no code-host access are reported plainly, not as errors; a value the host does not record reads `null`, never a false no. Once the PR merges, sets `status: merged` on the default branch, once |
-| `/sdlc-spike` | Open a bounded spike (`spikes/NNNN-name.md`) for a question the pod cannot yet answer. The deliverable is the written finding, not the code — the code is thrown away, the finding outlives the branch. Backed by `scripts/new_spike.py` |
-| `/sdlc-doctor` | Verify the installed harness will actually run in this repo — interpreters present, rails scripts executable, required secrets set, branch protection active — and print the fix for anything that will not. **Pack-aware:** reads the installed CI/CD pack from the harness manifest and checks GitHub installs with `gh` (repo secrets, ruleset), Azure DevOps installs with `az` (variable groups read from the installed pipelines, branch policies) — never asks a repo to install the other platform's CLI. The harness fails quietly; this is what makes it fail loudly |
-| `/sdlc-harness` | Install or refresh the delivery harness independent of a full `/sdlc-setup` |
-| `/sdlc-upgrade` | Bring an installed harness forward safely using the install manifest — updates factory-original files, preserves adaptations, surfaces both-sides changes as `.harness-new` siblings to merge |
-| `/sdlc-feature` | Decompose an epic into channel-aware features and specs |
-| `/sdlc-channel` | Bind a spec to its channel and inject the acceptance dimensions |
-| `/sdlc-experience` | Author the channel-shaped experience for a surface |
-| `/sdlc-data` | Author the data contract, readiness, and lineage for a feature |
-| `/sdlc-rules` | Author business rules and golden scenarios |
-| `/sdlc-evals` | Author the versioned golden set for an LLM-powered spec |
-| `/sdlc-revise` | Change one specific artifact (id or section) — discipline agent proposes, human decides; records the why to the change-ledger + a linked `DL-NN`, re-gates, shows downstream staleness to disposition |
-| `/sdlc-audit-artifacts` | Read-only sibling to `/sdlc-audit`: artifact freshness dashboard, forward `--impact`, and `--history` change trail (advisory; never blocks) |
-| `/sdlc-version` | Content history for any pre-Build artifact — list/show/diff versions derived from the change-ledger's hashes; rollback is preview → named-human confirm, append-only ("restored from vX"), `--ack-signoff` for signed-off artifacts; `gc` prunes the local store safely |
-| `/sdlc-refresh` | Reverse propagation — back-propagate a merged spec's shipped reality into pre-Build artifacts: detect (review-first, divergence-aware) → draft a `.proposed` → named-human apply/reject → status. The One Rule throughout: agent proposes, human decides |
-| `/sdlc-retro` | Read-only cross-ledger retro roll-up: recurring findings (permanent-check candidates), repeat-stale artifacts, the refresh funnel (divergence-heuristic tuning signal), a disposition-debt rollup, and — when `sprint-log.jsonl` exists — carry-over recurrence per spec (≥2 sprints; the only cross-sprint number) and bounce causes by lane and reason. Patterns, not people; never blocks |
+| `/sprd-handoff` | Hand a ready spec to a developer in one step — branch, `status`/`developer` frontmatter commit, code-host assignment (+ review request to the checker; on Azure DevOps the checker becomes a required reviewer through their roster `email:`, and a missing one is an `assignment_error` with the PR still opened), optionally starting Claude Code on the branch in plan mode. Refuses (repository untouched) unless the spec is ready, the developer is in the roster and isn't the spec's own checker, and the team is under its WIP limit |
+| `/sprd-spec-status` | Report a spec's status read from its pull request — checks, whether the grader ran and its verdict, whether a required security review passed, approvals, merge, and who the change is waiting on in one line. Reads GitHub through `gh` or Azure DevOps through `az`, whichever the repository's remote is on (`--host` overrides for one run). No PR yet or no code-host access are reported plainly, not as errors; a value the host does not record reads `null`, never a false no. Once the PR merges, sets `status: merged` on the default branch, once |
+| `/sprd-spike` | Open a bounded spike (`spikes/NNNN-name.md`) for a question the pod cannot yet answer. The deliverable is the written finding, not the code — the code is thrown away, the finding outlives the branch. Backed by `scripts/new_spike.py` |
+| `/sprd-doctor` | Verify the installed harness will actually run in this repo — interpreters present, rails scripts executable, required secrets set, branch protection active — and print the fix for anything that will not. **Pack-aware:** reads the installed CI/CD pack from the harness manifest and checks GitHub installs with `gh` (repo secrets, ruleset), Azure DevOps installs with `az` (variable groups read from the installed pipelines, branch policies) — never asks a repo to install the other platform's CLI. The harness fails quietly; this is what makes it fail loudly |
+| `/sprd-harness` | Install or refresh the delivery harness independent of a full `/sprd-setup` |
+| `/sprd-upgrade` | Bring an installed harness forward safely using the install manifest — updates factory-original files, preserves adaptations, surfaces both-sides changes as `.harness-new` siblings to merge |
+| `/sprd-feature` | Decompose an epic into channel-aware features and specs |
+| `/sprd-channel` | Bind a spec to its channel and inject the acceptance dimensions |
+| `/sprd-experience` | Author the channel-shaped experience for a surface |
+| `/sprd-data` | Author the data contract, readiness, and lineage for a feature |
+| `/sprd-rules` | Author business rules and golden scenarios |
+| `/sprd-evals` | Author the versioned golden set for an LLM-powered spec |
+| `/sprd-revise` | Change one specific artifact (id or section) — discipline agent proposes, human decides; records the why to the change-ledger + a linked `DL-NN`, re-gates, shows downstream staleness to disposition |
+| `/sprd-audit-artifacts` | Read-only sibling to `/sprd-audit`: artifact freshness dashboard, forward `--impact`, and `--history` change trail (advisory; never blocks) |
+| `/sprd-version` | Content history for any pre-Build artifact — list/show/diff versions derived from the change-ledger's hashes; rollback is preview → named-human confirm, append-only ("restored from vX"), `--ack-signoff` for signed-off artifacts; `gc` prunes the local store safely |
+| `/sprd-refresh` | Reverse propagation — back-propagate a merged spec's shipped reality into pre-Build artifacts: detect (review-first, divergence-aware) → draft a `.proposed` → named-human apply/reject → status. The One Rule throughout: agent proposes, human decides |
+| `/sprd-retro` | Read-only cross-ledger retro roll-up: recurring findings (permanent-check candidates), repeat-stale artifacts, the refresh funnel (divergence-heuristic tuning signal), a disposition-debt rollup, and — when `sprint-log.jsonl` exists — carry-over recurrence per spec (≥2 sprints; the only cross-sprint number) and bounce causes by lane and reason. Patterns, not people; never blocks |
 
 ---
 
@@ -919,43 +919,43 @@ One line each; see `commands/<name>.md` for the complete instructions.
 The typical SDLC lifecycle follows this pattern:
 
 ```
-/sdlc-setup
+/sprd-setup
     |
     v
-/sdlc          <-- Orient: what phase am I in, what do I do?
+/sprd          <-- Orient: what phase am I in, what do I do?
     |
     v
   [work]       <-- Produce artifacts, use skills, write code
     |
     v
-/sdlc-gate     <-- Check: am I ready to advance?
+/sprd-gate     <-- Check: am I ready to advance?
     |
-    +-- FAIL --> fix issues --> /sdlc-gate (repeat)
+    +-- FAIL --> fix issues --> /sprd-gate (repeat)
     |
     +-- PASS
          |
          v
-/sdlc-next     <-- Advance: run gates, HITL sign-off, resolve questions
+/sprd-next     <-- Advance: run gates, HITL sign-off, resolve questions
     |
     v
-/sdlc          <-- Orient to the new phase
+/sprd          <-- Orient to the new phase
     |
     v
   [repeat through Phase 9, then Phase C: Close & Transfer]
 ```
 
 Supporting commands used at any time:
-- `/sdlc-status` -- Quick progress check (no prerequisites beyond setup).
-- `/sdlc-phase-report` -- Generate shareable HTML report for any phase.
-- `/sdlc-audit` -- Analyze gate effectiveness after several phases complete.
+- `/sprd-status` -- Quick progress check (no prerequisites beyond setup).
+- `/sprd-phase-report` -- Generate shareable HTML report for any phase.
+- `/sprd-audit` -- Analyze gate effectiveness after several phases complete.
 
 ### Session Start Pattern
 
 A typical work session begins with:
-1. `/sdlc-status` -- See where the project stands.
-2. `/sdlc` -- Get actionable guidance for the current phase.
+1. `/sprd-status` -- See where the project stands.
+2. `/sprd` -- Get actionable guidance for the current phase.
 3. Work on artifacts.
-4. `/sdlc-gate` -- Verify progress before ending the session or advancing.
+4. `/sprd-gate` -- Verify progress before ending the session or advancing.
 
 ---
 
@@ -983,16 +983,16 @@ Scripts write structured output to stdout, which the calling command parses and 
 
 | Script | Called By | Purpose |
 |--------|-----------|---------|
-| `init_project.py` | `/sdlc-setup` | Creates `.sdlc/` directory structure |
-| `validate_profile.py` | `/sdlc-setup` | Validates profile YAML against schema |
-| `generate_status.py` | `/sdlc-status` | Generates progress dashboard |
-| `check_gates.py` | `/sdlc-gate`, `/sdlc-next` | Runs the 7-gate validation system |
-| `generate_phase_report.py` | `/sdlc-gate`, `/sdlc-next`, `/sdlc-phase-report` | Renders HTML reports |
-| `advance_phase.py` | `/sdlc-next` | Updates `state.yaml` with phase transition |
-| `audit_gates.py` | `/sdlc-audit` | Analyzes gate effectiveness across phases |
-| `sprint.py` | `/sdlc-sprint`, `/sdlc-refine`, `/sdlc-status` (read) | Sprint records, slate, verdicts, ready / close; the sprint ledger |
-| `generate_sprint_report.py` | `/sdlc-sprint` (`ready`, `plan`, `close`) | Renders the sprint-planning and sprint-review HTML pages |
-| `track_decisions.py` | `/sdlc-status`, `/sdlc-refine` | Open / overdue `DL-NN` decisions on their 2-business-day clock |
+| `init_project.py` | `/sprd-setup` | Creates `.sdlc/` directory structure |
+| `validate_profile.py` | `/sprd-setup` | Validates profile YAML against schema |
+| `generate_status.py` | `/sprd-status` | Generates progress dashboard |
+| `check_gates.py` | `/sprd-gate`, `/sprd-next` | Runs the 7-gate validation system |
+| `generate_phase_report.py` | `/sprd-gate`, `/sprd-next`, `/sprd-phase-report` | Renders HTML reports |
+| `advance_phase.py` | `/sprd-next` | Updates `state.yaml` with phase transition |
+| `audit_gates.py` | `/sprd-audit` | Analyzes gate effectiveness across phases |
+| `sprint.py` | `/sprd-sprint`, `/sprd-refine`, `/sprd-status` (read) | Sprint records, slate, verdicts, ready / close; the sprint ledger |
+| `generate_sprint_report.py` | `/sprd-sprint` (`ready`, `plan`, `close`) | Renders the sprint-planning and sprint-review HTML pages |
+| `track_decisions.py` | `/sprd-status`, `/sprd-refine` | Open / overdue `DL-NN` decisions on their 2-business-day clock |
 
 ---
 
@@ -1003,4 +1003,4 @@ Scripts write structured output to stdout, which the calling command parses and 
 - **Phase lifecycle:** See [phase-lifecycle.md](phase-lifecycle.md) for phase definitions, artifact requirements, and entry/exit criteria.
 - **Script internals:** See [scripts.md](scripts.md) for Python script implementation details, dependencies, and extension points.
 - **Validation rules:** See [references/validation-rules.md](../references/validation-rules.md) for gate override protocol and validation rule definitions.
-- **Sprint layer:** See [references/sprint-model.md](../references/sprint-model.md) for the sprint lifecycle, the slate and the mix, the ready rule, the build-order heuristic, the five spec keys, the ledger, and the metrics policy behind `/sdlc-sprint` and `/sdlc-refine`.
+- **Sprint layer:** See [references/sprint-model.md](../references/sprint-model.md) for the sprint lifecycle, the slate and the mix, the ready rule, the build-order heuristic, the five spec keys, the ledger, and the metrics policy behind `/sprd-sprint` and `/sprd-refine`.

@@ -28,6 +28,7 @@ import {
   type BatchDeps, type BatchEntry,
 } from './draftBatchState'
 import { ANALYSIS_TARGETS } from './draftTargets'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type {
   BatchCandidate, BatchJob, BatchKind, KeepBatchResult, PreviewBatchResult, RegistryResult, StartBatchResult,
 } from '../../shared/types'
@@ -36,7 +37,7 @@ export { getBatchState, resetBatchStateForTests } from './draftBatchState'
 export { discardBatch, keepBatch } from './draftBatchDecide'
 export type { BatchDeps } from './draftBatchState'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
 const GERUND: Readonly<Record<BatchKind, string>> = { summarise: 'summarising', analyse: 'analysing' }
 const ANALYSIS_LABEL = 'Contradictions and open questions'
 const labelOf = (doc: PlannedDocument) => `${doc.id} · ${doc.filename}`

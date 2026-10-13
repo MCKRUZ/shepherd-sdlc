@@ -34,7 +34,7 @@ stays pure and deterministic under test.
 
 # A change entry records that an artifact's *content* moved.
 #   created   — first time this artifact is seen by the ledger (baseline / new file)
-#   revised   — an explicit, human-driven change (the /sdlc-revise write)
+#   revised   — an explicit, human-driven change (the /sprd-revise write)
 #   refreshed — a downstream updated in response to an upstream change (closes a staleness item)
 #   snapshot  — drift picked up by a hash-scan (a direct edit the ledger had not yet seen)
 CHANGE_EVENTS = ("created", "revised", "refreshed", "snapshot")

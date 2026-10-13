@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 /** The lifecycle home (togo-command-center.md §3.4): StageHome composed with a Today column —
- * needs-you (the addressed list, one action per item), SDLC Studio's own record of chat activity, and
+ * needs-you (the addressed list, one action per item), Shepherd's own record of chat activity, and
  * the plugin's open decisions with `today-late-*` ONLY on its `overdue:true`. The screen root is
  * still `<main>`'s first child and holds the stage's h2; the column is a `<section>`, never a
  * third `<aside>`; a block the plugin did not answer reads "no data". */
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { CommandCenter, ProjectStage, ProjectStatus, SourcedBlock, StageDocument } from '../shared/types'
+import type { ChatActivity, CommandCenter, ProjectStage, ProjectStatus, SourcedBlock, StageDocument } from '../shared/types'
 import { NO_DATA, NOTHING_NEEDS_YOU, SIGN_IN_TO_SEE } from '../shared/reasons'
 import { LifecycleHome, NEEDS_YOU_SOURCE, WORKING_SOURCE, workingText, LIFECYCLE_TODAY_MAX_HEIGHT_CLASS } from '../src/components/LifecycleHome'
 import { StageReadinessProvider } from '../src/components/StageReadinessContext'
@@ -48,7 +48,7 @@ function install() {
   const studio = {
     getStageReadiness: vi.fn((_p: string, stageId?: string) => Promise.resolve(readinessWith({ stageId: stageId ?? '1', display: `Phase ${stageId ?? '1'}: Stage`, documents: [doc('a.md', true)] }))),
     openDocument: vi.fn().mockReturnValue(new Promise(() => {})),
-    onChatActivity: vi.fn(() => () => {}),
+    onChatActivity: vi.fn((_cb: (activity: ChatActivity) => void) => () => {}),
   }
   // @ts-expect-error - partial test double
   window.studio = studio
@@ -134,7 +134,7 @@ describe('LifecycleHome', () => {
     expect(screen.getByText(`${NO_DATA} — no decision-log`)).toBeTruthy()
   })
 
-  it('leaning into Build offers the sprint home; SDLC Studio\'s record says nothing ran until activity arrives', async () => {
+  it('leaning into Build offers the sprint home; Shepherd\'s record says nothing ran until activity arrives', async () => {
     const studio = install()
     const { onNavigate } = home(cc(), 'build')
     await screen.findByRole('heading', { level: 2 })

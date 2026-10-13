@@ -627,11 +627,11 @@ function MessageBubble({
         // The tight corner sits on the speaker's side (bottom-right for the person, bottom-left
         // for the assistant and sub-agents), so who spoke reads from the shape, not from colour.
         className={`max-w-[88%] rounded-[12px] px-3 py-2 text-sm leading-[1.45] ${
-          isUser ? 'rounded-br-[4px] bg-brand-600 text-white' : isSubagent ? 'rounded-bl-[4px] border border-dashed border-slate-300 bg-slate-50 text-slate-700' : 'rounded-bl-[4px] bg-slate-100 text-slate-800'
+          isUser ? 'rounded-br-[4px] bg-brand-600 text-white' : isSubagent ? 'rounded-bl-[4px] border border-dashed border-line-2 bg-surface-0 text-ink-2' : 'rounded-bl-[4px] bg-slate-100 text-ink-1'
         }`}
       >
         {isSubagent && (
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-eyebrow">
             {message.subagentType ?? 'sub-agent'}
           </p>
         )}
@@ -681,9 +681,9 @@ function QuestionPrompt({
   }, { scope: pillsRef, dependencies: [question.id] })
   return (
     <div className="mt-2 space-y-1">
-      <p className="text-xs font-medium text-slate-500">{question.question}</p>
+      <p className="text-xs font-medium text-ink-3">{question.question}</p>
       {question.answeredWith ? (
-        <p className="text-xs text-slate-500">You picked: <span className="font-semibold text-accent-text">{question.answeredWith}</span></p>
+        <p className="text-xs text-ink-3">You picked: <span className="font-semibold text-accent-text">{question.answeredWith}</span></p>
       ) : (
         <div ref={pillsRef} className="flex flex-wrap gap-1.5">
           {/* C1: the quick replies read in `accent-text` (legible on both themes) over the

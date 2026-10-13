@@ -11,7 +11,7 @@ import {
   BATON_MAX_PX, BatonGlyph, CC_EMPTY_FIGURE_NAMES, CcEmptyFigure, LANE_GLYPH_NAMES, LaneGlyph, PersonRing, ringInitials,
   STEERING_LOCKUP_LABEL, STEERING_MARK_PX, SteeringLockup, YOU_RING_SHADOW,
 } from '../src/components/brand/figures'
-import { DEPTH_MIN_PX } from '../src/components/brand/TogoMark'
+import { DEPTH_MIN_PX } from '../src/components/brand/ShepherdMark'
 
 const TONE_CLASSES = ['fill-accent-200', 'fill-accent-500', 'fill-none stroke-accent-200', 'fill-none stroke-accent-500']
 
@@ -110,7 +110,7 @@ describe('SteeringLockup', () => {
     expect(root).toBeTruthy()
     expect(root.innerHTML).toContain('linearGradient')
     expect(root.querySelector('svg')?.getAttribute('class')).toContain('h-12 w-12')
-    expect(root.textContent).toContain('SDLC Studio')
+    expect(root.textContent).toContain('Shepherd')
     expect(root.textContent).toContain(STEERING_LOCKUP_LABEL)
     expect(root.querySelector('h1, h2, h3, button, a, input')).toBeNull()
   })

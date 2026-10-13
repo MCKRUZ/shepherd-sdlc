@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Install the delivery harness (the kit) from the plugin's bundled payload into a target repo.
 
-Called by /sdlc-setup after .sdlc/ is initialized. Idempotent: existing files are left in place
+Called by /sprd-setup after .sdlc/ is initialized. Idempotent: existing files are left in place
 and reported as SKIPPED unless --force is given. The payload is the plugin's `harness/` directory,
 a generated copy of delivery-standard/kit (see scripts/sync_kit.py).
 
@@ -325,7 +325,7 @@ def _resolve_pack(axis: str, pack_id: str, payload: Path) -> tuple[Path, dict]:
 def _resolve_packs(profile: dict, payload: Path):
     """Resolve the stack + CI/CD packs the profile selects. The two axes degrade INDEPENDENTLY: a
     valid-but-unmapped stack or platform (no pack built for it yet) yields None on that axis plus a
-    warning — never a hard failure, so /sdlc-setup can never break just because a pack doesn't exist.
+    warning — never a hard failure, so /sprd-setup can never break just because a pack doesn't exist.
     A pack that IS mapped but missing from the payload, or an incompatible pair, still fails closed:
     those are real breakage (a stale sync, a misconfigured profile), not "not built yet".
 

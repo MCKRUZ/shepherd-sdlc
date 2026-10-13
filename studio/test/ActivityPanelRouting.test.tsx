@@ -81,7 +81,7 @@ describe('ActivitiesPanel: the panel activities', () => {
     const studio = install()
     const readiness = readinessWith({
       stageId: 'build', display: 'Phase Build: Build Loop', capabilities: ALL_CAPABILITIES,
-      activities: [activity({ id: 'sprint', kind: 'run', label: 'Plan, ready and close the sprint', command: 'sdlc-sprint' })],
+      activities: [activity({ id: 'sprint', kind: 'run', label: 'Plan, ready and close the sprint', command: 'sprd-sprint' })],
     })
     render(<ActivitiesPanel projectPath="/p" readiness={readiness} onOpenDocument={vi.fn()} />)
     expect(within(row('sprint')).getByTestId('sprint-panel')).toBeTruthy()

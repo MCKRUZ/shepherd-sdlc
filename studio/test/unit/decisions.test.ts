@@ -73,7 +73,7 @@ describe('decideDecision', () => {
   })
   it('no actor, a bad id or an empty resolution refuse before spawning', async () => {
     expect(await decideDecision(PROJECT, SCRIPTS, 'DL-01', 'x', null)).toEqual({ ok: false, stderr: NO_ACTOR })
-    expect((await decideDecision(PROJECT, SCRIPTS, '01', 'x', ACTOR)).stderr).toMatch(/not a decision id/)
+    expect(await decideDecision(PROJECT, SCRIPTS, '01', 'x', ACTOR)).toMatchObject({ ok: false, stderr: expect.stringMatching(/not a decision id/) })
     expect((await decideDecision(PROJECT, SCRIPTS, 'DL-01', ' ', ACTOR)).ok).toBe(false)
     expect(run).not.toHaveBeenCalled()
   })

@@ -37,7 +37,7 @@ function describe(s: SyncState): { label: string; tone: ChipTone; dot: DotStatus
       // Not a failure: every new project starts here. Calm tone, and the way out in the hover card.
       return {
         label: 'Saved on this computer only', tone: 'neutral', dot: 'ok', pulse: false,
-        detail: "Not shared with a team yet. This project is not connected to a shared repository, so nothing syncs. To work with a team, connect one (git remote add origin <the repository's address>) and Studio will start syncing.",
+        detail: "Not shared with a team yet. This project is not connected to a shared repository, so nothing syncs. To work with a team, connect one (git remote add origin <the repository's address>) and Shepherd will start syncing.",
       }
     case 'error':
       return { label: 'Sync error', tone: 'error', dot: 'error', pulse: false, detail: s.message }

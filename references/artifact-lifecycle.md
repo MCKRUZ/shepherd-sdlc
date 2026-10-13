@@ -7,7 +7,7 @@ the frozen layer or the downstream design doc as out of date, and there is no re
 when, by whom, or why.
 
 This is the conceptual reference for the artifact-update-audit layer. The commands are
-`/sdlc-revise` (change one thing) and `/sdlc-audit-artifacts` (audit freshness, impact, history);
+`/sprd-revise` (change one thing) and `/sprd-audit-artifacts` (audit freshness, impact, history);
 the engine is `scripts/audit_artifacts.py` over two models (`artifact_model.py`,
 `artifact_lineage.py`). Everything here is **advisory** — it tells a human something worth knowing;
 it never decides.
@@ -31,7 +31,7 @@ changed *after* a **downstream** one last did, the downstream is a **stale candi
 
 An append-only JSONL at `.sdlc/metrics/artifact-log.jsonl` — the artifact **history** the tool
 otherwise lacks. It lives in its own file, never inside `state.yaml`'s `gate_results` (which is
-gate-audit territory), so `/sdlc-audit` is byte-for-byte identical with or without this layer.
+gate-audit territory), so `/sprd-audit` is byte-for-byte identical with or without this layer.
 
 Two entry kinds share the file, told apart by `event`:
 
@@ -41,10 +41,10 @@ Two entry kinds share the file, told apart by `event`:
 
 Changes reach the ledger three ways, all command-driven (never a hook into `advance_phase.py`):
 
-1. **`/sdlc-revise`** appends an explicit `revised` entry for the thing you changed.
+1. **`/sprd-revise`** appends an explicit `revised` entry for the thing you changed.
 2. **`record --scan`** hash-walks the artifact tree and records any new (`created`) or drifted
-   (`snapshot`) file. It runs at the top of `/sdlc-audit-artifacts` and at advance time in
-   `/sdlc-next`, so direct edits (made outside `/sdlc-revise`) are captured too.
+   (`snapshot`) file. It runs at the top of `/sprd-audit-artifacts` and at advance time in
+   `/sprd-next`, so direct edits (made outside `/sprd-revise`) are captured too.
 3. The **first-ever scan** seeds a baseline — "history starts now". Nothing about the past is
    fabricated; missing data reads as no data.
 
@@ -82,7 +82,7 @@ A mislabeled disposition (ACKNOWLEDGED with no owner) counts exactly like OPEN.
 - **Advisory, never blocks.** `audit_artifacts.py` exits 0 always. Staleness is a REVIEW aid a human
   dispositions — the tool flags **candidates**, it never asserts breakage or changes a gate verdict.
 - **Protected core untouched.** `check_spec.py`, `check_gates.py`, `section-evaluator`, `harness/**`,
-  `phase_model.py`, `phase-registry.yaml`, `/sdlc-coach`, `/sdlc-spec`, and `advance_phase.py` are all
+  `phase_model.py`, `phase-registry.yaml`, `/sprd-coach`, `/sprd-spec`, and `advance_phase.py` are all
   byte-for-byte unchanged. The new modules *read* `check_spec` helpers; they never modify them.
 - **No phantom rows.** The ledger is a standalone JSONL; nothing is written into `gate_results`.
 - **Dual-mode + graceful degradation.** Every script runs standalone (`--repo`) or in-workflow

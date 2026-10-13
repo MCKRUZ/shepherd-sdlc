@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" width="120" height="72" aria-hidden="true">
-  <!-- SDLC Studio command center — empty state "no-sprint". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
-  <rect x="8" y="8" width="48" height="6" rx="3" fill="#1A99A3"/>
-  <rect x="8" y="22" width="20" height="44" rx="3" fill="#A7E6E7"/>
-  <rect x="36" y="22" width="20" height="44" rx="3" fill="#A7E6E7"/>
-  <rect x="64" y="22" width="20" height="44" rx="3" fill="#A7E6E7"/>
-  <rect x="92" y="22" width="20" height="44" rx="3" fill="#A7E6E7"/>
+  <!-- Shepherd command center — empty state "no-sprint". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
+  <rect x="8" y="8" width="48" height="6" rx="3" fill="#4F8545"/>
+  <rect x="8" y="22" width="20" height="44" rx="3" fill="#C7E0BC"/>
+  <rect x="36" y="22" width="20" height="44" rx="3" fill="#C7E0BC"/>
+  <rect x="64" y="22" width="20" height="44" rx="3" fill="#C7E0BC"/>
+  <rect x="92" y="22" width="20" height="44" rx="3" fill="#C7E0BC"/>
 </svg>

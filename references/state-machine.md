@@ -60,7 +60,7 @@ Phase keys in `phases:` are the string ids — `"0"`, `"1"`, …, `"build"`, …
 ## Transition Rules
 
 1. **Forward by order** — the next phase is the registry entry with `order + 1`, never `id + 1` (ids are strings and may be non-numeric). The lifecycle sequence is `0 → 1 → 2 → 3 → build → 7 → 8 → 9 → close`. Skipping requires explicit justification recorded in history.
-2. **Always manual** — advancement is never automatic. Every transition requires explicit human approval (`/sdlc-next` after the gate passes); there is no auto-advance.
+2. **Always manual** — advancement is never automatic. Every transition requires explicit human approval (`/sprd-next` after the gate passes); there is no auto-advance.
 3. **Gate required** — transition out of a phase requires ALL of that phase's exit gates to pass before advancement. The **Build loop** (`build`) is the exception: it has no batch artifact exit gate — checking happens per change, and a human declares the backlog feature-complete to leave.
 4. **Re-entry allowed** — a completed phase MAY be re-entered if issues are discovered. This creates a new history entry with `reentry: true`.
 5. **Atomic transitions** — state.yaml is updated atomically. If gate checking fails mid-way, no transition occurs.
@@ -69,7 +69,7 @@ Phase keys in `phases:` are the string ids — `"0"`, `"1"`, …, `"build"`, …
 ## Gate Check Flow
 
 ```
-/sdlc-next invoked
+/sprd-next invoked
   → Read state.yaml → get current_phase (string id)
   → Load phase-registry.yaml via phase_model.py → get exit_gates for current phase
   → Run check_gates.py with phase + profile context
@@ -128,8 +128,8 @@ There are no `04-implementation/`, `05-quality/`, or `06-testing/` directories �
 
 | Command | Effect on State |
 |---------|----------------|
-| `/sdlc-setup` | Creates initial state.yaml |
-| `/sdlc-next` | Advances current_phase if gates pass |
-| `/sdlc-gate` | Records gate_results but does NOT advance |
-| `/sdlc-status` | Read-only — no state changes |
-| `/sdlc` | Read-only — no state changes |
+| `/sprd-setup` | Creates initial state.yaml |
+| `/sprd-next` | Advances current_phase if gates pass |
+| `/sprd-gate` | Records gate_results but does NOT advance |
+| `/sprd-status` | Read-only — no state changes |
+| `/sprd` | Read-only — no state changes |

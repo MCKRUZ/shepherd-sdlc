@@ -3,7 +3,7 @@
 
 Owned collaboratively — **Bizreq owns the scenarios, Data owns the data**. Each `SCEN-NN` is a concrete
 input paired with the behavior a correct implementation must produce. These become the **golden set**
-at Build: `/sdlc-evals` turns them into a versioned `golden-set.yaml` next to the spec (required for
+at Build: `/sprd-evals` turns them into a versioned `golden-set.yaml` next to the spec (required for
 `llm_powered` channels), so the same scenarios that framed intent gate the behavior.
 
 Write each expected behavior so a grader can judge it — observable, not vague. Cover the happy path,

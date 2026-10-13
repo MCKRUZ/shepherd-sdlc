@@ -69,7 +69,7 @@ jobs:
           python-version: '3.13'   # «stack pack: ci-profile.toolchain.version»
 
       # THIS REPOSITORY HAS TWO ECOSYSTEMS, not one. The seam above is the stack pack's, and
-      # it is Python. Studio in studio/ is a Node application with 406 dependencies of its
+      # it is Python. The desktop app in studio/ is a Node application with 406 dependencies of its
       # own, and until this was added they were invisible to a scan that told its issue it
       # covered "this repo's dependencies" — the scan would have kept reporting clean over
       # hundreds of unexamined packages. A scan whose blind spot is undeclared is worse than
@@ -111,7 +111,7 @@ jobs:
             --no-emit-project -o "${RUNNER_TEMP}/pip-requirements.txt"
 
           # Non-zero here can mean "found advisories", so the status is not the answer — the
-          # same rule the Studio step states. Only a missing or unusable report is a failure.
+          # same rule the desktop-app step states. Only a missing or unusable report is a failure.
           if ! uvx pip-audit --format json --requirement "${RUNNER_TEMP}/pip-requirements.txt" \
                > "${RUNNER_TEMP}/pip-audit.json" 2> "${RUNNER_TEMP}/scan.err"; then
             if ! jq -e 'has("dependencies")' "${RUNNER_TEMP}/pip-audit.json" >/dev/null 2>&1; then
@@ -121,7 +121,7 @@ jobs:
             fi
           fi
 
-          # HOW MANY PACKAGES WERE ACTUALLY LOOKED AT — the same guard the Studio step below
+          # HOW MANY PACKAGES WERE ACTUALLY LOOKED AT — the same guard the desktop-app step below
           # carries, and it belongs here for exactly the same reason. The grader caught the
           # asymmetry of hardening one ecosystem and not the other; this guard then caught a
           # scan that had never examined a single package.
@@ -143,7 +143,7 @@ jobs:
       # The other half of this repository. APPENDED to the same file in the same four-column
       # shape, so everything downstream — the count, the issue table, the self-closing
       # behaviour — works on both ecosystems without knowing there are two.
-      - name: Scan Studio's dependencies too
+      - name: Scan the desktop app's dependencies too
         id: scan
         working-directory: studio
         run: |
@@ -153,7 +153,7 @@ jobs:
           # output and never inferred from the status — the same rule the Python half states.
           if ! npm audit --json > "${RUNNER_TEMP}/npm-audit.json" 2> "${RUNNER_TEMP}/npm.err"; then
             if ! jq -e 'has("vulnerabilities") or has("metadata")' "${RUNNER_TEMP}/npm-audit.json" >/dev/null 2>&1; then
-              echo "::error title=Studio dependency scan failed::npm audit produced no usable report, so Studio's vulnerability status is UNKNOWN — which is not the same as clean."
+              echo "::error title=Desktop app dependency scan failed::npm audit produced no usable report, so the desktop app's vulnerability status is UNKNOWN — which is not the same as clean."
               sed -n '1,40p' "${RUNNER_TEMP}/npm.err" || true
               exit 1
             fi
@@ -172,10 +172,10 @@ jobs:
           # cannot be satisfied by doing nothing — and zero audited is a failure, not a pass.
           AUDITED="$(jq -r '.metadata.dependencies.total // 0' "${RUNNER_TEMP}/npm-audit.json")"
           if [ "${AUDITED:-0}" -eq 0 ]; then
-            echo "::error title=Studio dependency scan examined nothing::npm audit reported 0 dependencies, so a clean result here means the scan did not run, not that Studio is clean. Check studio/package-lock.json."
+            echo "::error title=Desktop app dependency scan examined nothing::npm audit reported 0 dependencies, so a clean result here means the scan did not run, not that the desktop app is clean. Check studio/package-lock.json."
             exit 1
           fi
-          echo "Studio: ${AUDITED} Node dependencies examined."
+          echo "Desktop app (studio/): ${AUDITED} Node dependencies examined."
 
           sort -u -o "${RUNNER_TEMP}/findings.tsv" "${RUNNER_TEMP}/findings.tsv"
           COUNT="$(wc -l < "${RUNNER_TEMP}/findings.tsv" | tr -d ' ')"
@@ -212,7 +212,7 @@ jobs:
           fi
 
           {
-            echo "The scheduled dependency scan found **${COUNT}** advisory/advisories across this repo's dependencies — both the plugin's Python packages and Studio's Node packages under \`studio/\`."
+            echo "The scheduled dependency scan found **${COUNT}** advisory/advisories across this repo's dependencies — both the plugin's Python packages and the desktop app's Node packages under \`studio/\`."
             echo
             echo "These are **pre-existing** — the \`dependency-gate\` check blocks anything a change newly introduces, so nothing here was added by a recent PR. That is why this is an issue and not a red build."
             echo

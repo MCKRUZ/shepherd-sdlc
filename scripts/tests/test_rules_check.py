@@ -1,4 +1,4 @@
-"""rules_check.py — the advisory check behind /sdlc-rules (spec 0022).
+"""rules_check.py — the advisory check behind /sprd-rules (spec 0022).
 
 What these protect:
   * ADVISORY BY CONSTRUCTION. Every path exits 0 (a usage error is 2), including missing documents.

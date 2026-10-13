@@ -16,7 +16,7 @@ stack:
     state: redux-toolkit
     e2e: playwright
   database:
-    # Default engine. /sdlc-setup offers Azure SQL as the alternative and edits the frozen
+    # Default engine. /sprd-setup offers Azure SQL as the alternative and edits the frozen
     # .sdlc/profile.yaml copy — the engine is advisory metadata (nothing mechanical branches
     # on it); Alembic is the migration tool either way.
     engine: azure-postgresql

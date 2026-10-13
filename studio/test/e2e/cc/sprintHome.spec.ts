@@ -145,7 +145,7 @@ test.describe('[command center P7] the sprint home in the real window', () => {
     await expect(dialog).toHaveCount(0)
   })
 
-  test('no number on the home is SDLC Studio\'s own: no digit inside a person chip, no bare 0 in a stat', async () => {
+  test('no number on the home is Shepherd\'s own: no digit inside a person chip, no bare 0 in a stat', async () => {
     const chips = await page.locator(SEL.personChip).allTextContents()
     for (const text of chips) expect(text).not.toMatch(/\d/)
     const stats = await page.locator(SEL.stat).allTextContents()

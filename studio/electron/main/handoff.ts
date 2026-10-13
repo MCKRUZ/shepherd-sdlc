@@ -139,5 +139,5 @@ export function readHandOffCheckOutput(stdout: string, stderr: string): HandOffC
   } catch {
     return { ok: false, refusal: { kind: 'other', message: stderr.trim() || stdout.trim() || 'The hand-off check gave no readable answer.' } }
   }
-  return readHandOffCheck(parsed) ?? { ok: false, refusal: { kind: 'other', message: stderr.trim() || 'The hand-off check gave an answer Studio could not read.' } }
+  return readHandOffCheck(parsed) ?? { ok: false, refusal: { kind: 'other', message: stderr.trim() || 'The hand-off check gave an answer Shepherd could not read.' } }
 }

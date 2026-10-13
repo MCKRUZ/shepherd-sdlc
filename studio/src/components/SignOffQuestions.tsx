@@ -6,7 +6,7 @@ import { useCountUp } from '../motion/useCountUp'
 const HINT: Record<HintStatus, { label: string; tone: string }> = {
   looks_met: { label: 'Looks done', tone: 'text-[var(--color-command-ok)]' },
   not_yet: { label: 'Not yet', tone: 'text-status-warn-ink' },
-  judgement: { label: 'Needs your judgement', tone: 'text-slate-500' },
+  judgement: { label: 'Needs your judgement', tone: 'text-ink-3' },
 }
 
 function formatWhen(iso: string): string {
@@ -20,7 +20,7 @@ function formatWhen(iso: string): string {
 function ConfirmedCount({ confirmed, total, memoryKey }: { confirmed: number; total: number; memoryKey: string }) {
   const count = useCountUp(`sign-off-confirmed:${memoryKey}`, confirmed)
   return (
-    <span className="text-xs text-slate-500">
+    <span className="text-xs text-ink-3">
       <span ref={count.ref}>{count.text}</span>{` of ${total} confirmed`}
     </span>
   )
@@ -58,7 +58,7 @@ export function SignOffQuestions({
           const canTick = Boolean(actor.trim()) && Boolean(q.id) && busyId !== q.id
           return (
             <li key={q.id || q.text} data-reveal="" className="flex items-start justify-between gap-6 px-4 py-3">
-              <label className="flex min-w-0 flex-1 items-start gap-3 text-sm text-slate-800">
+              <label className="flex min-w-0 flex-1 items-start gap-3 text-sm text-ink-1">
                 {/* A native checkbox, not a kit control: the aria-label IS the question (pinned),
                     and the sign-off questions test reads `type="checkbox"` then `disabled` in
                     this attribute order. */}
@@ -68,12 +68,12 @@ export function SignOffQuestions({
                   checked={Boolean(q.confirmation)}
                   disabled={!canTick}
                   onChange={(e) => onToggle(q, e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-line-2"
                 />
                 <span className="min-w-0">
                   {q.text}
                   {q.confirmation && (
-                    <span className="mt-0.5 block text-xs text-slate-500">
+                    <span className="mt-0.5 block text-xs text-ink-3">
                       {`Confirmed by ${q.confirmation.actor} · ${formatWhen(q.confirmation.ts)}`}
                     </span>
                   )}
@@ -81,17 +81,17 @@ export function SignOffQuestions({
               </label>
               <p className="w-2/5 shrink-0 text-xs leading-relaxed">
                 <span className={`font-medium ${hint.tone}`}>{hint.label}</span>
-                {q.hint.status !== 'judgement' && <span className="text-slate-500">{` — ${q.hint.detail}`}</span>}
+                {q.hint.status !== 'judgement' && <span className="text-ink-3">{` — ${q.hint.detail}`}</span>}
               </p>
             </li>
           )
         })}
       </ul>
       <p className="mt-2 text-xs text-ink-3">
-        The notes on the right are pre-checks: they show what Studio could see, and you still confirm.
+        The notes on the right are pre-checks: they show what Shepherd could see, and you still confirm.
       </p>
       {!actor.trim() && (
-        <Notice tone="warn" className="mt-2">Studio records who confirmed, and you need to sign in before you can confirm.</Notice>
+        <Notice tone="warn" className="mt-2">Shepherd records who confirmed, and you need to sign in before you can confirm.</Notice>
       )}
       {tooOld && (
         <Notice tone="warn" className="mt-2">This plugin is too old to keep confirmations. To tick these, update the plugin.</Notice>

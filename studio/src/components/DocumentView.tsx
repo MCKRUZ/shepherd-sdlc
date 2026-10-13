@@ -304,7 +304,7 @@ export function DocumentView({
         // Not an error and not blocking: an older plugin still reads and saves every document
         // correctly. It just cannot offer everything this Studio can, and a person seeing a
         // section as plain text has no way to know that an update would change it.
-        <Notice tone="warn" data-testid="plugin-behind" title="Your installed SDLC plugin is older than this version of Studio.">
+        <Notice tone="warn" data-testid="plugin-behind" title="Your installed Shepherd plugin is older than this version of the app.">
           Everything still opens and saves correctly, but some parts of this document may show as
           plain text instead of editable fields. To update, run <code className="font-mono">claude plugin update</code>{' '}
           in a terminal, then reopen the document.

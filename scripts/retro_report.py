@@ -1,4 +1,4 @@
-"""retro_report.py — the cross-ledger retro roll-up behind /sdlc-retro.
+"""retro_report.py — the cross-ledger retro roll-up behind /sprd-retro.
 
 Three ledgers already record, honestly and append-only, what the advisory layers surfaced round
 after round: review findings (findings-log.jsonl), artifact staleness + change history

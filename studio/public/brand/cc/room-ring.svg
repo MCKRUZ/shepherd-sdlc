@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28" aria-hidden="true">
-  <!-- SDLC Studio command center — the "In the room" ring: initials disc, 2 px gap, 2 px you-ring. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
-  <circle cx="14" cy="14" r="13" fill="none" stroke="#0E7C86" stroke-width="2"/>
+  <!-- Shepherd command center — the "In the room" ring: initials disc, 2 px gap, 2 px you-ring. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
+  <circle cx="14" cy="14" r="13" fill="none" stroke="#3F6B35" stroke-width="2"/>
   <circle cx="14" cy="14" r="12" fill="#FFFFFF"/>
-  <circle cx="14" cy="14" r="10" fill="#F1F5F9"/>
+  <circle cx="14" cy="14" r="10" fill="#EFEAE1"/>
 </svg>

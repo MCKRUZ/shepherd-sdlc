@@ -1,6 +1,6 @@
-"""Assemble the one-page workshop brief from a person's selections (the mechanical half of /sdlc-brief).
+"""Assemble the one-page workshop brief from a person's selections (the mechanical half of /sprd-brief).
 
-/sdlc-brief is a curated command: the discovery-analyst proposes contradictions and questions, a
+/sprd-brief is a curated command: the discovery-analyst proposes contradictions and questions, a
 person chooses what makes the page, and only then is the brief drafted. This script is that last
 step. It FILLS `templates/phases/00-discovery/workshop-brief.md` with what it is handed and never
 invents content: the prose claims for "What the documents say" are supplied by the caller (each

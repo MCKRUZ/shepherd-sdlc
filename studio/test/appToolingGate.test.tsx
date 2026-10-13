@@ -33,7 +33,7 @@ afterEach(() => {
   delete window.studio
 })
 
-const TOOLING_HEADING = 'Before SDLC Studio can open a project'
+const TOOLING_HEADING = 'Before Shepherd can open a project'
 
 describe('App tooling gate: gh and az never block', () => {
   it('gh AND az both missing → the Welcome screen, not the tooling-issues screen', async () => {

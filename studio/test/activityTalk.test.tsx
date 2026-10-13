@@ -7,7 +7,7 @@ import { StageReadinessProvider } from '../src/components/StageReadinessContext'
 import type { ChatState, ChatTurnResult } from '../shared/types'
 import { activity, readinessWith } from './activityFixtures'
 
-const TALK = activity({ id: 'rules-talk', kind: 'talk', label: 'Business rules', command: 'sdlc-rules' })
+const TALK = activity({ id: 'rules-talk', kind: 'talk', label: 'Business rules', command: 'sprd-rules' })
 const READINESS = readinessWith({ capabilities: ['activities'], activities: [TALK] })
 
 function emptyState(): ChatState {
@@ -44,7 +44,7 @@ function renderBoth(withChat: boolean) {
 describe('Talk it through', () => {
   it('names the stage and the command and starts with the [Studio] marker', () => {
     expect(buildTalkMessage(TALK, 'Phase 1: Requirements')).toBe(
-      '[Studio] The person has opened the "Business rules" step (/sdlc-rules) in the Requirements stage and wants to talk it through. Help with this step now.',
+      '[Studio] The person has opened the "Business rules" step (/sprd-rules) in the Requirements stage and wants to talk it through. Help with this step now.',
     )
   })
 
@@ -62,7 +62,7 @@ describe('Talk it through', () => {
     expect([project, stage]).toEqual(['/p', '1'])
     expect(text.startsWith('[Studio] ')).toBe(true)
     expect(text).toContain('Requirements')
-    expect(text).toContain('/sdlc-rules')
+    expect(text).toContain('/sprd-rules')
     expect(studio.ensureChatStarted).not.toHaveBeenCalled()
   })
 

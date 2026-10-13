@@ -84,10 +84,10 @@ During Work:
 
 ## Hook Implementation
 
-The session-start hook (`hooks/sdlc-session-start.ps1`) implements Tier 1+2 loading. Output is tagged:
+The session-start hook (`hooks/shepherd-session-start.ps1`) implements Tier 1+2 loading. Output is tagged:
 
-- `[SDLC-CONTEXT:FOUNDATION]` — Tier 1 content
-- `[SDLC-CONTEXT:LAYERS]` — Tier 2 summary
-- `[SDLC-CONTEXT:LAYER:{name}]` — Individual layer content
+- `[SHEPHERD-CONTEXT:FOUNDATION]` — Tier 1 content
+- `[SHEPHERD-CONTEXT:LAYERS]` — Tier 2 summary
+- `[SHEPHERD-CONTEXT:LAYER:{name}]` — Individual layer content
 
 These tags allow Claude to identify the source tier of any context in its prompt.

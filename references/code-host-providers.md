@@ -31,7 +31,7 @@ combination; a reader that sees the two disagree gets an informational note, nev
 | # | Source | `source` tag | Works with no `.sdlc/`? | Notes |
 |---|---|---|---|---|
 | 1 | `--host github\|azure-devops\|none` on every host-touching script | `flag` | yes | one invocation |
-| 2 | env `SDLC_CODE_HOST` | `env` | yes | process tree; an unrecognised value is ignored and named in `detail` |
+| 2 | env `SHEPHERD_CODE_HOST`, then `SDLC_CODE_HOST` (the pre-2.0 name, still read) | `env` | yes | process tree; the new name wins when both are set and `detail` names whichever supplied the value; an unrecognised value is ignored and named in `detail` |
 | 3 | `.sdlc/code-host.yaml` → `host:` | `file` | no | travels with the clone; written by `set_setting.py code-host` |
 | 4 | `git remote get-url origin` → `parse_remote` | `remote` | yes | **the default path** |
 | 5 | harness manifest, CI axis | `manifest` | no | **tie-breaker only** when there is no usable remote; never overrides a parsed remote |
@@ -201,7 +201,7 @@ the display-name lookup is optional and silent; and az's **default account decid
 
 `scripts/scorecard.py`, `generate_status.py`, `check_gates.py`, `check_spec.py`,
 `advance_phase.py`, `phase_model.py`, `new_spec.py`, `harness/**`, `phases/phase-registry.yaml`,
-`agents/section-evaluator.md`, `commands/sdlc-coach.md`, `commands/sdlc-spec.md`,
+`agents/section-evaluator.md`, `commands/sprd-coach.md`, `commands/sprd-spec.md`,
 `templates/state-init.yaml`; `sprint.py` text and exit codes; `doctor.py`; `github_import.py`;
 `pipeline_proof_model.py`. No existing test file is edited — new coverage is new files or new
 additive classes. `scripts/tests/test_gh_argv_golden.py` is the mechanical proof: it records the

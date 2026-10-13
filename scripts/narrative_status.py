@@ -1,6 +1,6 @@
-"""Which artifacts have a narrative companion, and is it stale — the read-only half of /sdlc-enhance.
+"""Which artifacts have a narrative companion, and is it stale — the read-only half of /sprd-enhance.
 
-/sdlc-enhance spawns the narrative-enhancer for every artifact in a phase that has no
+/sprd-enhance spawns the narrative-enhancer for every artifact in a phase that has no
 `<name>.narrative.md` beside it. Working out *which* those are, and whether an existing narrative
 has been left behind by an edit to its source, is bookkeeping. This does it the same way every time
 so a button can show it and the model is spent only on the prose.

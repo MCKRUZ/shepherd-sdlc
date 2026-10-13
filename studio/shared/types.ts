@@ -908,7 +908,7 @@ export interface ChatMessage {
    * for it. Empty (never undefined) when the message proposed none. */
   proposals: ChatProposal[]
   /** Which of the plugin's real discipline sub-agents produced this message, when
-   * role is 'subagent' — e.g. "claude-code-sdlc:discovery-analyst". This is the sub-agent's
+   * role is 'subagent' — e.g. "shepherd:discovery-analyst". This is the sub-agent's
    * OWN output, forwarded by the CLI (`--forward-subagent-text`), never a paraphrase Studio
    * wrote. */
   subagentType?: string
@@ -1411,7 +1411,7 @@ export interface GateCheckResult {
 }
 
 /** One optional discipline sign-off a person can attach to a phase sign-off — the same
- * `Discipline:Section:Name` triple `/sdlc-next` offers to capture. */
+ * `Discipline:Section:Name` triple `/sprd-next` offers to capture. */
 export interface DisciplineSignoff {
   discipline: string
   section: string
@@ -1420,7 +1420,7 @@ export interface DisciplineSignoff {
 
 /** Signing off a phase from Studio: check the gates, confirm every judgement question, draft and
  * validate a frozen-layer summary, snapshot the artifact record, then advance — same order
- * `/sdlc-next` follows. `stage` names exactly where it stopped, so a refusal is never a mystery. */
+ * `/sprd-next` follows. `stage` names exactly where it stopped, so a refusal is never a mystery. */
 export type SignOffResult =
   | { ok: true; fromPhase?: string; toPhase?: string; note?: string }
   | { ok: false; stage: 'plugin' | 'claude' | 'build' | 'name' | 'not-current' | 'confirmations' | 'gates' | 'frozen-layer' | 'advance'; error: string }

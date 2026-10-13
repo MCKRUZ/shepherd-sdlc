@@ -55,7 +55,7 @@ afterEach(() => {
 
 describe('a run that proved nothing cannot look like a run that proved something', () => {
   it('THROWS when no plugin can be located, rather than skipping quietly', () => {
-    expect(() => requirePlugin(isolatedTestDir())).toThrow(/No usable claude-code-sdlc checkout/)
+    expect(() => requirePlugin(isolatedTestDir())).toThrow(/No usable Shepherd plugin checkout/)
   })
 
   it('names every place it looked, so the answer is actionable', () => {

@@ -15,7 +15,7 @@ Two additions close them as **one package**: content-snapshot **versioning** (di
 draft+confirm **auto-refresh** (reverse propagation). Versioning is built first because it is the
 **safety net** that makes an automated refresh reversible.
 
-The commands are `/sdlc-version` (content history: list/show/diff/rollback) and `/sdlc-refresh`
+The commands are `/sprd-version` (content history: list/show/diff/rollback) and `/sprd-refresh`
 (detect → draft → apply/reject → status). The engine folds into `scripts/audit_artifacts.py`; the
 derivation math lives in one **pure** module, `scripts/version_model.py`. Everything here is
 **advisory — `audit_artifacts.py` exits 0 on every path.**
@@ -49,16 +49,16 @@ and lists the alternatives — never a silent guess).
 A version is a **scan-time snapshot**, not keystroke history. There are **no write-path hooks**: the
 content store only gains a blob at the layer's capture points, so a version is captured when —
 
-- `/sdlc-revise` records a change (it captures the pre- **and** post-edit image);
-- `/sdlc-next` runs its advance-time `record --scan`;
-- `/sdlc-audit-artifacts` runs its step-2 `record --scan`;
+- `/sprd-revise` records a change (it captures the pre- **and** post-edit image);
+- `/sprd-next` runs its advance-time `record --scan`;
+- `/sprd-audit-artifacts` runs its step-2 `record --scan`;
 - `refresh apply` lands a `refreshed` change (pre-image captured, post-image materialized);
 - `version rollback` lands a `revised` change (same canonical mutate order).
 
 Between two capture points the file is invisible to the layer: **five edits collapse into the one
 version** the next capture records. That is by design (the ledger, not a file-watcher, is the source
 of truth) — but it means the history is as coarse as your scans, never a per-save timeline. Scan
-often (or revise through `/sdlc-revise`) if you want finer granularity.
+often (or revise through `/sprd-revise`) if you want finer granularity.
 
 ## Reverse propagation, divergence-aware
 
@@ -71,7 +71,7 @@ references a delta absent upstream) **or** the human passes `--draft`. This keep
 becoming a rubber-stamp mill while still making the candidates *surface automatically* the moment a
 spec merges — zero human memory required.
 
-The confirm path is `/sdlc-revise` inverted and enforces the same **One Rule**: the mapped discipline
+The confirm path is `/sprd-revise` inverted and enforces the same **One Rule**: the mapped discipline
 agent edits **only** a `.proposed` copy (the real artifact stays untouched); a **named human** echoes
 the diffhash they reviewed and owns the applied change. `DISCIPLINE_BY_STEM` is the single in-code
 source for the stem→agent routing (`requirements→requirements-analyst`,
@@ -98,18 +98,18 @@ every step's object is present before the ledger references it, recovery can alw
 
 | # | Requirement | Resolution |
 |---|-------------|------------|
-| **R1** | Refresh targets only pre-Build phase artifacts. | `PRE_BUILD_STEMS = {requirements, epics, feature-brief, business-rules}`. Frozen layers are structurally *downstream* and never returned by `upstream_of(spec)`; refreshing the phase artifact lets the existing forward-staleness engine flag the dependent layer on the next `/sdlc-status`. |
+| **R1** | Refresh targets only pre-Build phase artifacts. | `PRE_BUILD_STEMS = {requirements, epics, feature-brief, business-rules}`. Frozen layers are structurally *downstream* and never returned by `upstream_of(spec)`; refreshing the phase artifact lets the existing forward-staleness engine flag the dependent layer on the next `/sprd-status`. |
 | **R2** | A phantom or missing upstream never fabricates a candidate. | `source: —`, or a non-vocabulary / nonexistent id (`REQ-042`, `FR-999`), yields **zero** candidates + the nudge *"no traceable upstream — add an FR/EP/US/BR id to `source:`"*. Never a guess, never a crash. |
 | **R3** | The lineage→candidate adapter can't `IndexError` on an edge with no declared basis. | `basis = bases[0] if bases else "coarse-phase-order"`; `upstream_hash` from `latest_change_per_artifact(ledger)`, falling back to `compute_checksum(current file)` when absent. |
-| **R4** | A rejection must not render as forward staleness. | `reject` records `NOT_AFFECTED` as a **reverse** edge (downstream = the upstream artifact, upstream = the spec) — absent from the forward lineage graph, so `compute_staleness` never renders it. `/sdlc-audit-artifacts` forward counts are unaffected. |
+| **R4** | A rejection must not render as forward staleness. | `reject` records `NOT_AFFECTED` as a **reverse** edge (downstream = the upstream artifact, upstream = the spec) — absent from the forward lineage graph, so `compute_staleness` never renders it. `/sprd-audit-artifacts` forward counts are unaffected. |
 | **R5** | Changing a signed-off / completed-phase artifact needs explicit acknowledgement. | A shared `--ack-signoff` gate on `rollback --confirm` and `refresh apply`; without it, WARN and refuse (exit 0, no write). `--repo` with no sign-off data stays conservative and still asks for the flag. |
 | **R6** | An automated mutate must be reversible by construction. | Pre-image capture is step 1 of the canonical order and a hard precondition; `track_artifacts.compute_checksum` is the single hashing path shared by ledger identity and object filename, so content↔hash stays lockstep at one `capture()` call-site. |
 
 Two supporting blockers: **B2** — an artifact with no ledger entry (a pre-existing Phase-1 file)
 yields a single **`v1` baseline** synthesized from the current file's hash (`present=False`), never
 `[]` and never a `KeyError`. **B3** — the `version`/`refresh` subcommands write **nothing** to
-`state.yaml`; re-gating stays the command layer's job (`/sdlc-version` and `/sdlc-refresh` instruct a
-real `/sdlc-gate` run afterward, exactly as `/sdlc-revise` does), so "no `gate_results` phantom rows"
+`state.yaml`; re-gating stays the command layer's job (`/sprd-version` and `/sprd-refresh` instruct a
+real `/sprd-gate` run afterward, exactly as `/sprd-revise` does), so "no `gate_results` phantom rows"
 and "this layer writes no `state.yaml`" are both literally true. The apply/rollback impact preview is
 a read-only `compute_staleness` render.
 
@@ -144,8 +144,8 @@ messages say this and point back here.
 
 Two honest ways forward:
 
-- **Start capturing on this machine.** Run the `record --scan` step (via `/sdlc-audit-artifacts` or
-  `/sdlc-next`) here; from that scan on, this machine has the bytes of whatever it snapshots. It
+- **Start capturing on this machine.** Run the `record --scan` step (via `/sprd-audit-artifacts` or
+  `/sprd-next`) here; from that scan on, this machine has the bytes of whatever it snapshots. It
   cannot recover a version captured only elsewhere.
 - **Make the store portable.** Flip the one-line documented override in `.gitignore` — comment out
   the `.sdlc/versions/objects/` line and commit the store — so snapshots travel with the repo. History
@@ -157,11 +157,11 @@ Two honest ways forward:
   `--ack-signoff`, a moved `upstream_hash`, an agent-name `--actor`, rollback-to-uncaptured,
   capture-failed, R2 zero-candidate, empty / no-specs / first-ever-run).
 - **Protected core byte-for-byte unchanged.** `check_spec.py`, `check_gates.py`, `section-evaluator`,
-  `harness/**`, `phase_model.py`, `phase-registry.yaml`, `advance_phase.py`, `/sdlc-coach`,
-  `/sdlc-spec`, `plugin.json` — and `artifact_model.py`: the `refreshed` entry reuses
+  `harness/**`, `phase_model.py`, `phase-registry.yaml`, `advance_phase.py`, `/sprd-coach`,
+  `/sprd-spec`, `plugin.json` — and `artifact_model.py`: the `refreshed` entry reuses
   `change_entry(...)` unchanged, and the `source_spec` attribution is a **rider key** the caller adds
   to the dict, not a change to the model.
-- **The ledger stays its own JSONL.** Nothing is written into `gate_results`; `/sdlc-audit` is
+- **The ledger stays its own JSONL.** Nothing is written into `gate_results`; `/sprd-audit` is
   byte-identical with or without a version store or refresh run present. `audit_artifacts.py`'s
   existing `record` / `impact` / `report` output is byte-identical too — `capture()` rides the ledger
   append best-effort and prints nothing.
@@ -183,7 +183,7 @@ underneath is untouched by such a revert.
   radius; a too-tight signal means the feature proposes little until tuned (visible, not silent).
 - **`objects/` is a local-only safety net** (gitignored) — a fresh clone/CI degrades to "content not
   captured"; flip the documented override for portability.
-- **R1's payoff is latent** — the dependent frozen layer is flagged on the *next* `/sdlc-status`; the
+- **R1's payoff is latent** — the dependent frozen layer is flagged on the *next* `/sprd-status`; the
   apply impact preview mitigates but doesn't fully resolve.
 - **`gc` is a maintenance subcommand** (preview default, no dedicated slash command) — unbounded local
   growth until `gc --apply` is run.

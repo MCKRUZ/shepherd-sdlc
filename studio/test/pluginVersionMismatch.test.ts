@@ -26,7 +26,7 @@ describe('explainIfVersionMismatch', () => {
         + 'generate_status.py: error: unrecognized arguments: --json',
     })
     const result = explainIfVersionMismatch(real, 'generate_status.py')
-    expect(result.stderr).toContain("doesn't match what Studio expects")
+    expect(result.stderr).toContain("doesn't match what Shepherd expects")
     expect(result.stderr).toContain('generate_status.py')
     // The raw detail is still there for the technical reader — never hidden, only introduced.
     expect(result.stderr).toContain('unrecognized arguments: --json')
@@ -37,7 +37,7 @@ describe('explainIfVersionMismatch', () => {
       entry({ stderr: 'usage: foo.py [-h] --state STATE\nfoo.py: error: the following arguments are required: --state' }),
       'foo.py',
     )
-    expect(result.stderr).toContain("doesn't match what Studio expects")
+    expect(result.stderr).toContain("doesn't match what Shepherd expects")
   })
 
   it('leaves an ordinary failure alone — this is not a catch-all for every script error', () => {

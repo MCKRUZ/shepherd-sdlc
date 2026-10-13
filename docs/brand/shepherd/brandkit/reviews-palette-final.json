@@ -1,0 +1,51 @@
+{
+  "reviews": [
+    {
+      "stage": "palette",
+      "name": "Furrow (approved)",
+      "premise": "Moss acts, umber holds. Two light accents: wheat for warmth on paper and panels, spring for lift on moss and dark ground. Lake is information only.",
+      "keywords": [
+        "paired",
+        "warm",
+        "worked"
+      ],
+      "palette": [
+        {
+          "hex": "#3F6B35",
+          "name": "Moss \u2014 action"
+        },
+        {
+          "hex": "#5E452A",
+          "name": "Umber \u2014 structure"
+        },
+        {
+          "hex": "#2F5D7C",
+          "name": "Lake \u2014 information"
+        },
+        {
+          "hex": "#D9C7A3",
+          "name": "Wheat \u2014 accent (warm)"
+        },
+        {
+          "hex": "#9DC58E",
+          "name": "Spring \u2014 accent (lift)"
+        },
+        {
+          "hex": "#1C1915",
+          "name": "Bark \u2014 text"
+        },
+        {
+          "hex": "#F5EFE4",
+          "name": "Warm sand \u2014 background"
+        }
+      ],
+      "logo_ideas": [
+        "A moss crook standing in an umber field \u2014 two colours, one object",
+        "A fold arc in umber over three moss discs",
+        "An umber hill with one moss point above it"
+      ],
+      "background_color": "#F5EFE4",
+      "text_color": "#1C1915"
+    }
+  ]
+}

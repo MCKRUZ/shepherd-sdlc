@@ -34,7 +34,7 @@ describe('redact', () => {
   })
 
   it('leaves a plain https URL with no credentials untouched', () => {
-    const text = 'https://github.com/MCKRUZ/claude-code-sdlc.git'
+    const text = 'https://github.com/MCKRUZ/shepherd-sdlc.git'
     expect(redact(text)).toBe(text)
   })
 
@@ -99,7 +99,7 @@ describe('redact — credentials that are not GitHub tokens', () => {
   it('still leaves ordinary output alone', () => {
     for (const text of [
       'Merged pull request #42: Update requirements.md',
-      'https://github.com/MCKRUZ/claude-code-sdlc.git',
+      'https://github.com/MCKRUZ/shepherd-sdlc.git',
       'To github.com:MCKRUZ/sdlc-studio.git\n   abc1234..def5678  main -> main',
       '3 files changed, 42 insertions(+), 7 deletions(-)',
       'FR-001: The system SHALL reject a duplicate claim_id',

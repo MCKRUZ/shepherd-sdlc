@@ -15,11 +15,12 @@ import type { IpcMain } from 'electron'
 import { runAgent, type AgentLaunch } from './agentRun'
 import { discardCandidate, keepCandidate } from './draftKeep'
 import { planDraft, type DraftPlan } from './draftTargets'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type {
   DraftCandidate, DraftJob, DraftProgressEvent, DraftState, KeepDraftResult, StartDraftResult,
 } from '../../shared/types'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
 const PROGRESS_CHANNEL = 'studio:draftProgress'
 const PROGRESS_INTERVAL_MS = 500
 

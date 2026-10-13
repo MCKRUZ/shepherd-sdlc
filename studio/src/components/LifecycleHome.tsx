@@ -2,7 +2,7 @@
 // composition — today's `StageHome` (the Spine band with its Table twin, Workflow / Documents /
 // Guide, `1`/`2`/`3`, every pin inside the body) with a Today column on the right carrying three
 // groups: "needs you" (the command center's addressed list), "Claude is working the <stage>"
-// (SDLC Studio's own record of chat activity for this stage — labelled as such, and never present-tense
+// (Shepherd's own record of chat activity for this stage — labelled as such, and never present-tense
 // once the turn has ended or failed), and "Decisions this week" (`track_decisions.py --json`'s
 // open rows with the plugin's clock; `today-late-*` only on its `overdue:true`). Leaning into the
 // Build station adds a small "Go to the sprint home →" on the Needs-you row, never a banner.
@@ -33,7 +33,7 @@ export interface LifecycleHomeProps extends StageHomeProps {
 
 /** Provenance lines, in words: which scripts the block is drawn from and how it was addressed. */
 export const NEEDS_YOU_SOURCE = { scripts: 'sprint.py status · spec_status.py --all · track_decisions.py', how: 'matched to your handle' }
-export const WORKING_SOURCE = "SDLC Studio's own record of this session"
+export const WORKING_SOURCE = "Shepherd's own record of this session"
 
 /** The Today column's height cap as the right column (≥ 1600 px): the window less the 169 px
  * above it (band 48 + strip 64 + main padding 24 + the strip's own hairline and labels, probe-
@@ -126,7 +126,7 @@ function NeedsYou({ cc, onAct }: { cc: CommandCenter | null; onAct?: (item: Need
   )
 }
 
-/** SDLC Studio's own record: the last chat activity reported for this stage in this session, or the
+/** Shepherd's own record: the last chat activity reported for this stage in this session, or the
  * plain fact that none was. Never "Thinking…" — nothing is assumed to be running — and never a
  * present-tense label once the ChatPanel has published the turn's end: then the line reads
  * "last activity · HH:MM · turn ended" (or "turn failed"). */

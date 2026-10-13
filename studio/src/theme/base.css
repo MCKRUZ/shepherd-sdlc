@@ -198,14 +198,14 @@ select:focus-visible,
 }
 
 /* The canvas glow is the one decoration not in the token tables; it dims rather than flips. It
-   is the accent (teal) and quiet — a glow in a second hue read as a second brand. */
+   is the accent (moss) and quiet — a glow in a second hue read as a second brand. */
 :root {
-  --canvas-glow-1: rgb(26 153 163 / 0.10);
-  --canvas-glow-2: rgb(14 124 134 / 0.06);
+  --canvas-glow-1: rgb(79 133 69 / 0.10);
+  --canvas-glow-2: rgb(63 107 53 / 0.06);
 }
 [data-theme="dark"] {
-  --canvas-glow-1: rgb(26 153 163 / 0.09);
-  --canvas-glow-2: rgb(14 124 134 / 0.05);
+  --canvas-glow-1: rgb(79 133 69 / 0.09);
+  --canvas-glow-2: rgb(63 107 53 / 0.05);
 }
 
 /* §2.1 theme switch: theme.ts adds this class for 260 ms so colours cross-fade instead of

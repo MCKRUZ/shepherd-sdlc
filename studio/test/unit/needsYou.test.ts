@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { needsYou, type NeedsYouInput } from '../../electron/main/commandCenter'
 import { NO_ACTOR } from '../../shared/reasons'
-import type { BoardRow, SourcedBlock } from '../../shared/types'
+import type { BoardRow, DecisionsView, SourcedBlock } from '../../shared/types'
 
 const block = <T>(source: string, data: T | null): SourcedBlock<T> => ({ source, fetchedAt: 't', ok: data !== null, data, error: data === null ? 'no' : null })
 
@@ -80,7 +80,7 @@ describe('needsYou', () => {
   })
 
   it('a block that failed contributes nothing and does not hide the others', () => {
-    const { items } = needsYou(input({ decisions: block('track_decisions.py --json', null) }))
+    const { items } = needsYou(input({ decisions: block<DecisionsView>('track_decisions.py --json', null) }))
     expect(items.map((i) => i.kind)).toEqual(['ack', 'review'])
   })
 

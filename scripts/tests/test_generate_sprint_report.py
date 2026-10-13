@@ -129,7 +129,7 @@ INDEX_HTML = """\
     <a class="report-link" href="build-report.html">Build: build</a>
   </div>
 </div>
-<div class="report-footer"><span>claude-code-sdlc — Project Index</span></div>
+<div class="report-footer"><span>Shepherd — Project Index</span></div>
 </body>
 </html>
 """

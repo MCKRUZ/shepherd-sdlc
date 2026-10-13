@@ -21,7 +21,7 @@ afterEach(() => { cleanup(); configureMotionForTests(null) })
 describe('ToolingIssues: Required and Code-host CLIs are two sections', () => {
   it('names the two sections under the product heading', () => {
     render(<ToolingIssues report={REPORT} onOverride={vi.fn()} />)
-    expect(screen.getByRole('heading', { level: 1, name: 'Before SDLC Studio can open a project' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 1, name: 'Before Shepherd can open a project' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 2, name: 'Required' })).toBeTruthy()
     expect(screen.getByRole('heading', { level: 2, name: 'Code-host CLIs' })).toBeTruthy()
   })

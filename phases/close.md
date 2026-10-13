@@ -110,7 +110,7 @@ See the Visual Report Protocol in `SKILL.md` for rendering standards and fallbac
 
 ### Step 8: Generate Phase Report
 
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/close-report.html`. Share this report with stakeholders at the close steering. The report includes artifact inventory and gate status. The last billing milestone lands with the close gate's evidence attached.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/close-report.html`. Share this report with stakeholders at the close steering. The report includes artifact inventory and gate status. The last billing milestone lands with the close gate's evidence attached.
 
 ## Standalone or Workflow
 
@@ -164,9 +164,9 @@ Must contain ALL of:
 - [ ] A named human on each side signed the close (manual gate) — gates report, humans decide, one last time
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/close-report.html` and is fully self-contained — share it with stakeholders at the close steering as the review artifact for the final sign-off.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/close-report.html` and is fully self-contained — share it with stakeholders at the close steering as the review artifact for the final sign-off.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Terminal Phase
 Close is the final phase of the engagement. There is **no next phase and no handoff out** — only the clean exit (access revoked, audited) and the harvest PR back to the delivery standard. If the client wants ongoing help, that is a new agreement made in daylight, with its own Phase 0 — not a transition-services annex that quietly keeps the pod on retainer.
@@ -183,7 +183,7 @@ Close is the final phase of the engagement. There is **no next phase and no hand
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (transfer not yet started)
 - "Are client engineers named and ready to orchestrate real specs? If not, the close gate can't pass — that's a steering conversation now."

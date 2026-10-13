@@ -12,66 +12,74 @@
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --color-surface-0: #0b1120;
-  --color-surface-1: #111a2b;
-  --color-surface-2: #172236;
-  --color-surface-3: #1e2a42;
-  --color-surface-raised: #1d2838;
-  --color-surface-code: #05080f;
+  /* Surfaces — bark (docs/brand/shepherd/palette.json). */
+  --color-surface-0: #14120f;
+  --color-surface-1: #1c1915;
+  --color-surface-2: #25211c;
+  --color-surface-3: #2e2923;
+  --color-surface-raised: #2e2923;
+  --color-surface-code: #14120f;
   --color-surface-code-error: #1a0b0b;
   /* `surface-0` dark at .6; the blur comes from `--scrim-filter` on :root. */
-  --scrim: rgb(11 17 32 / 0.6);
+  --scrim: rgb(20 18 15 / 0.6);
   --color-scrim: var(--scrim);
 
-  --color-ink-1: #e6edf7;
-  --color-ink-2: #b7c3d6;
-  --color-ink-3: #8392aa;
-  /* Decoration only — placeholders, dividers, aria-hidden glyphs; never a word. Lifted from
-     #5b6a84 so a hairline glyph is visible on `surface-2` without becoming a text colour. */
-  --color-ink-4: #6b7a94;
-  --color-ink-inverse: #0b1120;
+  --color-ink-1: #f5efe4;
+  --color-ink-2: #d9d1c4;
+  --color-ink-3: #a69d94;
+  /* Decoration only — placeholders, dividers, aria-hidden glyphs; never a word. The light
+     theme's `ink-3`, so a hairline glyph is visible on `surface-2` (3.13:1 on `surface-0`)
+     without becoming a text colour. */
+  --color-ink-4: #6b625a;
+  --color-ink-inverse: #14120f;
   --color-eyebrow: var(--color-ink-3);
 
-  --color-line-1: #1e2a40;
-  --color-line-2: #2b3a56;
-  --color-line-3: #44515f;
-  --color-focus: #6fd1d4;
+  /* Lines. `line-1` is `surface-3`; `line-2` / `line-3` sit between it and `ink-4` on the bark
+     ramp, at the lightness the previous theme gave its input edge and emphasised edge
+     (1.5:1 and 2.2:1 on `surface-1`). */
+  --color-line-1: #2e2923;
+  --color-line-2: #3f3832;
+  --color-line-3: #574f47;
+  --color-focus: #9dc58e;
 
-  /* The dark accent ramp is not a mirror image: 500 is the brightest text accent, 600 stays a
-     vivid fill with white ink (`bg-brand-600` is an e2e pin), 800/900 are pale for text on fills. */
-  --color-accent-50: #0a2a2e;
-  --color-accent-100: #0c363b;
-  --color-accent-200: #0f4a50;
-  --color-accent-300: #136a72;
-  --color-accent-400: #1a99a3;
-  --color-accent-500: #22a3ad;
-  --color-accent-600: #0e7c86;
-  --color-accent-700: #0b6470;
-  --color-accent-800: #6fd1d4;
-  --color-accent-900: #a7e6e7;
-  /* Accent as text: the pale end of the inverted ramp (10.5:1 / 13.6:1 on `surface-0`). */
-  --color-accent-text: #6fd1d4;
-  --color-accent-text-hover: #a7e6e7;
+  /* The dark accent ramp is not a mirror image: 500 is the brightest fill accent, 600 stays the
+     light theme's fill with white ink (`bg-brand-600` is an e2e pin), 800/900 are pale for text
+     on fills (moss 300 / 200). 50–300 are the deep end of the light ramp (900 → 600). */
+  --color-accent-50: #192d17;
+  --color-accent-100: #243f20;
+  --color-accent-200: #2f5229;
+  --color-accent-300: #3f6b35;
+  --color-accent-400: #4f8545;
+  --color-accent-500: #6fa55f;
+  --color-accent-600: #3f6b35;
+  --color-accent-700: #2f5229;
+  --color-accent-800: #9dc58e;
+  --color-accent-900: #c7e0bc;
+  /* Accent as text: the pale end of the inverted ramp (9.63:1 / 13.19:1 on `surface-0`). */
+  --color-accent-text: #9dc58e;
+  --color-accent-text-hover: #c7e0bc;
 
-  /* Mark A — Depth in dark: the far stop is `accent-600`, not `accent-900`, so the disc never
-     sinks into `surface-0` (#0a3f47 on #0b1120 would read as a hole). The light pair is a
+  /* Mark — Depth in dark: the far stop is `accent-600`, not `accent-900`, so the lower lobe
+     never sinks into `surface-0` (#192d17 on #14120f would read as a hole). The light pair is a
      token-ramp pair; the dark ramp is inverted, so a ramp gradient is wrong by construction. */
-  --mark-depth-a: #6fd1d4;
-  --mark-depth-b: #0e7c86;
+  --mark-depth-a: #9dc58e;
+  --mark-depth-b: #3f6b35;
 
   --color-stage-signed-fill: #34d399;
   --color-stage-signed-bg: #0b2a1e;
   --color-stage-signed-ink: #86efac;
   --color-stage-signed-line: #14532d;
-  /* "Now" is the accent (tokens.css says why); these are the dark accent 500/100/800/300. */
-  --color-stage-current-fill: #22a3ad;
-  --color-stage-current-bg: #0c363b;
-  --color-stage-current-ink: #6fd1d4;
-  --color-stage-current-line: #136a72;
-  --color-stage-later-fill: #5b6a84;
-  --color-stage-later-bg: #111a2b;
-  --color-stage-later-ink: #7c8a9a;
-  --color-stage-later-line: #2e3947;
+  /* "Now" is the accent (tokens.css says why); these are the dark accent 800/100/800/300. The
+     fill is the pale step, not 500: the not-started ring is `ink-3` (spineModel), and a lit
+     station must outshine it — #6fa55f (L .31) sat under #a69d94 (L .34). */
+  --color-stage-current-fill: #9dc58e;
+  --color-stage-current-bg: #243f20;
+  --color-stage-current-ink: #9dc58e;
+  --color-stage-current-line: #3f6b35;
+  --color-stage-later-fill: #6b625a;
+  --color-stage-later-bg: #1c1915;
+  --color-stage-later-ink: #a69d94;
+  --color-stage-later-line: #3f3832;
 
   --color-status-ok-fill: #4ade80;
   --color-status-ok-bg: #0b2a1e;
@@ -90,10 +98,10 @@
   --color-status-running-ink: #7dd3fc;
   --color-status-running-line: #0c4a6e;
 
-  --color-spec-ready: #22a3ad;
+  --color-spec-ready: #6fa55f;
   --color-spec-inflight: #38bdf8;
   --color-spec-merged: #4ade80;
-  --color-spec-deferred: #5b6a84;
+  --color-spec-deferred: #6b625a;
   --color-spec-notready: #fbbf24;
 
   /* §2.6 dark elevation: depth by rim light, not blur. */
@@ -101,17 +109,18 @@
   --shadow-2: 0 0 0 1px rgb(255 255 255 / 0.07), 0 8px 24px -8px rgb(0 0 0 / 0.5);
   --shadow-3: 0 0 0 1px rgb(255 255 255 / 0.07), 0 24px 64px -16px rgb(0 0 0 / 0.7);
 
-  /* §2.4 legacy palette remap — only the steps actually used in src/ (grep 2026-10-05). */
-  --color-slate-50: #0f172a;
-  --color-slate-100: #172236;
-  --color-slate-200: #22304a;
-  --color-slate-300: #2d3d5c;
-  --color-slate-400: #5b6a84;
-  --color-slate-500: #8392aa;
-  --color-slate-600: #a9b6cb;
-  --color-slate-700: #c3cde0;
-  --color-slate-800: #dbe3f0;
-  --color-slate-900: #e6edf7;
+  /* §2.4 legacy palette remap — only the steps actually used in src/ (grep 2026-10-05), on the
+     bark ramp: 50–300 are surfaces and lines, 400/500 are `ink-4`/`ink-3`, 600–900 are text. */
+  --color-slate-50: #1c1915;
+  --color-slate-100: #25211c;
+  --color-slate-200: #2e2923;
+  --color-slate-300: #3f3832;
+  --color-slate-400: #6b625a;
+  --color-slate-500: #a69d94;
+  --color-slate-600: #d9d1c4;
+  --color-slate-700: #d9d1c4;
+  --color-slate-800: #f5efe4;
+  --color-slate-900: #f5efe4;
 
   --color-amber-50: #2a1f06;
   --color-amber-100: #3a2a08;
@@ -144,15 +153,16 @@
 
   /* Command center (togo-command-center-visual.md §2). Inside the FIRST block on purpose:
      tokenContrast.test reads only this block. Alias rows restate the alias so a retune follows. */
-  --color-lane: #0e1727;
-  --color-lane-header: #121c2f;
-  --color-lane-line: #1b2639;
-  --color-card-lit: #22a3ad;
-  --color-baton: #22a3ad;
-  --color-baton-bg: #0c363b;
-  --color-baton-ink: #6fd1d4;
-  --color-you-ring: #6fd1d4;
-  --color-strip-lit: var(--color-stage-signed-fill);
+  --color-lane: #1c1915;
+  --color-lane-header: #25211c;
+  --color-lane-line: #2e2923;
+  --color-card-lit: #6fa55f;
+  --color-baton: #6fa55f;
+  --color-baton-bg: #243f20;
+  --color-baton-ink: #9dc58e;
+  --color-you-ring: #9dc58e;
+  /* The dark signed fill (light takes the ink step; tokens.css says why). */
+  --color-strip-lit: #34d399;
   --color-strip-unlit: var(--color-line-2);
   --color-strip-viewing: var(--color-stage-current-fill);
   --color-today-act-bg: var(--color-stage-current-bg);
@@ -166,8 +176,8 @@
   --color-today-late-line: var(--color-status-error-line);
   --color-plan-backlog: var(--color-lane);
   --color-plan-slate: var(--color-surface-1);
-  --color-plan-says: #0a2a2e;
-  --color-plan-says-line: #0f4a50;
+  --color-plan-says: #192d17;
+  --color-plan-says-line: #2f5229;
   --color-rung-pass: var(--color-status-ok-fill);
   --color-rung-fail: var(--color-status-error-fill);
   --color-rung-pending: #38bdf8;
@@ -184,8 +194,9 @@
   --color-ledger-postponed-bg: var(--color-stage-later-bg);
   --color-ledger-postponed-ink: var(--color-stage-later-ink);
   --color-ledger-offbooks: var(--color-status-error-fill);
-  --color-steer-bg: #070c16;
-  --color-steer-tile: #111a2b;
+  /* One step beyond `surface-0` on the bark ramp, so the room goes dark. */
+  --color-steer-bg: #0e0c0a;
+  --color-steer-tile: #1c1915;
   --color-steer-tile-line: var(--color-line-1);
   --color-steer-number-ink: var(--color-ink-1);
   --color-steer-label-ink: var(--color-ink-2);
@@ -199,18 +210,19 @@
   background-color: var(--color-surface-1);
 }
 
-/* Console and HistoryPanel `<pre>` blocks stay dark with their `text-slate-100` (now #dbe3f0). */
+/* A `<pre>` or plate still on the legacy class stays dark (the code surface, bark-0); Console
+   and HistoryPanel themselves now read `bg-surface-code`. */
 [data-theme=dark] .bg-slate-900 {
-  background-color: #05080f;
+  background-color: #14120f;
 }
 
 /* Inverse pills invert to a light pill with dark ink; the class stays for the board e2e pin. */
 [data-theme=dark] .bg-slate-900.text-white {
-  background-color: #e6edf7;
-  color: #0b1120;
+  background-color: #f5efe4;
+  color: #14120f;
 }
 
-/* The OpeningOverlay scrim stays a dark wash. */
+/* A legacy 40 % dark wash takes the one scrim (OpeningOverlay itself now reads `bg-scrim`). */
 [data-theme=dark] .bg-slate-900\/40 {
   background-color: var(--color-scrim);
 }
@@ -226,14 +238,14 @@
   background-color: var(--color-surface-0);
 }
 
-/* Three progress tracks. */
+/* Three progress tracks: the remapped `slate-300` (`line-2`) at half. */
 [data-theme=dark] .bg-slate-200\/50 {
-  background-color: rgb(45 61 92 / 0.5);
+  background-color: rgb(63 56 50 / 0.5);
 }
 
-/* The sub-agent bubble border stays visible on the remapped `bg-slate-50`. */
+/* A dashed legacy border stays visible on the remapped `bg-slate-50` (`line-3`). */
 [data-theme=dark] .border-dashed.border-slate-300 {
-  border-color: #3b4d70;
+  border-color: #574f47;
 }
 
 /* Solid amber chips (7 usages) carry white text; the text-favouring remap of amber-600/700 to

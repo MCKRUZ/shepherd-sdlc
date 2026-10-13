@@ -2,7 +2,7 @@
 //
 // Everything else in Studio that finishes a phase is `advanceAfterDeclaration` in board.ts, but
 // that is reached only from Build's declare-complete flow. Every other phase — Discovery →
-// Requirements, Requirements → Design, and on — still needed `/sdlc-next` in Claude Code to
+// Requirements, Requirements → Design, and on — still needed `/sprd-next` in Claude Code to
 // actually finish, because nothing in the window did what that command's own steps do: check
 // the gates, confirm every judgement question, write and validate a condensed "frozen layer"
 // summary of the phase, snapshot the artifact record, then advance.
@@ -88,7 +88,7 @@ const FROZEN_LAYER_PROMPT_HEADER = [
 ].join('\n')
 
 /** Moves the current layer out of the way before a re-sign-off drafts its replacement, keeping
- * it as `<layer>.superseded-<YYYYMMDD>` — the name `/sdlc-next` uses, and one the sync allowlist
+ * it as `<layer>.superseded-<YYYYMMDD>` — the name `/sprd-next` uses, and one the sync allowlist
  * deliberately leaves on this machine. `restore()` puts it back and removes whatever draft was
  * written in its place, so a sign-off that fails after this point leaves the layer byte-for-byte
  * as it was. Before this the rename happened up front and a failed attempt left an invalid draft

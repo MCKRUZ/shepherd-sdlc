@@ -342,6 +342,7 @@ class TestOnAzureDevOps:
     def ado(self, tmp_path, monkeypatch):
         ado_transport.clear_caches()
         monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+        monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
 
         def git_only(cmd, input=None, capture_output=True, text=True, check=False):
             if cmd[:2] == ["git", "-C"]:
@@ -460,6 +461,7 @@ class TestOnAzureDevOps:
 
     def test_the_github_path_still_uses_gh_and_never_az(self, tmp_path, monkeypatch):
         monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+        monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
         monkeypatch.setattr(ga.subprocess, "run", FakeGh(secrets=[ga.API_KEY_SECRET]))
         fake = FakeAz()
         monkeypatch.setattr(ado_transport, "az_json", fake)
@@ -477,6 +479,7 @@ class TestOnAzureDevOps:
     ])
     def test_the_detection_twin_agrees_with_code_host(self, tmp_path, monkeypatch, url):
         monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+        monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
         monkeypatch.setattr(code_host, "origin_url", lambda root: url)
         monkeypatch.setattr(ga, "_origin_url", lambda root: url)
         assert ga.detect_host(tmp_path) == code_host.detect_host(tmp_path)

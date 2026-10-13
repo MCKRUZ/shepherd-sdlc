@@ -13,7 +13,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StageReadinessProvider, useStageReadiness } from '../src/components/StageReadinessContext'
-import type { StageReadiness } from '../../shared/types'
+import type { StageReadiness } from '../shared/types'
 
 function readinessStub(stageId: string): StageReadiness {
   return {

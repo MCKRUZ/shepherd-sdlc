@@ -138,8 +138,8 @@ test.describe('[spec 0024] activities and the Guide tab, in the real window', ()
     await expect(guide).toBeVisible({ timeout: 30_000 })
     await expect(guide).not.toContainText('No guidance file for this stage')
     // The activities Workflow does not draw are still named here, with their command.
-    await expect(guide).toContainText('/sdlc-review')
-    await expect(guide).toContainText('/sdlc-data')
+    await expect(guide).toContainText('/sprd-review')
+    await expect(guide).toContainText('/sprd-data')
   })
 
   test('changing back to Workflow lands on the steps again', async () => {

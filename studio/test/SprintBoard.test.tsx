@@ -258,10 +258,10 @@ describe('SprintBoard: the sprint as the plugin reports it', () => {
     expect(text).toContain('D-3 — Pick the queue (owner: no owner, due 2026-10-01)')
   })
 
-  it('a project with no sprint says so, points at /sdlc-sprint new, and shows no count at all', async () => {
+  it('a project with no sprint says so, points at /sprd-sprint new, and shows no count at all', async () => {
     install({ getSprintStatus: vi.fn().mockResolvedValue(NO_SPRINT) })
     render(<SprintBoard projectPath="/p" onOpenSpec={vi.fn()} />)
-    expect((await screen.findByTestId('sprint-empty')).textContent).toBe('No sprint — open one with /sdlc-sprint new.')
+    expect((await screen.findByTestId('sprint-empty')).textContent).toBe('No sprint — open one with /sprd-sprint new.')
     expect(screen.queryByTestId('sprint-header')).toBeNull()
     expect(screen.queryByTestId('sprint-readiness')).toBeNull()
     expect(screen.queryByTestId('sprint-pages')).toBeNull()
@@ -279,7 +279,7 @@ describe('SprintBoard: the sprint as the plugin reports it', () => {
     install({ getSprintStatus: vi.fn().mockResolvedValue({ ...NO_SPRINT, sprint: VIEW.sprint, mix: { HIGH: { target: 1, actual: 0 } } }) })
     render(<SprintBoard projectPath="/p" onOpenSpec={vi.fn()} />)
     await screen.findByTestId('sprint-header')
-    expect(screen.getByTestId('sprint-empty').textContent).toBe('Nothing slated yet — propose a slate with /sdlc-sprint slate.')
+    expect(screen.getByTestId('sprint-empty').textContent).toBe('Nothing slated yet — propose a slate with /sprd-sprint slate.')
     expect(screen.queryByTestId('sprint-slate')).toBeNull()
     expect(screen.getByTestId('sprint-readiness').textContent).toContain('no data')
     expect(screen.getByTestId('sprint-readiness').textContent).not.toContain('0 of 0')
@@ -360,11 +360,11 @@ describe('SprintBoard: the two pages', () => {
   })
 
   it('a refused open keeps the written result and shows the refusal once', async () => {
-    install({ openReport: vi.fn().mockResolvedValue({ ok: false, error: 'Studio only opens reports from this project’s .sdlc/reports folder.' }) })
+    install({ openReport: vi.fn().mockResolvedValue({ ok: false, error: 'Shepherd only opens reports from this project’s .sdlc/reports folder.' }) })
     render(<SprintBoard projectPath="/p" onOpenSpec={vi.fn()} />)
     await screen.findByTestId('sprint-pages')
     fireEvent.click(screen.getByRole('button', { name: 'Planning page' }))
-    expect((await screen.findByRole('alert')).textContent).toBe('Studio only opens reports from this project’s .sdlc/reports folder.')
+    expect((await screen.findByRole('alert')).textContent).toBe('Shepherd only opens reports from this project’s .sdlc/reports folder.')
     expect(screen.getByTestId('sprint-page-result')).toBeTruthy()
   })
 })
@@ -432,7 +432,7 @@ describe('SprintBoard: the compact panel', () => {
   it('says "no sprint" in the panel too', async () => {
     install({ getSprintStatus: vi.fn().mockResolvedValue(NO_SPRINT) })
     render(<SprintBoard projectPath="/p" compact />)
-    expect((await screen.findByTestId('sprint-empty')).textContent).toBe('No sprint — open one with /sdlc-sprint new.')
+    expect((await screen.findByTestId('sprint-empty')).textContent).toBe('No sprint — open one with /sprd-sprint new.')
   })
 })
 

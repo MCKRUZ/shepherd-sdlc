@@ -1,7 +1,7 @@
 [project]
-name = "claude-code-sdlc-scripts"
+name = "shepherd-scripts"
 version = "0.1.0"
-description = "Automation scripts for claude-code-sdlc plugin"
+description = "Automation scripts for the Shepherd plugin"
 requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0",

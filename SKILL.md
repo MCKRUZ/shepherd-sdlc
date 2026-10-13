@@ -1,5 +1,5 @@
 ---
-name: claude-code-sdlc
+name: shepherd
 description: |
   SDLC orchestration plugin for Claude Code. Drives projects through a
   9-phase software development lifecycle with company-configurable profiles,
@@ -9,9 +9,9 @@ description: |
   "project setup wizard", "lifecycle management".
 ---
 
-# claude-code-sdlc
+# Shepherd
 
-SDLC orchestration plugin for Claude Code. Drives projects through a 9-phase software development lifecycle with company-configurable profiles, compliance gates, and quality enforcement.
+Shepherd is an SDLC orchestration plugin for Claude Code. It drives projects through a 9-phase software development lifecycle with company-configurable profiles, compliance gates, and quality enforcement.
 
 ## What This Does
 
@@ -26,31 +26,31 @@ This plugin makes structured SDLC methodology executable in Claude Code. It prov
 
 | Command | Purpose |
 |---------|---------|
-| `/sdlc-setup` | Interactive setup wizard — select profile, initialize `.sdlc/` in your project |
-| `/sdlc` | Show current phase guidance, next action, required artifacts |
-| `/sdlc-status` | Progress dashboard with phase table and completion percentage |
-| `/sdlc-gate` | Run exit criteria checks for current phase (does not advance) |
-| `/sdlc-next` | Advance to next phase if all MUST gates pass |
-| `/sdlc-enhance` | Generate narrative companions for stakeholder review (optional) |
-| `/sdlc-coach` | Interactive coaching mode — adaptive dialogue for current phase |
-| `/sdlc-intake` | Catalog and summarize an external document corpus (Phase 0, opt-in) |
-| `/sdlc-brief` | Prep a stakeholder workshop brief from the document corpus |
-| `/sdlc-spec` | Author a ready Build-loop spec (`specs/NNNN-name.md`) and enforce the Definition of Ready |
-| `/sdlc-handoff` | Hand a ready spec to a developer — branch, frontmatter, code-host assignment, starting the agent |
-| `/sdlc-spec-status` | Report a spec's status read from its pull request — checks, grader verdict, approvals, merge |
-| `/sdlc-sprint` | Sprint board — slate a count of specs by risk-tier mix, ready the sprint once every slated spec clears the DoR and its Eng/Data verdicts, close it with kept / carried / dropped (advisory; never a gate) |
-| `/sdlc-refine` | Refinement agenda for the sprint's specs — DoR gaps, pending verdicts, overdue decisions; refine one spec or the whole slate; record Eng/Data verdicts; route upstream fixes without regressing a phase |
-| `/sdlc-review` | Multi-perspective artifact review (council, adversarial, or edge-case modes) |
-| `/sdlc-phase-report` | Generate phase HTML report with artifact inventory and gate results |
-| `/sdlc-audit` | Analyze gate effectiveness across completed phases — identify always-pass and high-fail gates |
+| `/sprd-setup` | Interactive setup wizard — select profile, initialize `.sdlc/` in your project |
+| `/sprd` | Show current phase guidance, next action, required artifacts |
+| `/sprd-status` | Progress dashboard with phase table and completion percentage |
+| `/sprd-gate` | Run exit criteria checks for current phase (does not advance) |
+| `/sprd-next` | Advance to next phase if all MUST gates pass |
+| `/sprd-enhance` | Generate narrative companions for stakeholder review (optional) |
+| `/sprd-coach` | Interactive coaching mode — adaptive dialogue for current phase |
+| `/sprd-intake` | Catalog and summarize an external document corpus (Phase 0, opt-in) |
+| `/sprd-brief` | Prep a stakeholder workshop brief from the document corpus |
+| `/sprd-spec` | Author a ready Build-loop spec (`specs/NNNN-name.md`) and enforce the Definition of Ready |
+| `/sprd-handoff` | Hand a ready spec to a developer — branch, frontmatter, code-host assignment, starting the agent |
+| `/sprd-spec-status` | Report a spec's status read from its pull request — checks, grader verdict, approvals, merge |
+| `/sprd-sprint` | Sprint board — slate a count of specs by risk-tier mix, ready the sprint once every slated spec clears the DoR and its Eng/Data verdicts, close it with kept / carried / dropped (advisory; never a gate) |
+| `/sprd-refine` | Refinement agenda for the sprint's specs — DoR gaps, pending verdicts, overdue decisions; refine one spec or the whole slate; record Eng/Data verdicts; route upstream fixes without regressing a phase |
+| `/sprd-review` | Multi-perspective artifact review (council, adversarial, or edge-case modes) |
+| `/sprd-phase-report` | Generate phase HTML report with artifact inventory and gate results |
+| `/sprd-audit` | Analyze gate effectiveness across completed phases — identify always-pass and high-fail gates |
 
 ## Quick Start
 
-1. Run `/sdlc-setup` in your project directory
+1. Run `/sprd-setup` in your project directory
 2. Select a profile (e.g., `microsoft-enterprise` or `starter`)
-3. Run `/sdlc` to see Phase 0 guidance
+3. Run `/sprd` to see Phase 0 guidance
 4. Work through each phase, creating required artifacts
-5. Run `/sdlc-next` when ready to advance
+5. Run `/sprd-next` when ready to advance
 
 ## How It Works
 
@@ -62,7 +62,7 @@ The plugin maintains state in `.sdlc/state.yaml` in your project directory. Each
 
 Phase transitions are atomic — either all MUST gates pass and you advance, or none do and you get a blockers report.
 
-For long-running phases (especially the Build loop), the spec is the durable source of truth across sessions — the agent re-reads it every session, and `scripts/track_specs.py` derives backlog progress from spec frontmatter. When the engagement runs sprints (`/sdlc-sprint`), the session start hook prints one `[SDLC-SPRINT]` line per active sprint record in `.sdlc/sprints/` (id, state, goal, start → end) so every session opens knowing the commitment window. The retired section-plan handoff summary (`session-handoff.json`) is no longer read by the hook.
+For long-running phases (especially the Build loop), the spec is the durable source of truth across sessions — the agent re-reads it every session, and `scripts/track_specs.py` derives backlog progress from spec frontmatter. When the engagement runs sprints (`/sprd-sprint`), the session start hook prints one `[SHEPHERD-SPRINT]` line per active sprint record in `.sdlc/sprints/` (id, state, goal, start → end) so every session opens knowing the commitment window. The retired section-plan handoff summary (`session-handoff.json`) is no longer read by the hook.
 
 ## Profiles
 
@@ -70,7 +70,7 @@ Profiles configure the plugin for your company/team:
 - `microsoft-enterprise` — C#/.NET 10 + Angular 22 + Azure + SOC 2 compliance
 - `ado-enterprise` — microsoft-enterprise's stack on Azure Repos + Azure Pipelines. The
   harness install is platform-aware (no GitHub payload lands in the repo; rails
-  governance content installs to `.azuredevops/rails/` instead), and `/sdlc-doctor` +
+  governance content installs to `.azuredevops/rails/` instead), and `/sprd-doctor` +
   the PR-flow rails check `az` instead of `gh`
 - `ado-enterprise-python` — ado-enterprise's Python sibling: FastAPI + SQLAlchemy +
   React/Redux Toolkit on the same Azure Repos + Azure Pipelines rails, Azure Container
@@ -97,7 +97,7 @@ Phase ids are strings (`build` and `close` are non-numeric); the 4/5/6 gap is in
 
 ## Writing Artifacts
 
-Each phase's artifacts have a template in `templates/phases/<phase>/`. Studio, the gates and the
+Each phase's artifacts have a template in `templates/phases/<phase>/`. The Shepherd desktop app, the gates and the
 completeness check all read a document by its `##` headings, so a document that renames them is
 treated as free text and none of its sections can be edited or checked. When you write an artifact:
 
@@ -120,9 +120,9 @@ After each phase completes (gates pass + human sign-off), a **phase layer** is g
 - Are written to `.sdlc/context/layers/phase{N}-{name}.md`
 - Are generated by Claude reading all phase artifacts and condensing them into the template at `templates/frozen-layer.md`
 - Are validated by `scripts/validate_frozen_layer.py`
-- Are **living, not frozen**: when a source artifact changes later (a requirement sharpened during `/sdlc-refine --upstream`, a `/sdlc-revise`, a `/sdlc-refresh`), the layer is regenerated, the previous version is kept as `.superseded-<date>`, and the regeneration is recorded in the artifact ledger. Earlier-phase artifacts are expected to change during refinement; the record keeps it honest, not a lock.
+- Are **living, not frozen**: when a source artifact changes later (a requirement sharpened during `/sprd-refine --upstream`, a `/sprd-revise`, a `/sprd-refresh`), the layer is regenerated, the previous version is kept as `.superseded-<date>`, and the regeneration is recorded in the artifact ledger. Earlier-phase artifacts are expected to change during refinement; the record keeps it honest, not a lock.
 
-The `/sdlc-next` command handles layer generation as step 5 (after HITL sign-off, before state advancement). See `references/frozen-layers.md` for format details and the regeneration procedure.
+The `/sprd-next` command handles layer generation as step 5 (after HITL sign-off, before state advancement). See `references/frozen-layers.md` for format details and the regeneration procedure.
 
 ## Context Architecture
 
@@ -141,18 +141,18 @@ The session-start hook automatically loads Tiers 1-2 (and 1.5 when document inta
 
 Every SDLC artifact can have a `.narrative.md` companion — a prose-rich, stakeholder-friendly version that makes the same information accessible to non-technical audiences. Narratives are **optional** (gates don't require them) but recommended before stakeholder reviews.
 
-- Run `/sdlc-enhance` to generate narratives for the current phase's artifacts
+- Run `/sprd-enhance` to generate narratives for the current phase's artifacts
 - The `narrative-enhancer` agent handles all generation
 - See `references/narrative-patterns.md` for transformation rules
 
 ## Multi-Perspective Review
 
-Run `/sdlc-review` to evaluate phase artifacts from multiple angles before advancing. Three modes:
+Run `/sprd-review` to evaluate phase artifacts from multiple angles before advancing. Three modes:
 - `--council` (default) — 4-viewpoint review: Architecture, Product, Quality, Security
 - `--adversarial` — Cynical QA: challenge assumptions, find quality issues
 - `--edge-cases` — Exhaustive path analysis: find unhandled conditions and boundaries
 
-Recommended before `/sdlc-gate` on design-heavy phases (2, 3) and during the Build loop. See `references/agent-roster.md` for phase-specific suggestions.
+Recommended before `/sprd-gate` on design-heavy phases (2, 3) and during the Build loop. See `references/agent-roster.md` for phase-specific suggestions.
 
 ## Smart Repair
 
@@ -160,7 +160,7 @@ When gate checks fail on structural issues (missing templates, empty sections, p
 
 ## Conversational Coaching
 
-For users who prefer guided dialogue over step lists, `/sdlc-coach` provides an adaptive coaching mode. The coach assesses the current phase state (which artifacts exist, what's missing), asks diagnostic questions, and generates artifacts as the conversation progresses.
+For users who prefer guided dialogue over step lists, `/sprd-coach` provides an adaptive coaching mode. The coach assesses the current phase state (which artifacts exist, what's missing), asks diagnostic questions, and generates artifacts as the conversation progresses.
 
 Coaching mode enforces the same gates and requirements as the structured approach — it just changes the interaction style. See `references/conversational-coaching.md` for the full pattern library and per-phase diagnostic questions.
 

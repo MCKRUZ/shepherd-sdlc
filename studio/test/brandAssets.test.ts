@@ -1,8 +1,9 @@
-/** The app icon IS the brand (round 2, B1 + B4). `docs/brand/togo/build-assets.mjs` writes every
- * raster from the SVG sources; this test reads what it wrote — the packaged icon is the Depth
- * tile at 256, the .ico and .icns carry the size ladder with the FLAT tile in the 16 px slot
- * (its ground pixel is accent-600 exactly), the builder config names the icon, and what the app
- * ships under public/brand is byte-identical to the brand source. Node only; no renderer. */
+/** The app icon IS the brand (round 2, B1 + B4). `docs/brand/shepherd/build-assets.mjs` writes
+ * every raster from the SVG sources; this test reads what it wrote — the packaged icon is the
+ * Depth tile at 256, the .ico and .icns carry the size ladder with the FLAT tile in the 16 px slot
+ * (the frame alone on sand: its bars are moss 600 and umber 700 exactly, its centre the sand
+ * ground with no S), the renderer's favicon is the same ICO, the builder config names the icon,
+ * and what the app ships under public/brand is byte-identical to the brand source. Node only. */
 import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -11,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 
 const studio = resolve(__dirname, '..')
 const repo = resolve(studio, '..')
-const brand = join(repo, 'docs', 'brand', 'togo')
+const brand = join(repo, 'docs', 'brand', 'shepherd')
 const read = (p: string) => readFileSync(p)
 const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex')
 
@@ -58,7 +59,7 @@ describe('build/icon.* is the brand tile', () => {
     expect(sha(read(join(studio, 'build', 'icon.png')))).toBe(sha(read(join(brand, 'exports', 'tile-depth-256.png'))))
   })
 
-  it('icon.ico carries at least five PNG members; the 16 px one is the flat tile with an accent-600 ground', () => {
+  it('icon.ico carries at least five PNG members; the 16 px one is the flat tile — the two-tone frame alone on sand', () => {
     const ico = read(join(studio, 'build', 'icon.ico'))
     expect(ico.readUInt16LE(2)).toBe(1)
     const count = ico.readUInt16LE(4)
@@ -72,15 +73,20 @@ describe('build/icon.* is the brand tile', () => {
     expect(sixteen).toBeDefined()
     const img = decodePng(sixteen.png)
     expect([img.width, img.height]).toEqual([16, 16])
-    // The tile's centre is the white disc, so the ground is read at the left and top mid-edges.
-    near(img.at(1, 8), '#0E7C86')
-    near(img.at(8, 1), '#0E7C86')
-    expect(img.at(8, 8)[0]).toBe(255) // the disc: white, not a gradient
+    // The frame at 7/8 puts its bars 2 px in: the left bar is the umber half, the top bar the moss
+    // half, read at the mid-edges; the centre is the sand ground — no S at this size, no gradient.
+    near(img.at(2, 8), '#5E452A')
+    near(img.at(8, 2), '#3F6B35')
+    near(img.at(8, 8), '#F5EFE4')
     expect(sixteen.png.equals(read(join(brand, 'exports', 'tile-16.png')))).toBe(true)
-    // From 64 px the member is the Depth tile: its ground differs top-left vs bottom-right.
+    // From 64 px the member is the Depth tile: the moss half reads lighter at its top-left end
+    // (the top bar) than at its bottom-right end (the right bar), and both differ from flat moss.
     const big = members.find((m) => m.w === 256)!
     const d = decodePng(big.png)
-    expect(d.at(20, 20)[0]).toBeGreaterThan(d.at(236, 236)[0]! + 40)
+    const lit = d.at(86, 49), shaded = d.at(207, 170), mossG = 0x6b
+    expect(lit[1]).toBeGreaterThan(shaded[1]! + 20)
+    expect(lit[1]).toBeGreaterThan(mossG + 10)
+    expect(shaded[1]).toBeLessThan(mossG - 5)
   })
 
   it('icon.icns carries at least five PNG members with the flat tile at 16 px', () => {
@@ -97,7 +103,13 @@ describe('build/icon.* is the brand tile', () => {
     const sixteen = members.find((m) => m.type === 'icp4')!
     const img = decodePng(sixteen.png)
     expect(img.width).toBe(16)
-    near(img.at(1, 8), '#0E7C86')
+    near(img.at(2, 8), '#5E452A')
+    near(img.at(8, 8), '#F5EFE4')
+  })
+
+  it('public/favicon.ico is the same ICO as build/icon.ico, so the window and tab icon cannot drift from the brand', () => {
+    expect(sha(read(join(studio, 'public', 'favicon.ico')))).toBe(sha(read(join(studio, 'build', 'icon.ico'))))
+    expect(sha(read(join(studio, 'public', 'brand', 'shepherd.ico')))).toBe(sha(read(join(studio, 'build', 'icon.ico'))))
   })
 
   it('electron-builder names build/icon for mac and win', () => {
@@ -108,15 +120,61 @@ describe('build/icon.* is the brand tile', () => {
 })
 
 describe('public/brand ships the brand source unchanged', () => {
-  for (const file of ['mark-a-macron.svg', 'mark-a-macron-depth.svg', 'tile.svg', 'tile-depth.svg']) {
-    it(`${file} is byte-identical to docs/brand/togo`, () => {
+  const shipped = ['mark-a-gate-s.svg', 'mark-a-gate-s-white.svg', 'mark-a-gate-s-depth.svg', 'tile.svg', 'tile-depth.svg', 'wordmark.svg', 'wordmark-white.svg', 'lockup.svg']
+  for (const file of shipped) {
+    it(`${file} is byte-identical to docs/brand/shepherd`, () => {
       expect(read(join(studio, 'public', 'brand', file)).equals(read(join(brand, file)))).toBe(true)
     })
   }
 
-  it('the pipeline script exists beside the sources and names the Depth floor', () => {
+  it('the pipeline script exists beside the sources, names the Depth floor and ships exactly these SVGs', () => {
     const script = join(brand, 'build-assets.mjs')
     expect(existsSync(script)).toBe(true)
-    expect(readFileSync(script, 'utf8')).toContain('DEPTH_FROM_PX = 64')
+    const text = readFileSync(script, 'utf8')
+    expect(text).toContain('DEPTH_FROM_PX = 64')
+    const list = text.match(/export const SHIPPED_SVGS = \[([\s\S]*?)\]/)![1]!
+    expect([...list.matchAll(/'([a-z0-9-]+\.svg)'/g)].map((m) => m[1]).sort()).toEqual([...shipped].sort())
+  })
+})
+
+describe('the wordmark and lockup files are outlined, never live text', () => {
+  const files = ['wordmark.svg', 'wordmark-white.svg', 'lockup.svg']
+  const texts = Object.fromEntries(files.map((f) => [f, readFileSync(join(brand, f), 'utf8')]))
+
+  it.each(files)('%s has no <text>, carries the eight glyph outlines of "shepherd" in Saira 600, and says what it is', (file) => {
+    const svg = texts[file]!
+    expect(svg).not.toMatch(/<text/)
+    expect(svg).toContain('data-wordmark="shepherd" data-face="Saira Variable 600" data-tracking="-0.01em"')
+    expect([...svg.matchAll(/data-glyph="([a-z])"/g)].map((m) => m[1]).join('')).toBe('shepherd')
+    expect(svg.match(/<path data-glyph="[a-z]" d="M[^"]+"\/>/g)?.length).toBe(8)
+    expect(svg).toContain('role="img" aria-label="Shepherd"')
+    expect(svg).toMatch(/Saira Variable at wght 600, lowercase, tracking −0\.01em, outlined/)
+  })
+
+  it('wordmark.svg is ink on a 64-unit grid sized to its outlines; wordmark-white.svg is the same outlines in white', () => {
+    expect(texts['wordmark.svg']).toContain('viewBox="0 0 201 64"')
+    expect(texts['wordmark.svg']).toContain('<g fill="#1C1915" data-wordmark="shepherd"')
+    expect(texts['wordmark-white.svg']).toContain('viewBox="0 0 201 64"')
+    expect(texts['wordmark-white.svg']).toContain('<g fill="#FFFFFF" data-wordmark="shepherd"')
+    const paths = (svg: string) => svg.match(/<path data-glyph="[a-z]" d="[^"]+"\/>/g)!
+    expect(paths(texts['wordmark-white.svg']!)).toEqual(paths(texts['wordmark.svg']!))
+    // The outlines start at x 0 and sit on the brand baseline: the first glyph's leftmost x is
+    // within a hundredth of 0 and no coordinate leaves the 64-unit canvas.
+    const numbers = paths(texts['wordmark.svg']!).join(' ').match(/-?\d+(?:\.\d+)?/g)!.map(Number)
+    expect(Math.min(...numbers)).toBeGreaterThanOrEqual(0)
+    expect(Math.max(...numbers)).toBeLessThanOrEqual(201)
+  })
+
+  it('lockup.svg is the mark byte for byte beside the wordmark from x 80 on the same baseline, 320 × 64', () => {
+    const lockup = texts['lockup.svg']!
+    expect(lockup).toContain('viewBox="0 0 320 64"')
+    const mark = readFileSync(join(brand, 'mark-a-gate-s.svg'), 'utf8')
+    for (const path of mark.match(/<path fill="#[0-9A-F]{6}" d="[^"]+"\/>/g)!) expect(lockup).toContain(path)
+    expect(lockup.match(/<path fill="#3F6B35"/g)?.length).toBe(2)
+    expect(lockup.match(/<path fill="#5E452A"/g)?.length).toBe(2)
+    // The word's first outline (the s) begins 80 units to the right of where it begins in wordmark.svg.
+    const first = (svg: string) => Number(svg.match(/<path data-glyph="s" d="M(-?\d+(?:\.\d+)?)/)![1])
+    expect(first(lockup) - first(texts['wordmark.svg']!)).toBeCloseTo(80, 1)
+    expect(lockup).toMatch(/the wordmark from x 80 on the same baseline \(y 46\)/)
   })
 })

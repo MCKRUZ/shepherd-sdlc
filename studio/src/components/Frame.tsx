@@ -230,7 +230,7 @@ function FrameBody({
   usePrefetchCanvasHost(projectPath)
 
   return (
-    <div ref={rootRef} data-frame-root="" data-chat-hidden={steering ? '' : undefined} data-chat-collapsed={chatCollapsed && !steering ? '' : undefined} data-steering={steering ? '' : undefined} style={rootStyle} className="flex h-screen flex-col bg-slate-50">
+    <div ref={rootRef} data-frame-root="" data-chat-hidden={steering ? '' : undefined} data-chat-collapsed={chatCollapsed && !steering ? '' : undefined} data-steering={steering ? '' : undefined} style={rootStyle} className="flex h-screen flex-col bg-surface-0">
       <SkipLink />
       <LiveAnnouncer />
       {/* The shell band: the FIRST aside, holding the band and the strip (`nav[aria-label="Project"]`). */}
@@ -318,7 +318,7 @@ function ConsoleDock({ entries, onHeightReport }: { entries?: ConsoleEntry[]; on
 
   if (!rendered) return null
   return (
-    <div ref={wrapper} className="h-64 shrink-0 border-t border-slate-200 bg-white" style={{ height }}>
+    <div ref={wrapper} className="h-64 shrink-0 border-t border-line-1 bg-white" style={{ height }}>
       <ConsolePanel entries={entries} height={height} onHeightChange={setHeight} />
     </div>
   )

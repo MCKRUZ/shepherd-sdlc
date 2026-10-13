@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
 /* Fonts (studio-observatory.md §2.1). The variable woff2 files ship in the bundle, so `font-src
-   'self'` covers them in `vite dev` and the packaged `file://` build; the CSP line is unchanged. */
+   'self'` covers them in `vite dev` and the packaged `file://` build; the CSP line is unchanged.
+   Inter is the UI face, JetBrains Mono the code face, and Saira the display face — the wordmark's
+   only (type.css `--font-display`; brand rule "one UI face, one display face for the wordmark
+   only"). Its latin/latin-ext/vietnamese `wght` subsets ride the same bundle. */
 @import "@fontsource-variable/inter/wght.css";
 @import "@fontsource-variable/jetbrains-mono/wght.css";
+@import "@fontsource-variable/saira/wght.css";
 
 /* The theme, in four short files: light tokens + the Tailwind mapping, the type scale, the dark
    theme (semantic values, legacy palette remap, eight exceptions), then the base rules. */

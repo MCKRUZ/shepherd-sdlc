@@ -8,7 +8,7 @@ import { Input } from '../ui'
 // (the kit's Input). The focus style is the universal `:focus-visible` ring — this string no
 // longer removes the outline (C5: a focus ring is never clipped or suppressed).
 export const TEXT_INPUT =
-  'w-full rounded-lg border border-slate-200 px-2 py-1 text-xs text-slate-800 focus:border-brand-600'
+  'w-full rounded-lg border border-line-1 px-2 py-1 text-xs text-ink-1 focus:border-brand-600'
 
 /** The one-line text box the brief form uses everywhere (claims, decisions, logistics, attendees). */
 export function BriefInput(props: Omit<InputProps, 'size'>) {

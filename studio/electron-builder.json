@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.mckruz.sdlc-studio",
-  "productName": "SDLC Studio",
+  "appId": "com.mckruz.shepherd",
+  "productName": "Shepherd",
   "asar": true,
   "directories": {
     "output": "release/${version}"

@@ -118,5 +118,5 @@ export function decisionResultView(ran: string, result: OpenDecisionResult | Dec
 
 /** The bridge method a verb needs is absent (an older Studio build): said plainly, as "Not done". */
 export function bridgeMissingView(ran: string, method: string): ResultView {
-  return { heading: EXIT_HEADING[1], tone: 'warn', ran, stdout: '', stderr: `window.studio.${method} is not in this build of SDLC Studio — nothing was run` }
+  return { heading: EXIT_HEADING[1], tone: 'warn', ran, stdout: '', stderr: `window.studio.${method} is not in this build of Shepherd — nothing was run` }
 }

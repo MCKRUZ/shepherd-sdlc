@@ -51,7 +51,7 @@ export function AppearanceSection() {
   return (
     <Section id="appearance" title="Appearance" file="" fileLabel="">
       <p className="text-xs text-ink-3">
-        These are preferences of this machine, kept by SDLC Studio rather than in the project. They do
+        These are preferences of this machine, kept by Shepherd rather than in the project. They do
         not travel with the repository and change nothing about the work.
       </p>
       <div className="mt-3 grid gap-5 sm:grid-cols-2">

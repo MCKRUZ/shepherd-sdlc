@@ -4,7 +4,7 @@
 > **Location:** this file lives at `.sdlc/decision-log.md` — a single, **phase-spanning** file. A
 > decision opens in one phase (e.g. `DL-01` in Requirements) and closes in a later phase (e.g. Design)
 > in the **same file**; it is not per-phase. `scripts/track_decisions.py` reads it to list open
-> decisions and flag any past its clock, and `/sdlc-status` surfaces them.
+> decisions and flag any past its clock, and `/sprd-status` surfaces them.
 
 Owned by **Product**. The decision log captures **cross-cutting product decisions** that must be made
 before specs exist — the ones an agent must not silently guess. Each open decision gets a **named

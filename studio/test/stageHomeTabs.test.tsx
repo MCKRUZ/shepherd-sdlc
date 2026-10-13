@@ -13,8 +13,8 @@ function doc(path: string, ready: boolean): StageDocument {
 
 const ACTIVITIES = [
   activity({ id: 'rules-check', kind: 'check', label: 'Business rules check' }),
-  activity({ id: 'analysis', kind: 'run', label: 'Read the documents', command: 'sdlc-intake' }),
-  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sdlc-data' }),
+  activity({ id: 'analysis', kind: 'run', label: 'Read the documents', command: 'sprd-intake' }),
+  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sprd-data' }),
 ]
 
 function stage(stageId: string, over: Partial<StageReadiness> = {}): StageReadiness {
@@ -70,7 +70,7 @@ describe('StageHome: the Guide tab', () => {
     fireEvent.click(await screen.findByRole('tab', { name: 'Guide' }))
     expect(await screen.findByText('The stage guide text.')).toBeTruthy()
     const items = screen.getAllByTestId('guide-activity').map((i) => i.textContent)
-    expect(items).toContain('Read the documents /sdlc-intake')
+    expect(items).toContain('Read the documents /sprd-intake')
   })
 
   it('goes back to Workflow when the stage changes, as the other tabs do', async () => {
@@ -115,7 +115,6 @@ describe('StageHome: Also in this stage on the Workflow tab', () => {
 
   it('refreshes readiness after Create so the activity status comes from the plugin again', async () => {
     const studio = install((id) => stage(id ?? '1', { capabilities: ['activities'], activities: ACTIVITIES.slice(2) }))
-    // @ts-expect-error - extending the test double
     window.studio.startActivity = vi.fn().mockResolvedValue({ ok: true, created: ['x/data-contract.md'], existing: [], opened: 'x/data-contract.md' })
     render(home('1'))
     fireEvent.click(await screen.findByRole('button', { name: 'Create' }))

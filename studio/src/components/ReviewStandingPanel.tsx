@@ -77,7 +77,7 @@ function StrictResult({ mismatches }: { mismatches: number }) {
   )
 }
 
-/** The wording is condensed from commands/sdlc-review.md (its modes and its "When to Use"). */
+/** The wording is condensed from commands/sprd-review.md (its modes and its "When to Use"). */
 const MODES: Array<{ mode: ReviewMode; label: string; when: string }> = [
   { mode: 'council', label: 'Council', when: 'Seven viewpoints (Architecture, Product, Quality, Security, Design, Data, Bizreq). Use in Design to check the architecture from several angles.' },
   { mode: 'adversarial', label: 'Adversarial', when: 'A cynical QA reader who challenges every assumption. Use in the Build loop on a spec or a hardening pass.' },

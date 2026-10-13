@@ -529,23 +529,43 @@ def render_outcomes(view: dict, sprint_id: str, close_section: str | None, ledge
 
 STYLE = """
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Shepherd palette — parchment by default, bark when the system prefers dark */
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface2: #21242f;
-  --border: #2d3147;
-  --accent: #6c8ef7;
-  --accent2: #a78bfa;
-  --green: #4ade80;
-  --yellow: #facc15;
-  --red: #f87171;
-  --orange: #fb923c;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --code-bg: #0d1117;
+  --bg: #F5EFE4;
+  --surface: #FBF7EF;
+  --surface2: #ECE4D4;
+  --border: #D8CDB8;
+  --accent: #3F6B35;
+  --accent2: #5E452A;
+  --green: #2F6B3E;
+  --yellow: #7A5C00;
+  --red: #A23B2A;
+  --orange: #9C5418;
+  --text: #1C1915;
+  --muted: #6B6358;
+  --code-bg: #ECE4D4;
+  --row-alt: rgba(28,25,21,.03);
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14120F;
+    --surface: #1C1915;
+    --surface2: #262219;
+    --border: #39322A;
+    --accent: #9DC58E;
+    --accent2: #D9C7A3;
+    --green: #7FBF8A;
+    --yellow: #E0B84A;
+    --red: #E07B6A;
+    --orange: #E0945A;
+    --text: #EFEAE1;
+    --muted: #A89F8F;
+    --code-bg: #0F0D0B;
+    --row-alt: rgba(239,234,225,.03);
+  }
 }
 html { scroll-behavior: smooth; }
 body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.65; }
@@ -569,16 +589,16 @@ nav.toc a:hover { color: var(--text); border-color: var(--accent); }
 table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13.5px; background: var(--surface); }
 th { background: var(--surface2); color: var(--accent); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; padding: 10px 14px; text-align: left; border: 1px solid var(--border); }
 td { padding: 9px 14px; border: 1px solid var(--border); vertical-align: top; }
-tr:nth-child(even) td { background: rgba(255,255,255,.02); }
-code { font-family: var(--mono); font-size: 13px; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: #7dd3fc; }
+tr:nth-child(even) td { background: var(--row-alt); }
+code { font-family: var(--mono); font-size: 13px; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: var(--accent2); }
 pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; overflow-x: auto; margin: 12px 0; }
 ul, ol { margin: 8px 0 8px 24px; }
 li { margin: 4px 0; }
 .badge { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; padding: 2px 9px; border-radius: 20px; }
-.badge-ok { background: rgba(74,222,128,.15); color: var(--green); }
-.badge-bad { background: rgba(248,113,113,.15); color: var(--red); }
-.badge-warn { background: rgba(250,204,21,.15); color: var(--yellow); }
-.badge-muted { background: rgba(148,163,184,.15); color: var(--muted); }
+.badge-ok { background: rgba(95,160,110,.15); color: var(--green); }
+.badge-bad { background: rgba(200,100,85,.15); color: var(--red); }
+.badge-warn { background: rgba(200,160,60,.15); color: var(--yellow); }
+.badge-muted { background: rgba(150,140,125,.15); color: var(--muted); }
 .warn-list li { color: var(--yellow); }
 .gaps > li { margin-bottom: 8px; }
 .arrows { font-size: 14px; margin: 8px 0 12px; }
@@ -614,7 +634,7 @@ def render_page(view: dict, sprint_id: str, kind: str, *, name: str, workflow: b
     body = "\n".join(_section(sid, title, inner) for sid, title, inner in sections)
     title = f"Sprint {html.escape(sprint_id)} — {kind} page"
     footer = (f'<footer class="report-footer"><span class="guardrail">{html.escape(GUARDRAIL)}</span>'
-              f"<span>claude-code-sdlc — sprint {html.escape(kind)} page — {html.escape(generated_at)}</span></footer>")
+              f"<span>Shepherd — sprint {html.escape(kind)} page — {html.escape(generated_at)}</span></footer>")
     return (
         "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"

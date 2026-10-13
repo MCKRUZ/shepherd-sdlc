@@ -18,8 +18,8 @@ afterEach(() => {
 })
 
 const ACTIVITIES = [
-  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sdlc-data' }),
-  activity({ id: 'intake', kind: 'run', label: 'Read the documents', command: 'sdlc-intake' }),
+  activity({ id: 'data', kind: 'create', label: 'Data contract', command: 'sprd-data' }),
+  activity({ id: 'intake', kind: 'run', label: 'Read the documents', command: 'sprd-intake' }),
   activity({ id: 'brief', kind: 'draft', label: 'Brief', command: null }),
 ]
 
@@ -37,8 +37,8 @@ describe('GuideTab', () => {
     render(<GuideTab readiness={readinessWith({ definition: 'phases/x.md', activities: ACTIVITIES })} />)
     const items = await screen.findAllByTestId('guide-activity')
     expect(items.map((i) => i.getAttribute('data-activity-id'))).toEqual(['data', 'intake', 'brief'])
-    expect(items[0].textContent).toBe('Data contract /sdlc-data')
-    expect(items[1].textContent).toBe('Read the documents /sdlc-intake')
+    expect(items[0].textContent).toBe('Data contract /sprd-data')
+    expect(items[1].textContent).toBe('Read the documents /sprd-intake')
     expect(items[2].textContent).toBe('Brief')
   })
 

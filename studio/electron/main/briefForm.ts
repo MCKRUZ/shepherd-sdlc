@@ -12,13 +12,14 @@ import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { IpcMain } from 'electron'
 import { checkAgainstCandidates, parseSelections, questionIdsForBuild } from './briefValidate'
 import { finite, isRecord, runBriefScript, strings } from './briefRun'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type {
   BriefCandidatesResult, BriefContradiction, BriefDocument, BriefLimits, BriefQuestion, BriefSelections, BriefSource, BuildBriefResult,
 } from '../../shared/types'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
 const CANDIDATES_UNREADABLE = 'The workshop brief choices could not be read, so there is nothing to show.'
-const BUILD_UNREADABLE = 'The brief could not be confirmed: the plugin did not give an answer Studio could read.'
+const BUILD_UNREADABLE = 'The brief could not be confirmed: the plugin did not give an answer Shepherd could read.'
 // Where `--state <project>/.sdlc/state.yaml` makes the plugin write the brief.
 const BRIEF_PATH = '.sdlc/artifacts/00-discovery/workshop-brief.md'
 

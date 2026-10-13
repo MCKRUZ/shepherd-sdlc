@@ -26,7 +26,7 @@ describe('WelcomeScreen hero', () => {
     mount()
     const headings = screen.getAllByRole('heading', { level: 1 })
     expect(headings.length).toBe(1)
-    expect(headings[0]!.textContent).toBe('SDLC Studio')
+    expect(headings[0]!.textContent).toBe('Shepherd')
     expect(headings[0]!.className).toContain('text-display')
   })
 

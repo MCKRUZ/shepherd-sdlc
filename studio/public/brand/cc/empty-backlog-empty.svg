@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" width="120" height="72" aria-hidden="true">
-  <!-- SDLC Studio command center — empty state "backlog-empty". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
-  <rect x="36" y="10" width="48" height="52" rx="4" fill="#A7E6E7"/>
-  <circle cx="60" cy="36" r="8" fill="none" stroke="#1A99A3" stroke-width="1.5" stroke-dasharray="3 3"/>
+  <!-- Shepherd command center — empty state "backlog-empty". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
+  <rect x="36" y="10" width="48" height="52" rx="4" fill="#C7E0BC"/>
+  <circle cx="60" cy="36" r="8" fill="none" stroke="#4F8545" stroke-width="1.5" stroke-dasharray="3 3"/>
 </svg>

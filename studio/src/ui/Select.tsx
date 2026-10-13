@@ -17,12 +17,12 @@ const SIZE: Record<ControlSize, string> = {
 }
 
 // The native chevron breaks the type, so it is replaced by an inline `data:` SVG (allowed by the
-// CSP's `img-src 'self' data:`). Light stroke is ink-3 (#64748B), dark is the dark ink-3
-// (#8392AA). `color-scheme` already follows the theme for the popup list.
+// CSP's `img-src 'self' data:`). Light stroke is ink-3 (#6B625A), dark is the dark ink-3
+// (#A69D94). `color-scheme` already follows the theme for the popup list.
 const CHEVRON =
   'appearance-none pr-7 bg-no-repeat bg-[right_8px_center] bg-[length:12px_12px] ' +
-  'bg-[url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M3 4.5l3 3 3-3\' fill=\'none\' stroke=\'%2364748B\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")] ' +
-  'dark:bg-[url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M3 4.5l3 3 3-3\' fill=\'none\' stroke=\'%238392AA\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")]'
+  'bg-[url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M3 4.5l3 3 3-3\' fill=\'none\' stroke=\'%236B625A\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")] ' +
+  'dark:bg-[url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M3 4.5l3 3 3-3\' fill=\'none\' stroke=\'%23A69D94\' stroke-width=\'1.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'/%3E%3C/svg%3E")]'
 
 function SelectInner<V extends string>(
   { size = 'md', value, onChange, options, roster, invalid, disabled, disabledReason, className, id, required, ...rest }: SelectProps<V>,

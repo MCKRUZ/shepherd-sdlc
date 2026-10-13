@@ -140,7 +140,7 @@ See the Visual Report Protocol in `SKILL.md` for rendering standards and fallbac
 
 ### Step 10: Generate Phase Report
 
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/03-foundation-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/03-foundation-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
 
 ## Standalone or Workflow
 
@@ -222,9 +222,9 @@ Must contain:
 - [ ] Stakeholder reviewed and approved (manual gate)
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/03-foundation-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/03-foundation-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Next Phase
 Foundation hands off into the **Build loop** (`phases/build-loop.md`) — the continuous middle where every change from here to feature-complete rides the same three beats on the rails this phase proved. `build-handoff.md` is the entry package.
@@ -240,7 +240,7 @@ Foundation hands off into the **Build loop** (`phases/build-loop.md`) — the co
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (no rails yet)
 - "What's the thinnest end-to-end slice that proves the architecture? Which single slice carries the most risk?"

@@ -14,7 +14,7 @@ checker: ""              # non-author approval — filled at hand-off
 team: ""                 # the team this spec belongs to (see .sdlc/team.yaml, if present)
 harness_context: ""      # the ONE existing pattern this change reuses (DoR requires this named)
 created: "YYYY-MM-DD"
-sprint: ""               # optional — sprint id (e.g. S07); written by /sdlc-sprint slate, never by hand
+sprint: ""               # optional — sprint id (e.g. S07); written by /sprd-sprint slate, never by hand
 next_owner: ""           # optional — who holds the next action; set by `handoff`, cleared by `ack`
 eng_review: ""           # optional — pending | accepted | returned; Engineering verdict, recorded by name
 data_review: ""          # optional — pending | accepted | returned | n-a (n-a needs a reason); Data verdict

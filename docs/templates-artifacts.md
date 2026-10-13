@@ -1,6 +1,6 @@
 # Templates and Artifacts Reference
 
-Comprehensive reference for the claude-code-sdlc template system -- the structured artifact
+Comprehensive reference for the Shepherd template system -- the structured artifact
 definitions that drive every phase of the SDLC lifecycle.
 
 ---
@@ -33,8 +33,8 @@ gate system checks that it does.
   `TODO`, `TBD`) that must be replaced with real project-specific content during phase work, and
   `<!-- REQUIRED: ... -->` comments that must be **deleted** once the section they mark is written.
 - **Stored in the plugin directory.** Templates live under `templates/` inside the
-  claude-code-sdlc plugin repository, not in target projects.
-- **Copied at initialization.** When `/sdlc-setup` runs, templates are copied to the target
+  Shepherd plugin repository, not in target projects.
+- **Copied at initialization.** When `/sprd-setup` runs, templates are copied to the target
   project's `.sdlc/artifacts/` directory, organized by phase.
 - **Gate validation depends on templates.** Gate 1 (Existence) checks that every required
   artifact file exists. Gate 2 (Completeness) fails the artifact if it still contains any of
@@ -368,7 +368,7 @@ Groups related functionality into epics, prioritized by P0/P1/P2.
 
 | Section | Purpose | What Must Be Filled In |
 |---------|---------|----------------------|
-| **Epic Map** | Visual overview | Table mapping epics to priorities, story counts, and target release (a sprint window is set later, at `/sdlc-sprint slate`, never here) |
+| **Epic Map** | Visual overview | Table mapping epics to priorities, story counts, and target release (a sprint window is set later, at `/sprd-sprint slate`, never here) |
 | **P0 Epics** (EP-NNN) | Must-ship functionality | Goal, user value, constituent stories (US-NNN refs), acceptance criteria, dependencies |
 | **P1 Epics** | Should-ship functionality | Same structure as P0 |
 | **P2 Epics** | Nice-to-have functionality | Same structure as P0 |
@@ -532,9 +532,9 @@ that flags stalled review.
 | **Cadence Calendar** | When work happens | The recurring rhythm of build/review beats |
 | **WIP Cap** | Concurrency limit | Maximum changes allowed in flight at once |
 | **Review-Wait Tripwire** | Stall detector | The threshold at which a change waiting on review raises a flag |
-| **Sprint length** | Commitment window | Business days per sprint (default 10); `/sdlc-sprint new` derives `end` from it |
+| **Sprint length** | Commitment window | Business days per sprint (default 10); `/sprd-sprint new` derives `end` from it |
 | **Review-turnaround target** | Verdict clock | Per lane (Engineering, Data); the sprint agenda flags verdicts waiting beyond it; `[not set]` is an allowed final value and reads "no target set" |
-| **Cross-functional review** (Mon/Wed/Fri) | Sprint refinement slot | Slate readiness, pending verdicts, overdue decisions -- `/sdlc-refine` renders the agenda |
+| **Cross-functional review** (Mon/Wed/Fri) | Sprint refinement slot | Slate readiness, pending verdicts, overdue decisions -- `/sprd-refine` renders the agenda |
 
 ### build-handoff.md -- Handoff into the Build Loop
 
@@ -564,7 +564,7 @@ The standard section plan template with structured fields for gate validation an
 
 | Field | Purpose | What Must Be Filled In |
 |-------|---------|----------------------|
-| **Header metadata** | Section identity | Owner, sprint window (`[SNN]`, blank until slated at `/sdlc-sprint slate`), estimated effort (S/M/L/XL), status |
+| **Header metadata** | Section identity | Owner, sprint window (`[SNN]`, blank until slated at `/sprd-sprint slate`), estimated effort (S/M/L/XL), status |
 | **Goal** | What this section delivers | One sentence describing the capability that exists when complete |
 | **Epics / Stories Covered** | Traceability | List of EP-NNN and US-NNN identifiers this section implements |
 | **Entry Criteria** | Prerequisites | Conditions that must be true before work begins |
@@ -675,7 +675,7 @@ It runs standalone (`--repo <path>`) or in-workflow (`--state .sdlc/state.yaml`)
 reports only that sprint's slate, and its summary carries a `by_sprint` partition (each `SNN`,
 `unassigned`, `pre-sprint` for specs merged before the sprint layer existed).
 
-**Optional sprint keys.** A spec slated by `/sdlc-sprint` carries five more frontmatter keys --
+**Optional sprint keys.** A spec slated by `/sprd-sprint` carries five more frontmatter keys --
 `sprint`, `next_owner`, `eng_review`, `data_review`, `depends_on` -- written only by
 `scripts/sprint.py` (values are enumerations, names and spec ids; `""` by default). `status`
 is not one of them and stays hand-moved. `templates/phases/build/spec.md` ships the keys blank;
@@ -684,9 +684,9 @@ a spec without them behaves exactly as before.
 ### sprint.md -- Sprint Record
 
 Shape of `.sdlc/sprints/SNN.md`, the optional two-week commitment window over the spec backlog
-(`/sdlc-sprint`). `sprint.py new` fills the frontmatter and the H1; `slate`, `unslate`, `ready` and `close`
+(`/sprd-sprint`). `sprint.py new` fills the frontmatter and the H1; `slate`, `unslate`, `ready` and `close`
 render the `## Slate` table and `close` writes `## Close` -- never hand-edit them. `status` is
-read-only: it prints the live view (`/sdlc-sprint status`) and touches no file.
+read-only: it prints the live view (`/sprd-sprint status`) and touches no file.
 
 | Field | Purpose | Values |
 |-------|---------|--------|
@@ -711,7 +711,7 @@ Legacy JSON file for Build-loop continuity across Claude Code sessions. An engag
 keep it for its own notes, but **nothing in the plugin reads it** since 1.6.0 -- the session-start
 hook's summary of it was retired (it was a section-plan progress model competing with the spec
 backlog), and the retired `current_sprint` field is gone: the active sprint lives in
-`.sdlc/sprints/SNN.md` and the hook prints it as `[SDLC-SPRINT]`.
+`.sdlc/sprints/SNN.md` and the hook prints it as `[SHEPHERD-SPRINT]`.
 
 **Schema version:** `session-handoff-v1`
 
@@ -856,7 +856,7 @@ jump, since the Build loop replaces the old phase 4/5/6 (there is no phase4/5/6-
 Open questions use a numbered format (Q-01, Q-02, ... or AQ-01, AQ-02 for architectural
 questions) and are tracked across phase boundaries.
 
-**Critical behavior:** The `/sdlc-next` command checks handoff documents for unresolved Q-NN
+**Critical behavior:** The `/sprd-next` command checks handoff documents for unresolved Q-NN
 items. When entering a new phase, the SDLC system:
 
 1. Reads the handoff document that was just produced

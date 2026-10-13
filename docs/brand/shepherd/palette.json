@@ -1,0 +1,94 @@
+{
+  "name": "Shepherd",
+  "hue_family": "moss–umber (green/brown) with lake",
+  "accent": {
+    "50": "#F3F7F0",
+    "100": "#E3EDDD",
+    "200": "#C7E0BC",
+    "300": "#9DC58E",
+    "400": "#6FA55F",
+    "500": "#4F8545",
+    "600": "#3F6B35",
+    "700": "#2F5229",
+    "800": "#243F20",
+    "900": "#192D17"
+  },
+  "accent_dark": {
+    "50": "#192D17",
+    "100": "#243F20",
+    "200": "#2F5229",
+    "300": "#3F6B35",
+    "400": "#4F8545",
+    "500": "#6FA55F",
+    "600": "#3F6B35",
+    "700": "#2F5229",
+    "800": "#9DC58E",
+    "900": "#C7E0BC"
+  },
+  "primary": "#3F6B35",
+  "primary_on_white_contrast": 6.24,
+  "spring": "#9DC58E",
+  "spring_on_dark_0_contrast": 9.63,
+  "focus_light": "#3F6B35",
+  "focus_dark": "#9DC58E",
+  "umber": {
+    "600": "#7C5A36",
+    "700": "#5E452A",
+    "800": "#553A21"
+  },
+  "umber_mark": "#5E452A",
+  "umber_700_on_white_contrast": 8.9,
+  "wheat": "#D9C7A3",
+  "lake": {
+    "300": "#8FB8D3",
+    "500": "#3B739A",
+    "600": "#2F5D7C",
+    "700": "#244B66"
+  },
+  "lake_600_on_white_contrast": 7.05,
+  "ink": {
+    "1": "#1C1915",
+    "2": "#3D3630",
+    "3": "#6B625A",
+    "4": "#A69D94"
+  },
+  "ink_dark": {
+    "1": "#F5EFE4",
+    "2": "#D9D1C4",
+    "3": "#A69D94",
+    "4": "#6B625A"
+  },
+  "surface": {
+    "0": "#F5EFE4",
+    "1": "#FFFFFF",
+    "2": "#EFEAE1",
+    "3": "#E9E3D9"
+  },
+  "surface_dark": {
+    "0": "#14120F",
+    "1": "#1C1915",
+    "2": "#25211C",
+    "3": "#2E2923"
+  },
+  "mark_depth": {
+    "light": ["#9DC58E", "#192D17"],
+    "dark": ["#9DC58E", "#3F6B35"],
+    "vector": { "x1": 4, "y1": 4, "x2": 60, "y2": 60 },
+    "overlay_opacity": 0.3,
+    "min_px": 48
+  },
+  "semantic_unchanged": {
+    "stage_signed": "#16A34A",
+    "status_warn": "#D97706",
+    "status_error": "#DC2626",
+    "status_running": "#0EA5E9"
+  },
+  "typography": {
+    "ui": "Inter Variable (bundled)",
+    "code": "JetBrains Mono Variable (bundled)",
+    "display": "Saira Variable 600, sentence case, tracking −0.01em — brand materials only, never the app UI (bundled)",
+    "wordmark": "Saira Variable 600, lowercase, tracking −0.01em (bundled)",
+    "wordmark_files": ["wordmark.svg", "wordmark-white.svg", "lockup.svg"],
+    "wordmark_outlined": true
+  }
+}

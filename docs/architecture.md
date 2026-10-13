@@ -1,6 +1,6 @@
 # System Architecture
 
-Comprehensive architectural documentation for `claude-code-sdlc` -- a Claude Code plugin that orchestrates a full 9-phase Software Development Lifecycle with company-configurable profiles, compliance gates, and quality enforcement.
+Comprehensive architectural documentation for Shepherd -- a Claude Code plugin that orchestrates a full 9-phase Software Development Lifecycle with company-configurable profiles, compliance gates, and quality enforcement.
 
 ---
 
@@ -28,12 +28,12 @@ registry inside it. The marketplace entry (`.claude-plugin/marketplace.json`) de
 
 ```json
 {
-  "name": "claude-code-sdlc",
+  "name": "shepherd",
   "version": "1.3.0",
   "description": "SDLC orchestration for Claude Code + one-command install of the full delivery harness (...)",
   "author": { "name": "Matt Kruczek", "url": "https://github.com/MCKRUZ" },
-  "homepage": "https://github.com/MCKRUZ/claude-code-sdlc",
-  "repository": "https://github.com/MCKRUZ/claude-code-sdlc",
+  "homepage": "https://github.com/MCKRUZ/shepherd-sdlc",
+  "repository": "https://github.com/MCKRUZ/shepherd-sdlc",
   "license": "MIT",
   "keywords": ["sdlc", "lifecycle", "compliance", "quality", "orchestration", "..."]
 }
@@ -52,7 +52,7 @@ Every component is discovered from its conventional location in the plugin direc
 | Slash commands | `commands/*.md` | One file per command, picked up by filename. |
 | Agents | `agents/*.md` | One file per agent definition. |
 | Hooks | `hooks/` | Session/phase context-injection scripts, wired via hook configuration. |
-| **Profiles** | `profiles/*/profile.yaml` | **Runtime directory listing** — `/sdlc-setup` lists `profiles/` (excluding `_schema.yaml`) and presents every profile found, including ones it has never seen. Adding a profile is creating the directory; no registration step exists. |
+| **Profiles** | `profiles/*/profile.yaml` | **Runtime directory listing** — `/sprd-setup` lists `profiles/` (excluding `_schema.yaml`) and presents every profile found, including ones it has never seen. Adding a profile is creating the directory; no registration step exists. |
 | Scripts | `scripts/*.py` | Invoked explicitly by commands/hooks via `uv run`. |
 
 Two consequences of the profiles row: a new profile ships automatically (the payload is the
@@ -71,13 +71,13 @@ When Claude Code activates the plugin, it loads components in this order:
 
    | Command File | Slash Command | Purpose |
    |-------------|---------------|---------|
-   | `sdlc-setup.md` | `/sdlc-setup` | Interactive setup wizard -- select profile, initialize `.sdlc/` |
-   | `sdlc.md` | `/sdlc` | Show current phase guidance, next action, required artifacts |
-   | `sdlc-status.md` | `/sdlc-status` | Progress dashboard with phase table and completion % |
-   | `sdlc-gate.md` | `/sdlc-gate` | Run exit criteria checks for current phase (does not advance) |
-   | `sdlc-next.md` | `/sdlc-next` | Advance to next phase if all MUST gates pass |
-   | `sdlc-phase-report.md` | `/sdlc-phase-report` | Generate visual HTML report for current phase |
-   | `sdlc-audit.md` | `/sdlc-audit` | Analyze gate effectiveness across completed phases |
+   | `sprd-setup.md` | `/sprd-setup` | Interactive setup wizard -- select profile, initialize `.sdlc/` |
+   | `sprd.md` | `/sprd` | Show current phase guidance, next action, required artifacts |
+   | `sprd-status.md` | `/sprd-status` | Progress dashboard with phase table and completion % |
+   | `sprd-gate.md` | `/sprd-gate` | Run exit criteria checks for current phase (does not advance) |
+   | `sprd-next.md` | `/sprd-next` | Advance to next phase if all MUST gates pass |
+   | `sprd-phase-report.md` | `/sprd-phase-report` | Generate visual HTML report for current phase |
+   | `sprd-audit.md` | `/sprd-audit` | Analyze gate effectiveness across completed phases |
 
 3. **`agents/`** -- Four custom agent definitions are loaded. These are specialized Claude sub-agents spawned during specific phases:
 
@@ -92,7 +92,7 @@ When Claude Code activates the plugin, it loads components in this order:
 
    | Hook File | Trigger | Behavior |
    |----------|---------|----------|
-   | `sdlc-session-start.ps1` | Session start | Reads `.sdlc/state.yaml`, outputs current phase context banner, displays session handoff summary for long-running phases |
+   | `shepherd-session-start.ps1` | Session start | Reads `.sdlc/state.yaml`, outputs current phase context banner, displays session handoff summary for long-running phases |
    | `sdlc-phase-inject.ps1` | PreToolUse (file edits) | Injects phase-aware reminders when Claude edits files (e.g., "Build Loop: write the spec first, build from an approved plan, prove against the spec before merge.") |
 
 ---
@@ -177,7 +177,7 @@ When Claude Code activates the plugin, it loads components in this order:
 
 ### 2.2 Interaction Patterns
 
-**SKILL.md references commands and agents.** The skill definition contains the command table and agent orchestration protocol. When a user says "start sdlc" or types `/sdlc-setup`, Claude reads the SKILL.md context to determine which command handles the request and which agents to spawn.
+**SKILL.md references commands and agents.** The skill definition contains the command table and agent orchestration protocol. When a user says "start sdlc" or types `/sprd-setup`, Claude reads the SKILL.md context to determine which command handles the request and which agents to spawn.
 
 **Commands call Python scripts via `uv run`.** Slash commands instruct Claude to execute Python automation. The invocation pattern is:
 
@@ -191,7 +191,7 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
 
 **Hooks read `state.yaml` to inject context.** The session-start hook reads `state.yaml` to determine the current phase and display a context banner. The phase-inject hook reads it on every file edit to provide phase-appropriate reminders.
 
-**Profiles are frozen at init time.** During `/sdlc-setup`, the selected profile is copied from the plugin's `profiles/` directory into `.sdlc/profile.yaml` in the target project. This frozen copy is what scripts and hooks read at runtime -- the plugin's source profiles are never referenced after initialization.
+**Profiles are frozen at init time.** During `/sprd-setup`, the selected profile is copied from the plugin's `profiles/` directory into `.sdlc/profile.yaml` in the target project. This frozen copy is what scripts and hooks read at runtime -- the plugin's source profiles are never referenced after initialization.
 
 **Phase definitions are referenced by `phase-registry.yaml`.** The registry maps phase ids to definition files (`phases/00-discovery.md`, `01-requirements.md`, `02-design.md`, `03-foundation.md`, `build-loop.md`, `07-documentation.md`, `08-deployment.md`, `09-monitoring.md`, `close.md`), along with entry/exit gate conditions, skill mappings, and required artifacts. Phase ids are strings (`build` and `close` are non-numeric), and the registry `order` field drives sequence -- not the id.
 
@@ -213,7 +213,7 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
    |                       |  load SKILL.md           |                       |
    |                       |  (triggers matched)      |                       |
    |                       |                          |                       |
-   |  /sdlc-setup          |                          |                       |
+   |  /sprd-setup          |                          |                       |
    |---------------------->|                          |                       |
    |                       |  validate_profile.py --->|                       |
    |                       |  init_project.py ------->|-----> state.yaml      |
@@ -225,14 +225,14 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
    |---------------------->|                          |                       |
    |                       |  write artifacts ------->|-----> artifacts/NN/   |
    |                       |                          |                       |
-   |  /sdlc-gate           |                          |                       |
+   |  /sprd-gate           |                          |                       |
    |---------------------->|                          |                       |
    |                       |  check_gates.py -------->|<----- state.yaml     |
    |                       |                          |<----- artifacts/NN/  |
    |                       |<-- gate results ---------|                       |
    |<-- pass/fail report --|                          |                       |
    |                       |                          |                       |
-   |  /sdlc-next           |                          |                       |
+   |  /sprd-next           |                          |                       |
    |---------------------->|                          |                       |
    |                       |  advance_phase.py ------>|<----- state.yaml     |
    |                       |                          |-----> state.yaml     |
@@ -254,7 +254,7 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
 
 **Step 1: Plugin Activation.** When a user opens a project that has this plugin installed, Claude Code reads `plugin.json` and loads `SKILL.md` into context. This gives Claude full awareness of the SDLC methodology, available commands, agent orchestration rules, and human-in-the-loop protocol. No target project state exists yet.
 
-**Step 2: Project Setup (`/sdlc-setup`).** The user invokes the setup wizard. Claude runs two scripts in sequence:
+**Step 2: Project Setup (`/sprd-setup`).** The user invokes the setup wizard. Claude runs two scripts in sequence:
 
 1. `validate_profile.py` -- Validates the selected profile YAML against `profiles/_schema.yaml`. Checks required fields (`company`, `stack`, `quality`), type constraints, value ranges (e.g., `coverage_minimum` between 0-100), and optional compliance/conventions blocks. Returns a list of errors or confirms validity.
 
@@ -267,7 +267,7 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
 
 **Step 3: Phase Work.** During each phase, Claude guides the user through the phase definition's workflow. Artifacts are written to `.sdlc/artifacts/<slug>/`, where the directory name is the phase's `slug` field -- not a zero-padded integer (`build` and `close` are non-numeric). Each phase has required and optional artifacts defined in `phase-registry.yaml`. Within the Build Loop, session continuity is maintained per-spec through `session-handoff.json` -- a structured JSON file tracking spec/section progress, blockers, and next actions across sessions.
 
-**Step 4: Gate Checking (`/sdlc-gate`).** The `check_gates.py` script reads `state.yaml` to determine the current phase, then validates artifacts against the 7-gate system:
+**Step 4: Gate Checking (`/sprd-gate`).** The `check_gates.py` script reads `state.yaml` to determine the current phase, then validates artifacts against the 7-gate system:
 
 | Gate | What It Checks | Severity |
 |------|---------------|----------|
@@ -281,7 +281,7 @@ The `--project` flag ensures `uv` resolves dependencies from the scripts' `pypro
 
 Gate severity varies by phase. Phase 2 (Design) and the Build Loop apply the gates most strictly, while Phase 0 (Discovery) only requires G1 and G2 as MUST. G7 is silent for Phases 0-2, which declare no prose exit conditions.
 
-**Step 5: Phase Advancement (`/sdlc-next`).** The `advance_phase.py` script:
+**Step 5: Phase Advancement (`/sprd-next`).** The `advance_phase.py` script:
 1. Runs `check_gates.py` internally to verify all MUST gates pass
 2. If gates fail, returns a blockers report without modifying state
 3. If gates pass, atomically updates `state.yaml`:
@@ -294,10 +294,10 @@ Gate severity varies by phase. Phase 2 (Design) and the Build Loop apply the gat
 
 All phases use `approval: manual` in the registry, so advancement is always manual -- every phase transition requires human confirmation. There is no auto-advance.
 
-**Step 6: Session Start Hook.** On every new Claude Code session, `sdlc-session-start.ps1`:
+**Step 6: Session Start Hook.** On every new Claude Code session, `shepherd-session-start.ps1`:
 1. Checks if `.sdlc/state.yaml` exists in the current directory
 2. Parses the current phase number and name
-3. Outputs a context banner: `[SDLC] Phase N: PhaseName -- description`
+3. Outputs a context banner: `[SHEPHERD] Phase N: PhaseName -- description`
 4. During the Build Loop, reads `session-handoff.json` and displays a continuity summary with active spec/section, blockers, and next steps
 
 **Step 7: Phase-Inject Hook.** On every file edit operation, `sdlc-phase-inject.ps1`:
@@ -314,20 +314,20 @@ All phases use `approval: manual` in the registry, so advancement is always manu
 ### 4.1 Plugin Directory (Source)
 
 ```
-claude-code-sdlc/                          Plugin root (installed or symlinked)
+shepherd/                          Plugin root (installed or symlinked)
 |
 |-- plugin.json                            Plugin manifest -- discovery entry point
 |-- SKILL.md                               Skill definition -- loaded on activation
 |-- CLAUDE.md                              Development instructions for contributors
 |
 |-- commands/                              7 slash command definitions
-|   |-- sdlc.md                            /sdlc -- current phase guidance
-|   |-- sdlc-setup.md                      /sdlc-setup -- project initialization wizard
-|   |-- sdlc-status.md                     /sdlc-status -- progress dashboard
-|   |-- sdlc-gate.md                       /sdlc-gate -- run exit criteria checks
-|   |-- sdlc-next.md                       /sdlc-next -- advance to next phase
-|   |-- sdlc-phase-report.md               /sdlc-phase-report -- generate HTML report
-|   +-- sdlc-audit.md                      /sdlc-audit -- gate effectiveness analysis
+|   |-- sprd.md                            /sprd -- current phase guidance
+|   |-- sprd-setup.md                      /sprd-setup -- project initialization wizard
+|   |-- sprd-status.md                     /sprd-status -- progress dashboard
+|   |-- sprd-gate.md                       /sprd-gate -- run exit criteria checks
+|   |-- sprd-next.md                       /sprd-next -- advance to next phase
+|   |-- sprd-phase-report.md               /sprd-phase-report -- generate HTML report
+|   +-- sprd-audit.md                      /sprd-audit -- gate effectiveness analysis
 |
 |-- agents/                                4 custom agent definitions
 |   |-- sdlc-orchestrator.md               Master coordinator agent
@@ -415,7 +415,7 @@ claude-code-sdlc/                          Plugin root (installed or symlinked)
 |                                          documents and azure_devops/captured/ real az output with provenance
 |
 +-- hooks/                                 PowerShell context injection
-    |-- sdlc-session-start.ps1             Session start -- phase context banner
+    |-- shepherd-session-start.ps1             Session start -- phase context banner
     +-- sdlc-phase-inject.ps1              PreToolUse -- phase-aware edit reminders
 ```
 
@@ -423,7 +423,7 @@ claude-code-sdlc/                          Plugin root (installed or symlinked)
 
 ```
 target-project/                            User's project (where code lives)
-+-- .sdlc/                                 Created by /sdlc-setup
++-- .sdlc/                                 Created by /sprd-setup
     |-- state.yaml                         Phase tracking, history, gate results
     |-- profile.yaml                       Immutable copy of selected profile
     |-- constitution.md                    Project constitution (scope, constraints)
@@ -608,9 +608,9 @@ Only the current phase's definition is in context at any time. Previous phase de
 | Trigger | What Gets Loaded |
 |---------|-----------------|
 | Plugin activation | `SKILL.md` only |
-| `/sdlc-setup` | Profile selection UI (no extra docs) |
-| `/sdlc` or `/sdlc-status` | Current phase definition |
-| `/sdlc-gate` | Current phase definition + `validation-rules.md` |
+| `/sprd-setup` | Profile selection UI (no extra docs) |
+| `/sprd` or `/sprd-status` | Current phase definition |
+| `/sprd-gate` | Current phase definition + `validation-rules.md` |
 | Agent spawn | `agent-roster.md` (if routing needed) |
 | Compliance check | `compliance-frameworks.md` |
 | Phase 2-3 with /deep-plan | `deep-plan-integration.md` |
@@ -672,7 +672,7 @@ Hooks gracefully exit when the current directory has no `.sdlc/` folder, allowin
 
 ### 6.5 Initialization Creates the Bridge
 
-The `/sdlc-setup` command is the only operation that spans both directories:
+The `/sprd-setup` command is the only operation that spans both directories:
 
 1. Reads profile from **plugin directory**: `profiles/<name>/profile.yaml`
 2. Validates against schema in **plugin directory**: `profiles/_schema.yaml`
@@ -711,9 +711,10 @@ way — a second **code host**, not a tracker connector.
 **The repository chooses the host.** `scripts/code_host.py` reads the `origin` remote
 (`github.com` → `github`; `dev.azure.com`, `*.visualstudio.com`, `ssh.dev.azure.com` →
 `azure-devops`; anything else → `none`, which falls through to `gh` exactly as every repository
-behaved before). `--host` on any host-touching script, the `SDLC_CODE_HOST` variable, or a
-per-clone `.sdlc/code-host.yaml` (written by `set_setting.py code-host`) sit ahead of the remote;
-the harness manifest breaks the tie only when there is no usable remote. There is no global
+behaved before). `--host` on any host-touching script, the `SHEPHERD_CODE_HOST` variable (or
+`SDLC_CODE_HOST`, the pre-2.0 name — still read), or a per-clone `.sdlc/code-host.yaml` (written
+by `set_setting.py code-host`) sit ahead of the remote; the harness manifest breaks the tie only
+when there is no usable remote. There is no global
 setting and no profile field: the profile describes the CI pack, and the host is a property of
 the clone.
 

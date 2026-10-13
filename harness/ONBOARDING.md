@@ -3,7 +3,7 @@
 The harness is installed. This is the shortest path from a fresh clone to a change that can
 actually merge, plus the handful of things that fail silently if you skip them.
 
-**The fast version:** run `/sdlc-doctor`. It checks everything on this page and prints the fix for
+**The fast version:** run `/sprd-doctor`. It checks everything on this page and prints the fix for
 anything that is wrong. The rest of this document is what it checks and why each one matters.
 
 ---
@@ -48,7 +48,7 @@ chmod +x .claude/hooks/*.sh scripts/rails/*.sh
 
 Git does not reliably carry the executable bit across platforms. Without it the hooks and rails
 scripts fail with `Permission denied`, and because the gates fail closed, that surfaces as a
-blocked merge with a confusing reason rather than an obvious error. `/sdlc-doctor` checks this.
+blocked merge with a confusing reason rather than an obvious error. `/sprd-doctor` checks this.
 
 Windows users can skip this — the bit does not exist there, which is also why it is easy to ship
 broken from a Windows machine.
@@ -56,7 +56,7 @@ broken from a Windows machine.
 ## 5. Check the repo secrets
 
 The reviewer workflows need an API credential. Which one depends on what this repo adapted to —
-`/sdlc-doctor` reads your workflows and names the secret they actually reference. Typically:
+`/sprd-doctor` reads your workflows and names the secret they actually reference. Typically:
 
 ```bash
 gh secret list                                   # what is already set
@@ -75,7 +75,7 @@ files that need them.
 A few placeholders that end up on a command line use a plain `NAME_NOT_SET` sentinel instead —
 Windows `cmd.exe` reads `<<` as a redirect and would fail before the tool even starts.
 
-`/sdlc-doctor` lists every placeholder still unfilled, in either form, and which phase fills it.
+`/sprd-doctor` lists every placeholder still unfilled, in either form, and which phase fills it.
 They are not bugs; they are the unfinished half of setup.
 
 ## 7. Prove it works before you trust it
@@ -83,7 +83,7 @@ They are not bugs; they are the unfinished half of setup.
 Run the doctor:
 
 ```bash
-/sdlc-doctor
+/sprd-doctor
 ```
 
 Then read **`CLAUDE.md`** (the rules every agent session loads) and **`.github/RAILS.md`** (what

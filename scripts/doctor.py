@@ -162,7 +162,7 @@ def check_harness_present(repo: Path) -> list[Result]:
     if not manifest.exists():
         return [Result(FAIL, "harness not installed",
                        "no .claude/harness-manifest.json in this repo",
-                       "run /sdlc-setup, or install_harness.py, from the repo root")]
+                       "run /sprd-setup, or install_harness.py, from the repo root")]
     try:
         data = json.loads(manifest.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
@@ -553,7 +553,7 @@ def _count(sections: list[tuple[str, list[Result] | None]], status: str) -> int:
 
 
 def _print_text(repo: Path, sections: list[tuple[str, list[Result] | None]]) -> int:
-    print(f"/sdlc-doctor — {repo.resolve()}\n")
+    print(f"/sprd-doctor — {repo.resolve()}\n")
     for title, results in sections:
         if results is None:
             print(f"{title}\n  [SKIP] --offline\n")
@@ -585,7 +585,7 @@ def _print_json(repo: Path, sections: list[tuple[str, list[Result] | None]]) -> 
         "harness_installed": installed,
         "message": None if installed else
         "No harness is installed in this repo (no .claude/harness-manifest.json); "
-        "run /sdlc-setup from the repo root.",
+        "run /sprd-setup from the repo root.",
         "checks": [
             {"name": r.title, "status": r.status, "detail": r.detail or None,
              "fix": r.fix if r.fix and r.status != PASS else None}

@@ -75,7 +75,24 @@ describe('detectHostFromInputs — the same precedence as scripts/code_host.py',
   it('an unrecognised env value is ignored and named in the detail, not obeyed', () => {
     const d = detectHostFromInputs({ flagOrEnv: 'bitbucket', remoteUrl: gh })
     expect(d).toMatchObject({ host: 'github', source: 'remote' })
-    expect(d.detail).toContain('SDLC_CODE_HOST="bitbucket" ignored')
+    expect(d.detail).toContain('SHEPHERD_CODE_HOST="bitbucket" ignored')
+  })
+
+  it('SHEPHERD_CODE_HOST wins over SDLC_CODE_HOST, and the detail names the one that decided', () => {
+    const d = detectHostFromInputs({ flagOrEnv: 'github', legacyEnv: 'azure-devops', remoteUrl: ado })
+    expect(d).toMatchObject({ host: 'github', source: 'env', detail: 'SHEPHERD_CODE_HOST=github' })
+  })
+
+  it('SDLC_CODE_HOST alone still decides — the pre-2.0 name is read, after the new one', () => {
+    const d = detectHostFromInputs({ legacyEnv: 'none', remoteUrl: ado })
+    expect(d).toMatchObject({ host: 'none', source: 'env', detail: 'SDLC_CODE_HOST=none' })
+    expect(d.remote?.host).toBe('azure-devops')
+    // An empty new name counts as unset, as it always did, so the old one is still read.
+    expect(detectHostFromInputs({ flagOrEnv: '', legacyEnv: 'none', remoteUrl: ado })).toMatchObject({ host: 'none', source: 'env', detail: 'SDLC_CODE_HOST=none' })
+    // And an unrecognised old value is named under the old name — the variable the person set.
+    const bad = detectHostFromInputs({ legacyEnv: 'bitbucket', remoteUrl: gh })
+    expect(bad).toMatchObject({ host: 'github', source: 'remote' })
+    expect(bad.detail).toContain('SDLC_CODE_HOST="bitbucket" ignored')
   })
 
   it('the file\'s organisation/project/repository stand in for a remote nobody could parse', () => {

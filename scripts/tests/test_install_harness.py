@@ -805,12 +805,12 @@ class TestIdempotency:
 
 # ── splice scope (the stack section only — never the content around it) ─────────
 
-SDLC_SECTION = "## SDLC lifecycle\n\nManaged by /sdlc-setup. Phases live in .sdlc/state.yaml.\n"
+SDLC_SECTION = "## SDLC lifecycle\n\nManaged by /sprd-setup. Phases live in .sdlc/state.yaml.\n"
 
 
 class TestSpliceScope:
     """The splice must replace ONLY the stack-standards section (heading to the next '## '
-    heading, or EOF). Content appended below it — e.g. the SDLC section /sdlc-setup Step 6
+    heading, or EOF). Content appended below it — e.g. the SDLC section /sprd-setup Step 6
     adds — must survive every re-run."""
 
     def _append_sdlc(self, target):

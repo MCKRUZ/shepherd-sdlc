@@ -118,15 +118,15 @@ def phase_exit_criteria(phase_id) -> list[str]:
 # Presentational scheme keyed by canonical string phase id. Purely cosmetic
 # (icon + accent colour); identity/ordering never read from here.
 PHASE_PRESENTATION = {
-    "0": {"icon": "🔍", "color": "#6c8ef7"},
-    "1": {"icon": "📋", "color": "#818cf8"},
-    "2": {"icon": "📐", "color": "#a78bfa"},
-    "3": {"icon": "🏗", "color": "#c084fc"},
-    "build": {"icon": "🔁", "color": "#22d3ee"},
-    "7": {"icon": "📚", "color": "#34d399"},
-    "8": {"icon": "🚀", "color": "#fb923c"},
-    "9": {"icon": "📊", "color": "#facc15"},
-    "close": {"icon": "🏁", "color": "#f472b6"},
+    "0": {"icon": "🔍", "color": "#3F6B35"},
+    "1": {"icon": "📋", "color": "#5B7FA6"},
+    "2": {"icon": "📐", "color": "#8A6A48"},
+    "3": {"icon": "🏗", "color": "#7A8B3C"},
+    "build": {"icon": "🔁", "color": "#2F8A86"},
+    "7": {"icon": "📚", "color": "#B5651D"},
+    "8": {"icon": "🚀", "color": "#B8503C"},
+    "9": {"icon": "📊", "color": "#8A6A00"},
+    "close": {"icon": "🏁", "color": "#7D5A7A"},
 }
 
 
@@ -300,23 +300,45 @@ HTML_TEMPLATE = """\
 <style>
 /* Reset & base */
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+/* Shepherd palette — parchment by default, bark when the system prefers dark */
 :root {{
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface2: #21242f;
-  --border: #2d3147;
-  --accent: #6c8ef7;
-  --accent2: #a78bfa;
-  --green: #4ade80;
-  --yellow: #facc15;
-  --red: #f87171;
-  --orange: #fb923c;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --code-bg: #0d1117;
+  --bg: #F5EFE4;
+  --surface: #FBF7EF;
+  --surface2: #ECE4D4;
+  --border: #D8CDB8;
+  --accent: #3F6B35;
+  --accent2: #5E452A;
+  --on-accent: #F5EFE4;
+  --green: #2F6B3E;
+  --yellow: #7A5C00;
+  --red: #A23B2A;
+  --orange: #9C5418;
+  --text: #1C1915;
+  --muted: #6B6358;
+  --code-bg: #ECE4D4;
+  --row-alt: rgba(28,25,21,.03);
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --bg: #14120F;
+    --surface: #1C1915;
+    --surface2: #262219;
+    --border: #39322A;
+    --accent: #9DC58E;
+    --accent2: #D9C7A3;
+    --on-accent: #14120F;
+    --green: #7FBF8A;
+    --yellow: #E0B84A;
+    --red: #E07B6A;
+    --orange: #E0945A;
+    --text: #EFEAE1;
+    --muted: #A89F8F;
+    --code-bg: #0F0D0B;
+    --row-alt: rgba(239,234,225,.03);
+  }}
 }}
 html {{ scroll-behavior: smooth; }}
 body {{
@@ -349,7 +371,7 @@ body {{
 .sidebar-header .phase-badge {{
   display: inline-block;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .08em;
@@ -551,8 +573,8 @@ body {{
   font-size: 16px;
   flex-shrink: 0;
 }}
-.artifact-icon.found {{ background: rgba(74,222,128,.12); }}
-.artifact-icon.missing {{ background: rgba(248,113,113,.12); }}
+.artifact-icon.found {{ background: rgba(95,160,110,.12); }}
+.artifact-icon.missing {{ background: rgba(200,100,85,.12); }}
 .artifact-title h3 {{
   font-size: 18px;
   font-weight: 700;
@@ -572,8 +594,8 @@ body {{
   padding: 4px 12px;
   border-radius: 20px;
 }}
-.artifact-badge.found {{ background: rgba(74,222,128,.15); color: var(--green); }}
-.artifact-badge.missing {{ background: rgba(248,113,113,.15); color: var(--red); }}
+.artifact-badge.found {{ background: rgba(95,160,110,.15); color: var(--green); }}
+.artifact-badge.missing {{ background: rgba(200,100,85,.15); color: var(--red); }}
 
 .artifact-body {{
   background: var(--surface);
@@ -584,7 +606,7 @@ body {{
 .artifact-body.missing-body {{
   border-style: dashed;
   border-color: var(--red);
-  background: rgba(248,113,113,.04);
+  background: rgba(200,100,85,.04);
   text-align: center;
   padding: 40px;
   color: var(--muted);
@@ -614,7 +636,7 @@ body {{
   background: var(--code-bg);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #7dd3fc;
+  color: var(--accent2);
 }}
 .artifact-body pre {{
   background: var(--code-bg);
@@ -628,7 +650,7 @@ body {{
   background: none;
   padding: 0;
   font-size: 13px;
-  color: #e2e8f0;
+  color: var(--text);
 }}
 .artifact-body table {{
   width: 100%;
@@ -652,7 +674,7 @@ body {{
   color: var(--text);
   vertical-align: top;
 }}
-.artifact-body tr:nth-child(even) td {{ background: rgba(255,255,255,.02); }}
+.artifact-body tr:nth-child(even) td {{ background: var(--row-alt); }}
 .artifact-body hr {{ border: none; border-top: 1px solid var(--border); margin: 20px 0; }}
 .artifact-body a {{ color: var(--accent); text-decoration: none; }}
 .artifact-body a:hover {{ text-decoration: underline; }}
@@ -714,7 +736,7 @@ body {{
   {artifact_sections}
 
   <div class="report-footer">
-    <span>claude-code-sdlc — {phase_badge} Report</span>
+    <span>Shepherd — {phase_badge} Report</span>
     <span>{generated_at}</span>
   </div>
 </main>
@@ -734,7 +756,11 @@ sections.forEach(s => observer.observe(s));
 </script>
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-mermaid.initialize({{ startOnLoad: true, theme: 'dark', themeVariables: {{ primaryColor: '#a78bfa', primaryTextColor: '#e2e8f0', lineColor: '#64748b', secondaryColor: '#1e293b', tertiaryColor: '#0f172a' }} }});
+// Shepherd palette, following the page's own light/dark choice.
+const shepherdDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({{ startOnLoad: true, theme: 'base', themeVariables: shepherdDark
+  ? {{ darkMode: true, primaryColor: '#9DC58E', primaryTextColor: '#14120F', primaryBorderColor: '#3F6B35', lineColor: '#A89F8F', secondaryColor: '#1C1915', tertiaryColor: '#14120F', textColor: '#EFEAE1' }}
+  : {{ darkMode: false, primaryColor: '#3F6B35', primaryTextColor: '#F5EFE4', primaryBorderColor: '#2E5027', lineColor: '#5E452A', secondaryColor: '#ECE4D4', tertiaryColor: '#F5EFE4', textColor: '#1C1915' }} }});
 </script>
 </body>
 </html>
@@ -1020,22 +1046,41 @@ INDEX_TEMPLATE = """\
 <title>{title}</title>
 <style>
 *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+/* Shepherd palette — parchment by default, bark when the system prefers dark */
 :root {{
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --surface2: #21242f;
-  --border: #2d3147;
-  --accent: #6c8ef7;
-  --accent2: #a78bfa;
-  --green: #4ade80;
-  --yellow: #facc15;
-  --red: #f87171;
-  --orange: #fb923c;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
+  --bg: #F5EFE4;
+  --surface: #FBF7EF;
+  --surface2: #ECE4D4;
+  --border: #D8CDB8;
+  --accent: #3F6B35;
+  --accent2: #5E452A;
+  --green: #2F6B3E;
+  --yellow: #7A5C00;
+  --red: #A23B2A;
+  --orange: #9C5418;
+  --text: #1C1915;
+  --muted: #6B6358;
+  --row-alt: rgba(28,25,21,.03);
   --radius: 8px;
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+}}
+@media (prefers-color-scheme: dark) {{
+  :root {{
+    --bg: #14120F;
+    --surface: #1C1915;
+    --surface2: #262219;
+    --border: #39322A;
+    --accent: #9DC58E;
+    --accent2: #D9C7A3;
+    --green: #7FBF8A;
+    --yellow: #E0B84A;
+    --red: #E07B6A;
+    --orange: #E0945A;
+    --text: #EFEAE1;
+    --muted: #A89F8F;
+    --row-alt: rgba(239,234,225,.03);
+  }}
 }}
 html {{ scroll-behavior: smooth; }}
 body {{
@@ -1215,7 +1260,7 @@ body {{
   font-family: var(--mono);
   font-size: 13px;
 }}
-.history-table tr:nth-child(even) td {{ background: rgba(255,255,255,.02); }}
+.history-table tr:nth-child(even) td {{ background: var(--row-alt); }}
 .history-empty {{
   color: var(--muted);
   font-size: 13px;
@@ -1311,13 +1356,17 @@ body {{
 </div>
 
 <div class="report-footer">
-  <span>claude-code-sdlc — Project Index</span>
+  <span>Shepherd — Project Index</span>
   <span>{generated_at}</span>
 </div>
 
 <script type="module">
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-mermaid.initialize({{ startOnLoad: true, theme: 'dark', themeVariables: {{ primaryColor: '#a78bfa', primaryTextColor: '#e2e8f0', lineColor: '#64748b', secondaryColor: '#1e293b', tertiaryColor: '#0f172a' }} }});
+// Shepherd palette, following the page's own light/dark choice.
+const shepherdDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+mermaid.initialize({{ startOnLoad: true, theme: 'base', themeVariables: shepherdDark
+  ? {{ darkMode: true, primaryColor: '#9DC58E', primaryTextColor: '#14120F', primaryBorderColor: '#3F6B35', lineColor: '#A89F8F', secondaryColor: '#1C1915', tertiaryColor: '#14120F', textColor: '#EFEAE1' }}
+  : {{ darkMode: false, primaryColor: '#3F6B35', primaryTextColor: '#F5EFE4', primaryBorderColor: '#2E5027', lineColor: '#5E452A', secondaryColor: '#ECE4D4', tertiaryColor: '#F5EFE4', textColor: '#1C1915' }} }});
 </script>
 </body>
 </html>

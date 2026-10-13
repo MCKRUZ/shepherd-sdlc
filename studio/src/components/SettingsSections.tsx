@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import type { ApprovalStage, ConnectionInfo, SettingsSection, ToolStatus } from '../../shared/types'
 import { claudeLacksMessage } from '../../shared/claudeContract'
-import { CODE_HOST_ENV, CODE_HOST_FILE, HOSTS, cliFor, type HostName } from '../../shared/codeHostModel'
+import { CODE_HOST_ENV, CODE_HOST_FILE, HOSTS, LEGACY_CODE_HOST_ENV, cliFor, type HostName } from '../../shared/codeHostModel'
 import { Card, Eyebrow, Input, Notice, Segmented, Select } from '../ui'
 import type { DefinitionItem } from '../ui'
 import { hostReasons, signedInSentence } from '../hostReasons'
@@ -12,7 +12,7 @@ const HOST_LABEL: Record<HostName, string> = { github: 'GitHub', 'azure-devops':
 export function describeHostSource(connection: Pick<ConnectionInfo, 'hostSource'>): string {
   switch (connection.hostSource) {
     case 'flag': return 'from a --host flag'
-    case 'env': return `from ${CODE_HOST_ENV}`
+    case 'env': return `from ${CODE_HOST_ENV} or ${LEGACY_CODE_HOST_ENV}`
     case 'file': return `from ${CODE_HOST_FILE}`
     case 'remote': return 'from origin'
     case 'manifest': return 'from the harness manifest'
@@ -181,16 +181,16 @@ export function describeClaude(status: ToolStatus): string {
   if (!status.found) return status.error ?? 'not found'
   const missing = status.missingFlags ?? []
   if (missing.length > 0) return claudeLacksMessage(status.version, missing)
-  return `${status.version ?? 'found'} — accepts every flag Studio uses`
+  return `${status.version ?? 'found'} — accepts every flag Shepherd uses`
 }
 
 /** Which plugin is driving this session, said plainly: the path alone does not say whether it is
  * the checkout beside Studio or an older marketplace copy (studio-improvements F2). */
 export function describePlugin(status: ToolStatus): string {
   if (!status.found || !status.path) return status.error ?? 'not found'
-  const origin = status.source === 'sibling' ? 'the checkout beside Studio'
+  const origin = status.source === 'sibling' ? 'the checkout beside Shepherd'
     : status.source === 'cache' ? 'the plugin cache'
-    : status.source === 'override' ? 'the path set in Studio'
+    : status.source === 'override' ? 'the path set in Shepherd'
     : 'origin not recorded'
   const version = status.pluginVersion ? `version ${status.pluginVersion}` : 'version not readable'
   return `${status.path} — ${version}, from ${origin}`

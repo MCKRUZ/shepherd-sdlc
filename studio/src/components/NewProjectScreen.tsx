@@ -19,7 +19,7 @@ function joinForDisplay(parent: string, name: string): string {
   return parent.endsWith(separator) ? `${parent}${name}` : `${parent}${separator}${name}`
 }
 
-/** Start a project from nothing: a name, and where it should live. SDLC Studio makes the folder and
+/** Start a project from nothing: a name, and where it should live. Shepherd makes the folder and
  * starts version tracking in it, then the person continues into the same setup wizard an
  * existing folder goes through — they never leave the app to make a folder first. */
 export function NewProjectScreen({
@@ -74,7 +74,7 @@ export function NewProjectScreen({
         <div>
           <h1 className="text-lg text-ink-1">New project</h1>
           <p className="mt-1 text-sm text-ink-3">
-            SDLC Studio will make the folder and set it up for you. You'll choose the lifecycle profile on the next step.
+            Shepherd will make the folder and set it up for you. You'll choose the lifecycle profile on the next step.
           </p>
         </div>
 

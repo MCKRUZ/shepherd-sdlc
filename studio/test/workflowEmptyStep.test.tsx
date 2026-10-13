@@ -17,7 +17,7 @@ function doc(path: string, over: Partial<StageDocument> = {}): StageDocument {
 }
 
 const BRIEF = '.sdlc/artifacts/00-discovery/workshop-brief.md'
-const CREATE = activity({ id: 'brief-doc', kind: 'create', label: 'Workshop brief', command: 'sdlc-brief', creates: [BRIEF] })
+const CREATE = activity({ id: 'brief-doc', kind: 'create', label: 'Workshop brief', command: 'sprd-brief', creates: [BRIEF] })
 
 function readiness(over: Partial<StageReadiness> = {}): StageReadiness {
   return readinessWith({
@@ -59,7 +59,7 @@ describe('the empty step panel', () => {
     expect(within(panel).getByText('The one-page brief for the workshop.')).toBeTruthy()
     const creator = within(panel).getByTestId('empty-step-creator')
     expect(creator.textContent).toContain('Workshop brief')
-    expect(creator.textContent).toContain('/sdlc-brief')
+    expect(creator.textContent).toContain('/sprd-brief')
     expect(within(panel).getByText(/Ask in Chat/)).toBeTruthy()
     expect(within(panel).getByRole('heading', { name: 'Up next' })).toBeTruthy()
     expect(within(panel).getByText('next.md')).toBeTruthy()

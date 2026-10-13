@@ -4,7 +4,7 @@
 Understand the problem space deeply enough that a stakeholder who has never heard of the project can read the artifacts and make an informed decision about whether to proceed, what scope to approve, and what success looks like. This phase produces evidence, not assumptions.
 
 ## Entry Criteria
-- Project initiated via `/sdlc-setup`
+- Project initiated via `/sprd-setup`
 - State machine created with Phase 0 active
 
 ## Workflow
@@ -36,11 +36,11 @@ If the project directory contains existing source code (not just `.sdlc/`), run 
 If the project profile includes a `documentation` section, process external reference documents
 before writing discovery artifacts.
 
-**Run `/sdlc-intake`.** The command owns the whole workflow: it runs the cataloger
+**Run `/sprd-intake`.** The command owns the whole workflow: it runs the cataloger
 (`intake_documents.py`), presents the HITL prioritization gate, writes a token-budgeted summary
 per document (DOC-NNN IDs), generates the registry and the session-start index, and locks the
 catalog so DOC-NNN IDs stay stable for Phase 1 traceability. Do not run the cataloger script by
-hand — `/sdlc-intake` is the entry point. See `commands/sdlc-intake.md` for the full step list,
+hand — `/sprd-intake` is the entry point. See `commands/sprd-intake.md` for the full step list,
 arguments (`--docs`, `--rescan`), and budgets.
 
 If the profile does NOT include a `documentation` section, skip this step entirely.
@@ -67,12 +67,12 @@ has nothing to read — proceed with the question list only, sourced from the sc
 2. **Send the cheap questions now:** Questions routed `pre-workshop` are answerable by email —
    send them before the workshop so room time is spent only on what the room can uniquely answer.
 
-3. **Draft the brief:** Run `/sdlc-brief` (or follow its steps inline). The human curates what
+3. **Draft the brief:** Run `/sprd-brief` (or follow its steps inline). The human curates what
    makes the page — which contradictions, which questions, the decisions the room must leave
    with, logistics.
 
 > **HITL GATE:** The workshop brief is curated, not generated. The human chooses its contents
-> via the `/sdlc-brief` curation gate, edits the draft, and distributes it themselves. The brief
+> via the `/sprd-brief` curation gate, edits the draft, and distributes it themselves. The brief
 > contains questions only — never draft outcomes, metrics, or solutions into it; the workshop
 > exists to produce those in the stakeholders' words.
 
@@ -80,7 +80,7 @@ has nothing to read — proceed with the question list only, sourced from the sc
    answer/resolution logs (who answered, what, when). Resolved content feeds Steps 1-5;
    questions still open at phase exit carry into `phase1-handoff.md` under the SAME Q-NN IDs.
 
-These artifacts are optional for gate purposes (`/sdlc-gate` does not require them), but every
+These artifacts are optional for gate purposes (`/sprd-gate` does not require them), but every
 `blocks-outcome` contradiction must be resolved or explicitly accepted as a risk before Phase 0
 exit.
 
@@ -144,7 +144,7 @@ Generate an interactive HTML visual report at `.sdlc/reports/00-discovery-visual
 See the Visual Report Protocol in `SKILL.md` for rendering standards and fallback behavior.
 
 ### Step 8: Generate Phase Report
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/00-discovery-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/00-discovery-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
 
 ## Artifact Specifications
 
@@ -248,9 +248,9 @@ Must contain: the questions as sent, who curated them, who received it, and the 
 - [ ] Scope boundaries are unambiguous
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/00-discovery-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/00-discovery-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Guidance
 - Resist the urge to jump to solutions. A proposed solution in a problem statement is a scope assumption.
@@ -261,7 +261,7 @@ To regenerate at any time: `/sdlc-phase-report`
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (no artifacts yet)
 - "What problem are you trying to solve? Tell me in plain language."

@@ -1,4 +1,4 @@
-"""audit_artifacts.py — the advisory engine behind /sdlc-audit-artifacts and /sdlc-revise.
+"""audit_artifacts.py — the advisory engine behind /sprd-audit-artifacts and /sprd-revise.
 
 Connects two facts the tool already has — *when each artifact last changed* (SHA-256 hashes) and
 *what depends on what* (declared traceability, via artifact_lineage) — into staleness detection, an
@@ -10,7 +10,7 @@ Three subcommands, all **exit 0 always** (advisory — staleness is never a gate
              --scan                      hash-walk every artifact; append `created` for new files and
                                          `snapshot` for drifted ones. The first-ever scan is the
                                          baseline ("history starts now" — the retro-baseline).
-             --artifact P [--target ID]  one explicit change entry (the /sdlc-revise write).
+             --artifact P [--target ID]  one explicit change entry (the /sprd-revise write).
                  --actor A --reason R [--event revised] [--decision-ref DL-NN] [--phase P]
              --disposition SET           a human's judgement on one staleness candidate.
                  --downstream D --upstream U [--owner O] [--reason R] [--actor A]
@@ -54,7 +54,7 @@ REFRESH_DIR_NAME = "refresh"
 # absent — refreshing the phase artifact lets the forward-staleness engine flag the layer next run.
 PRE_BUILD_STEMS = ("requirements", "epics", "feature-brief", "business-rules")
 
-# The single source for the stem -> discipline-agent routing (mirrors /sdlc-revise's prose table so
+# The single source for the stem -> discipline-agent routing (mirrors /sprd-revise's prose table so
 # it cannot silently drift). Emitted per refresh candidate; also the actor-name denylist below.
 DISCIPLINE_BY_STEM = {
     "requirements": "requirements-analyst",
@@ -471,7 +471,7 @@ def cmd_impact(args) -> int:
         path = " -> ".join(r["path"][1:]) if len(r["path"]) > 2 else r["node"]
         print(f"  • {r['node']}   [{label}]" + (f"   via {path}" if len(r["path"]) > 2 else ""))
     print("(advisory — a downstream may already account for the change; disposition each in "
-          "/sdlc-audit-artifacts)")
+          "/sprd-audit-artifacts)")
     return 0
 
 
@@ -836,7 +836,7 @@ def _not_captured_note() -> str:
     return (
         "The version store is local and gitignored, so a version's bytes live only on the machine "
         "that captured them — a fresh clone/CI, a `gc` prune, or a store fault all read this.\n"
-        "Run the `record --scan` step (via /sdlc-audit-artifacts or /sdlc-next) on this machine to "
+        "Run the `record --scan` step (via /sprd-audit-artifacts or /sprd-next) on this machine to "
         "capture from now on, or see references/artifact-versioning.md for the documented .gitignore "
         "override that commits the store for team-portable history."
     )
@@ -851,7 +851,7 @@ def do_version_list(args, base_dir, sdlc_dir, metrics_dir, versions_dir) -> int:
     print(f"Version history — {node}")
     print("=" * 50)
     if not versions:
-        print("  (no versions — run `record --scan` to seed a baseline, or edit via /sdlc-revise)")
+        print("  (no versions — run `record --scan` to seed a baseline, or edit via /sprd-revise)")
         return 0
     for v in versions:
         when = (v.get("ts") or "")[:10] or "----------"
@@ -978,7 +978,7 @@ def do_version_rollback(args, base_dir, sdlc_dir, metrics_dir, versions_dir) -> 
     print(f"Rolled back {node} to v{row['n']} content ({row['hash']}) by {args.actor}.")
     print(f"Recorded as a new, append-only version — the rollback is itself reversible and renders "
           f"'restored from v{row['n']}'.")
-    print("Re-gate the affected phase with /sdlc-gate (this command writes no state.yaml).")
+    print("Re-gate the affected phase with /sprd-gate (this command writes no state.yaml).")
     return 0
 
 
@@ -1586,16 +1586,16 @@ def do_refresh_apply(args, base_dir, sdlc_dir, metrics_dir) -> int:
         return 0
     _clear_draft(sdlc_dir, spec_node, stem)
     print(f"Refreshed {target} from spec {spec_id} by {args.actor} (recorded as a `refreshed` "
-          f"change, attributed to the spec; rollback via /sdlc-version).")
+          f"change, attributed to the spec; rollback via /sprd-version).")
     _print_apply_impact(base_dir, sdlc_dir, target)
     print("Open a DL-NN decision-log item for this refresh, then re-gate the affected phase with "
-          "/sdlc-gate (this command writes no state.yaml).")
+          "/sprd-gate (this command writes no state.yaml).")
     return 0
 
 
 def _print_apply_impact(base_dir: Path, sdlc_dir: Path, target: str) -> None:
     """Read-only forward impact of the refresh: what may now go stale downstream (the forward
-    engine flags it on the next /sdlc-status). Never writes; a lineage fault is swallowed."""
+    engine flags it on the next /sprd-status). Never writes; a lineage fault is swallowed."""
     try:
         graph = al.build_graph(base_dir, sdlc_dir)
         rows = al.downstream_of(graph, target)
@@ -1891,7 +1891,7 @@ def _add_refresh_cli(sub, common) -> None:
     r_det.add_argument("--json", action="store_true", help="Emit JSON")
 
     r_scan = rsub.add_parser("scan", parents=[common],
-                             help="Detect across all merged specs (backs the /sdlc-status drift nudge)")
+                             help="Detect across all merged specs (backs the /sprd-status drift nudge)")
     r_scan.add_argument("--transitive", action="store_true",
                         help="Include transitive declared upstreams")
     r_scan.add_argument("--include-coarse", dest="include_coarse", action="store_true",

@@ -100,21 +100,25 @@ describe('togo-command-center-visual.md', () => {
 
   it('the recorded contrast numbers reproduce by the WCAG formula (text ≥ 4.5, UI ≥ 3)', () => {
     // [fg, bg, light ratio, dark ratio] — the rows of the §2 contrast table that carry hexes.
+    // Shepherd palette (Furrow) — the same rows, re-measured: ink-1 / ink-3 / accent-text on lane,
+    // eyebrow on lane-header, card-lit on surface-1, baton-ink on baton-bg, you-ring on lane, strip-lit
+    // on surface-0 (the signed INK step in light), today-act, ink-3 on plan-says, rung-pending on
+    // surface-1, ledger-postponed, ink-1 on steer-bg, ink-3 on steer-tile.
     const pinned: Array<[string, string, string, string, number, number, number]> = [
-      ['#0b1120', '#eef2f7', '#e6edf7', '#0e1727', 16.75, 15.23, 4.5],
-      ['#5d6c84', '#eef2f7', '#8392aa', '#0e1727', 4.74, 5.69, 4.5],
-      ['#5d6c84', '#e9eef5', '#8392aa', '#121c2f', 4.57, 5.4, 4.5],
-      ['#0b6470', '#eef2f7', '#6fd1d4', '#0e1727', 6.08, 10.04, 4.5],
-      ['#1a99a3', '#ffffff', '#22a3ad', '#111a2b', 3.43, 5.73, 3],
-      ['#0b6470', '#d3f3f3', '#6fd1d4', '#0c363b', 5.82, 7.31, 4.5],
-      ['#0e7c86', '#eef2f7', '#6fd1d4', '#0e1727', 4.4, 10.04, 3],
-      ['#16a34a', '#f8fafc', '#34d399', '#0b1120', 3.15, 9.79, 3],
-      ['#0b6470', '#edfafa', '#6fd1d4', '#0c363b', 6.4, 7.31, 4.5],
-      ['#5d6c84', '#edfafa', '#8392aa', '#0a2a2e', 4.98, 4.81, 4.5],
-      ['#0369a1', '#ffffff', '#38bdf8', '#111a2b', 5.93, 8.13, 3],
-      ['#64748b', '#f8fafc', '#7c8a9a', '#111a2b', 4.55, 4.94, 4.5],
-      ['#0b1120', '#ffffff', '#e6edf7', '#070c16', 18.83, 16.61, 4.5],
-      ['#5d6c84', '#f8fafc', '#8392aa', '#111a2b', 5.09, 5.52, 4.5],
+      ['#1c1915', '#efeae1', '#f5efe4', '#1c1915', 14.61, 15.30, 4.5],
+      ['#6b625a', '#efeae1', '#a69d94', '#1c1915', 4.98, 6.56, 4.5],
+      ['#6b625a', '#e9e3d9', '#a69d94', '#25211c', 4.67, 6.00, 4.5],
+      ['#3f6b35', '#efeae1', '#9dc58e', '#1c1915', 5.21, 9.01, 4.5],
+      ['#4f8545', '#ffffff', '#6fa55f', '#1c1915', 4.40, 6.02, 3],
+      ['#3f6b35', '#e3eddd', '#9dc58e', '#243f20', 5.18, 5.98, 4.5],
+      ['#3f6b35', '#efeae1', '#9dc58e', '#1c1915', 5.21, 9.01, 3],
+      ['#15803d', '#f5efe4', '#34d399', '#14120f', 4.38, 9.73, 3],
+      ['#3f6b35', '#f3f7f0', '#9dc58e', '#243f20', 5.76, 5.98, 4.5],
+      ['#6b625a', '#f3f7f0', '#a69d94', '#192d17', 5.50, 5.51, 4.5],
+      ['#0369a1', '#ffffff', '#38bdf8', '#1c1915', 5.93, 8.17, 3],
+      ['#6b625a', '#f5efe4', '#a69d94', '#1c1915', 5.21, 6.56, 4.5],
+      ['#1c1915', '#ffffff', '#f5efe4', '#0e0c0a', 17.51, 17.06, 4.5],
+      ['#6b625a', '#f5efe4', '#a69d94', '#1c1915', 5.21, 6.56, 4.5],
     ]
     for (const [lf, lb, df, db, light, dark, floor] of pinned) {
       const l = contrast(lf, lb), d = contrast(df, db)

@@ -1,4 +1,4 @@
-"""workshop_brief.py build - the mechanical half of /sdlc-brief (spec 0022).
+"""workshop_brief.py build - the mechanical half of /sprd-brief (spec 0022).
 
 What these protect:
   * NOTHING IS INVENTED. Every contradiction and question on the page is the analyst's own text,

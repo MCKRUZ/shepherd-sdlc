@@ -12,7 +12,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  CODE_HOST_FILE, cliFor, detectHostFromInputs, parseCodeHostYaml, WORDING,
+  CODE_HOST_ENV, CODE_HOST_FILE, LEGACY_CODE_HOST_ENV, cliFor, detectHostFromInputs, parseCodeHostYaml, WORDING,
   type CliName, type CliStatus, type Detection,
 } from '../../shared/codeHostModel'
 import { azJson as defaultAzJson, AzError } from './az'
@@ -110,7 +110,8 @@ export async function resolveCodeHost(projectPath: string, deps: ResolveCodeHost
   const fileText = readFile(join(projectPath, CODE_HOST_FILE))
   const file = fileText === null ? { settings: null, error: null } : parseCodeHostYaml(fileText)
   const detection = detectHostFromInputs({
-    flagOrEnv: env.SDLC_CODE_HOST ?? null, fileHost: file.settings, fileError: file.error, remoteUrl,
+    flagOrEnv: env[CODE_HOST_ENV] ?? null, legacyEnv: env[LEGACY_CODE_HOST_ENV] ?? null,
+    fileHost: file.settings, fileError: file.error, remoteUrl,
     manifestPacks: manifestPacks(readFile(join(projectPath, '.claude', 'harness-manifest.json'))),
   })
 

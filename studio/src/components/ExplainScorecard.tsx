@@ -150,7 +150,7 @@ export function ScorecardView({ projectPath }: { projectPath: string }) {
       <PageHeader
         eyebrow="Build · How it is going"
         title="How Build is going"
-        lede="Every number here is computed by the plugin from recorded events. SDLC Studio does no arithmetic of its own."
+        lede="Every number here is computed by the plugin from recorded events. Shepherd does no arithmetic of its own."
         actions={(
           <>
             <Button size="sm" icon={Download} onClick={exportScorecard}>Export for a meeting</Button>

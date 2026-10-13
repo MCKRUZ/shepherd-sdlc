@@ -46,6 +46,7 @@ def _fresh(monkeypatch):
     ao.clear_caches()
     ado_import.clear_caches()
     monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+    monkeypatch.delenv(code_host.LEGACY_CODE_HOST_ENV, raising=False)
     monkeypatch.setattr(code_host, "origin_url", lambda root: ADO_REMOTE)
     yield
     ao.clear_caches()

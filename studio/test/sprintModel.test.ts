@@ -113,15 +113,15 @@ describe('lane badges', () => {
 })
 
 describe('what to say instead of a slate', () => {
-  it('no sprint at all points at /sdlc-sprint new, in the plugin\'s words when it gave any', () => {
-    expect(emptyMessage(view({ sprint: null, slate: [], hasData: false }))).toBe('No sprint — open one with /sdlc-sprint new.')
+  it('no sprint at all points at /sprd-sprint new, in the plugin\'s words when it gave any', () => {
+    expect(emptyMessage(view({ sprint: null, slate: [], hasData: false }))).toBe('No sprint — open one with /sprd-sprint new.')
     expect(emptyMessage(view({ sprint: null, slate: [], hasData: false, note: "'S7' is not a sprint id" }))).toBe("'S7' is not a sprint id")
   })
 
-  it('an open sprint with nothing slated points at /sdlc-sprint slate; a closed one at its review page', () => {
-    expect(emptyMessage(view({ slate: [], hasData: false }))).toBe('Nothing slated yet — propose a slate with /sdlc-sprint slate.')
+  it('an open sprint with nothing slated points at /sprd-sprint slate; a closed one at its review page', () => {
+    expect(emptyMessage(view({ slate: [], hasData: false }))).toBe('Nothing slated yet — propose a slate with /sprd-sprint slate.')
     expect(emptyMessage(view({ slate: [], hasData: false, sprint: sprint({ state: 'closed' }) })))
-      .toBe('Closed; see .sdlc/reports/sprint-S07-review.html. Start the next sprint with /sdlc-sprint new.')
+      .toBe('Closed; see .sdlc/reports/sprint-S07-review.html. Start the next sprint with /sprd-sprint new.')
   })
 
   it('says nothing when there is a slate', () => {

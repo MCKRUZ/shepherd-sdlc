@@ -34,7 +34,7 @@ phases:
       secondary: []
     entry_gate:
       conditions:
-        - "Project initiated via /sdlc-setup"
+        - "Project initiated via /sprd-setup"
     exit_gate:
       conditions:
         - artifact: "constitution.md"

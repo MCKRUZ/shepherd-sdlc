@@ -46,7 +46,7 @@ SPRINT_TEMPLATE = (
     '## Goal\n'
     '\n'
     '## Slate\n'
-    '<!-- Rendered by `sprint.py slate/unslate/ready/close` from spec frontmatter — never hand-edit; run /sdlc-sprint status for the live view. -->\n'
+    '<!-- Rendered by `sprint.py slate/unslate/ready/close` from spec frontmatter — never hand-edit; run /sprd-sprint status for the live view. -->\n'
     '\n'
     '## Close\n'
     '<!-- Written by `sprint.py close`: | spec | outcome (kept | carried → SNN | dropped) | by | reason | -->\n'

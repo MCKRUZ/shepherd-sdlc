@@ -16,7 +16,7 @@ created: "YYYY-MM-DD"
 ## Goal
 
 ## Slate
-<!-- Rendered by `sprint.py slate/unslate/ready/close` from spec frontmatter — never hand-edit; run /sdlc-sprint status for the live view. -->
+<!-- Rendered by `sprint.py slate/unslate/ready/close` from spec frontmatter — never hand-edit; run /sprd-sprint status for the live view. -->
 
 ## Close
 <!-- Written by `sprint.py close`: | spec | outcome (kept | carried → SNN | dropped) | by | reason | -->

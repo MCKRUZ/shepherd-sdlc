@@ -1,4 +1,4 @@
-// SDLC Studio's own record of a chat TURN's life (togo-command-center.md §3.4 "Claude is working the
+// Shepherd's own record of a chat TURN's life (togo-command-center.md §3.4 "Claude is working the
 // <stage>"): the ChatPanel owns `busy` and publishes here when a turn starts, ends or fails, so
 // the lifecycle home's "Claude is working …" line can say so too — a present-tense label after
 // the turn is over would assert work that is not happening. UI state only, keyed by project and
@@ -11,7 +11,7 @@ export interface ChatTurnSnapshot {
   projectPath: string
   stageId: string
   phase: ChatTurnPhase
-  /** When the phase was published (SDLC Studio's clock, labelled as its own record where shown). */
+  /** When the phase was published (Shepherd's clock, labelled as its own record where shown). */
   at: number
 }
 

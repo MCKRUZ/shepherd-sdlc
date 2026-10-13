@@ -7,8 +7,8 @@ name and a reason. It is never a second backlog, never a gate, and never gated.
 
 This is a **Tier-3 reference**: loaded on demand, product-agnostic, and read by nothing at runtime. The
 executable half is `scripts/sprint_model.py` (pure arithmetic — the single source of truth for every rule
-below), `scripts/sprint.py` (the `/sdlc-sprint` CLI) and `scripts/generate_sprint_report.py` (the
-planning and review pages). `/sdlc-refine` drives the slated specs to READY and records the verdicts.
+below), `scripts/sprint.py` (the `/sprd-sprint` CLI) and `scripts/generate_sprint_report.py` (the
+planning and review pages). `/sprd-refine` drives the slated specs to READY and records the verdicts.
 
 ---
 
@@ -105,11 +105,11 @@ placeholder token — so `check_spec`'s frontmatter parsing and DoR verdict are 
 
 | Key | Values | Written by | Read by |
 |---|---|---|---|
-| `sprint` | `""` or `SNN` | `slate`, `unslate`, `close --carry-to` | `track_specs` (`by_sprint`, `--sprint`), `status`, `/sdlc-refine` |
+| `sprint` | `""` or `SNN` | `slate`, `unslate`, `close --carry-to` | `track_specs` (`by_sprint`, `--sprint`), `status`, `/sprd-refine` |
 | `next_owner` | a name, or `""` | `handoff --to`; cleared by `ack` | `status` (unacknowledged handoffs with business-day age), the agenda |
-| `eng_review` | `pending \| accepted \| returned \| n-a` | `verdict --lane eng` (via `/sdlc-refine validate`) | the ready rule |
+| `eng_review` | `pending \| accepted \| returned \| n-a` | `verdict --lane eng` (via `/sprd-refine validate`) | the ready rule |
 | `data_review` | `pending \| accepted \| returned \| n-a` | `verdict --lane data` (`n-a` needs `--reason`) | the ready rule |
-| `depends_on` | `""` or `"0007,0009"` | `/sdlc-refine` proposes, a human confirms; `slate` may add | build order, next up, slate warning, ready gap |
+| `depends_on` | `""` or `"0007,0009"` | `/sprd-refine` proposes, a human confirms; `slate` may add | build order, next up, slate warning, ready gap |
 
 `status` (draft → ready → in-flight → merged) is **not** one of them: it stays the protected, hand-moved
 field, and no sprint verb writes it. Only files whose basename matches `^\d{4}-` are ever listed or written,
@@ -161,11 +161,11 @@ tracked: velocity, story points, PR count, lines of code.*
 | Guarantee | How the layer keeps it |
 |---|---|
 | Refinement runs in **any phase** where specs exist | no sprint verb reads `current_phase`; standalone `--repo` mode needs no `.sdlc/` at all |
-| An upstream gap is fixed **without regressing the phase** | `/sdlc-refine --upstream` edits the Phase 1/2 artifact in place (human-confirmed diff), records it to the artifact ledger, re-gates that phase with `check_gates.py --phase N` as information, and regenerates that phase's layer; `current_phase` never moves |
+| An upstream gap is fixed **without regressing the phase** | `/sprd-refine --upstream` edits the Phase 1/2 artifact in place (human-confirmed diff), records it to the artifact ledger, re-gates that phase with `check_gates.py --phase N` as information, and regenerates that phase's layer; `current_phase` never moves |
 | Earlier-phase artifacts are **expected to change** during refinement, and layers follow them | Phase layers are living summaries, not locks: regenerated when a source changes, previous version kept as `.superseded-<date>`, regeneration recorded as `refreshed` (see `references/frozen-layers.md`) |
 | A sprint is **never a gate and never gated** | every read verb exits 0; `ready` and `close` check only the slate, never G1–G7; nothing writes `.sdlc/state.yaml` |
-| Leaving Build stays a **human declaration** | `close` never suggests advancing; `/sdlc-next` gains one advisory line |
-| The protected core is **byte-for-byte unchanged** | `check_spec.py`, `check_gates.py`, `advance_phase.py`, `phase_model.py`, the registry, `new_spec.py`, `scorecard.py`, `harness/**`, `/sdlc-coach`, `/sdlc-spec` are imported from, never edited |
+| Leaving Build stays a **human declaration** | `close` never suggests advancing; `/sprd-next` gains one advisory line |
+| The protected core is **byte-for-byte unchanged** | `check_spec.py`, `check_gates.py`, `advance_phase.py`, `phase_model.py`, the registry, `new_spec.py`, `scorecard.py`, `harness/**`, `/sprd-coach`, `/sprd-spec` are imported from, never edited |
 | **Standalone or workflow** | `--state <.sdlc/state.yaml>` or `--repo <path>`; workflow mode is detected by `state.yaml` presence, never by a bare `.sdlc/` directory |
 
 ## Metrics policy
@@ -175,7 +175,7 @@ tracked: velocity, story points, PR count, lines of code.*
 | slated / ready / not-ready counts; kept / carried / dropped at close, each with a named human and a reason | velocity, story points, estimates, effort, hours, capacity — `FORBIDDEN_FIELDS`, exit 2 |
 | pending verdicts and unacknowledged handoffs with business-day age | PR count, commit count, lines of code — never computed |
 | mix actual vs target; WIP vs cap | any per-person aggregation — no such key exists in any JSON |
-| carry-over recurrence per spec (the only cross-sprint number, in `/sdlc-retro`) | cross-sprint trends of kept / carried counts ("velocity with the points removed") |
+| carry-over recurrence per spec (the only cross-sprint number, in `/sprd-retro`) | cross-sprint trends of kept / carried counts ("velocity with the points removed") |
 | overdue decision-log items | "% complete" as a sprint number; fabricated zeros |
 
 `FORBIDDEN_FIELDS` is a superset of `scorecard.FORBIDDEN_TYPES`, so a metric the scorecard refuses cannot

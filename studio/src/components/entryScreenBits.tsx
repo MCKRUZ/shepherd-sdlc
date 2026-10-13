@@ -1,5 +1,5 @@
 // What the pre-project screens (Welcome, New project, Set up, Tooling, Clash) share: the centred
-// full-window shell, the Ambient Field slot behind it, the small SDLC Studio lockup in the top-left,
+// full-window shell, the Ambient Field slot behind it, the small Shepherd lockup in the top-left,
 // the theme toggle as window chrome in the top-right, and the one way a screen builds a
 // choreography context from the motion module. Kept here so each screen imports a line, not a
 // recipe — and so the "scene behind, content above" layering is decided once.
@@ -9,7 +9,7 @@ import { MOTION_DURATIONS, MOTION_EASES, type ChoreoContext } from '../motion/co
 import { contextFrom } from '../motion/choreo'
 import { enabled, reduced } from '../motion/motion'
 import { ThemeToggle, cn } from '../ui'
-import { TogoLockup } from './brand/TogoLockup'
+import { ShepherdLockup } from './brand/ShepherdLockup'
 
 /** The Ambient Field has nothing to activate; the slot still wants the callback. */
 const noop = () => {}
@@ -60,7 +60,7 @@ export function EntryShell({
   return (
     <div ref={rootRef} className={cn('relative flex h-screen items-center justify-center bg-surface-0 p-6', className)} {...rest}>
       <AmbientBackdrop canvasRef={canvasRef} />
-      {brand ? <TogoLockup className="absolute left-6 top-5 z-10" /> : null}
+      {brand ? <ShepherdLockup className="absolute left-6 top-5 z-10" /> : null}
       {/* 16 px from both edges — the same inset top and right, so the pill sits on the grid
           rather than 20 px in and 16 px down. */}
       {corner ? <div className="absolute right-4 top-4 z-10">{corner}</div> : null}

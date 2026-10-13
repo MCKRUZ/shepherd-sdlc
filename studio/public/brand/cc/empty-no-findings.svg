@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 72" width="120" height="72" aria-hidden="true">
-  <!-- SDLC Studio command center — empty state "no-findings". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
-  <rect x="30" y="8" width="60" height="56" rx="4" fill="#A7E6E7"/>
-  <rect x="48" y="8" width="24" height="3" rx="1.5" fill="#1A99A3"/>
-  <path d="M40 24 H80 M40 34 H72 M40 44 H76 M40 54 H66" fill="none" stroke="#1A99A3" stroke-width="1" stroke-linecap="round"/>
+  <!-- Shepherd command center — empty state "no-findings". Two tones from the accent ramp. Generated from studio/src/components/brand/figures/ccFigureGeometry.ts; do not hand-edit. -->
+  <rect x="30" y="8" width="60" height="56" rx="4" fill="#C7E0BC"/>
+  <rect x="48" y="8" width="24" height="3" rx="1.5" fill="#4F8545"/>
+  <path d="M40 24 H80 M40 34 H72 M40 44 H76 M40 54 H66" fill="none" stroke="#4F8545" stroke-width="1" stroke-linecap="round"/>
 </svg>

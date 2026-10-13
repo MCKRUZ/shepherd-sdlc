@@ -40,6 +40,7 @@ def test_parse_remote_web_urls():
 @pytest.fixture
 def no_env(monkeypatch):
     monkeypatch.delenv(ch.ENV_VAR, raising=False)
+    monkeypatch.delenv(ch.LEGACY_CODE_HOST_ENV, raising=False)
 
 
 @pytest.fixture

@@ -30,7 +30,8 @@ GATE_PR = int(route_param("pr_threads_abandoned", "pullRequestId"))  # the PR ca
 @pytest.fixture(autouse=True)
 def _fresh(monkeypatch):
     ai.clear_caches()
-    monkeypatch.delenv(code_host.ENV_VAR, raising=False)
+    for name in code_host.CODE_HOST_ENV_VARS:  # both SHEPHERD_CODE_HOST and the older SDLC_CODE_HOST
+        monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(code_host, "origin_url", lambda root: ADO_REMOTE)
     yield
     ai.clear_caches()

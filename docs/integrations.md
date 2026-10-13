@@ -197,7 +197,7 @@ The `/deep-implement` skill reads section plans (specs) and builds code one chan
 
 **Input:**
 - Section plan files (specs) from `.sdlc/artifacts/03-foundation/section-plans/SECTION-NNN.md`
-- The ordered build backlog -- the sequence of specs handed off from `.sdlc/artifacts/03-foundation/build-handoff.md` (the spec backlog is the build order; a sprint is a time-boxed commitment overlay on that order (`/sdlc-sprint`), never a second backlog or a reordering)
+- The ordered build backlog -- the sequence of specs handed off from `.sdlc/artifacts/03-foundation/build-handoff.md` (the spec backlog is the build order; a sprint is a time-boxed commitment overlay on that order (`/sprd-sprint`), never a second backlog or a reordering)
 - Profile configuration from `.sdlc/profile.yaml`
 
 **Workflow per change (one spec at a time):**
@@ -224,9 +224,9 @@ risk: MEDIUM
 
 **Session continuity:**
 
-The spec is the handoff. When a Claude Code session ends mid-implementation, the in-flight spec's branch and PR are left in a state the next session can resume from (spec current, plan recorded, test state obvious); the agent re-reads the spec every session. An engagement may still keep a machine-readable `session-handoff.json` for its own notes, but nothing in the plugin reads it any more — the session-start hook's Build-loop block that summarized it was retired in 1.6.0. What the hook prints instead is the active sprint: one `[SDLC-SPRINT] S07 (ready) — "goal" — start → end` line per non-closed record in `.sdlc/sprints/`.
+The spec is the handoff. When a Claude Code session ends mid-implementation, the in-flight spec's branch and PR are left in a state the next session can resume from (spec current, plan recorded, test state obvious); the agent re-reads the spec every session. An engagement may still keep a machine-readable `session-handoff.json` for its own notes, but nothing in the plugin reads it any more — the session-start hook's Build-loop block that summarized it was retired in 1.6.0. What the hook prints instead is the active sprint: one `[SHEPHERD-SPRINT] S07 (ready) — "goal" — start → end` line per non-closed record in `.sdlc/sprints/`.
 
-**Sprints over the backlog (optional, `/sdlc-sprint`):**
+**Sprints over the backlog (optional, `/sprd-sprint`):**
 
 A sprint slates a *count* of specs from the backlog by risk-tier mix into a two-week commitment window. The slated specs gain five optional frontmatter keys (`sprint`, `next_owner`, `eng_review`, `data_review`, `depends_on`) written only by `scripts/sprint.py`; `status` stays hand-moved as above. `track_specs.py --sprint S07` reports the slate's backlog, and `sprint.py status` adds the advisory build order (dependencies first, then the spec that unblocks the most others, then HIGH → MEDIUM → LOW, then spec id) and the recommended next-up spec. `/deep-implement` is unaffected: the sprint never reorders the backlog and is never a gate.
 
@@ -394,7 +394,7 @@ The `/deep-project` skill decomposes vague, high-level project requirements into
 |----------|---------------|
 | `docs/gate-system.md` | Phase entry/exit gate mechanics, approval modes, artifact checks |
 | `docs/architecture.md` | Overall plugin architecture, state management, profile system |
-| `docs/commands.md` | Slash command reference (`/sdlc`, `/sdlc-setup`, `/sdlc-next`, `/sdlc-gate`) |
+| `docs/commands.md` | Slash command reference (`/sprd`, `/sprd-setup`, `/sprd-next`, `/sprd-gate`) |
 | `references/skill-mapping.md` | Authoritative phase-to-skill matrix with skill details |
 | `phases/phase-registry.yaml` | Machine-readable phase definitions, gate conditions, artifact lists |
 | `scripts/map_deep_plan_artifacts.py` | Source code for /deep-plan artifact transformation |

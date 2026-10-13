@@ -161,7 +161,7 @@ def test_no_harness_reports_installed_false_and_points_at_setup(tmp_path):
     doc = json.loads(stdout)
     assert rc == 1 and doc["ok"] is False
     assert doc["harness_installed"] is False
-    assert "/sdlc-setup" in doc["message"]
+    assert "/sprd-setup" in doc["message"]
 
 
 def test_installed_harness_has_no_message(tmp_path):
@@ -207,7 +207,7 @@ def test_subprocess_json_on_a_bare_repo_is_one_document_and_exit_one(tmp_path):
     doc = json.loads(proc.stdout)
     assert proc.returncode == 1
     assert doc["harness_installed"] is False
-    assert "/sdlc-setup" in doc["message"]
+    assert "/sprd-setup" in doc["message"]
     assert proc.stderr == ""
 
 
@@ -215,4 +215,4 @@ def test_subprocess_exit_code_is_the_same_with_and_without_json(tmp_path):
     plain = _subprocess(tmp_path, "--offline")
     flagged = _subprocess(tmp_path, "--offline", "--json")
     assert plain.returncode == flagged.returncode == 1
-    assert plain.stdout.startswith("/sdlc-doctor")
+    assert plain.stdout.startswith("/sprd-doctor")

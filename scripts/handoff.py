@@ -13,8 +13,9 @@ still does its local half even with no code-host access; only the assignment ste
 the code host's CLI, and its failure is reported, not fatal.
 
 Code host (code-host providers): the assignment step goes to `gh` on GitHub and to `az` on
-Azure DevOps, chosen by the origin remote (`--host` / `SDLC_CODE_HOST` / `.sdlc/code-host.yaml`
-ahead of it — `code_host.detect_host`). The GitHub path is byte-identical to what it was. On
+Azure DevOps, chosen by the origin remote (`--host` / `SHEPHERD_CODE_HOST` (or the older
+`SDLC_CODE_HOST`) / `.sdlc/code-host.yaml` ahead of it — `code_host.detect_host`). The GitHub
+path is byte-identical to what it was. On
 Azure DevOps there is no assignee on a pull request, so the developer is named in the
 description; the checker is added as a required reviewer by roster EMAIL, and a checker with no
 email is an `assignment_error` (the PR still opens — the local half is never failed over it).

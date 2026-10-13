@@ -1,14 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Tōgō">
-  <!-- The tile in Depth: the ground takes the gradient along the same light direction as the
-       mark (top-left → bottom-right); bar and disc stay white. The app icon at 64 px and above;
-       at 16 and 32 px the flat tile (tile.svg) is used, where a gradient would only be noise. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Shepherd">
+  <!-- The tile in Depth: the full mark (frame and S) on the sand ground at the same 7/8 inset as
+       tile.svg, with the one Depth overlay on the mark's silhouette — the same (4, 4) → (60, 60)
+       vector in the mark's own units, the same 30 %. The app icon at 64 px and above; at 16 and
+       32 px the flat tile (tile.svg) is used, where a gradient and the S would only be noise. -->
   <defs>
-    <linearGradient id="depth" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="64" y2="64">
-      <stop offset="0" stop-color="#6FD1D4"/>
-      <stop offset="1" stop-color="#0A3F47"/>
+    <linearGradient id="depth" gradientUnits="userSpaceOnUse" x1="4" y1="4" x2="60" y2="60">
+      <stop offset="0" stop-color="#9DC58E"/>
+      <stop offset="1" stop-color="#192D17"/>
     </linearGradient>
+    <clipPath id="mark">
+      <path d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+      <path d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+      <path d="M21.03 27.33 A8.75 8.75 0 0 1 28.57 23.00 L36.53 23.00 A2.57 2.57 0 0 1 39.11 25.57 L39.11 28.47 A3.99 3.99 0 0 1 35.89 32.38 A34.59 34.59 0 0 0 27.04 30.09 A20.79 20.79 0 0 1 23.18 29.25 A3.57 3.57 0 0 1 21.03 27.33 Z"/>
+      <path d="M20.49 28.76 A6.34 6.34 0 0 0 24.22 32.45 A31.17 31.17 0 0 0 31.50 34.18 A16.51 16.51 0 0 1 36.65 35.64 A4.18 4.18 0 0 1 38.74 40.99 A5.54 5.54 0 0 1 33.58 44.50 L21.94 44.50 A1.75 1.75 0 0 1 20.20 42.75 L20.14 41.16 A3.08 3.08 0 0 1 20.67 39.39 A3.85 3.85 0 0 1 23.83 37.74 L25.64 37.74 A6.81 6.81 0 0 1 20.49 28.76 Z"/>
+    </clipPath>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#depth)"/>
-  <rect x="19" y="13" width="26" height="6" rx="3" fill="#FFFFFF"/>
-  <circle cx="32" cy="38" r="15" fill="#FFFFFF"/>
+  <rect width="64" height="64" rx="14" fill="#F5EFE4"/>
+  <g transform="translate(4 4) scale(0.875)">
+    <path fill="#3F6B35" d="M10.47 10.22 L16.7 4 L51.5 4 L60 12.5 L60 47.3 L56.52 50.77 L50.25 44.5 L42.7 44.5 L42.7 38.9 L49.1 38.9 L49.1 14.9 L15.15 14.9 Z"/>
+    <path fill="#5E452A" d="M7.47 13.22 L14.9 20.65 L14.9 49.1 L48.85 49.1 L53.52 53.77 L47.3 60 L12.5 60 L4 51.5 L4 16.7 Z"/>
+    <path fill="#3F6B35" d="M21.03 27.33 A8.75 8.75 0 0 1 28.57 23.00 L36.53 23.00 A2.57 2.57 0 0 1 39.11 25.57 L39.11 28.47 A3.99 3.99 0 0 1 35.89 32.38 A34.59 34.59 0 0 0 27.04 30.09 A20.79 20.79 0 0 1 23.18 29.25 A3.57 3.57 0 0 1 21.03 27.33 Z"/>
+    <path fill="#5E452A" d="M20.49 28.76 A6.34 6.34 0 0 0 24.22 32.45 A31.17 31.17 0 0 0 31.50 34.18 A16.51 16.51 0 0 1 36.65 35.64 A4.18 4.18 0 0 1 38.74 40.99 A5.54 5.54 0 0 1 33.58 44.50 L21.94 44.50 A1.75 1.75 0 0 1 20.20 42.75 L20.14 41.16 A3.08 3.08 0 0 1 20.67 39.39 A3.85 3.85 0 0 1 23.83 37.74 L25.64 37.74 A6.81 6.81 0 0 1 20.49 28.76 Z"/>
+    <rect width="64" height="64" fill="url(#depth)" clip-path="url(#mark)" opacity=".3"/>
+  </g>
 </svg>

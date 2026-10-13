@@ -29,7 +29,7 @@ The smart repair system attempts to fix simple gate failures before escalating t
 
 ## Invocation
 
-### Via `/sdlc-gate`
+### Via `/sprd-gate`
 
 The gate command offers repair when failures are found:
 
@@ -49,7 +49,7 @@ If the user agrees, the `gate-repair` agent:
 3. Re-runs gate check on repaired artifacts
 4. Reports: "Repaired 1 of 2 failures. 1 requires human attention."
 
-### Via `/sdlc-next`
+### Via `/sprd-next`
 
 When MUST gates fail during phase advancement, the command offers: "Would you like me to attempt auto-repair on the fixable issues?" Same flow as above.
 

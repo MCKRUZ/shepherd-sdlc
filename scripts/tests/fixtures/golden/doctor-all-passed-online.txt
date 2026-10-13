@@ -1,6 +1,6 @@
 exit: 0
 --- stdout ---
-/sdlc-doctor — <REPO>
+/sprd-doctor — <REPO>
 
 Tools
   [PASS] git present - /fake/bin/git

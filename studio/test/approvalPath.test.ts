@@ -166,8 +166,8 @@ describe.skipIf(!available)('saving a document through a real remote', () => {
       expect(git(['show', `main:${REQUIREMENTS}`], origin)).not.toContain('WHILE THE BRANCH WAS PROTECTED')
 
       // And the work is parked on a branch of its own, which is what a pending draft IS.
-      const branches = git(['branch', '--list', 'studio/*'], origin)
-      expect(branches, 'no studio/* branch was pushed').toMatch(/studio\//)
+      const branches = git(['branch', '--list', 'shepherd/*'], origin)
+      expect(branches, 'no shepherd/* branch was pushed').toMatch(/shepherd\//)
 
       const parked = branches.split('\n')[0].trim().replace(/^\*?\s*/, '')
       expect(git(['show', `${parked}:${REQUIREMENTS}`], origin)).toContain('WHILE THE BRANCH WAS PROTECTED')

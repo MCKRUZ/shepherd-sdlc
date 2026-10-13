@@ -7,6 +7,13 @@
   --font-sans: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-sans--font-feature-settings: "cv11", "ss01";
   --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* The display face — the wordmark's and nothing else's (brand rule: "one UI face, one display
+     face for the wordmark only"). Headings stay in `--font-sans`: no `--text-*` token below names
+     it, and `font-display` is carried by `ShepherdWordmark` alone. The fallback stack has the
+     same shape as `--font-sans`, so a missing Saira degrades to the UI face, never to a serif.
+     `cv11`/`ss01` are Inter's own alternates, so the display face resets them to `normal`. */
+  --font-display: "Saira Variable", Saira, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display--font-feature-settings: normal;
 
   /* §2.5 type scale. `2xs`, `md`, `display` and `code` are new; `sm` is retuned from 14 to 13. */
   /* `2xs` is a plain small size — meta lines, the Welcome path, plate meta, Console meta. Weight

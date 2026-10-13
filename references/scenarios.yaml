@@ -7,10 +7,10 @@ version: "1.0"
 scenarios:
   - id: setup-wizard-fresh
     name: "Setup wizard on fresh project"
-    description: "Run /sdlc-setup on an empty directory with microsoft-enterprise profile"
+    description: "Run /sprd-setup on an empty directory with microsoft-enterprise profile"
     steps:
       - action: "Create empty directory"
-      - action: "Run /sdlc-setup"
+      - action: "Run /sprd-setup"
       - action: "Select microsoft-enterprise profile"
       - action: "Accept default project name"
     acceptance_criteria:
@@ -23,9 +23,9 @@ scenarios:
 
   - id: setup-wizard-existing
     name: "Setup wizard on project with existing .sdlc"
-    description: "Run /sdlc-setup when .sdlc/ already exists"
+    description: "Run /sprd-setup when .sdlc/ already exists"
     steps:
-      - action: "Run /sdlc-setup on initialized project"
+      - action: "Run /sprd-setup on initialized project"
     acceptance_criteria:
       - "Warning displayed about existing .sdlc/"
       - "User prompted for action (view status or re-initialize)"
@@ -33,10 +33,10 @@ scenarios:
 
   - id: phase-guidance
     name: "Phase guidance display"
-    description: "Run /sdlc to see current phase guidance"
+    description: "Run /sprd to see current phase guidance"
     steps:
       - action: "Initialize project"
-      - action: "Run /sdlc"
+      - action: "Run /sprd"
     acceptance_criteria:
       - "Shows Phase 0: Discovery"
       - "Lists required artifacts with status"
@@ -46,10 +46,10 @@ scenarios:
 
   - id: gate-check-fail
     name: "Gate check with missing artifacts"
-    description: "Run /sdlc-gate when required artifacts are missing"
+    description: "Run /sprd-gate when required artifacts are missing"
     steps:
       - action: "Initialize project"
-      - action: "Run /sdlc-gate (no artifacts created)"
+      - action: "Run /sprd-gate (no artifacts created)"
     acceptance_criteria:
       - "Reports FAIL for G1-integrity (missing problem-statement.md)"
       - "Reports FAIL for G2-completeness"
@@ -58,23 +58,23 @@ scenarios:
 
   - id: gate-check-pass
     name: "Gate check with complete artifacts"
-    description: "Run /sdlc-gate after creating all required artifacts"
+    description: "Run /sprd-gate after creating all required artifacts"
     steps:
       - action: "Initialize project"
       - action: "Create problem-statement.md with complete content"
-      - action: "Run /sdlc-gate"
+      - action: "Run /sprd-gate"
     acceptance_criteria:
       - "Reports PASS for all gates"
       - "Shows ALL GATES PASSED"
-      - "Suggests running /sdlc-next"
+      - "Suggests running /sprd-next"
 
   - id: phase-advance
     name: "Phase advance from 0 to 1"
-    description: "Run /sdlc-next to advance from Discovery to Requirements"
+    description: "Run /sprd-next to advance from Discovery to Requirements"
     steps:
       - action: "Initialize project"
       - action: "Create problem-statement.md"
-      - action: "Run /sdlc-next"
+      - action: "Run /sprd-next"
     acceptance_criteria:
       - "Gate checks run and pass"
       - "state.yaml current_phase updated to 1"
@@ -85,11 +85,11 @@ scenarios:
 
   - id: status-dashboard
     name: "Status dashboard display"
-    description: "Run /sdlc-status to view progress"
+    description: "Run /sprd-status to view progress"
     steps:
       - action: "Initialize project"
       - action: "Advance to Phase 1"
-      - action: "Run /sdlc-status"
+      - action: "Run /sprd-status"
     acceptance_criteria:
       - "Shows project name and profile"
       - "Shows progress bar (10%)"
@@ -104,7 +104,7 @@ scenarios:
     steps:
       - action: "Initialize with microsoft-enterprise profile"
       - action: "Create requirements.md WITHOUT auth/authz content"
-      - action: "Run /sdlc-gate for Phase 1"
+      - action: "Run /sprd-gate for Phase 1"
     acceptance_criteria:
       - "SOC 2 CC6.1 gate fails (missing authentication/authorization content)"
       - "Compliance gate listed with MUST severity"
@@ -116,7 +116,7 @@ scenarios:
     steps:
       - action: "Initialize project"
       - action: "Create problem-statement.md with 'TODO: fill in details'"
-      - action: "Run /sdlc-gate"
+      - action: "Run /sprd-gate"
     acceptance_criteria:
       - "G2-completeness FAIL reported"
       - "Message mentions placeholder content"
@@ -127,7 +127,7 @@ scenarios:
     description: "Walk through all 9 phases (0, 1, 2, 3, build, 7, 8, 9, close) with minimal artifacts"
     steps:
       - action: "Initialize project"
-      - action: "For each phase in lifecycle order (0, 1, 2, 3, build, 7, 8, 9, close): create required artifacts, run /sdlc-next"
+      - action: "For each phase in lifecycle order (0, 1, 2, 3, build, 7, 8, 9, close): create required artifacts, run /sprd-next"
     acceptance_criteria:
       - "All 9 phases complete"
       - "state.yaml shows current_phase: \"close\" with status completed"

@@ -126,7 +126,7 @@ overlays:
   - { src: scripts/post-pr-thread.sh,                           dest: scripts/rails/post-pr-thread.sh }
   - { src: branch-policies/policies.json,                       dest: .azuredevops/rails/branch-policies.json }
   # Overlays the core's GitHub-flavored guide (last wins) so the documented path
-  # (.github/RAILS.md, referenced by /sdlc-setup Step 8) holds the ADO realization.
+  # (.github/RAILS.md, referenced by /sprd-setup Step 8) holds the ADO realization.
   - { src: RAILS.md,                                            dest: .github/RAILS.md }
   - { src: settings.fragment.json,                              dest: .claude/settings.json, merge: true }
   - { src: mcp.fragment.json,                                   dest: .mcp.json, merge: true }

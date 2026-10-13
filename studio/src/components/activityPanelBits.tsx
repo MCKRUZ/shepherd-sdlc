@@ -12,7 +12,7 @@ import { Button, Notice, SkeletonBlock } from '../ui'
 export const PANEL_BUTTON =
   'rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-700 disabled:opacity-60'
 export const PANEL_SECONDARY_BUTTON =
-  'rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-300 disabled:opacity-60'
+  'rounded-lg border border-line-1 px-3 py-1.5 text-xs font-medium text-ink-2 hover:border-line-2 disabled:opacity-60'
 
 type PanelButtonProps = Omit<ButtonProps, 'variant' | 'size'>
 

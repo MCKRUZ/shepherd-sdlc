@@ -15,7 +15,7 @@ estimated_tokens: ${ESTIMATED_TOKENS}  # word_count × 1.3
 
 <!--
   A living summary of this phase's artifacts as they are NOW — not a lock on them. When a source
-  artifact changes later (refinement, /sdlc-revise, /sdlc-refresh), this layer is regenerated and
+  artifact changes later (refinement, /sprd-revise, /sprd-refresh), this layer is regenerated and
   the previous version is kept as phase{N}-{name}.md.superseded-<YYYYMMDD>. The `## Locked Metrics`
   heading is read literally by the G5 gate; "locked" means carried forward and re-checked.
   See references/frozen-layers.md.

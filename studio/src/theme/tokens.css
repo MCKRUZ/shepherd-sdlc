@@ -9,64 +9,65 @@
 :root {
   color-scheme: light;
 
-  /* Surfaces — what things sit on. `code` and `code-error` stay dark in both themes. */
-  --color-surface-0: #f8fafc;
+  /* Surfaces — what things sit on: sand (docs/brand/shepherd/palette.json). `code` and
+     `code-error` stay dark in both themes; `code` is the dark theme's bark-0. */
+  --color-surface-0: #f5efe4;
   --color-surface-1: #ffffff;
-  --color-surface-2: #f1f5f9;
-  --color-surface-3: #e8edf4;
+  --color-surface-2: #efeae1;
+  --color-surface-3: #e9e3d9;
   --color-surface-raised: #ffffff;
-  --color-surface-code: #0f172a;
+  --color-surface-code: #14120f;
   --color-surface-code-error: #450a0a;
   /* The scrim is a brand wash, not a black one: `surface-0` at .55 plus a 2 px blur, so an
-     amber Notice under a dialog stays amber and the accent button stays teal. `--scrim` is the
+     amber Notice under a dialog stays amber and the accent button stays moss. `--scrim` is the
      one definition (dark.css restates it); `--color-scrim` is its utility name (`bg-scrim`). */
-  --scrim: rgb(248 250 252 / 0.55);
+  --scrim: rgb(245 239 228 / 0.55);
   --scrim-filter: blur(2px) saturate(1);
   --color-scrim: var(--scrim);
 
-  /* Ink. `ink-3` is the quietest colour a WORD may wear: measured 4.86:1 on `surface-2` and
-     4.53:1 on `surface-3` (tokenContrast.test), so a secondary line inside an inset card still
+  /* Ink — bark. `ink-3` is the quietest colour a WORD may wear: measured 4.98:1 on `surface-2` and
+     4.67:1 on `surface-3` (tokenContrast.test), so a secondary line inside an inset card still
      passes AA. `ink-4` is decoration only — placeholders, dividers, aria-hidden glyphs; never a
-     word (2.45:1 on `surface-0`). */
-  --color-ink-1: #0b1120;
-  --color-ink-2: #334155;
-  --color-ink-3: #5d6c84;
-  --color-ink-4: #94a3b8;
-  --color-ink-inverse: #f8fafc;
+     word (2.33:1 on `surface-0`). */
+  --color-ink-1: #1c1915;
+  --color-ink-2: #3d3630;
+  --color-ink-3: #6b625a;
+  --color-ink-4: #a69d94;
+  --color-ink-inverse: #f5efe4;
   /* The eyebrow voice (section, group and table-header labels) is `ink-3` in both themes — a
      label is a word, so it never wears `ink-4`. One name so a sweep can grep for it. */
   --color-eyebrow: var(--color-ink-3);
 
-  /* Lines */
-  --color-line-1: #e4e9f0;
-  --color-line-2: #cbd5e1;
-  --color-line-3: #94a3b8;
-  --color-focus: #0e7c86;
+  /* Lines — the sand ramp's hairline (surface-3), input edge, and emphasised edge (ink-4). */
+  --color-line-1: #e9e3d9;
+  --color-line-2: #d9d1c4;
+  --color-line-3: #a69d94;
+  --color-focus: #3f6b35;
 
   /* The one accent. */
-  /* SDLC Studio accent — teal–cyan (green/blue), docs/brand/togo/palette.json; 600 is the one fill used
-     with white text (4.95:1). The scale is the product's single accent; stage/status hues stay semantic. */
-  --color-accent-50: #edfafa;
-  --color-accent-100: #d3f3f3;
-  --color-accent-200: #a7e6e7;
-  --color-accent-300: #6fd1d4;
-  --color-accent-400: #3ab5bc;
-  --color-accent-500: #1a99a3;
-  --color-accent-600: #0e7c86;
-  --color-accent-700: #0b6470;
-  --color-accent-800: #0b505a;
-  --color-accent-900: #0a3f47;
+  /* Shepherd accent — moss (green), docs/brand/shepherd/palette.json; 600 is the one fill used
+     with white text (6.24:1). The scale is the product's single accent; stage/status hues stay semantic. */
+  --color-accent-50: #f3f7f0;
+  --color-accent-100: #e3eddd;
+  --color-accent-200: #c7e0bc;
+  --color-accent-300: #9dc58e;
+  --color-accent-400: #6fa55f;
+  --color-accent-500: #4f8545;
+  --color-accent-600: #3f6b35;
+  --color-accent-700: #2f5229;
+  --color-accent-800: #243f20;
+  --color-accent-900: #192d17;
   /* Accent as TEXT (links, "Open ↵", spec ids, quick replies). A separate pair because the dark
-     ramp is inverted: `accent-700` is a fill step there (#0b6470 on #0b1120 ≈ 2.5:1), so a link
-     coloured by ramp step is unreadable in dark. Light 6.5:1 on `surface-0`; dark 10.5:1. */
-  --color-accent-text: #0b6470;
-  --color-accent-text-hover: #0b505a;
+     ramp is inverted: `accent-700` is a fill step there (#2f5229 on #14120f ≈ 2.1:1), so a link
+     coloured by ramp step is unreadable in dark. Light 5.45:1 on `surface-0`; dark 9.63:1. */
+  --color-accent-text: #3f6b35;
+  --color-accent-text-hover: #2f5229;
 
-  /* Mark A — Depth: the ONE sanctioned gradient (brand §8), two steps of the one accent, bar
-     top-left → disc bottom-right. Hero and icon only, ≥ 48 px, never a control, chip, status,
-     data body or text. Not a `--color-*` token on purpose: there is no utility for it. */
-  --mark-depth-a: #6fd1d4;
-  --mark-depth-b: #0a3f47;
+  /* Mark — Depth: the ONE sanctioned gradient (brand §8), two steps of the one accent, moss 300
+     → moss 900. Hero and icon only, ≥ 48 px, never a control, chip, status, data body or text.
+     Not a `--color-*` token on purpose: there is no utility for it. */
+  --mark-depth-a: #9dc58e;
+  --mark-depth-b: #192d17;
 
   /* `brand-*` is the accent under its legacy name. Steps 200/300/800/900 were used 14 times
      with no CSS emitted before this file; the full scale closes that gap. */
@@ -89,15 +90,15 @@
   --color-stage-signed-line: #bbf7d0;
   /* "Now" is the accent: one hue says "where you are" everywhere (sidebar Now, current ring,
      current workflow step, Spine station, ready bodies). The blue it replaces was a second accent
-     competing with teal; the four semantics below are untouched. */
-  --color-stage-current-fill: #0e7c86;
-  --color-stage-current-bg: #edfafa;
-  --color-stage-current-ink: #0b6470;
-  --color-stage-current-line: #a7e6e7;
-  --color-stage-later-fill: #94a3b8;
-  --color-stage-later-bg: #f8fafc;
-  --color-stage-later-ink: #64748b;
-  --color-stage-later-line: #e2e8f0;
+     competing with moss; the four semantics below are untouched. */
+  --color-stage-current-fill: #3f6b35;
+  --color-stage-current-bg: #f3f7f0;
+  --color-stage-current-ink: #3f6b35;
+  --color-stage-current-line: #c7e0bc;
+  --color-stage-later-fill: #a69d94;
+  --color-stage-later-bg: #f5efe4;
+  --color-stage-later-ink: #6b625a;
+  --color-stage-later-line: #e9e3d9;
 
   /* §2.3 status groups. Running is its own hue because running is not a warning. */
   --color-status-ok-fill: #16a34a;
@@ -119,10 +120,10 @@
 
   /* §2.3 spec tones — constellation body colour and Chip tone (the SprintBoard CHIP meanings). */
   /* ready = can be picked up now, so it shares the accent family with `stage-current`. */
-  --color-spec-ready: #1a99a3;
+  --color-spec-ready: #4f8545;
   --color-spec-inflight: #0ea5e9;
   --color-spec-merged: #16a34a;
-  --color-spec-deferred: #94a3b8;
+  --color-spec-deferred: #a69d94;
   --color-spec-notready: #b45309;
 
   /* Legacy aliases — 23 `text-[var(--color-command-error)]` usages and the stage-nav vars
@@ -135,10 +136,17 @@
   --color-command-error: var(--color-status-error-fill);
   --color-command-running: var(--color-status-running-fill);
 
-  /* §2.6 elevation. Dark swaps these for a rim light (dark.css). */
-  --shadow-1: 0 1px 2px rgb(15 23 42 / 0.06), inset 0 0 0 1px var(--color-line-1);
-  --shadow-2: 0 8px 24px -8px rgb(15 23 42 / 0.14), 0 0 0 1px var(--color-line-1);
-  --shadow-3: 0 0 0 1px var(--color-line-1), 0 24px 64px -16px rgb(15 23 42 / 0.28);
+  /* One legacy palette step retuned in light. The assistant chat bubble keeps `bg-slate-100`
+     because `e2e/chatAuthoring.spec.ts` locates it by that class; Tailwind 4 compiles the class
+     to `var(--color-slate-100)`, so pointing the variable at `surface-2` here paints it sand
+     (dark.css §2.4 does the same for dark). `slate-900` is deliberately NOT retuned: the inverse
+     plate (`bg-slate-900 text-white`) is pinned to Tailwind's value by ui/kbd.test. */
+  --color-slate-100: var(--color-surface-2);
+
+  /* §2.6 elevation — the shadow tint is `ink-1`. Dark swaps these for a rim light (dark.css). */
+  --shadow-1: 0 1px 2px rgb(28 25 21 / 0.06), inset 0 0 0 1px var(--color-line-1);
+  --shadow-2: 0 8px 24px -8px rgb(28 25 21 / 0.14), 0 0 0 1px var(--color-line-1);
+  --shadow-3: 0 0 0 1px var(--color-line-1), 0 24px 64px -16px rgb(28 25 21 / 0.28);
   --ring: 0 0 0 2px var(--color-surface-0), 0 0 0 4px var(--color-focus);
 
   /* §2.1 density — comfortable; `[data-density="compact"]` in base.css redefines these. */
@@ -160,15 +168,17 @@
 
   /* Command center (togo-command-center-visual.md §2 — P0 adds exactly these). Hex rows are
      measured in the document's contrast table; alias rows follow the token they name. */
-  --color-lane: #eef2f7;
-  --color-lane-header: #e9eef5;
-  --color-lane-line: #dce3ec;
-  --color-card-lit: #1a99a3;
-  --color-baton: #0e7c86;
-  --color-baton-bg: #d3f3f3;
-  --color-baton-ink: #0b6470;
-  --color-you-ring: #0e7c86;
-  --color-strip-lit: var(--color-stage-signed-fill);
+  --color-lane: #efeae1;
+  --color-lane-header: #e9e3d9;
+  --color-lane-line: #d9d1c4;
+  --color-card-lit: #4f8545;
+  --color-baton: #3f6b35;
+  --color-baton-bg: #e3eddd;
+  --color-baton-ink: #3f6b35;
+  --color-you-ring: #3f6b35;
+  /* Light uses the signed INK step: the fill (#16a34a) is 2.88:1 on the sand canvas, under the
+     3:1 UI floor — the same move `rung-pending` makes below. Dark is the dark signed fill. */
+  --color-strip-lit: #15803d;
   --color-strip-unlit: var(--color-line-2);
   --color-strip-viewing: var(--color-stage-current-fill);
   --color-today-act-bg: var(--color-stage-current-bg);
@@ -182,8 +192,8 @@
   --color-today-late-line: var(--color-status-error-line);
   --color-plan-backlog: var(--color-lane);
   --color-plan-slate: var(--color-surface-1);
-  --color-plan-says: #edfafa;
-  --color-plan-says-line: #a7e6e7;
+  --color-plan-says: #f3f7f0;
+  --color-plan-says-line: #c7e0bc;
   --color-rung-pass: var(--color-status-ok-fill);
   --color-rung-fail: var(--color-status-error-fill);
   /* Light uses the running INK step: the fill (#0ea5e9) is 2.77:1 on white. */
@@ -202,7 +212,7 @@
   --color-ledger-postponed-ink: var(--color-stage-later-ink);
   --color-ledger-offbooks: var(--color-status-error-fill);
   --color-steer-bg: #ffffff;
-  --color-steer-tile: #f8fafc;
+  --color-steer-tile: #f5efe4;
   --color-steer-tile-line: var(--color-line-1);
   --color-steer-number-ink: var(--color-ink-1);
   --color-steer-label-ink: var(--color-ink-2);
@@ -342,4 +352,3 @@
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
 }
-

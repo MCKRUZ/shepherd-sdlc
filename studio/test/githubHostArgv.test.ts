@@ -12,14 +12,14 @@ import { GitHubHost, GITHUB_ARGV, type GitHubHostDeps } from '../electron/main/h
 const SIX = {
   whoAmI: ['api', 'user', '--jq', '.login'],
   rulesets: ['api', 'repos/{owner}/{repo}/rulesets'],
-  prCreateNoReviewer: ['pr', 'create', '--base', 'main', '--head', 'studio/1758700000000', '--title', 'Edited requirements', '--body', 'Saved from SDLC Studio.\n\nEdited requirements'],
-  prCreateReviewer: ['pr', 'create', '--base', 'main', '--head', 'studio/1758700000000', '--title', 'Edited requirements', '--body', 'Saved from SDLC Studio.\n\nEdited requirements', '--reviewer', 'priya-n'],
+  prCreateNoReviewer: ['pr', 'create', '--base', 'main', '--head', 'shepherd/1758700000000', '--title', 'Edited requirements', '--body', 'Saved from Shepherd.\n\nEdited requirements'],
+  prCreateReviewer: ['pr', 'create', '--base', 'main', '--head', 'shepherd/1758700000000', '--title', 'Edited requirements', '--body', 'Saved from Shepherd.\n\nEdited requirements', '--reviewer', 'priya-n'],
   repoOwner: ['repo', 'view', '--json', 'owner', '--jq', '.owner.login'],
-  prList: ['pr', 'list', '--head', 'studio/1758700000000', '--state', 'open', '--json', 'number,headRefName,author,headRepositoryOwner,files,statusCheckRollup,reviews'],
+  prList: ['pr', 'list', '--head', 'shepherd/1758700000000', '--state', 'open', '--json', 'number,headRefName,author,headRepositoryOwner,files,statusCheckRollup,reviews'],
   prMerge: ['pr', 'merge', '7', '--merge'],
 }
 
-const create = { base: 'main', head: 'studio/1758700000000', title: 'Edited requirements', body: 'Saved from SDLC Studio.\n\nEdited requirements' }
+const create = { base: 'main', head: 'shepherd/1758700000000', title: 'Edited requirements', body: 'Saved from Shepherd.\n\nEdited requirements' }
 
 describe('GITHUB_ARGV golden', () => {
   it('is exactly what sync.ts issued', () => {
@@ -30,7 +30,7 @@ describe('GITHUB_ARGV golden', () => {
     expect(GITHUB_ARGV.prCreate({ ...create, reviewer: '@priya-n' })).toEqual(SIX.prCreateReviewer)
     expect(GITHUB_ARGV.prCreate({ ...create, reviewer: 'priya-n' })).toEqual(SIX.prCreateReviewer)
     expect(GITHUB_ARGV.repoOwner()).toEqual(SIX.repoOwner)
-    expect(GITHUB_ARGV.prList('studio/1758700000000')).toEqual(SIX.prList)
+    expect(GITHUB_ARGV.prList('shepherd/1758700000000')).toEqual(SIX.prList)
     expect(GITHUB_ARGV.prMerge(7)).toEqual(SIX.prMerge)
   })
 })
@@ -49,7 +49,7 @@ describe('GitHubHost runs nothing but those argv', () => {
     expect((await host.repoView()).headOwnerKey).toBe('MCKRUZ')
     expect(await host.isBranchProtected('main')).toBe(true)
     expect(await host.createPullRequest({ ...create, reviewer: '@priya-n' })).toEqual({ url: 'https://github.com/MCKRUZ/x/pull/7' })
-    expect(await host.listOpenPullRequests('studio/1758700000000')).toEqual([{ number: 7 }])
+    expect(await host.listOpenPullRequests('shepherd/1758700000000')).toEqual([{ number: 7 }])
     expect(await host.mergePullRequest(7)).toBe('https://github.com/MCKRUZ/x/pull/7')
 
     expect(runGh.mock.calls.map((c) => c[0])).toEqual([SIX.whoAmI, SIX.repoOwner, SIX.prCreateReviewer, SIX.prMerge])

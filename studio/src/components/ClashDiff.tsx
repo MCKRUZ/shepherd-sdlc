@@ -50,7 +50,7 @@ function Row({ line }: { line: DiffLine }) {
         {line.segments
           ? line.segments.map((s, i) =>
               s.changed
-                ? <mark key={i} className={`rounded px-0.5 text-slate-900 ${tone.mark}`}>{s.text}</mark>
+                ? <mark key={i} className={`rounded px-0.5 text-ink-1 ${tone.mark}`}>{s.text}</mark>
                 : <span key={i}>{s.text}</span>,
             )
           : line.text || ' '}

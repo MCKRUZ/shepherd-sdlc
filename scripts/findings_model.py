@@ -1,6 +1,6 @@
 """findings_model.py — Single source of truth for review-finding severity, disposition, identity.
 
-A review (/sdlc-review — the grader) surfaces findings. Per the delivery-standard the grader
+A review (/sprd-review — the grader) surfaces findings. Per the delivery-standard the grader
 *advises, never blocks* (the-rails.md §4): so this module does NOT gate. What it does is give a
 finding a stable identity, a disposition with honest counting rules, and one arithmetic for
 "how much open HIGH+ debt is on the table" — the number the human Checker weighs at the merge bar.

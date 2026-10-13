@@ -4,7 +4,7 @@
 // against the file. Literal numbers, never computed, so a re-render is byte-identical and a
 // reviewer can diff a shape by eye.
 //
-// Vocabulary is the instrument's: four lane wells, a sprint-title bar (the Macron's gesture), a
+// Vocabulary is the instrument's: four lane wells, a sprint-title bar (the gate's top bar), a
 // Today column and the "you" ring, a sealed ledger page, the decision clock, the next-up slot.
 // Two tones only — quiet and lit — both from the one accent ramp (§2: `accent-200`, `accent-500`).
 
@@ -100,5 +100,7 @@ export const PERSON_RING_PX = 20
 export const PERSON_RING_GAP_PX = 2
 export const PERSON_RING_WIDTH_PX = 2
 
-/** Light-theme hex for the static twins under `public/brand/cc/` (tokens.css values). */
-export const CC_STATIC_HEX = { quiet: '#A7E6E7', lit: '#1A99A3', glyph: '#0E7C86' } as const
+/** Light-theme hex for the static twins under `public/brand/cc/`: the moss ramp's 200 / 500 / 600
+ * (docs/brand/shepherd/palette.json) — the values the `accent-200` / `accent-500` / `accent-600`
+ * tokens resolve to in light, because a file cannot read a token. */
+export const CC_STATIC_HEX = { quiet: '#C7E0BC', lit: '#4F8545', glyph: '#3F6B35' } as const

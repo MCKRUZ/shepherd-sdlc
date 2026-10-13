@@ -42,7 +42,7 @@ export async function runSprintVerb(
   capabilities?: readonly string[],
   boardSpecIds: readonly string[] | undefined = cachedBoardSpecIds(projectPath),
 ): Promise<SprintVerbResult> {
-  if (!req || typeof req !== 'object' || !WRITE_VERBS.includes(req.verb)) return notRun(req, 'That is not a sprint verb Studio runs.')
+  if (!req || typeof req !== 'object' || !WRITE_VERBS.includes(req.verb)) return notRun(req, 'That is not a sprint verb Shepherd runs.')
   if (!actor) return notRun(req, NO_ACTOR)
   const cap = VERB_CAPABILITY[req.verb]
   if (cap && capabilities && !capabilities.includes(cap)) return notRun(req, newerPlugin(cap))

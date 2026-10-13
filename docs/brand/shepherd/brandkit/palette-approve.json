@@ -1,0 +1,15 @@
+{
+  "approval_summary": "Owner selected Furrow ('furrow is awesome') and asked for Spring as a second light accent alongside Wheat.",
+  "palette": {
+    "colors": [
+      {"hex": "#3F6B35", "name": "Moss", "role": "primary"},
+      {"hex": "#5E452A", "name": "Umber", "role": "support"},
+      {"hex": "#2F5D7C", "name": "Lake", "role": "support"},
+      {"hex": "#D9C7A3", "name": "Wheat", "role": "accent"},
+      {"hex": "#9DC58E", "name": "Spring", "role": "accent"},
+      {"hex": "#1C1915", "name": "Bark", "role": "text"},
+      {"hex": "#F5EFE4", "name": "Warm sand", "role": "background"}
+    ],
+    "gradients": []
+  }
+}

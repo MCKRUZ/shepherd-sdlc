@@ -490,7 +490,7 @@ try {
   })
   page.on('pageerror', (err) => consoleLines.push(`[pageerror] ${String(err.message ?? err).split('\n')[0].slice(0, 220)}`))
   await setView(1440, 900)
-  await page.getByRole('heading', { level: 1, name: 'SDLC Studio' }).waitFor({ timeout: 30_000 })
+  await page.getByRole('heading', { level: 1, name: 'Shepherd' }).waitFor({ timeout: 30_000 })
   await settle(page)
   await shot(page, 'welcome')
   // v8: the Welcome in the dark theme. The corner pill is the kit's ThemeToggle (group "Theme"),

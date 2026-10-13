@@ -15,14 +15,15 @@ import { runPluginScript } from './project'
 import { rawStdout } from './commandRunner'
 import { isSprintId } from '../../shared/sprintModel'
 import { readSlateProposal, readSprintList, readSprintLog } from './commandCenterReaders'
+import { PLUGIN_NOT_FOUND } from '../../shared/pluginId'
 import type {
   SlateProposal, SprintCarriedIn, SprintDecisions, SprintHandoffOpen, SprintListView, SprintLogView, SprintMixTier,
   SprintReadinessGap, SprintRecord, SprintReportKind, SprintReportResult, SprintSlateRow, SprintStatusResult,
   SprintVerdictPending, SprintView,
 } from '../../shared/types'
 
-const NO_PLUGIN = 'claude-code-sdlc plugin scripts not found'
-const NOT_A_SPRINT_ID = 'That is not a sprint id Studio can read (expected S07, S12, ...).'
+const NO_PLUGIN = PLUGIN_NOT_FOUND
+const NOT_A_SPRINT_ID = 'That is not a sprint id Shepherd can read (expected S07, S12, ...).'
 const UNREADABLE = 'The sprint could not be read, so there is nothing to show.'
 const PAGE_UNWRITTEN = 'The sprint page could not be written.'
 
@@ -197,7 +198,7 @@ export async function renderSprintReport(
   projectPath: string, scriptsDir: string, sprintId: string, kind: SprintReportKind,
 ): Promise<SprintReportResult> {
   if (!isSprintId(sprintId)) return { ok: false, error: NOT_A_SPRINT_ID }
-  if (kind !== 'planning' && kind !== 'review') return { ok: false, error: 'Studio writes a planning page or a review page.' }
+  if (kind !== 'planning' && kind !== 'review') return { ok: false, error: 'Shepherd writes a planning page or a review page.' }
   const [script, args] = kind === 'planning'
     ? ['sprint.py', ['plan', ...sourceArgs(projectPath), '--sprint', sprintId, '--json']] as const
     : ['generate_sprint_report.py', [...sourceArgs(projectPath), '--sprint', sprintId, '--kind', 'review', '--json']] as const

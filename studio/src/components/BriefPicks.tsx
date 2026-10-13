@@ -123,7 +123,7 @@ function QuestionRow({ q, checked, full, onToggle }: { q: BriefQuestion; checked
       />
       <span className="text-xs text-ink-2">
         <span className="font-medium text-ink-1">{q.id}</span> {q.question}
-        {unusable && <span className="block text-ink-3">{interview ? 'Neither in the room nor emailed.' : 'Its route is not one Studio recognises.'}</span>}
+        {unusable && <span className="block text-ink-3">{interview ? 'Neither in the room nor emailed.' : 'Its route is not one Shepherd recognises.'}</span>}
       </span>
     </li>
   )

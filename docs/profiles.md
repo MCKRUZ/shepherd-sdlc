@@ -1,6 +1,6 @@
 # Profile System
 
-Profiles are the configuration backbone of the claude-code-sdlc plugin. They define everything from your technology stack and quality thresholds to compliance frameworks and coding conventions. This document is the authoritative reference for the profile system.
+Profiles are the configuration backbone of the Shepherd plugin. They define everything from your technology stack and quality thresholds to compliance frameworks and coding conventions. This document is the authoritative reference for the profile system.
 
 ---
 
@@ -31,7 +31,7 @@ A profile is a YAML configuration file that customizes the entire SDLC pipeline 
 
 1. Profiles are authored as YAML files inside `profiles/<profile-name>/profile.yaml` in the plugin repository.
 2. They are validated against `profiles/_schema.yaml` using `scripts/validate_profile.py`.
-3. When a target project is initialized with `/sdlc-setup`, the selected profile is copied to the target project's `.sdlc/profile.yaml`.
+3. When a target project is initialized with `/sprd-setup`, the selected profile is copied to the target project's `.sdlc/profile.yaml`.
 4. Once copied, the profile is **immutable** within the target project -- it serves as the contract that governs all subsequent SDLC phases.
 5. Every phase, gate check, hook, agent, and report reads from `.sdlc/profile.yaml` to determine behavior.
 
@@ -328,7 +328,7 @@ Gate results are categorized as PASS, FAIL, or MANUAL. Any FAIL on a MUST-severi
 
 ### Hook Behavior
 
-The session-start hook (`hooks/sdlc-session-start.ps1`) reads `.sdlc/state.yaml` at the beginning of each Claude Code session and loads the current phase context. Profile conventions are injected into the active session:
+The session-start hook (`hooks/shepherd-session-start.ps1`) reads `.sdlc/state.yaml` at the beginning of each Claude Code session and loads the current phase context. Profile conventions are injected into the active session:
 
 - When `conventions.immutability` is `true`, the session context includes reminders to use immutable data patterns (spread operators, `with` expressions, new state objects in reducers).
 - When `conventions.no_console_log` is `true`, the session context includes a reminder to use structured logging instead of `console.log`.
@@ -493,7 +493,7 @@ Supported `check_type` values:
 
 ### Step 5: Done — There Is No Registration Step
 
-Profiles are **auto-discovered**: `/sdlc-setup` lists the `profiles/` directory at runtime
+Profiles are **auto-discovered**: `/sprd-setup` lists the `profiles/` directory at runtime
 (excluding `_schema.yaml`) and presents every profile it finds — including ones not named in
 any documentation. The plugin manifest (`.claude-plugin/plugin.json`) is metadata only and has
 no profile registry; the plugin ships the whole repository directory
@@ -695,7 +695,7 @@ When writing evaluation criteria for your custom profile:
 | Topic | Location | Description |
 |-------|----------|-------------|
 | Gate system | `docs/gate-system.md` | How gates work, gate categories (G1--G6), phase transitions |
-| Commands | `docs/commands.md` | `/sdlc-setup` (profile selection and initialization) |
+| Commands | `docs/commands.md` | `/sprd-setup` (profile selection and initialization) |
 | Scripts | `docs/scripts.md` | `validate_profile.py`, `check_gates.py`, `generate_phase_report.py` |
 | Agents | `docs/agents.md` | `section-evaluator` agent behavior and evaluation workflow |
 | Phase definitions | `phases/00-discovery.md`, `01-requirements.md`, `02-design.md`, `03-foundation.md`, `build-loop.md`, `07-documentation.md`, `08-deployment.md`, `09-monitoring.md`, `close.md` | Per-phase requirements and artifacts |

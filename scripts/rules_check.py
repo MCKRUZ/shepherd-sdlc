@@ -1,4 +1,4 @@
-"""Advisory check of business rules against golden scenarios (the mechanical half of /sdlc-rules).
+"""Advisory check of business rules against golden scenarios (the mechanical half of /sprd-rules).
 
 Reads business-rules.md (a `BR-NN` decision table), golden-scenarios.md (a `SCEN-NN` table) and the
 optional decision-log, and reports what a person would otherwise have to find by reading:

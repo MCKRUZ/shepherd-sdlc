@@ -976,7 +976,7 @@ export async function save(
     }
 
     // Rejected (most likely branch protection) — branch + PR fallback.
-    const branchName = `studio/${Date.now()}`
+    const branchName = `shepherd/${Date.now()}`
     const pushBranch = await runGitTolerant(['push', 'origin', `${newCommit}:refs/heads/${branchName}`], projectPath)
     if (!pushBranch.ok) {
       return { ok: false, entries: [directPush, pushBranch], error: pushBranch.stderr || 'Could not push — check network and permissions.' }
@@ -991,8 +991,8 @@ export async function save(
     try {
       const created = await resolved.provider.createPullRequest({
         base: branch, head: branchName,
-        title: (changeNote.split('\n')[0] || `Studio save ${branchName}`).slice(0, 72),
-        body: `Saved from SDLC Studio.\n\n${changeNote}`,
+        title: (changeNote.split('\n')[0] || `Shepherd save ${branchName}`).slice(0, 72),
+        body: `Saved from Shepherd.\n\n${changeNote}`,
         reviewer: review.reviewer,
       })
       prUrl = created.url

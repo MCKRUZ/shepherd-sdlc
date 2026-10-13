@@ -100,7 +100,7 @@ Generate an interactive HTML visual report at `.sdlc/reports/07-documentation-vi
 See the Visual Report Protocol in `SKILL.md` for rendering standards and fallback behavior.
 
 ### Step 7: Generate Phase Report
-Run `/sdlc-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/07-documentation-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
+Run `/sprd-gate` to validate exit criteria and automatically generate the phase HTML report at `.sdlc/reports/07-documentation-report.html`. Share this report with stakeholders for review before requesting sign-off. The report includes artifact inventory and gate status.
 
 ## Artifact Specifications
 
@@ -207,9 +207,9 @@ every divergence found between the spec and reality.
 - [ ] Stakeholder reviewed and approved (manual gate)
 
 ## HTML Report
-The phase report is generated automatically when you run `/sdlc-gate` or `/sdlc-next`. It is written to `.sdlc/reports/07-documentation-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
+The phase report is generated automatically when you run `/sprd-gate` or `/sprd-next`. It is written to `.sdlc/reports/07-documentation-report.html` and is fully self-contained — share it with stakeholders as the review artifact for the manual sign-off gate.
 
-To regenerate at any time: `/sdlc-phase-report`
+To regenerate at any time: `/sprd-phase-report`
 
 ## Guidance
 - Test your README against a fresh checkout — clone the repo to a temp directory and follow the instructions verbatim. If any step requires knowledge not in the README, the README is incomplete.
@@ -220,7 +220,7 @@ To regenerate at any time: `/sdlc-phase-report`
 
 ## Coaching Prompts
 
-When operating in coaching mode (`/sdlc-coach`) for this phase:
+When operating in coaching mode (`/sprd-coach`) for this phase:
 
 ### Opening (no docs started)
 - "Who's the audience for this documentation — developers, operators, end users?"

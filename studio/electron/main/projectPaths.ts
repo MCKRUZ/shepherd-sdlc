@@ -95,10 +95,10 @@ export function resolveInProject(projectPath: string, relPath: string): string {
     throw new UnsafePathError(`${relPath} is outside this project.`)
   }
   if (existsSync(full) && lstatSync(full).isSymbolicLink()) {
-    throw new UnsafePathError(`${relPath} is a link to somewhere else, so Studio will not read or write it.`)
+    throw new UnsafePathError(`${relPath} is a link to somewhere else, so Shepherd will not read or write it.`)
   }
   if (!inside(realDeepestExisting(full))) {
-    throw new UnsafePathError(`${relPath} leads outside this project, so Studio will not read or write it.`)
+    throw new UnsafePathError(`${relPath} leads outside this project, so Shepherd will not read or write it.`)
   }
   return full
 }
