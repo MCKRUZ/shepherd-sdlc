@@ -26,6 +26,7 @@ import { contextFrom, sharedElement } from '../../motion/choreo'
 import { stashBack } from '../../motion/choreo/sharedElement'
 import { PersonRing } from '../brand/figures'
 import { ringFor, riskTone } from '../planning/planningModel'
+import { AdoChip } from '../ado/AdoChip'
 import { ChannelDimensions } from './ChannelDimensions'
 import { FindingsLedger } from './FindingsLedger'
 import { HandoffFoot } from './HandoffFoot'
@@ -148,6 +149,7 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
         {pr ? (
           <a href={pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-ident text-accent-text hover:underline"><Icon icon={GitPullRequest} size={16} />#{pr.number}</a>
         ) : <span className="text-ink-3" data-testid="no-pr">{NO_PR_YET}</span>}
+        <AdoChip projectPath={projectPath} specId={row.spec} capabilities={capabilities} actor={actor} />
         {row.engReview && <Chip tone="neutral" casing="state">eng {row.engReview}</Chip>}
         {row.dataReview && <Chip tone="neutral" casing="state">data {row.dataReview}</Chip>}
       </div>
