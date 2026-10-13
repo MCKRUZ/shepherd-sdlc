@@ -1,9 +1,11 @@
-"""ado_sync.py -- The CLI of the Azure Boards mirror: set it up, read the client's process, plan and read the board (B1, B2).
+"""ado_sync.py -- The CLI of the Azure Boards mirror: set it up, read the client's process, plan, read and write the board.
 
 Azure DevOps Boards is a board the team already uses; this mirror projects the repository's specs, epics and
 features onto it and reads board changes back. Fold B1 shipped the verbs that never touch a work item; Fold B2
-adds the READ verbs. Nothing in this file writes to the board: `apply` and the comment writes arrive with the
-write path.
+adds the READ verbs; Fold B3 adds the WRITE verbs. The one place the mirror writes to the board is `apply` (through
+`ado_sync_apply`, as the person whose `az` login is active) and `link-pr`; `iteration bind`, `posture` and `comment`
+write only files in this repository. A write verb needs a named human as `--by`, and `apply` and `link-pr` also need
+posture `assisted`.
 
   config init [--force]   copy the starter `.sdlc/ado.yaml` in and ignore the local cache folder
   config check            the config's findings, one per line (against the saved schema when there is one)
@@ -28,6 +30,17 @@ write path.
                           a work item's cached discussion, quoted; `--fetch` reads it from the board first
   discussion gc [--dry-run]
                           delete discussion caches past `discussion.retain_days` or for unlinked items
+  apply --confirm <12hex> --by H [--limit N]
+                          send the plan a person confirmed (the hash `plan` printed) to the board, as that person:
+                          field ops first, then comments; every write is ledgered
+  link-pr --spec NNNN --pr N --by H
+                          link a pull request to the spec's work item (one `az repos pr work-item add`)
+  iteration bind SNN --path P --by H
+                          bind a sprint to an iteration path the discovered schema has (`.sdlc/ado.yaml` only)
+  posture plan-only|assisted --by H
+                          switch this clone's posture (`.sdlc/ado.yaml` only); `assisted` is what offers `apply`
+  comment <ref|#id> --message=TEXT --by H [--mention @h ...] [--event NAME]
+                          draft one comment as a one-row plan file; nothing is sent until `apply --confirm`
 
 What it reads
   - `.sdlc/ado.yaml` (the config), `.sdlc/ado/schema.json` (what `discover` saved), the repository's own specs,
@@ -41,7 +54,12 @@ What it writes
     discussion cache (`.sdlc/ado/local/discussion/<id>.json`, `me.json`) and ledger `discussion_pulled`,
     `comment_seen`, `directive_seen` -- counts, ids and hashes only, never a comment's text, a name or an address
   - `link`, `adopt`: ledger `linked`; `discussion gc`: deletions under the local folder, ledger `discussion_gc`
-  - Nothing else: never `state.yaml`, never a spec, never the board. `--help` and an import write nothing.
+  - `apply`: the board (work items it creates or updates, comments it posts), ledger `applied`, `commented`,
+    `conflict`, `refused` (written by `ado_sync_apply`); `link-pr`: one relation on the board, ledger `applied`
+    (`action: link_pr`, the item's baseline carried); `posture`: `.sdlc/ado.yaml`, ledger `posture`;
+    `iteration bind`: `.sdlc/ado.yaml`, ledger `iteration_bound`; `comment`: one plan file, and ledger
+    `comment_refused` when the text is refused -- never the board
+  - Nothing else: never `state.yaml`, never a spec. `--help` and an import write nothing.
   The ledger is `.sdlc/metrics/ado-sync-log.jsonl`, append-only, one `json.dumps(event)` per line; a failed
   append prints `DRIFT: ...` and exits 1. A `linked` (or, later, `applied`) line carries `work_item`, `rev_after`
   (the board's revision it was written against), `type` and `projection_hash`: `ado_sync_model.projection_hash` of
@@ -57,22 +75,45 @@ Exit codes (the kit's verb table)
   validate      0 resolvable | 1 gaps (no config or schema, an unresolvable pin, a kind with no type) |
                 2 a forbidden field is mapped
   plan, status, drift, show
-                0 always -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
+                0 -- a board that cannot be reached (or a missing config or schema) is `unavailable` with
                 no rows, never a failure; so is a ledger that cannot be read or holds a line that is not a ledger
                 line, and a plan file that cannot be written (`unavailable: <reason>`; in `--json`
-                `"unavailable": "<reason>"`). A ledger append or hook line that fails after the read is printed
-                (`DRIFT: ...`, `hook line: not written`) and the exit is still 0. 1 only for a usage error (a ref
+                `"unavailable": "<reason>"`). A hook line that fails after the read is printed
+                (`hook line: not written`) and the exit is still 0. 1 for a usage error (a ref
                 that is not ledgered and no `#id`, a target that is neither, a `--sprint` that is not a sprint
-                id, `--fetch`/`--versions` on a remote that is not Azure DevOps); an unknown `--kind` is
-                argparse's own usage error (2), the choices being `boards_contract.KINDS`
+                id, `--fetch`/`--versions` on a remote that is not Azure DevOps) and for `DRIFT`: house rule 7
+                outranks "reads exit 0" for a verb that appends to the ledger, so a `plan` whose `planned` line
+                could not be appended and a `show --fetch` whose `discussion_pulled` line could not be (the file or
+                the cache it already wrote stays, and what the verb read is still printed) exit 1; an unknown
+                `--kind` is argparse's own usage error (2), the choices being `boards_contract.KINDS`
   pull          0 | 1 `DRIFT` (the ledger append failed) -- and nothing else: an unreadable ledger is `unavailable`
                 (exit 0), and `--full` without `--discussion` implies it
   link, adopt   0 linked | 1 the item is not found, is already mapped, carries another mirror ref, or is ambiguous;
                 the ledger cannot be read; `--by` names two people on the roster
                 | 2 an AI or agent `--by`, an e-mail address that is on nobody's roster entry, or the `AB#` form
   discussion gc 0 | 1 `DRIFT`
+  apply         0 every row applied (a row deferred by `--limit` or `limits.writes_per_run` is the person's choice)
+                | 1 a row failed (a conflict, a rule, a stop), a stale hash (the plan file's rows no longer hash to
+                  its id), a plan that is missing, a ledger that cannot be read or appended to (`DRIFT`), a board
+                  that cannot be read before the first write, a `--confirm` that is not 12 hex
+                | 2 an AI or agent `--by`, an address off the roster, posture `plan-only` (`apply not offered in this
+                  clone`), or a whole-plan refusal with NOTHING sent: a forbidden effort field, a comment row
+                  refused while drafting, the first `--all` seed over `limits.first_seed` without a `--limit` in
+                  range, an `az` identity that is not `--by` (`identity_mismatch`, `identity_unknown`)
+  link-pr       0 linked (or already linked in this clone's ledger) | 1 the spec is not ledgered, a bad id, `az`
+                refused or failed (the class is said; an unknown outcome says the link may exist), `DRIFT` after the
+                link landed | 2 an AI `--by`, an address off the roster, posture `plan-only`
+  iteration bind
+                0 bound (or already bound) | 1 not a sprint id, no discovered schema, a path the schema does not have,
+                `DRIFT` | 2 an AI `--by` or an address off the roster
+  posture       0 changed (or already that value) | 1 no config, `DRIFT` | 2 an AI `--by` or an address off the roster;
+                it works under `plan-only`: it is how a clone leaves it
+  comment       0 plan written (also under `plan-only`, where it prints `apply not offered in this clone`), or nothing
+                to draft because the key was already posted | 1 not ledgered, a message that is empty, a mention
+                that is not `@handle`, `DRIFT` | 2 an AI `--by`, or the text refused: `max_chars`, `email_in_text`,
+                `event_unknown`, `budget`, `needs_disposition` (ledgered `comment_refused`)
   Refused (2) is a setting the mirror will not honour or a name that reads as an agent; Illegal (1) is a missing
-  precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `pull`'s DRIFT. Refused and Illegal are
+  precondition, and Usage (an Illegal) the read verbs' only exit 1 besides `DRIFT`. Refused and Illegal are
   copied from `sprint.py`, not imported.
   `--by` is ledgered as a roster `@handle` when the typed text is, case-insensitively, one person's `handle`, `name`
   or `email` on `.sdlc/team.yaml`; a name that matches nobody is kept as typed (the `sprint.py` precedent).
@@ -105,6 +146,8 @@ import ado_discussion_cache as cache  # noqa: E402
 import ado_discussion_map as dm  # noqa: E402
 import ado_schema  # noqa: E402
 import ado_schema_map as sm  # noqa: E402
+import ado_sync_apply as apply_mod  # noqa: E402
+import ado_sync_comments as comments_mod  # noqa: E402
 import ado_sync_config as cfgmod  # noqa: E402
 import ado_sync_model as model  # noqa: E402
 import ado_sync_sources as sources  # noqa: E402
@@ -157,7 +200,8 @@ class LedgerUnreadable(Illegal):
 
 
 # The verbs that only read the board (`pull` also records what it read): house rule 4, they exit 0 on every path
-# that is not a usage error; `pull` alone may exit 1, and only for `DRIFT`.
+# that is not a usage error; house rule 7 outranks it for the ones that append to the ledger (`pull`, `plan`,
+# `show --fetch`): a failed append is `DRIFT` and exit 1.
 READ_VERBS = ("plan", "status", "pull", "drift", "show")
 # What each read verb's `--json` carries when it is `unavailable`, beside `unavailable` and `reason`.
 UNAVAILABLE_EXTRA: dict[str, dict] = {"plan": {"plan": None, "rows": [], "counts": None},
@@ -1027,6 +1071,60 @@ def _row_head(r: dict) -> str:
     return f"{head}  {r['reason']}"
 
 
+COMMENT_ACTION = "comment"  # the `action` of a comment row (`ado_sync_comments.ROW_KEYS`)
+
+
+def _who(row: dict) -> str:
+    """How a comment row names its item: `spec 0004` from the ref, else the `#id` it was addressed to."""
+    ref = row.get("ref")
+    parts = ref.split(":") if isinstance(ref, str) else []
+    return f"{parts[1]} {parts[2]}" if len(parts) == 3 else str(row.get("target") or "work item")
+
+
+def _comment_lines(row: dict, plan: str) -> list[str]:
+    """A comment row as the plan shows it: its key, the exact text the board will carry (the trailer with this plan's
+    hash included), every line quoted `  | ` so it can never be read as the plan's own words, and what is only text."""
+    who = _who(row)
+    if row["status"] == "refused":
+        return [f"{who}  comment  refused  {row['reason']}: {row['detail']}  (an apply of this plan is refused whole)"]
+    head = f"{who}  comment  #{row['work_item']}  event {row['event'] or 'ad hoc'}  (key {row['idem_key']})"
+    facts = f"  format {row['format']} · {row['chars']} chars · trailer {row['trailer']}"
+    text = model.with_trailer(row["text"], plan, row["trailer"])
+    return [head, facts, *[f"  | {line}" for line in text.split("\n")], *[f"  {n}" for n in row["notes"]]]
+
+
+def _comments_line(comments: dict, skipped: list[dict]) -> str | None:
+    """The one line that counts what the drafter found (None when it found nothing or was told not to look)."""
+    if not comments["planned"] or comments["unavailable"] or not (comments["draft"] or comments["skipped"]
+                                                                  or comments["refused"]):
+        return None
+    why: dict[str, int] = {}
+    for row in skipped:
+        why[row["reason"]] = why.get(row["reason"], 0) + 1
+    by_reason = f" ({', '.join(f'{k} {v}' for k, v in sorted(why.items()))})" if why else ""
+    line = f"comments: {comments['draft']} to send, {comments['skipped']} skipped{by_reason}, {comments['refused']} refused"
+    if comments["refused"]:
+        line += "  (an apply of a plan holding a refused comment is refused whole; `plan --no-comments` splits them off)"
+    return line
+
+
+def _draft_comments(repo_root: Path, cfg: dict, ledger: list[dict], links: dict[str, dict],
+                    selected: set[str] | None) -> tuple[list[dict], list[dict], str | None]:
+    """`(rows, skipped, why not)`: the comment rows `ado_sync_comments` drafts from the repository's own ledgers.
+    `rows` are the drafts (what an apply would send) and the refusals (an apply refuses a plan that holds one, so the
+    person sees them first); `skipped` rows are listed and counted, never planned (they have nothing to send). `selected`
+    is the refs the plan's selector named (None: no selector, every row). A drafter that cannot read the repository
+    leaves the plan with no comments and says why: a plan never fails for them."""
+    idmap = {ref: link["work_item"] for ref, link in links.items()}
+    try:
+        drafted = comments_mod.draft_event_rows(repo_root, cfg, ledger, idmap)
+    except (ValueError, OSError, KeyError, TypeError, AttributeError, yaml.YAMLError) as exc:
+        return [], [], f"comments not planned: {_tidy(exc, 160)}"
+    if selected is not None:
+        drafted = [r for r in drafted if r["ref"] in selected]
+    return ([r for r in drafted if r["status"] != "skipped"], [r for r in drafted if r["status"] == "skipped"], None)
+
+
 def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
     schema = out["schema"]
     age = schema["age_days"]
@@ -1034,9 +1132,12 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
     who = out["executed_as_word"]
     lines = [f"plan {out['plan']}  (schema {str(schema['discovered_at'])[:10]}, {old}; posture {out['posture']}; "
              f"az executed as {who})"]
-    width = max([len(o["path"]) - len(FIELDS_PREFIX) for r in out["rows"] for o in r["ops"]
-                 if o["path"].startswith(FIELDS_PREFIX)] + [10]) + 2
+    width = max([len(o["path"]) - len(FIELDS_PREFIX) for r in out["rows"] if r["action"] != COMMENT_ACTION
+                 for o in r["ops"] if o["path"].startswith(FIELDS_PREFIX)] + [10]) + 2
     for r in out["rows"]:
+        if r["action"] == COMMENT_ACTION:
+            lines += _comment_lines(r, out["plan"])
+            continue
         lines.append(_row_head(r))
         lines += [_op_line(o, width) for o in r["ops"]]
         parent = r["parent"]
@@ -1049,6 +1150,9 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
         lines.append("nothing to push: no row is waiting on the board")
     if in_sync:
         lines.append(f"in sync: {_plural(in_sync, 'item')}")
+    summary = _comments_line(out["comments"], out["comments_skipped"])
+    if summary:
+        lines.append(summary)
     for s in out["skipped"]:
         lines.append(f"skipped {s['kind']}: {s['reason']}")
     if out["unmatched_ids"]:
@@ -1056,8 +1160,10 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
     if fit_lines:
         lines += ["", "How each kind lands on this process", *fit_lines, ""]
     c = out["cost"]
+    drafts = out["comments"]["draft"] or 0
+    sending = f", {_plural(drafts, 'comment')}" if drafts else ""
     lines.append(f"cost: {_plural(c['writes'], 'write')}, {_plural(c['creates'], 'create')}, "
-                 f"{_plural(c['links'], 'link')}  (az spawns on apply: {c['az_spawns']})")
+                 f"{_plural(c['links'], 'link')}{sending}  (az spawns on apply: {c['az_spawns']})")
     lines += [f"note: {n}" for n in out["notes"]]
     if out["validated"]:
         lines.append("validated locally against the discovered process; the board was not asked")
@@ -1065,7 +1171,7 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
     return "\n".join(lines)
 
 
-def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict) -> list[str]:
+def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, comments: int = 0) -> list[str]:
     limits = cfg.get("limits") if isinstance(cfg.get("limits"), dict) else {}
     first_seed, per_run = limits.get("first_seed"), limits.get("writes_per_run")
     notes = []
@@ -1073,7 +1179,7 @@ def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict) ->
     if scope_all and never_applied and _is_id(first_seed) and counts["create"] > first_seed:
         notes.append(f"first seed: {_plural(counts['create'], 'create')} is over limits.first_seed ({first_seed}); "
                      "an apply of this plan will need --limit")
-    pending = counts["create"] + counts["update"]
+    pending = counts["create"] + counts["update"] + comments   # a comment is a write too (field ops go first)
     if _is_id(per_run) and pending > per_run:
         notes.append(f"{_plural(pending, 'row')} is over limits.writes_per_run ({per_run}); an apply stops at "
                      f"{per_run}, and the next plan covers the rest")
@@ -1160,18 +1266,22 @@ def cmd_plan(args, repo_root: Path) -> int:
             r["notes"].append(p["parent_note"])
         if args.validate and r["action"] in PENDING_ACTIONS:
             r["validation"] = _validation(schema, r["type"], r["ops"], r["action"] == "create")
-    rows = [r for _, r in pairs]
-    counts = {a: sum(1 for r in rows if r["action"] == a) for a in ACTION_ORDER}
+    narrowed = bool(args.kind or ids or sprint)  # a selector: a comment row is in scope only for the items it chose
+    comment_rows, comment_skipped, comment_why = ([], [], None) if args.no_comments else _draft_comments(
+        repo_root, cfg, ledger, links, {p["ref"] for p in selected} if narrowed else None)
+    rows = [r for _, r in pairs] + comment_rows        # field ops first, then the comments (the order apply sends them in)
+    counts = {a: sum(1 for r in rows if r["action"] == a) for a in ACTION_ORDER}   # field ops only: "comment" is not one
     counts["in_sync"] = in_sync
+    drafts = sum(1 for r in comment_rows if r["status"] == "draft")
     cost = {"writes": counts["update"], "creates": counts["create"], "links": 0,
-            "az_spawns": counts["update"] + counts["create"]}
+            "az_spawns": counts["update"] + counts["create"] + (1 + drafts if drafts else 0)}   # + connectionData, one POST each
     plan = model.plan_hash(rows)
     stamp = _stamp()
     posture = cfg.get("posture") if cfg.get("posture") in ("plan-only", "assisted") else "plan-only"
     path = f"{LOCAL_DIR}/plans/{plan}.json"
     # the lines are built first: one the model refuses stops the plan before the plan file is written
     events = [_event(stamp, "planned", plan=plan, ref=r["ref"], kind=r["kind"], action=r["action"],
-                     work_item=r["work_item"]) for r in rows if r["action"] in PENDING_ACTIONS]
+                     work_item=r["work_item"]) for r in rows if r["action"] in PENDING_ACTIONS]   # never a comment row
     if not events:  # "a plan that found nothing" is a line with no ref, so `pending` reads 0, not no data
         events = [_event(stamp, "planned", plan=plan, ref=None)]
     try:
@@ -1185,25 +1295,33 @@ def cmd_plan(args, repo_root: Path) -> int:
         try:
             append_ledger(repo_root, events)
             ledger = ledger + events
-        except LedgerDrift as exc:  # printed, never a failure: plan exits 0 on every path that is not a usage error
+        except LedgerDrift as exc:  # the plan is still shown, but the record is short: house rule 7, exit 1
             drift = str(exc)
     hook, hook_note = _write_hook_line(repo_root, ledger)
     me = cache.load_me(repo_root)
     executed_as = me.get("handle") if me else None
     word = executed_as or ("an identity that is not on the roster" if me else "not read yet")
-    out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
+    planned_comments = not args.no_comments and comment_why is None
+    comments = {"planned": not args.no_comments,
+                "draft": drafts if planned_comments else None,
+                "skipped": len(comment_skipped) if planned_comments else None,
+                "refused": sum(1 for r in comment_rows if r["status"] == "refused") if planned_comments else None,
+                "unavailable": comment_why}
+    out = {"ok": drift is None, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
            "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
            "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
-           "notes": _plan_notes(cfg, ledger, scope["all"], counts) + ([hook_note] if hook_note else []),
-           "validated": bool(args.validate), "comments": "not planned in this version", "hook_line": hook,
-           "drift": drift}
+           "notes": _plan_notes(cfg, ledger, scope["all"], counts, drafts)
+           + ([comment_why] if comment_why else []) + ([hook_note] if hook_note else []),
+           "validated": bool(args.validate), "comments": comments,
+           "comments_skipped": [{k: r[k] for k in ("ref", "event", "reason", "detail")} for r in comment_skipped],
+           "hook_line": hook, "drift": drift}
     if args.json:
         print(json.dumps(out, indent=2))
     else:
         lines = _fit_table(fit, resolved) if fit or resolved else []
         text = _plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n")
         print(text if drift is None else f"{text}\n{drift}")  # `DRIFT: ...` leads its line, as in sprint.py
-    return 0
+    return 0 if drift is None else 1
 
 
 # --- status ----------------------------------------------------------------------------------------------------------
@@ -1749,22 +1867,24 @@ def _cfg_or_note(repo_root: Path) -> tuple[dict, str | None]:
                     "not cached")
 
 
-def _keep_discussion(repo_root: Path, ts: str, ref: str, wid: int, doc: dict, diff: dict) -> tuple[bool, str | None]:
-    """Save a fetched discussion and ledger its `discussion_pulled`. `(saved, problem)`: a line the model refuses or
-    a cache that cannot be written leaves both unwritten; an append that fails after the save is the `DRIFT:`
-    sentence. Either is printed; `show` still exits 0."""
+def _keep_discussion(repo_root: Path, ts: str, ref: str, wid: int, doc: dict,
+                     diff: dict) -> tuple[bool, str | None, bool]:
+    """Save a fetched discussion and ledger its `discussion_pulled`. `(saved, problem, drifted)`: a line the model
+    refuses or a cache that cannot be written leaves both unwritten (a note, `show` still exits 0: nothing was
+    appended); an append that fails after the save is the `DRIFT:` sentence and `drifted`, which `show` answers with
+    exit 1 (house rule 7). Either is printed."""
     try:
         event = _event(ts, "discussion_pulled", ref=ref, work_item=wid, comments=len(doc["comments"]),
                        new=len(diff["new"]), edited=len(diff["edited"]), deleted=len(diff["deleted"]),
                        truncated=doc["truncated"])
         cache.save_cache(repo_root, doc)
     except (Illegal, OSError, ValueError) as exc:
-        return False, f"not cached: {_tidy(exc, 160)}"
+        return False, f"not cached: {_tidy(exc, 160)}", False
     try:
         append_ledger(repo_root, [event])
     except LedgerDrift as exc:
-        return True, str(exc)
-    return True, None
+        return True, str(exc), True
+    return True, None, False
 
 
 def cmd_show(args, repo_root: Path) -> int:
@@ -1790,7 +1910,7 @@ def cmd_show(args, repo_root: Path) -> int:
     (cfg, cfg_note), emails, ts = _cfg_or_note(repo_root), _emails(repo_root), _stamp()
     cached = cache.load_cache(repo_root, wid)
     doc, unavailable, fetched, saved = cached, None, False, cached is not None
-    outside, kept = False, None
+    outside, kept, drifted = False, None, False
     if args.fetch:
         try:
             items, missing = _read_items(repo_root, [wid], emails)
@@ -1804,7 +1924,7 @@ def cmd_show(args, repo_root: Path) -> int:
         else:
             fetched, doc = True, fresh
             if not ref.startswith("#") or _bound(items[wid], cfg):
-                saved, kept = _keep_discussion(repo_root, ts, ref, wid, fresh, _diff)
+                saved, kept, drifted = _keep_discussion(repo_root, ts, ref, wid, fresh, _diff)
             else:
                 saved, outside = False, True  # a raw id outside the bound paths is a live print: nothing is kept
     stub = {"work_item_id": wid, "ref": ref}
@@ -1830,12 +1950,12 @@ def cmd_show(args, repo_root: Path) -> int:
         notes.append(kept)  # `not cached: ...`, or the `DRIFT: ...` sentence leading its own line
     if unavailable:
         notes.append(f"unavailable: {unavailable}")
-    out = {"ok": True, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
+    out = {"ok": not drifted, "work_item": wid, "ref": ref, "cached": saved, "fetched": fetched,
            "as_of": doc.get("pulled_at") if isinstance(doc, dict) else None, "unavailable": unavailable,
            "for_agent": bool(args.for_agent), "comment_count": len(comments) if comments is not None else None,
            "rendered": "\n".join([rendered, *extra]), "notes": notes}
     _emit(args, out, "\n".join([rendered, *extra, *notes]))
-    return 0
+    return 1 if drifted else 0
 
 
 def cmd_discussion(args, repo_root: Path) -> int:
@@ -1853,6 +1973,497 @@ def cmd_discussion(args, repo_root: Path) -> int:
     _emit(args, {"ok": True, "dry_run": bool(args.dry_run), "removed": removed, "count": len(gone)}, "\n".join(lines))
     return 0
 
+# --- the write verbs (B3): apply, link-pr, iteration bind, posture, comment ------------------------------------------
+#
+# A write verb needs a named human as `--by` (`resolve_by`: blank is 1, an AI, an agent or an address off the roster is
+# 2, before anything is read or sent). `apply` and `link-pr` write to the board, so they also need posture `assisted`
+# (2, zero `az` spawns). `posture`, `iteration bind` and `comment` write files in this repository only, so a clone in
+# `plan-only` can still use them: `posture` is how it leaves that state, and a drafted comment waits in its plan file.
+# A ledger line follows each write; an append that fails is `LedgerDrift`, which `main` answers `DRIFT: ...`, exit 1.
+
+POSTURES = ("plan-only", "assisted")
+PLANS_DIR = f"{LOCAL_DIR}/plans"
+NOT_OFFERED = ("apply not offered in this clone: posture is plan-only (the default). A named human runs "
+               "`ado_sync.py posture assisted --by <you>` to offer it")
+
+# What a whole-plan refusal says, by `ado_sync_model.APPLY_REFUSALS` member: fixed sentences, never the board's words.
+APPLY_REFUSAL_WORDS: dict[str, str] = {
+    "ai_actor": "--by reads as an AI or an agent; only a named human applies a plan",
+    "posture": NOT_OFFERED,
+    "forbidden_field": "the plan carries an effort field (points, estimates or hours), which the mirror never writes",
+    "first_seed": "this is the first --all seed and it creates more items than limits.first_seed allows; pass "
+                  "--limit N (N within limits.first_seed) to apply it in chunks",
+    "identity_mismatch": "az is signed in as someone other than --by, so a comment would post in that other person's "
+                         "name; sign in as --by, or re-plan with --no-comments to apply the field ops",
+    "identity_unknown": "who az is signed in as could not be matched to --by (a service principal, an account that is "
+                        "not on the roster, a --by that is not a roster @handle, or an identity read that failed); "
+                        "re-plan with --no-comments to apply the field ops",
+    "budget": "a comment in the plan is over comments.per_item_budget for its item; re-plan with --no-comments to "
+              "apply the field ops",
+    "max_chars": "a comment in the plan is over comments.max_chars; re-plan with --no-comments to apply the field ops",
+    "email_in_text": "a comment in the plan would carry an e-mail address (a comment names people by @handle only); "
+                     "re-plan with --no-comments to apply the field ops",
+    "event_unknown": "a comment in the plan names an event outside the closed set; re-plan with --no-comments to "
+                     "apply the field ops",
+    "needs_disposition": "a comment in the plan is for an item the board no longer has or has retyped; reconcile it "
+                         "first, or re-plan with --no-comments to apply the field ops",
+}
+
+
+def _posture_of(cfg: dict) -> str:
+    return cfg.get("posture") if cfg.get("posture") in POSTURES else "plan-only"
+
+
+def _require_assisted(cfg: dict, verb: str) -> None:
+    """Posture is read before any file, plan or `az`: a `plan-only` clone is refused the same whatever else is true."""
+    if cfg.get("posture") != "assisted":
+        raise Refused(f"Refused: {verb} sent nothing. {NOT_OFFERED}.")
+
+
+def _write_text(path: Path, text: str) -> None:
+    """UTF-8 text with a bare LF, through a temporary file and a rename (the form `_write_json` writes JSON in)."""
+    scratch = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+    try:
+        scratch.write_bytes(text.encode("utf-8"))
+        os.replace(scratch, path)
+    finally:
+        scratch.unlink(missing_ok=True)
+
+
+def _write_plan_file(repo_root: Path, rows: list[dict], *, ids: list[str], posture: str, stamp: str) -> tuple[str, str]:
+    """`(plan hash, repo-relative path)` of a plan file holding `rows`, in the one shape `plan` writes and `apply`
+    reads. `Illegal` when it cannot be written: nothing was ledgered, so nothing disagrees."""
+    plan = model.plan_hash(rows)
+    path = f"{PLANS_DIR}/{plan}.json"
+    doc = {"schema": PLAN_SCHEMA, "plan": plan, "created": stamp,
+           "scope": {"kinds": [], "ids": ids, "sprint": None, "all": False}, "posture": posture, "rows": rows}
+    try:
+        _ensure_local_ignore(repo_root)
+        _write_json(repo_root / path, doc)
+    except OSError as exc:
+        raise Illegal(f"could not write the plan file {path} ({type(exc).__name__}); nothing was ledgered") from None
+    return plan, path
+
+
+# --- apply -----------------------------------------------------------------------------------------------------------
+
+def _confirm_arg(text) -> str:
+    raw = str(text or "").strip()
+    if not raw:
+        raise Illegal("--confirm <12hex> is required: the hash `ado_sync.py plan` printed for the plan you read")
+    if not bc.HASH_RE.fullmatch(raw):
+        raise Illegal(f"--confirm {raw!r} is not a plan hash: 12 lower-case hex digits, as `plan` printed it")
+    return raw
+
+
+def _read_plan(repo_root: Path, confirm: str) -> dict:
+    """The plan file `confirm` names, checked: it exists, is a plan, says it is `confirm`, and its rows still hash to
+    `confirm`. A file edited after it was planned is a stale hash: what a person confirmed is not what is in it."""
+    rel = f"{PLANS_DIR}/{confirm}.json"
+    try:
+        text = (repo_root / rel).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        raise Illegal(f"plan missing: {rel} does not exist in this clone; run `ado_sync.py plan`, read it, and "
+                      "confirm the hash it prints") from None
+    except (OSError, UnicodeDecodeError) as exc:
+        raise Illegal(f"the plan file {rel} could not be read ({type(exc).__name__}); nothing was sent") from None
+    try:
+        doc = json.loads(text)
+    except (ValueError, RecursionError):
+        doc = None
+    rows = doc.get("rows") if isinstance(doc, dict) else None
+    if not (isinstance(rows, list) and all(isinstance(r, dict) for r in rows)):
+        raise Illegal(f"{rel} is not a plan file (no list of rows); run `ado_sync.py plan` again")
+    if doc.get("plan") != confirm:
+        raise Illegal(f"stale hash: {rel} holds plan {doc.get('plan')!r}, not {confirm}; run `ado_sync.py plan` again "
+                      "and confirm the hash it prints")
+    if model.plan_hash(rows) != confirm:
+        raise Illegal(f"stale hash: the rows of {rel} no longer hash to {confirm} (the file was edited after it was "
+                      "planned); run `ado_sync.py plan` again and confirm the new hash")
+    return doc
+
+
+def _what(row: dict) -> str:
+    """The item a result row is about: its ref, else the `#id` a comment was addressed to."""
+    return row["ref"] if row.get("ref") else f"#{row.get('work_item')}"
+
+
+def _applied_line(a: dict) -> str:
+    if a["action"] == "create":
+        return f"create {_what(a)} -> #{a['work_item']} (rev {a['rev_after']})"
+    if a["action"] == "update":
+        return f"update {_what(a)} #{a['work_item']} (rev {a['rev_after']})"
+    how = ", recovered after an unknown outcome" if a.get("recovered") else ""
+    via = f"comment {a['comment_id']}" if a.get("comment_id") is not None else f"history, rev {a.get('rev_after')}"
+    return f"comment {_what(a)} #{a['work_item']} ({via}{how})"
+
+
+def _failed_line(f: dict) -> str:
+    where = _what(f) + (f" #{f['work_item']}" if f.get("work_item") and f.get("ref") else "")
+    why = f" ({f['reason']})" if f.get("reason") else ""
+    return f"{f['action']} {where}  {f['class']}{why}" + ("" if f["class"] == "drift" else f": {f['detail']}")
+
+
+def _apply_report(args, plan: str, by: str, result: dict) -> int:
+    code, reason = result["exit"], result["refused_reason"]
+    applied, failed, deferred = result["applied"], result["failed"], result["deferred"]
+    counts = {"applied": len(applied), "failed": len(failed), "deferred": len(deferred)}
+    if reason is not None:  # nothing was sent: the whole plan is refused
+        return _error(args, f"Refused: apply sent nothing. {APPLY_REFUSAL_WORDS[reason]} (reason: {reason})", 2,
+                      plan=plan, by=by, refused_reason=reason, applied=[], failed=[], deferred=[], counts=counts,
+                      drift=None)
+    drift = next((f["detail"] for f in failed if f["class"] == "drift"), None)   # begins `DRIFT: `
+    if code == 1:
+        word = "some rows failed or the run stopped; plan again before applying what is left"
+    elif not applied and not deferred:
+        word = "nothing was sent: the plan holds no row `apply` sends (create, update or a drafted comment)"
+    elif deferred:
+        word = "applied what the limit allowed; the rest is deferred, apply the same plan again for it"
+    else:
+        word = "all applied"
+    lines = [f"apply {plan}  by {by}"]
+    if drift:
+        lines.append(drift)  # `DRIFT: ...` leads its line, as in sprint.py
+    lines.append(f"applied {len(applied)}")
+    lines += [f"  {_applied_line(a)}" for a in applied]
+    if failed:
+        lines += [f"failed {len(failed)}", *[f"  {_failed_line(f)}" for f in failed]]
+    if deferred:
+        lines += [f"deferred {len(deferred)}", *[f"  {d['action']} {_what(d)}  {d['why']}" for d in deferred]]
+    lines.append(f"Result: {word} (exit {code})")
+    payload = {"ok": code == 0, "exit": code, "plan": plan, "by": by, "applied": applied, "failed": failed,
+               "deferred": deferred, "refused_reason": None, "counts": counts, "drift": drift}
+    _emit(args, payload, "\n".join(lines))
+    return code
+
+
+def cmd_apply(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    confirm = _confirm_arg(args.confirm)
+    cfg = cfgmod.load_config(repo_root)  # ConfigError -> main (1)
+    _require_assisted(cfg, "apply")
+    schema = ado_schema.load_schema(repo_root)  # an unusable file -> AdoImportError -> main (1)
+    if schema is None:
+        raise Illegal("no discovered schema: run `ado_sync.py discover` first, so there is a process to apply against")
+    plan = _read_plan(repo_root, confirm)
+    try:
+        result = apply_mod.apply_plan(repo_root, plan, by=by, cfg=cfg, schema=schema, limit=args.limit,
+                                      today=_now().date())
+    except ValueError as exc:  # a malformed row, a ledger that cannot be read, a limit that is not a count: nothing sent
+        raise Illegal(_tidy(exc, 300)) from None
+    except AdoImportError as exc:
+        raise Illegal(f"the board could not be read before the first write, so nothing was sent: {_tidy(exc)}") from None
+    return _apply_report(args, confirm, by, result)
+
+
+# --- link-pr ---------------------------------------------------------------------------------------------------------
+
+def _spec_arg(text) -> str:
+    raw = str(text or "").strip()
+    if not re.fullmatch(r"[0-9]{1,6}", raw):
+        raise Illegal(f"--spec {raw!r} is not a spec id (0004, or 4)")
+    return raw.zfill(4)
+
+
+def _pr_arg(text) -> int:
+    found = re.fullmatch(r"!?([1-9][0-9]*)", str(text or "").strip())
+    if found is None:
+        raise Illegal(f"--pr {str(text or '').strip()!r} is not a pull request number (a positive number: 12, or !12)")
+    return int(found.group(1))
+
+
+def _link_failure(pr: int, wid: int, exc: AdoImportError) -> str:
+    cls = getattr(exc, "error_class", None)
+    if cls == "unknown":
+        return (f"PR {pr} may or may not be linked to #{wid}: the outcome is unknown ({_tidy(exc, 160)}). Look at the "
+                "pull request's work items before running this again; nothing was ledgered.")
+    reason = f" ({cls}): {apply_mod.DETAIL[cls]}" if cls in apply_mod.DETAIL else f": {_tidy(exc, 200)}"
+    return f"PR {pr} was not linked to #{wid}: the board refused it{reason}"
+
+
+def _pr_linked_on(cfg: dict) -> bool:
+    block = cfg.get("comments") if isinstance(cfg.get("comments"), dict) else {}
+    events = block.get("events") if isinstance(block.get("events"), dict) else {}
+    value = events.get("pr_linked")
+    word = value.strip().lower() if isinstance(value, str) else None
+    if value is True or word in ("on", "true"):
+        return True
+    if value is False or word in ("off", "false"):
+        return False
+    return comments_mod.EVENT_TEMPLATES["pr_linked"]["default"] == "on"
+
+
+def _draft_pr_linked(repo_root: Path, cfg: dict, ledger: list[dict], ref: str, wid: int, pr: int,
+                     stamp: str) -> tuple[dict | None, str | None]:
+    """`(the comment plan, a note)` for the `pr_linked` event: nothing when the event is off (the default), else a
+    one-row plan file holding `PR !N linked.` for a person to confirm. The row is drafted, never sent."""
+    if not _pr_linked_on(cfg):
+        return None, None
+    try:
+        row = comments_mod.event_row("pr_linked", ref, wid, {"pr": pr}, {"ref": ref, "pr": pr}, cfg=cfg, ledger=ledger)
+    except ValueError as exc:  # includes `MissingValue`
+        return None, f"pr_linked comment not drafted: {_tidy(exc, 160)}"
+    if row["status"] != "draft":
+        return None, f"pr_linked comment not drafted ({row['reason']}): {row['detail']}"
+    try:
+        plan, path = _write_plan_file(repo_root, [row], ids=[ref], posture=_posture_of(cfg), stamp=stamp)
+    except Illegal as exc:
+        return None, f"pr_linked comment not drafted: {exc}"
+    return {"plan": plan, "path": path, "row": row}, None
+
+
+def cmd_link_pr(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    spec, pr = _spec_arg(args.spec), _pr_arg(args.pr)
+    cfg = cfgmod.load_config(repo_root)  # ConfigError -> main (1)
+    _require_assisted(cfg, "link-pr")
+    ledger = read_ledger(repo_root)
+    ref = f"sdlc:spec:{spec}"
+    link = linked_items(ledger).get(ref)
+    if link is None:
+        raise Illegal(f"{ref} is not ledgered in this clone, so it has no work item here: `plan` and `apply` create "
+                      "it, or `link` / `adopt` maps one that exists")
+    wid = link["work_item"]
+    done = any(e.get("event") == "applied" and e.get("action") == "link_pr" and e.get("ref") == ref
+               and e.get("pr") == pr for e in ledger)
+    if done:
+        _emit(args, {"ok": True, "ref": ref, "work_item": wid, "pr": pr, "linked": False, "comment_plan": None,
+                     "notes": []}, f"PR {pr} is already linked to #{wid} ({ref}) in this clone's ledger; nothing was sent")
+        return 0
+    # The line carries the item's baseline forward (`rev_after`, `type`, `projection_hash` of its last linking line), so
+    # the ledger still says what was pushed and when; the link's own revision was not read.
+    carried = {k: link[k] for k in ("rev_after", "type", "projection_hash") if link.get(k) is not None}
+    stamp = _stamp()
+    event = _event(stamp, "applied", ref=ref, kind="spec", work_item=wid, action="link_pr", pr=pr,
+                   fields=["relations:ArtifactLink"], by=by, executed_as="unknown", **carried,
+                   notes=["baseline carried: the revision the link made was not read"])
+    try:
+        ado_wit.link_pr(repo_root, pr, wid)
+    except AdoImportError as exc:
+        raise Illegal(_link_failure(pr, wid, exc)) from None
+    append_ledger(repo_root, [event])  # LedgerDrift -> main: `DRIFT: ...`, exit 1 (the link is on the board, unrecorded)
+    comment_plan, note = _draft_pr_linked(repo_root, cfg, ledger + [event], ref, wid, pr, stamp)
+    notes = [f"a later `pull` may report the PR link as a relation change on #{wid}: the revision it made was not read"]
+    notes += [note] if note else []
+    lines = [f"Linked PR {pr} to #{wid} ({ref}) by {by}"]
+    if comment_plan:
+        lines.append(f"Drafted the pr_linked comment: plan {comment_plan['plan']} "
+                     f"(`ado_sync.py apply --confirm {comment_plan['plan']} --by <you>` sends it)")
+    lines += [f"note: {n}" for n in notes]
+    _emit(args, {"ok": True, "ref": ref, "work_item": wid, "pr": pr, "linked": True,
+                 "comment_plan": {k: comment_plan[k] for k in ("plan", "path")} if comment_plan else None,
+                 "notes": notes}, "\n".join(lines))
+    return 0
+
+
+# --- posture and iteration bind: `.sdlc/ado.yaml`, edited in place ---------------------------------------------------
+
+_POSTURE_LINE = re.compile(r"^posture:([ \t]*)([^\s#]+)(.*)$", re.MULTILINE)
+_ITERATIONS_KEY = re.compile(r"^iterations:[ \t]*(#.*)?$")
+
+
+def _with_posture(text: str, value: str) -> str:
+    """The config text with its top-level `posture:` line set, its trailing comment kept in its column."""
+    found = _POSTURE_LINE.search(text)
+    if found is None:
+        return text + ("" if not text or text.endswith("\n") else "\n") + f"posture: {value}\n"
+    gap, old, rest = found.groups()
+    if rest.lstrip(" ").startswith("#"):
+        pad = max(1, len(rest) - len(rest.lstrip(" ")) + len(old) - len(value))
+        rest = " " * pad + rest.lstrip(" ")
+    return text[:found.start()] + f"posture:{gap}{value}{rest}" + text[found.end():]
+
+
+def _quoted(text: str) -> str:
+    """A YAML single-quoted scalar: the one form that needs no other escaping (a path carries backslashes)."""
+    return "'" + text.replace("'", "''") + "'"
+
+
+def _with_iteration(text: str, sprint: str, path: str) -> str | None:
+    """The config text with `sprint: path` under a block-style top-level `iterations:`; a new block when the key is
+    absent. None when the key is there in another style (the caller then rewrites the file from the parsed config)."""
+    lines = text.split("\n")
+    start = next((i for i, line in enumerate(lines) if _ITERATIONS_KEY.match(line)), None)
+    entry = f"{sprint}: {_quoted(path)}"
+    if start is None:
+        if any(line.startswith("iterations:") for line in lines):
+            return None
+        return text + ("" if not text or text.endswith("\n") else "\n") + f"iterations:\n  {entry}\n"
+    last, indent, end = start, None, start + 1
+    while end < len(lines):
+        line = lines[end]
+        if line.strip() and line[0] in " \t":
+            last, indent = end, indent or line[:len(line) - len(line.lstrip())]
+        elif line.strip():
+            break
+        end += 1
+    for i in range(start + 1, last + 1):
+        found = re.match(rf"^(\s+){re.escape(sprint)}:[ \t]*", lines[i])
+        if found:
+            comment = re.search(r"[ \t]+#[^'\"]*$", lines[i])
+            lines[i] = f"{found.group(1)}{entry}{comment.group(0) if comment else ''}"
+            return "\n".join(lines)
+    lines.insert(last + 1, f"{indent or '  '}{entry}")
+    return "\n".join(lines)
+
+
+def _save_config(repo_root: Path, new_cfg: dict, edited: str | None) -> str | None:
+    """Write `.sdlc/ado.yaml`: the in-place edit when it parses back to exactly `new_cfg`, else the parsed config
+    dumped (comments lost, and the note says so). `Illegal` when it cannot be written."""
+    note = None
+    try:
+        parsed = yaml.safe_load(edited) if edited is not None else None
+    except yaml.YAMLError:
+        parsed = None
+    if parsed != new_cfg:
+        edited = yaml.safe_dump(new_cfg, sort_keys=False, allow_unicode=True)
+        note = f"{CONFIG_FILE} was rewritten without its comments: its layout could not be edited in place"
+    try:
+        _write_text(repo_root / CONFIG_FILE, edited)
+    except OSError as exc:
+        raise Illegal(f"could not write {CONFIG_FILE} ({type(exc).__name__}); nothing was changed") from None
+    return note
+
+
+def _config_text(repo_root: Path) -> str:
+    try:
+        return (repo_root / CONFIG_FILE).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        raise Illegal(f"{CONFIG_FILE} could not be read ({type(exc).__name__})") from None
+
+
+def cmd_posture(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    cfg = cfgmod.load_config(repo_root)  # ConfigError -> main (1): the posture is a key of the config
+    value, previous = args.value, _posture_of(cfg)
+    if cfg.get("posture") == value or (cfg.get("posture") is None and value == previous):
+        _emit(args, {"ok": True, "posture": value, "previous": previous, "changed": False, "notes": []},
+              f"Posture is already {value}; nothing was changed")
+        return 0
+    event = _event(_stamp(), "posture", posture=value, previous=previous, by=by)
+    note = _save_config(repo_root, {**cfg, "posture": value}, _with_posture(_config_text(repo_root), value))
+    append_ledger(repo_root, [event])  # LedgerDrift -> main: `DRIFT: ...` (the config moved, the record did not)
+    notes = [note] if note else []
+    if value == "assisted":
+        notes.append("apply is now offered here: `ado_sync.py plan`, read it, then `ado_sync.py apply --confirm <hash> "
+                     "--by <you>`; the board is written as whoever az is signed in as")
+    _emit(args, {"ok": True, "posture": value, "previous": previous, "changed": True, "notes": notes},
+          "\n".join([f"Posture: {previous} -> {value} by {by}", *[f"note: {n}" for n in notes]]))
+    return 0
+
+
+def _iteration_path(text) -> str:
+    raw = str(text or "").strip()
+    if not raw:
+        raise Illegal("--path is required: the iteration path to bind, as the discovered schema spells it "
+                      "(Claims\\Sprint 7)")
+    if any(ord(ch) < 32 or ord(ch) == 127 for ch in raw):
+        raise Illegal("--path may not hold a control character")
+    return raw[1:] if raw.startswith("\\") else raw  # the REST form `\Claims\Sprint 7` is the work-item form
+
+
+def cmd_iteration(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    sprint = str(args.sprint or "").strip()
+    if not SPRINT_ID_RE.fullmatch(sprint):
+        raise Illegal(f"{sprint!r} is not a sprint id (S07, S12): the id of a file in .sdlc/sprints/")
+    path = _iteration_path(args.path)
+    cfg = cfgmod.load_config(repo_root)  # ConfigError -> main (1)
+    schema = ado_schema.load_schema(repo_root)  # an unusable file -> AdoImportError -> main (1)
+    if schema is None:
+        raise Illegal("no discovered schema: run `ado_sync.py discover` first, so there is an iteration tree to bind to")
+    known = [i["path"] for i in schema.get("iterations") or [] if isinstance(i, dict) and isinstance(i.get("path"), str)]
+    found = next((k for k in known if k == path), None) or next((k for k in known if k.casefold() == path.casefold()),
+                                                                None)
+    if found is None:
+        shown = ", ".join(known[:6]) + (", ..." if len(known) > 6 else "")
+        raise Illegal(f"{path!r} is not an iteration path in the discovered schema (known: {shown or 'none'}); "
+                      "bind to one that exists, or `ado_sync.py discover --refresh` if it was just added")
+    iterations = dict(cfg["iterations"]) if isinstance(cfg.get("iterations"), dict) else {}
+    previous = iterations.get(sprint)
+    notes = []
+    team = schema.get("team_iterations")
+    if isinstance(team, list) and found not in [t.get("path") for t in team if isinstance(t, dict)]:
+        notes.append(f"{found} is in the project's iteration tree but not one of "
+                     f"{_name_of(schema.get('team')) or 'the team'}'s iterations; add it to the team in Boards, or the "
+                     "team's sprint board will not show it")
+    elif team is None:
+        notes.append("the team's iterations were not read (no team in the config), so this path was not checked "
+                     "against them")
+    if not (repo_root / ".sdlc" / "sprints" / f"{sprint}.md").is_file():
+        notes.append(f"there is no .sdlc/sprints/{sprint}.md in this clone; the binding is recorded anyway")
+    sharing = sorted(k for k, v in iterations.items() if v == found and k != sprint)
+    if sharing:
+        notes.append(f"{', '.join(sharing)} {'is' if len(sharing) == 1 else 'are'} also bound to {found}")
+    if previous == found:
+        _emit(args, {"ok": True, "sprint": sprint, "path": found, "previous": previous, "changed": False,
+                     "notes": notes}, "\n".join([f"{sprint} is already bound to {found}; nothing was changed",
+                                                 *[f"note: {n}" for n in notes]]))
+        return 0
+    event = _event(_stamp(), "iteration_bound", ref=f"sdlc:sprint:{sprint}", kind="sprint", sprint=sprint, path=found,
+                   previous=previous, by=by)
+    iterations[sprint] = found
+    saved = _save_config(repo_root, {**cfg, "iterations": iterations},
+                         _with_iteration(_config_text(repo_root), sprint, found))
+    append_ledger(repo_root, [event])  # LedgerDrift -> main: `DRIFT: ...` (the config moved, the record did not)
+    notes += [saved] if saved else []
+    was = f" (was {previous})" if previous else ""
+    _emit(args, {"ok": True, "sprint": sprint, "path": found, "previous": previous, "changed": True, "notes": notes},
+          "\n".join([f"Bound {sprint} -> {found}{was} by {by}", *[f"note: {n}" for n in notes]]))
+    return 0
+
+
+# --- comment ---------------------------------------------------------------------------------------------------------
+
+def cmd_comment(args, repo_root: Path) -> int:
+    by = resolve_by(repo_root, args.by, "--by")
+    target = str(args.target or "").strip()
+    if args.message is None:
+        raise Illegal("--message is required: the comment's text. Write it as --message=<text> so a text that starts "
+                      "with a dash is not read as a flag")
+    cfg = _cfg_or_empty(repo_root)
+    ledger = read_ledger(repo_root)
+    links = linked_items(ledger)
+    raw = re.fullmatch(r"#([0-9]+)", target)
+    if raw is not None:  # a raw id names the item's ref when the ledger knows it, so one key covers both spellings
+        wid = int(raw.group(1))
+        if wid < 1:
+            raise Illegal(f"{target} is not a work item id (#4521)")
+        ref = next((r for r, link in sorted(links.items()) if link["work_item"] == wid), None)
+    elif REF_RE.fullmatch(target):
+        if target not in links:
+            raise Illegal(f"{target} is not ledgered in this clone, so it has no work item here: pass #<work item id>, "
+                          "or `link` / `adopt` it first")
+        ref, wid = target, links[target]["work_item"]
+    else:
+        raise Illegal(f"{target!r} is neither an sdlc:<kind>:<id> ref nor a #<work item id>")
+    try:
+        row = comments_mod.ad_hoc_row(ref or f"#{wid}", wid, args.message, by=by, mentions=args.mention or [], cfg=cfg,
+                                      event=args.event, ledger=ledger)
+    except ValueError as exc:  # an empty message, a mention that is not @handle: the request is illegal, not refused
+        raise Illegal(_tidy(exc, 200)) from None
+    stamp, posture = _stamp(), _posture_of(cfg)
+    if row["status"] == "refused":  # exit 2 and the refusal is recorded; the refused text is in neither
+        append_ledger(repo_root, [_event(stamp, "comment_refused", ref=row["ref"], work_item=wid, reason=row["reason"],
+                                         idem_key=row["idem_key"], comment_event=row["event"], by=by)])
+        shown = {k: v for k, v in row.items() if k != "text"}  # the refused words are not echoed back in the result
+        return _error(args, f"Refused: the comment was not drafted ({row['reason']}): {row['detail']}", 2,
+                      reason=row["reason"], row=shown)
+    if row["status"] == "skipped":  # already posted: nothing to confirm
+        _emit(args, {"ok": True, "plan": None, "path": None, "posture": posture, "apply_offered": False, "row": row,
+                     "notes": []}, f"Nothing to draft: {row['detail']}")
+        return 0
+    plan, path = _write_plan_file(repo_root, [row], ids=[target], posture=posture, stamp=stamp)
+    offered = posture == "assisted"
+    closing = (f"Next: `ado_sync.py apply --confirm {plan} --by <you>` sends it, as whoever az is signed in as"
+               if offered else f"{NOT_OFFERED}; the comment stays drafted in the plan file")
+    _emit(args, {"ok": True, "plan": plan, "path": path, "posture": posture, "apply_offered": offered, "row": row,
+                 "notes": row["notes"]},
+          "\n".join([f"comment plan {plan}  (posture {posture})", *_comment_lines(row, plan), f"Plan file: {path}",
+                     closing]))
+    return 0
+
+
 # --- CLI -------------------------------------------------------------------------------------------------------------
 
 BY_HELP = ("A named person, ledgered as the roster @handle when it is one person's handle, name or address on "
@@ -1869,8 +2480,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ado_sync.py",
         description="Azure Boards mirror: configure it, discover the client's process, check that the config fits it, "
-                    "plan against the board and read it back. Reads and plans by default; nothing here writes to "
-                    "the board.")
+                    "plan against the board, read it back and, when a named person confirms a plan, write to it. "
+                    "Reads and plans by default; only `apply` and `link-pr` write to the board, only as a named "
+                    "human, and only when posture is assisted.")
     sub = parser.add_subparsers(dest="verb", required=True)
 
     p = sub.add_parser("config", help="Start or check .sdlc/ado.yaml")
@@ -1902,7 +2514,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--validate", action="store_true",
                    help="Also check each row against the discovered process (locally; the board is not asked)")
     p.add_argument("--no-comments", action="store_true",
-                   help="Plan no comment rows (none are planned in this version; accepted so scripts do not change)")
+                   help="Draft no comment rows: the plan holds field ops only (an apply of a plan with a refused "
+                        "comment, or one whose az identity is not --by, is refused whole; this is how to split them)")
 
     sub.add_parser("status", parents=[common],
                    help="What the ledger says, offline: linked, pending, drifted, as of when (no data is no data)")
@@ -1947,13 +2560,57 @@ def build_parser() -> argparse.ArgumentParser:
     q = discussion_sub.add_parser("gc", parents=[common],
                                   help="Delete caches past discussion.retain_days and those of unlinked items")
     q.add_argument("--dry-run", action="store_true", help="List what would be deleted; delete nothing")
+
+    p = sub.add_parser("apply", parents=[common],
+                       help="Send the plan a person confirmed to the board, as that person (posture assisted only)")
+    p.add_argument("--confirm", default=None, metavar="HASH",
+                   help="The 12-hex hash `plan` printed for the plan you read; a plan nobody confirmed is never sent")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+    p.add_argument("--limit", type=int, default=None, metavar="N",
+                   help="Send at most N writes this run, comments counted (a first --all seed over "
+                        "limits.first_seed needs it); apply the same plan again for the rest")
+
+    p = sub.add_parser("link-pr", parents=[common],
+                       help="Link a pull request to a spec's work item (posture assisted only)")
+    p.add_argument("--spec", default=None, metavar="NNNN", help="The spec's id (0004, or 4); it must be ledgered here")
+    p.add_argument("--pr", default=None, metavar="N", help="The pull request's number (12, or !12)")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+
+    p = sub.add_parser("iteration", help="Bind sprints to the board's iterations")
+    iteration_sub = p.add_subparsers(dest="iteration_verb", required=True)
+    q = iteration_sub.add_parser("bind", parents=[common],
+                                 help="Bind a sprint to an iteration path the discovered schema has (edits "
+                                      ".sdlc/ado.yaml; the board is not asked)")
+    q.add_argument("sprint", metavar="SNN", help="The sprint id (S07)")
+    q.add_argument("--path", default=None, metavar="P",
+                   help="The iteration path as the discovered schema spells it (Claims\\Sprint 7)")
+    q.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+
+    p = sub.add_parser("posture", parents=[common],
+                       help="Switch this clone between plan-only and assisted (edits .sdlc/ado.yaml)")
+    p.add_argument("value", choices=POSTURES, help="plan-only never writes to the board; assisted offers apply")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+
+    p = sub.add_parser("comment", parents=[common],
+                       help="Draft one comment as a one-row plan file; nothing is sent until `apply --confirm`")
+    p.add_argument("target", help="sdlc:<kind>:<id> (ledgered) or #<work item id>")
+    p.add_argument("--message", default=None, metavar="TEXT",
+                   help="The comment's text. Write --message=<text> (one argument) so a text that starts with a dash "
+                        "is not read as a flag")
+    p.add_argument("--by", default=None, metavar="HUMAN", help=BY_HELP)
+    p.add_argument("--mention", action="append", metavar="@h",
+                   help="A person to name, as @handle (repeatable); it is text only and will not notify")
+    p.add_argument("--event", default=None, metavar="NAME",
+                   help="Label the comment as one of the comment events (handoff, spec_deferred, ...); "
+                        "a name outside that set is refused")
     return parser
 
 
 VERBS: dict[str, Callable[[argparse.Namespace, Path], int]] = {
     "config": cmd_config, "discover": cmd_discover, "validate": cmd_validate, "plan": cmd_plan,
     "status": cmd_status, "pull": cmd_pull, "drift": cmd_drift, "link": cmd_link, "adopt": cmd_adopt,
-    "show": cmd_show, "discussion": cmd_discussion,
+    "show": cmd_show, "discussion": cmd_discussion, "apply": cmd_apply, "link-pr": cmd_link_pr,
+    "iteration": cmd_iteration, "posture": cmd_posture, "comment": cmd_comment,
 }
 
 
@@ -1988,12 +2645,11 @@ def main(argv: list[str] | None = None) -> int:
             return _unavailable(args, repo_root, args.verb, _tidy(exc), host_error=str(exc),
                                 **UNAVAILABLE_EXTRA.get(args.verb, {}))
         return _error(args, str(exc), 1)
-    except LedgerDrift as exc:
-        code = 1 if args.verb not in READ_VERBS or args.verb == "pull" else 0  # pull's DRIFT is its only exit 1
+    except LedgerDrift as exc:  # house rule 7: a failed append is exit 1 on every verb that appends
         if args.json:
-            return _error(args, str(exc), code)
+            return _error(args, str(exc), 1)
         print(exc)  # `DRIFT: ...` leads the line, as in sprint.py
-        return code
+        return 1
 
 
 if __name__ == "__main__":
