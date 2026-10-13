@@ -19,17 +19,21 @@ fulfils is a `Related` link.
   load_requirements(repo_root)         one row per FR, parent_ref = its domain's ref
   domain_of_fr(repo_root)              {"FR-001": "<domain slug>"}
   parse_fr_link(text)                  "FR-001..004, FR-009" -> the five ids
-  epic_links(repo_root, row, cfg)      (parent_ref, note, related_refs) for one epic
+  epic_links(repo_root, row, cfg)      (parent_ref, note, related_refs) for one epic; registered whole as
+                                       PARENT_RESOLVERS["epic"], so `projections` carries the fulfils links
   domain_outcomes(cfg, summary_rows)   {domain slug: [outcome id]} from tree.domain_outcomes + an `Outcome` column
 
 A row is a Projection (the keys `ado_sync_sources.projections` documents): `ref`, `kind`, `id`, `title`,
 `status`, `fields`, `tags`, `parent_ref`, `parent_note`, `related_refs`, `source_path`, `source_sha`.
 `title` is the board title (`Outcome 1 · Turnaround time`, `Order Intake`, `FR-001 · Reject duplicates`);
-`status` is always None because State is the board's (the mirror never writes it); `fields` carries only
-what the repository says, under neutral keys (`description_rows`, `fr_ids`, `priority`, `domain`) because
-which work item field a value lands on depends on the discovered process, which a source never sees;
-`source_sha` is the SHA-256 of the file as stored. A ref is `sdlc:outcome:<n>-<slug>`, `sdlc:domain:<slug>`
-or `sdlc:fr:<digits>`, and the row's tag is the ref itself.
+`status` is always None because State is the board's (the mirror never writes it); `fields` carries the one
+work item field every process has, `System.Title` (the board title, cut to 255 characters with a note), by
+reference name like every projection, plus what the repository says under neutral keys (`description_rows`,
+`fr_ids`, `priority`, `domain`) because which work item field those land on depends on the discovered process,
+which a source never sees. A neutral key is never a field op: `ado_sync_model.diff` (and so both patch builders)
+pushes reference names only. `notes` says what was left out (a cut title). `source_sha` is the SHA-256 of the
+file as stored. A ref is `sdlc:outcome:<n>-<slug>`, `sdlc:domain:<slug>` or `sdlc:fr:<digits>`, and the row's
+tag is the ref itself.
 
 A kind whose artifact does not exist yields no rows (the kinds are default-on only when their artifact is
 there). An artifact that contradicts itself raises `ValueError` naming the offence — a domain heading with
@@ -75,6 +79,8 @@ _PRIORITY_RE = re.compile(r"\bP([0-3])\b")
 _FR_LINK_RE = re.compile(
     r"\bFR-(\d+)(?:\s*(?:\.\.\.?|…|–|—|-|\bto\b)\s*(?:FR-)?(\d+))?", re.IGNORECASE)
 _RANGE_LIMIT = 500  # a typo such as FR-001..9999 must not become ten thousand links
+_MAX_TITLE = 255     # the work item title limit (as `ado_sync_sources` cuts a spec's or an epic's title)
+_TITLE = "System.Title"
 _NONE_WORDS = frozenset({"", "-", "–", "—", "n/a", "na", "none", "tbd"})
 
 
@@ -157,6 +163,17 @@ def _priority(text: str) -> str | None:
     return f"P{found.pop()}" if len(found) == 1 else None
 
 
+def _titled(title: str, neutral: dict) -> tuple[dict, list[str]]:
+    """`(fields, notes)`: `System.Title` (the board title, cut to the work item limit with a note) beside the
+    repository's neutral keys, which no field op ever carries."""
+    notes = []
+    board = title
+    if len(board) > _MAX_TITLE:
+        notes.append(f"title cut to {_MAX_TITLE} characters, the work item limit")
+        board = board[:_MAX_TITLE - 1] + "…"
+    return {_TITLE: board, **neutral}, notes
+
+
 # --- outcomes ---------------------------------------------------------------------------------------------
 
 def load_outcomes(repo_root) -> list[dict]:
@@ -181,11 +198,11 @@ def load_outcomes(repo_root) -> list[dict]:
         seen[number] = inst["heading_text"]
         ident = f"{number}-{_slug(name)}" if _slug(name) else str(number)
         ref = f"sdlc:outcome:{ident}"
-        rows.append({"ref": ref, "kind": "outcome", "id": ident,
-                     "title": f"Outcome {number} · {name}" if name else f"Outcome {number}", "status": None,
-                     "fields": {"description_rows": _threshold_rows(text[inst["start"]:inst["end"]])},
-                     "tags": {ref}, "parent_ref": None, "parent_note": None, "related_refs": [],
-                     "source_path": SUCCESS_REL, "source_sha": sha})
+        title = f"Outcome {number} · {name}" if name else f"Outcome {number}"
+        fields, notes = _titled(title, {"description_rows": _threshold_rows(text[inst["start"]:inst["end"]])})
+        rows.append({"ref": ref, "kind": "outcome", "id": ident, "title": title, "status": None,
+                     "fields": fields, "tags": {ref}, "parent_ref": None, "parent_note": None, "related_refs": [],
+                     "source_path": SUCCESS_REL, "source_sha": sha, "notes": notes})
     return rows
 
 
@@ -308,13 +325,16 @@ def load_requirements(repo_root) -> list[dict]:
     if tree is None:
         return []
     flat = not tree["domains"]
-    return [{"ref": fr["ref"], "kind": "requirement", "id": fr["id"],
-             "title": f"{fr['id']} · {fr['name']}" if fr["name"] else fr["id"], "status": None,
-             "fields": {"priority": fr["priority"], "domain": fr["domain"]}, "tags": {fr["ref"]},
-             "parent_ref": f"sdlc:domain:{fr['domain']}" if fr["domain"] else None,
-             "parent_note": "no parent: requirements.md has no domain headings" if flat else None,
-             "related_refs": [], "source_path": REQUIREMENTS_REL, "source_sha": tree["sha"]}
-            for fr in tree["frs"]]
+    rows = []
+    for fr in tree["frs"]:
+        title = f"{fr['id']} · {fr['name']}" if fr["name"] else fr["id"]
+        fields, notes = _titled(title, {"priority": fr["priority"], "domain": fr["domain"]})
+        rows.append({"ref": fr["ref"], "kind": "requirement", "id": fr["id"], "title": title, "status": None,
+                     "fields": fields, "tags": {fr["ref"]},
+                     "parent_ref": f"sdlc:domain:{fr['domain']}" if fr["domain"] else None,
+                     "parent_note": "no parent: requirements.md has no domain headings" if flat else None,
+                     "related_refs": [], "source_path": REQUIREMENTS_REL, "source_sha": tree["sha"], "notes": notes})
+    return rows
 
 
 def domain_of_fr(repo_root) -> dict[str, str]:
@@ -378,14 +398,14 @@ def load_domains(repo_root, cfg: dict | None = None) -> list[dict]:
         refs = [f"sdlc:outcome:{i}" for i in ids]
         parent = refs[0] if refs and edge == "parent" else None
         ref = f"sdlc:domain:{d['slug']}"
+        fields, notes = _titled(d["name"], {"fr_ids": list(d["fr_ids"]),
+                                            "description_rows": [{"fr": i, "priority": priority[i]} for i in d["fr_ids"]]})
         rows.append({"ref": ref, "kind": "domain", "id": d["slug"], "title": d["name"], "status": None,
-                     "fields": {"fr_ids": list(d["fr_ids"]),
-                                "description_rows": [{"fr": i, "priority": priority[i]} for i in d["fr_ids"]]},
-                     "tags": {ref}, "parent_ref": parent,
+                     "fields": fields, "tags": {ref}, "parent_ref": parent,
                      "parent_note": None if refs else f"no outcome link: tree.domain_outcomes has no entry for "
                                                       f"{d['slug']}",
                      "related_refs": refs[1:] if parent else refs,
-                     "source_path": REQUIREMENTS_REL, "source_sha": tree["sha"]})
+                     "source_path": REQUIREMENTS_REL, "source_sha": tree["sha"], "notes": notes})
     return rows
 
 
@@ -453,21 +473,29 @@ def epic_links(repo_root, epic_row: dict, cfg: dict | None = None) -> tuple[str 
       requirements.md is missing; a flat requirements.md gives (None, "fulfils ...", [the FR refs]).
 
     An FR is never the parent. An FR the epic links but requirements.md does not define raises `ValueError`.
-    `epic_row` names its epic by `id` (EP-001) or `ref` (sdlc:epic:001). `cfg` is accepted so every resolver takes
+    `epic_row` names its epic by `id` (EP-001) or `ref` (sdlc:epic:001). A row `ado_sync_sources.projections` hands
+    over carries `source_row` — what its epic loader read, from whichever epics.md it found — and its `FR Link`
+    is used as read (the Epic Summary cell, else the epic's `**Linked requirement:**` line); a bare row re-reads
+    the Epic Summary of `.sdlc/artifacts/01-requirements/epics.md`. `cfg` is accepted so every resolver takes
     the same arguments; the links are declared in the artifacts, so none of it is read."""
     number = next((n for n in (_ep_number(str(epic_row.get(k) or "")) for k in ("id", "ref")) if n is not None), None)
     if number is None:
         raise ValueError(f"epic row carries no EP-NNN id (id={epic_row.get('id')!r}, ref={epic_row.get('ref')!r})")
     epic_id = f"EP-{number:03d}"
-    epics = _read(repo_root, EPICS_REL)
-    if epics is None:
-        return None, "no fulfils links: epics.md not found", []
-    links = _epic_fr_links(epics[0])
-    if links is None:
-        return None, "no fulfils links: epics.md has no FR Link column", []
-    if number not in links:
-        return None, f"no fulfils links: {epic_id} has no row in the Epic Summary", []
-    wanted = parse_fr_link(links[number])
+    source_row = epic_row.get("source_row")
+    if isinstance(source_row, dict) and "FR Link" in source_row:
+        cell = str(source_row.get("FR Link") or "")
+    else:
+        epics = _read(repo_root, EPICS_REL)
+        if epics is None:
+            return None, "no fulfils links: epics.md not found", []
+        links = _epic_fr_links(epics[0])
+        if links is None:
+            return None, "no fulfils links: epics.md has no FR Link column", []
+        if number not in links:
+            return None, f"no fulfils links: {epic_id} has no row in the Epic Summary", []
+        cell = links[number]
+    wanted = parse_fr_link(cell)
     if not wanted:
         return None, "no fulfils links: FR Link empty", []
     tree = _read_requirements(repo_root)
@@ -500,10 +528,11 @@ def _requirements_source(repo_root, cfg=None, schema=None) -> list[dict]:
     return load_requirements(repo_root)
 
 
-def _epic_parent(repo_root, epic_row: dict) -> tuple[str | None, str | None]:
-    """The `PARENT_RESOLVERS["epic"]` shape: (parent_ref, note). The related refs are `epic_links`' third value."""
-    parent, note, _related = epic_links(repo_root, epic_row, None)
-    return parent, note
+def _epic_parent(repo_root, epic_row: dict) -> tuple[str | None, str | None, list[str]]:
+    """`PARENT_RESOLVERS["epic"]`: `epic_links` whole — (parent_ref, note, related_refs). `projections` writes the
+    first two into `parent_ref`/`parent_note` and appends the fulfils links to `related_refs` (kit K25: an epic is
+    Related to every FR in its FR Link, and a cross-domain epic to each domain)."""
+    return epic_links(repo_root, epic_row, None)
 
 
 def _register(hooks=None) -> bool:

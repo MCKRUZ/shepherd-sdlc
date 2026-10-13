@@ -322,6 +322,21 @@ def test_diff_honours_a_kind_ownership_map():
     assert [o["path"] for o in sm.diff(proj, rem)] == ["/fields/System.Title"]
 
 
+@pytest.mark.parametrize("key", ["description_rows", "fr_ids", "priority", "domain", "System", "System.", ".Title",
+                                 "System Title", "1System.Title"])
+def test_a_field_key_that_is_not_a_reference_name_is_never_an_op(key):
+    """A source's neutral key (the requirements tree's `description_rows`, `fr_ids`) is its own data, never a push."""
+    proj = projection("requirement", fields={"System.Title": "FR-001 · Reject duplicates", key: ["FR-001"]})
+    assert [o["path"] for o in sm.diff(proj, None)] == ["/fields/System.Tags", "/fields/System.Title"]
+    rem = remote(title="FR-001 · old words", tags=set(proj["tags"]))
+    assert [o["path"] for o in sm.diff(proj, rem)] == ["/fields/System.Title"]
+
+
+@pytest.mark.parametrize("key", ["System.Title", "Microsoft.VSTS.Common.Priority", "Custom.RiskTier", "Org_X.Field_2"])
+def test_a_dotted_reference_name_is_one(key):
+    assert sm.REFERENCE_NAME_RE.fullmatch(key)
+
+
 def test_ownership_for_layers_the_kind_on_the_contract():
     assert sm.ownership_for("spec") == dict(bc.OWNERSHIP)
     assert sm.ownership_for("epic")["System.State"] == "A"

@@ -18,6 +18,8 @@ What it decides:
     `RELATION_DRIFT`. A forbidden (effort) field is named and its value never read. Identity, History and
     free-text values are never copied into the result (the D38 scrub runs on this path, not only for discussion).
   * `diff` — what a push would change: the SDLC-owned (`S`) fields of a projection that differ from the item.
+    Only a work item field reference name (`System.Title`, `Microsoft.VSTS.Common.Priority`, `Custom.RiskTier`:
+    `REFERENCE_NAME_RE`) is ever an op; a source's neutral key (`description_rows`, `fr_ids`) is its own data.
   * `validate_disposition` / `counts_as_open` — the disposition state machine with honest counting: a
     mislabelled disposition (ACKNOWLEDGED without an owner, NOT_DRIFT without a reason, TAKE_* without a recorded
     child exit 0) is still open.
@@ -81,6 +83,10 @@ IDENTITY_FIELDS: Final = frozenset({"System.AssignedTo", "System.ChangedBy", "Sy
 
 PARENT_REL: Final = "System.LinkTypes.Hierarchy-Reverse"
 ATTACHMENT_REL: Final = "AttachedFile"
+# A work item field reference name is always dotted (`System.Title`, `Microsoft.VSTS.Common.Priority`,
+# `Custom.RiskTier`). A projection key without a dot is a source's neutral data (the requirements tree's
+# `description_rows`, `fr_ids`, `priority`, `domain`): never a field op, so a plan never lists `/fields/fr_ids`.
+REFERENCE_NAME_RE: Final = re.compile(r"^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$")
 MARKER_BEGIN: Final = "<!-- sdlc:begin -->"
 MARKER_END: Final = "<!-- sdlc:end -->"
 
@@ -200,12 +206,15 @@ def diff(projection: dict, remote: dict | None, ownership: dict = bc.OWNERSHIP) 
     """The ops a push would make, sorted by path: `{"op", "path", "old", "new", "class"}`.
 
     It compares `projection["fields"]` (the values the mirror pushes, by reference name) and the plugin-prefixed
-    subset of `projection["tags"]` — nothing else. No item yet: every field is an `add` (`NEVER_PUSHED`). An
+    subset of `projection["tags"]` — nothing else; a `fields` key that is not a reference name (`REFERENCE_NAME_RE`:
+    a source's neutral data, such as the requirements tree's `description_rows`) is never an op, so neither patch
+    builder can send it. No item yet: every field is an `add` (`NEVER_PUSHED`). An
     existing item: only an `S` field (by `ownership`; a pushed field the map does not name is the repo's) that
     differs after normalisation (trimmed text, case-folded e-mail, tag sets, the Description's marker block) is an
     op (`SDLC_OWNED_DRIFT`); an `A`/`C` field is the board's after create, so it never is. A field the remote
     document does not carry is not compared (the B2-P1 patch builder reads the whole item)."""
-    want = dict(projection.get("fields") or {})
+    want = {ref: value for ref, value in (projection.get("fields") or {}).items()
+            if isinstance(ref, str) and REFERENCE_NAME_RE.fullmatch(ref)}
     tags = sorted(_plugin_tags(projection.get("tags")))
     if remote is None:
         ops = [{"op": "add", "path": f"/fields/{ref}", "old": None, "new": value, "class": "NEVER_PUSHED"}

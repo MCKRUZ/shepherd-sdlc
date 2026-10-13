@@ -23,7 +23,10 @@ from pathlib import Path
 
 import pytest
 
+import ado_sync_model as model
+import ado_sync_sources as sources
 import ado_sync_sources_tree as tree
+import ado_wit_map as wm
 import boards_contract as bc
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "boards_repo_tree"
@@ -486,10 +489,78 @@ def test_the_registered_loaders_answer_with_one_two_or_three_arguments(hooks, cl
     assert [r["kind"] for r in requirement(clean, {}, {})] == ["requirement"] * 7
     assert domain(clean, CONFIG)[0]["related_refs"] == ["sdlc:outcome:1-turnaround-time"]
     assert domain(clean)[0]["parent_note"].startswith("no outcome link")
-    assert hooks.PARENT_RESOLVERS["epic"](clean, {"id": "EP-001"}) == ("sdlc:domain:order-intake",
-                                                                       "fulfils FR-001..002")
+    # the resolver answers epic_links whole: the fulfils links ride its third value into `related_refs` (K25)
+    assert hooks.PARENT_RESOLVERS["epic"](clean, {"id": "EP-001"}) == (
+        "sdlc:domain:order-intake", "fulfils FR-001..002", ["sdlc:fr:001", "sdlc:fr:002"])
     assert hooks.PARENT_RESOLVERS["epic"](clean, {"id": "EP-002"}) == (
-        None, "spans domains: order-intake, pricing-rules")
+        None, "spans domains: order-intake, pricing-rules",
+        ["sdlc:fr:003", "sdlc:fr:005", "sdlc:domain:order-intake", "sdlc:domain:pricing-rules"])
+
+
+# --- the tree as projections: titled by reference name, fulfils links carried (K25) ---------------------------
+
+HYPERLINK = "https://dev.azure.com/org/Claims/_git/claims-api?path=/x.md&version=GCabc1234"
+HISTORY = f"{bc.HISTORY_TOKEN} · created"
+
+
+def _tree_rows(root: Path) -> list[dict]:
+    return tree.load_outcomes(root) + tree.load_domains(root, CONFIG) + tree.load_requirements(root)
+
+
+def test_every_tree_projection_carries_its_title_by_reference_name(clean):
+    rows = _tree_rows(clean)
+    assert {r["kind"] for r in rows} == {"outcome", "domain", "requirement"} and len(rows) == 13
+    for row in rows:
+        assert row["fields"]["System.Title"] == row["title"] and row["notes"] == [], row["ref"]
+
+
+def test_a_tree_projections_neutral_keys_are_never_field_ops_and_it_can_be_created(clean):
+    """`fields` keeps the repository's neutral keys (`description_rows`, `fr_ids`, `priority`, `domain`) beside
+    `System.Title`; only the reference name is ever an op, so a plan lists no `/fields/fr_ids` and a create is
+    buildable for every tree kind."""
+    for row in _tree_rows(clean):
+        assert [o["path"] for o in model.diff(row, None)] == ["/fields/System.Tags", "/fields/System.Title"], row["ref"]
+        patch = wm.build_create_patch(row, {}, HYPERLINK, HISTORY, None)
+        field_paths = [o["path"] for o in patch if o["path"].startswith("/fields/")]
+        assert field_paths == ["/fields/System.Tags", "/fields/System.Title", "/fields/System.History"], row["ref"]
+        assert next(o["value"] for o in patch if o["path"] == "/fields/System.Title") == row["title"]
+
+
+def test_a_title_over_the_work_item_limit_is_cut_with_a_note(tmp_path):
+    long_name = "x" * 300
+    root = _repo(tmp_path, requirements=_doc({"A": [1]}).replace("Requirement 1", long_name))
+    (row,) = tree.load_requirements(root)
+    assert len(row["fields"]["System.Title"]) == 255 and row["fields"]["System.Title"].endswith("…")
+    assert row["notes"] == ["title cut to 255 characters, the work item limit"]
+    assert row["title"] == f"FR-001 · {long_name}"  # the projection's own title is the repository's, uncut
+
+
+def test_projections_carry_each_epics_fulfils_links_as_related_refs(clean):
+    """K25 through `ado_sync_sources.projections`: a single-domain epic parents under its Domain and is Related to
+    its FRs; a cross-domain epic has no parent and is Related to its FRs and to each domain."""
+    tree._register(sources)
+    epics = {p["id"]: p for p in sources.projections(clean, {}, {}, ["epic"])}
+    assert (epics["EP-001"]["parent_ref"], epics["EP-001"]["parent_note"], epics["EP-001"]["related_refs"]) == (
+        "sdlc:domain:order-intake", "fulfils FR-001..002", ["sdlc:fr:001", "sdlc:fr:002"])
+    assert (epics["EP-002"]["parent_ref"], epics["EP-002"]["parent_note"], epics["EP-002"]["related_refs"]) == (
+        None, "spans domains: order-intake, pricing-rules",
+        ["sdlc:fr:003", "sdlc:fr:005", "sdlc:domain:order-intake", "sdlc:domain:pricing-rules"])
+    assert (epics["EP-003"]["parent_ref"], epics["EP-003"]["parent_note"], epics["EP-003"]["related_refs"]) == (
+        None, "no fulfils links: FR Link empty", [])
+
+
+def test_a_projected_epic_is_linked_from_the_fr_link_its_loader_read(clean):
+    """The epic loader also finds a root-level epics.md; the resolver uses the FR Link that loader read
+    (`source_row`) rather than a second lookup of its own that would say the file is missing."""
+    (clean / EPICS).rename(clean / "epics.md")
+    tree._register(sources)
+    epics = {p["id"]: p for p in sources.projections(clean, {}, {}, ["epic"])}
+    assert epics["EP-001"]["related_refs"] == ["sdlc:fr:001", "sdlc:fr:002"]
+    assert tree.epic_links(clean, {"id": "EP-001"}, {})[1] == "no fulfils links: epics.md not found"  # a bare row
+    assert tree.epic_links(clean, {"id": "EP-001", "source_row": {"FR Link": "FR-004..005"}}, {}) == (
+        "sdlc:domain:pricing-rules", "fulfils FR-004..005", ["sdlc:fr:004", "sdlc:fr:005"])
+    assert tree.epic_links(clean, {"id": "EP-001", "source_row": {"FR Link": ""}}, {}) == (
+        None, "no fulfils links: FR Link empty", [])
 
 
 # --- purity: reads only, spawns nothing, no identity ----------------------------------------------------------
@@ -530,11 +601,13 @@ def test_the_exports_are_exactly_the_kits():
                                            "parse_fr_link", "epic_links", "domain_outcomes"])
 
 
-def test_the_mini_repo_is_the_four_generic_files_and_carries_no_identity():
+def test_the_mini_repo_is_the_three_generic_artifacts_and_carries_no_identity():
+    """Its own mini repo (`boards_repo_tree/**`, disjoint from B2-P3's `boards_repo/**`): the deliberately stray
+    FR-099 would otherwise make every epic projection over the shared mini repo refuse."""
     for path in FIXTURE.rglob("*"):
         if path.is_file():
             text = path.read_text(encoding="utf-8")
             assert not bc.EMAIL_RE.search(text) and not bc.GUID_RE.search(text), path.name
     assert sorted(p.relative_to(FIXTURE).as_posix() for p in FIXTURE.rglob("*") if p.is_file()) == [
         ".sdlc/artifacts/00-discovery/success-criteria.md", ".sdlc/artifacts/01-requirements/epics.md",
-        ".sdlc/artifacts/01-requirements/requirements.md", ".sdlc/team.yaml"]
+        ".sdlc/artifacts/01-requirements/requirements.md"]

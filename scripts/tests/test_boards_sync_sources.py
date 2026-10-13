@@ -519,6 +519,28 @@ def test_the_epic_parent_comes_from_the_registered_resolver_which_is_given_the_s
     assert all("source_row" not in p for p in out)
 
 
+def test_a_resolvers_third_value_is_appended_to_related_refs_each_once(monkeypatch):
+    """`(parent_ref, note, related_refs)`: the requirements tree's epic resolver answers an epic's fulfils links (K25)."""
+    monkeypatch.setitem(src.PARENT_RESOLVERS, "epic", lambda r, row: (
+        "sdlc:domain:intake", "fulfils FR-001..002", ["sdlc:fr:001", "sdlc:fr:002", "sdlc:fr:001"]))
+    p = one("epic", "EP-001")
+    assert (p["parent_ref"], p["parent_note"]) == ("sdlc:domain:intake", "fulfils FR-001..002")
+    assert p["related_refs"] == ["sdlc:fr:001", "sdlc:fr:002"]
+    monkeypatch.setitem(src.PARENT_RESOLVERS, "epic", lambda r, row: (None, "no fulfils links: FR Link empty", []))
+    assert one("epic", "EP-001")["related_refs"] == []
+
+
+@pytest.mark.parametrize("answer, match", [
+    ((None, None, ["FR-001"]), "related ref 'FR-001'"),
+    ((None, None, ["sdlc:fr:001"], "extra"), "returned 4 values"),
+    ((None,), "returned 1 values"),
+])
+def test_a_resolver_answer_of_the_wrong_shape_is_refused(monkeypatch, answer, match):
+    monkeypatch.setitem(src.PARENT_RESOLVERS, "epic", lambda r, row: answer)
+    with pytest.raises(ValueError, match=match):
+        rows(["epic"])
+
+
 def test_with_no_epic_resolver_loaded_the_epic_says_why_it_has_no_parent(monkeypatch):
     monkeypatch.delitem(src.PARENT_RESOLVERS, "epic", raising=False)
     p = one("epic", "EP-001")

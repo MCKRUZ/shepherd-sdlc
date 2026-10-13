@@ -51,7 +51,9 @@ Two registries make the module extend-only. `SOURCES` maps a kind to its loader:
 schema)` or, for a loader that needs neither, `loader(repo_root)`; it returns projections. Later packages
 add kinds (the requirements tree adds `outcome`, `domain` and `requirement`). `PARENT_RESOLVERS` maps a kind
 to `resolver(repo_root, row) -> (parent_ref, note)`; `projections` calls it for every row of its kind
-and writes the answer into `parent_ref` and `parent_note`. `row["source_row"]` is the raw material the
+and writes the answer into `parent_ref` and `parent_note`. A resolver may answer a third value, the item's
+`Related` refs (`ado_sync_sources_tree.epic_links`: an epic's fulfils links, kit K25); `projections` appends
+them to `related_refs`, each once, refusing one that is not `sdlc:<kind>:<id>`. `row["source_row"]` is the raw material the
 loader read (a spec's frontmatter; an epic's `{"Epic ID", "Title", "Priority", "FR Link"}`; a feature's
 `{"epic": <text after "epic:" or None>}`); it is removed before `projections` returns. The spec and feature
 resolvers also work on a bare row, re-reading the file at `source_path`. Whoever registers
@@ -671,6 +673,26 @@ def _checked(kind: str, row) -> dict:
     return row
 
 
+def _resolve(kind: str, resolver, root: Path, row: dict) -> None:
+    """Write a resolver's answer into `row`: `(parent_ref, note)`, or `(parent_ref, note, related_refs)` whose refs
+    are appended to the row's own `related_refs` (each once, in order). A ref that is not `sdlc:<kind>:<id>` is a
+    ValueError naming the resolver's kind and the row."""
+    answer = tuple(resolver(root, dict(row)))  # a copy: `source_row` is dropped by the caller
+    if len(answer) not in (2, 3):
+        raise ValueError(f"the parent resolver for kind {kind!r} returned {len(answer)} values for {row['ref']}; it "
+                         "answers (parent_ref, note) or (parent_ref, note, related_refs)")
+    row["parent_ref"], row["parent_note"] = answer[0], answer[1]
+    if row["parent_ref"] is not None and not bc.REF_RE.fullmatch(str(row["parent_ref"])):
+        raise ValueError(f"the parent resolver for kind {kind!r} returned {row['parent_ref']!r} for "
+                         f"{row['ref']}, which is not sdlc:<kind>:<id>")
+    related = list(answer[2] or []) if len(answer) == 3 else []
+    for ref in related:
+        if not bc.REF_RE.fullmatch(str(ref)):
+            raise ValueError(f"the parent resolver for kind {kind!r} returned the related ref {ref!r} for "
+                             f"{row['ref']}, which is not sdlc:<kind>:<id>")
+    row["related_refs"] = list(dict.fromkeys([*row["related_refs"], *(str(r) for r in related)]))
+
+
 def projections(repo_root, cfg: dict, schema: dict, kinds: list[str]) -> list[dict]:
     """One projection per item of each kind, kinds in the order asked (each once), items in id order.
 
@@ -693,10 +715,7 @@ def projections(repo_root, cfg: dict, schema: dict, kinds: list[str]) -> list[di
         for raw in _call(SOURCES[kind], root, cfg, schema):
             row = _checked(kind, raw)
             if resolver is not None:
-                row["parent_ref"], row["parent_note"] = resolver(root, dict(row))  # a copy: `source_row` is dropped below
-                if row["parent_ref"] is not None and not bc.REF_RE.fullmatch(str(row["parent_ref"])):
-                    raise ValueError(f"the parent resolver for kind {kind!r} returned {row['parent_ref']!r} for "
-                                     f"{row['ref']}, which is not sdlc:<kind>:<id>")
+                _resolve(kind, resolver, root, row)
             row.pop("source_row", None)
             rows.append(row)
         out.extend(sorted(rows, key=lambda r: _natural(r["id"])))
