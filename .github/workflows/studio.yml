@@ -4,7 +4,8 @@ name: Shepherd desktop
 # Node/TypeScript application inside a Python plugin repository — and until it was folded in
 # here its 233 tests ran on exactly one laptop and nowhere else.
 #
-#   studio  — both TypeScript projects typecheck, then the full vitest suite, on Linux,
+#   studio  — all three TypeScript projects typecheck (renderer, main process, tests), then
+#             the full vitest suite, on Linux,
 #             Windows and macOS. BLOCKS once added to the required checks; see the note on
 #             path filters below.
 #
@@ -101,6 +102,11 @@ jobs:
       - run: npm ci
 
       - run: npm run typecheck
+
+      # The tests are their own TypeScript project (tsconfig.test.json). vitest strips types,
+      # so it stayed green while that project carried 31 errors across 18 files; only running
+      # the test typecheck here holds the tests to the bar the code they exercise is held to.
+      - run: npm run typecheck:test
 
       # `npx vitest run` rather than `npm test`, which would first run a `pretest` Vite build
       # that only the Playwright end-to-end suite needs. Same command that is run locally.
