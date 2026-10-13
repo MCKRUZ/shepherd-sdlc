@@ -19,6 +19,7 @@ import { Button, Eyebrow, cn } from '../ui'
 import { useChatTurn } from '../stores/chatTurnStore'
 import { CcEmptyFigure } from './brand/figures'
 import { StageHome } from './StageHome'
+import { AdoTodayRows } from './today/AdoTodayRows'
 
 type StageHomeProps = Parameters<typeof StageHome>[0]
 
@@ -78,6 +79,7 @@ export function LifecycleHome({ commandCenter, onNeedsYou, ...stageHome }: Lifec
         <Group label="Decisions this week" source={commandCenter?.decisions.source ?? null}>
           <Decisions cc={commandCenter} />
         </Group>
+        <AdoTodayRows cc={commandCenter} />
       </section>
     </div>
   )

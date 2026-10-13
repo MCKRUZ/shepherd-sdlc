@@ -16,6 +16,7 @@ import { TODAY_ROW_RISE } from '../../motion/presets'
 import { enabled as motionEnabled, reduced as motionReduced } from '../../motion/motion'
 import { engineFor } from '../../motion/useStudioGSAP'
 import { CcEmptyFigure } from '../brand/figures'
+import { AdoTodayRows } from './AdoTodayRows'
 
 export interface TodayColumnProps {
   cc: CommandCenter
@@ -151,6 +152,8 @@ export function TodayColumn({ cc, onRun, onDecide, onConfirmTier, onSince, onAct
         </p>
         <Button size="sm" variant="secondary" icon={Bell} disabled disabledReason={STANDUP_NOTES}>Standup notes</Button>
       </section>
+      {/* The Azure Boards rows: a sibling group, never a needs-you item (K18). */}
+      <AdoTodayRows cc={cc} strip={strip} />
     </section>
   )
 }
