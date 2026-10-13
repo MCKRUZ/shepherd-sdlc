@@ -38,7 +38,7 @@ RENAMES: list[tuple[re.Pattern[bytes], bytes]] = [
     # The slash-command prefix only. The lookbehind excludes a path token (`.sdlc/`, `foo/sdlc`),
     # where the slash is preceded by a word character or a dot; `\b` keeps `/sdlc` from matching
     # inside a longer token.
-    (re.compile(rb"(?<![\w.])/sdlc\b"), b"/sprd"),
+    (re.compile(rb"(?<![\w./~])/sdlc\b"), b"/sprd"),
     (re.compile(rb"MCKRUZ/claude-code-sdlc"), b"MCKRUZ/shepherd-sdlc"),
     (re.compile(rb"claude-code-sdlc@mckruz"), b"shepherd@mckruz"),
     (re.compile(rb"claude-code-sdlc"), b"shepherd"),

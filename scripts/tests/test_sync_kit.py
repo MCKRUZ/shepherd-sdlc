@@ -24,7 +24,7 @@ import sync_kit
 REAL_PAYLOAD = sync_kit.PAYLOAD  # captured before any fixture monkeypatches it
 SCHEMA_REL = "profile/rails-telemetry.schema.json"
 SCHEMA_ID = b'"$id": "https://mckruz.dev/delivery-standard/rails-telemetry.schema.json"'
-COMMAND = re.compile(rb"(?<![\w.])/sdlc\b")
+COMMAND = re.compile(rb"(?<![\w./~])/sdlc\b")
 
 README = b"""# Kit
 /plugin marketplace add MCKRUZ/claude-code-sdlc
@@ -60,7 +60,8 @@ class TestRenameMap:
 
     def test_path_tokens_are_not_commands(self):
         # `.sdlc/` is the state directory and `foo/sdlc` a path — neither is a slash command.
-        for text in (b".sdlc/state.yaml", b"foo/sdlc/bar", b"a/sdlcx"):
+        # A `~/sdlc` home path or a doubled slash is a path too (correctness review on PR #4).
+        for text in (b".sdlc/state.yaml", b"foo/sdlc/bar", b"a/sdlcx", b"~/sdlc/x", b"//sdlc"):
             assert sync_kit.rename(text) == text
 
     def test_specific_forms_resolve_before_the_bare_id(self):
