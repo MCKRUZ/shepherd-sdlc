@@ -290,24 +290,155 @@ def connection_data(repo_root) -> dict:
 # --- writes: B3 fills these six bodies, nothing else in this file ------------------------------------------
 
 def create(repo_root, type_name: str, patch: list[dict]) -> dict:
-    raise NotImplementedError("B3")
+    """`POST wit/workItems` of a JSON Patch: a new item of `type_name`. Returns `{"id", "rev"}` and nothing else — the
+    board's reply names the people who created it, and that never leaves this module.
+
+    The location is `WIT_ROUTES["workitem_create"]` (route `project=<P> type=$<type_name>`); the body goes
+    `application/json-patch+json`. A failure is an `AdoImportError` carrying `error_class`: what
+    `ado_wit_map.classify_write_error` reads its stderr as (`conflict`, `rule`, `permission`, `throttled`,
+    `not_found`, else `unknown`). A reply this module cannot read is `unknown` too: the board said yes, so the item
+    may exist. An error raised before `az` was called (no Azure DevOps remote) carries no `error_class`. Never retried."""
+    if (not isinstance(type_name, str) or not type_name.strip() or type_name.startswith("$")
+            or any(ch in "/\\?#%" or ord(ch) < 32 or ord(ch) == 127 for ch in type_name)):
+        raise ValueError(f"type_name must be a work item type name (no leading $, slash or control character), "
+                         f"got {type_name!r}")
+    if not isinstance(patch, list) or not patch or not all(isinstance(op, dict) for op in patch):
+        raise ValueError("patch must be a non-empty list of JSON Patch operations")
+    row = WIT_ROUTES["workitem_create"]
+    params = {"project": _project(repo_root), "type": f"${type_name}"}
+    label = f"{row['area']}/{row['resource']} (create {type_name})"
+    try:
+        doc = ado_transport.invoke_body(repo_root, row["area"], row["resource"],
+                                        {key: params[key] for key in row["route"]}, method=row["method"], body=patch,
+                                        media_type="application/json-patch+json", api_version=row["api_version"])
+    except AdoImportError as exc:
+        from ado_wit_map import classify_write_error  # here, not at the top: Fold B3 changes only these six bodies
+        error_class = classify_write_error(str(exc))
+        failure = AdoImportError(f"{label}: write failed [{error_class}]: {exc}")
+        failure.error_class = error_class
+        raise failure from exc
+    try:
+        return {"id": _id_in(_require(doc, "id", "workItems create"), "workItems create.id"),
+                "rev": _id_in(_require(doc, "rev", "workItems create"), "workItems create.rev")}
+    except AdoImportError as exc:
+        failure = AdoImportError(f"{label}: the reply was unreadable and the write may have landed [unknown]: {exc}")
+        failure.error_class = "unknown"
+        raise failure from exc
 
 
 def update(repo_root, wid: int, patch: list[dict]) -> dict:
-    raise NotImplementedError("B3")
+    """`PATCH wit/workItems` of a JSON Patch on item `wid`. The patch MUST begin with `test /rev` (the revision the
+    caller read), so a board that has moved on answers a refusal (`conflict`) instead of being overwritten; a patch
+    that does not is a `ValueError` before any call. Returns `{"id", "rev"}` (the new revision) and nothing else.
+
+    The location is `WIT_ROUTES["workitem_update"]` (route `project=<P> id=<wid>`), `application/json-patch+json`.
+    Errors as `create`: a failed write carries `error_class`, an unreadable reply (or one for another item) is
+    `unknown`. Never retried."""
+    wid = _positive(wid, "a work item id")
+    first = patch[0] if isinstance(patch, list) and patch else None
+    if not (isinstance(first, dict) and first.get("op") == "test" and first.get("path") == "/rev"
+            and _is_int(first.get("value")) and first["value"] >= 1):
+        raise ValueError("an update patch must begin with {'op': 'test', 'path': '/rev', 'value': <the revision read>}")
+    if not all(isinstance(op, dict) for op in patch):
+        raise ValueError("patch must be a list of JSON Patch operations")
+    row = WIT_ROUTES["workitem_update"]
+    params = {"project": _project(repo_root), "id": wid}
+    label = f"{row['area']}/{row['resource']} (work item {wid})"
+    try:
+        doc = ado_transport.invoke_body(repo_root, row["area"], row["resource"],
+                                        {key: params[key] for key in row["route"]}, method=row["method"], body=patch,
+                                        media_type="application/json-patch+json", api_version=row["api_version"])
+    except AdoImportError as exc:
+        from ado_wit_map import classify_write_error  # here, not at the top: Fold B3 changes only these six bodies
+        error_class = classify_write_error(str(exc))
+        failure = AdoImportError(f"{label}: write failed [{error_class}]: {exc}")
+        failure.error_class = error_class
+        raise failure from exc
+    try:
+        answered = _id_in(_require(doc, "id", "workItems update"), "workItems update.id")
+        if answered != wid:
+            raise AdoImportError(f"unexpected az shape: workItems update answered for work item {answered}")
+        return {"id": answered, "rev": _id_in(_require(doc, "rev", "workItems update"), "workItems update.rev")}
+    except AdoImportError as exc:
+        failure = AdoImportError(f"{label}: the reply was unreadable and the write may have landed [unknown]: {exc}")
+        failure.error_class = "unknown"
+        raise failure from exc
 
 
 def add_comment(repo_root, wid: int, text: str, fmt: str) -> dict:
-    raise NotImplementedError("B3")
+    """`POST wit/comments` of `{"text": text}` on item `wid`, `format=<fmt>` (`markdown` or `html`), at
+    `PREVIEW_API_VERSION`: the discussion's own endpoint. The text rides in the request body only — never in an argv
+    element, so no quote, newline or `$(` in it can reach a shell — and never in an error message. Returns
+    `{"comment_id", "version"}` and nothing else.
+
+    The location is the `comments` row of `WIT_ROUTES` (the read location of the same resource; the method here is
+    POST). Errors as `create`: a failed write carries `error_class`; an unreadable reply is `unknown`, and the caller
+    recovers by re-listing (`list_recent_comments`), never by posting again. Never retried."""
+    wid = _positive(wid, "a work item id")
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError("a comment's text must be non-empty text")
+    if fmt not in ("markdown", "html"):
+        raise ValueError(f"fmt must be 'markdown' or 'html', got {fmt!r}")
+    row = WIT_ROUTES["comments"]
+    params = {"project": _project(repo_root), "workItemId": wid}
+    label = f"{row['area']}/{row['resource']} (work item {wid})"
+    try:
+        doc = ado_transport.invoke_body(repo_root, row["area"], row["resource"],
+                                        {key: params[key] for key in row["route"]}, method="POST",
+                                        body={"text": text}, media_type="application/json", query={"format": fmt},
+                                        api_version=row["api_version"])
+    except AdoImportError as exc:
+        from ado_wit_map import classify_write_error  # here, not at the top: Fold B3 changes only these six bodies
+        error_class = classify_write_error(str(exc))
+        failure = AdoImportError(f"{label}: write failed [{error_class}]: {exc}")
+        failure.error_class = error_class
+        raise failure from exc
+    try:
+        return {"comment_id": _id_in(_require(doc, "id", "comments add"), "comments add.id"),
+                "version": _id_in(_require(doc, "version", "comments add"), "comments add.version")}
+    except AdoImportError as exc:
+        failure = AdoImportError(f"{label}: the reply was unreadable and the write may have landed [unknown]: {exc}")
+        failure.error_class = "unknown"
+        raise failure from exc
 
 
 def add_history(repo_root, wid: int, rev: int, html: str) -> dict:
-    raise NotImplementedError("B3")
+    """The fallback for a comment: `update` with `[test /rev, add /fields/System.History]` — one History entry on item
+    `wid`, written only if the item is still at revision `rev`. Returns what `update` returns (`{"id", "rev"}`);
+    every refusal, error and `error_class` is `update`'s."""
+    rev = _positive(rev, "a revision")
+    if not isinstance(html, str) or not html.strip():
+        raise ValueError("a history entry must be non-empty text")
+    return update(repo_root, wid, [{"op": "test", "path": "/rev", "value": rev},
+                                   {"op": "add", "path": "/fields/System.History", "value": html}])
 
 
 def list_recent_comments(repo_root, wid: int) -> list[dict]:
-    raise NotImplementedError("B3")
+    """The newest 20 comments on item `wid`, newest first (`order=desc`, `$top=20`), as the board sent them: a READ,
+    asked after a comment POST whose outcome is unknown, so the caller can look for the text it sent (by its
+    `text_sha`) instead of posting twice. Authors and text are returned unredacted — the recovery rule needs the
+    author's id — so nothing here may be written to a file."""
+    wid = _positive(wid, "a work item id")
+    doc = _call(repo_root, "comments", query={"order": "desc", "$top": "20"}, project=_project(repo_root),
+                workItemId=wid)
+    return _list_in(doc, "comments", "comments")
 
 
 def link_pr(repo_root, pr_id: int, wid: int) -> None:
-    raise NotImplementedError("B3")
+    """`az repos pr work-item add --id <pr_id> --work-items <wid>` through `az_json`: link pull request `pr_id` to
+    work item `wid`. A native verb, not a `devops invoke`. A pull request id is organisation-wide (as for
+    `az repos pr update --id`), so the argv carries `--detect false --org <url>` and not `--project`/`--repository`.
+    Errors as `create`: a failure carries `error_class`. Never retried."""
+    pr_id = _positive(pr_id, "a pull request id")
+    wid = _positive(wid, "a work item id")
+    org_url = ado_transport.remote(repo_root).org_url
+    label = f"repos pr work-item add (PR {pr_id}, work item {wid})"
+    try:
+        ado_transport.az_json(["repos", "pr", "work-item", "add", "--id", str(pr_id), "--work-items", str(wid),
+                               "--detect", "false", "--org", org_url], repo_root)
+    except AdoImportError as exc:
+        from ado_wit_map import classify_write_error  # here, not at the top: Fold B3 changes only these six bodies
+        error_class = classify_write_error(str(exc))
+        failure = AdoImportError(f"{label}: write failed [{error_class}]: {exc}")
+        failure.error_class = error_class
+        raise failure from exc
