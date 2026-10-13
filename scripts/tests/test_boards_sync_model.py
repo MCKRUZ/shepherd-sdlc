@@ -641,3 +641,117 @@ def test_ai_by_agrees_with_the_cli_require_human():
         except ado_sync.Refused:
             cli_refused = True
         assert cli_refused is refused, name
+
+
+# === Fold B4 (B4-P0): the reconcile disposition enums. Appended; nothing above this line changed. ============
+#
+# The design §8 state machine, keyed by the state a drift row starts in, as `reconcile` (B4-P1a) records it:
+# OPEN -> TAKE_ADO | TAKE_SDLC | ACKNOWLEDGED(owner) | NOT_DRIFT(reason); CONFLICT -> TAKE_ADO | TAKE_SDLC;
+# DELETED_IN_ADO -> RECREATE | UNLINK | ACKNOWLEDGED; ORPHAN_IN_REPO -> UNLINK | RELINK. The tests hold the named
+# table equal to what `validate_disposition` / `counts_as_open` decide with, for every class and every word.
+
+MACHINE = {
+    "OPEN": ("TAKE_ADO", "TAKE_SDLC", "ACKNOWLEDGED", "NOT_DRIFT"),
+    "CONFLICT": ("TAKE_ADO", "TAKE_SDLC"),
+    "DELETED_IN_ADO": ("RECREATE", "UNLINK", "ACKNOWLEDGED"),
+    "ORPHAN_IN_REPO": ("UNLINK", "RELINK"),
+}
+# What each disposition carries when it is genuinely off the books (the honest-counting fields).
+FULL = {"TAKE_ADO": {"child_exit": 0}, "TAKE_SDLC": {"child_exit": 0}, "ACKNOWLEDGED": {"owner": "@MCKRUZ"},
+        "NOT_DRIFT": {"reason": "the team re-planned the sprint"}, "RECREATE": {}, "UNLINK": {},
+        "RELINK": {"relink_ref": "sdlc:spec:0009"}}
+STATE_OF = [
+    ("SDLC_OWNED_DRIFT", "OPEN"), ("ADO_OWNED_CHANGE", "OPEN"), ("MOVED", "OPEN"), ("RELATION_DRIFT", "OPEN"),
+    ("UNMAPPED_IN_ADO", "OPEN"), ("CONFLICT", "CONFLICT"), ("RETYPED", "CONFLICT"),
+    ("DELETED_IN_ADO", "DELETED_IN_ADO"), ("ORPHAN_IN_REPO", "ORPHAN_IN_REPO"),
+    ("IN_SYNC", None), ("COMMENT", None), ("NEVER_PUSHED", None), ("NOT_A_CLASS", None), (None, None),
+]
+
+
+def test_the_disposition_machine_is_the_design_s_four_rows():
+    assert sm.DISPOSITION_MACHINE == MACHINE
+    assert list(sm.DISPOSITION_MACHINE) == ["OPEN", "CONFLICT", "DELETED_IN_ADO", "ORPHAN_IN_REPO"]
+    assert sm.CONFLICT_CLASSES == ("CONFLICT", "RETYPED")
+
+
+def test_state_of_covers_every_drift_class():
+    assert {c for c, _ in STATE_OF if c in bc.DRIFT_CLASSES} == set(bc.DRIFT_CLASSES)
+
+
+@pytest.mark.parametrize("cls, state", STATE_OF, ids=[str(c) for c, _ in STATE_OF])
+def test_a_drift_row_starts_in_its_machine_state(cls, state):
+    assert sm.machine_state(cls) == state
+    assert sm.dispositions_for(cls) == (MACHINE[state] if state else ())
+
+
+def test_the_machine_is_the_table_validate_disposition_decides_with():
+    for cls in bc.DRIFT_CLASSES:
+        if cls in sm.NOT_DRIFT_CLASSES:
+            assert sm.dispositions_for(cls) == (), cls
+        else:
+            assert sm.dispositions_for(cls) == sm.DISPOSITIONS_BY_CLASS.get(cls, sm.DEFAULT_DISPOSITIONS), cls
+
+
+def test_every_disposition_but_open_names_what_it_needs_and_the_machine_uses_them_all():
+    assert set(sm.DISPOSITION_NEEDS) == set(sm.DISPOSITIONS) - {"OPEN"}
+    assert {d for row in sm.DISPOSITION_MACHINE.values() for d in row} == set(sm.DISPOSITION_NEEDS)
+    assert sm.DISPOSITION_NEEDS == {"TAKE_ADO": "child_exit", "TAKE_SDLC": "child_exit", "ACKNOWLEDGED": "owner",
+                                    "NOT_DRIFT": "reason", "RECREATE": None, "UNLINK": None, "RELINK": "relink_ref"}
+
+
+EVERY_PAIR = [(cls, disp) for cls in bc.DRIFT_CLASSES for disp in sm.DISPOSITIONS if disp != "OPEN"]
+
+
+@pytest.mark.parametrize("cls, disp", EVERY_PAIR, ids=[f"{c}-{d}" for c, d in EVERY_PAIR])
+def test_validate_disposition_honours_the_machine_for_every_class_and_word(cls, disp):
+    row = {"class": cls, "disposition": disp, **FULL[disp]}
+    allowed = cls in sm.NOT_DRIFT_CLASSES or disp in sm.dispositions_for(cls)
+    ok, reason = sm.validate_disposition(row)
+    assert ok is allowed, reason
+    assert sm.counts_as_open(row) is (not allowed)
+
+
+NEEDY = [(state, disp) for state, row in MACHINE.items() for disp in row if FULL[disp]]
+
+
+@pytest.mark.parametrize("state, disp", NEEDY, ids=[f"{s}-{d}" for s, d in NEEDY])
+def test_a_disposition_without_what_it_needs_still_counts_as_open(state, disp):
+    cls = "SDLC_OWNED_DRIFT" if state == "OPEN" else state
+    assert sm.counts_as_open({"class": cls, "disposition": disp}) is True
+    assert sm.counts_as_open({"class": cls, "disposition": disp, **FULL[disp]}) is False
+    blank = {k: (1 if k == "child_exit" else "  ") for k in FULL[disp]}
+    assert sm.counts_as_open({"class": cls, "disposition": disp, **blank}) is True
+
+
+def test_the_take_words_are_the_verb_table_s_and_name_four_dispositions():
+    assert sm.RECONCILE_TAKES == ("ado", "sdlc", "ack", "not-drift")
+    assert tuple(sm.TAKE_DISPOSITION) == sm.RECONCILE_TAKES
+    assert sm.TAKE_DISPOSITION == {"ado": "TAKE_ADO", "sdlc": "TAKE_SDLC", "ack": "ACKNOWLEDGED", "not-drift": "NOT_DRIFT"}
+    assert set(sm.TAKE_DISPOSITION.values()) == set(MACHINE["OPEN"])
+
+
+TAKES = [
+    ("SDLC_OWNED_DRIFT", "ado", "TAKE_ADO"), ("SDLC_OWNED_DRIFT", "sdlc", "TAKE_SDLC"),
+    ("ADO_OWNED_CHANGE", "ack", "ACKNOWLEDGED"), ("ADO_OWNED_CHANGE", "not-drift", "NOT_DRIFT"),
+    ("CONFLICT", "ado", "TAKE_ADO"), ("CONFLICT", "sdlc", "TAKE_SDLC"), ("CONFLICT", "ack", None),
+    ("CONFLICT", "not-drift", None), ("RETYPED", "not-drift", None), ("RETYPED", "sdlc", "TAKE_SDLC"),
+    ("DELETED_IN_ADO", "ack", "ACKNOWLEDGED"), ("DELETED_IN_ADO", "ado", None), ("DELETED_IN_ADO", "not-drift", None),
+    ("ORPHAN_IN_REPO", "ado", None), ("ORPHAN_IN_REPO", "ack", None),
+    ("IN_SYNC", "ado", None), ("COMMENT", "ack", None), ("NOT_A_CLASS", "ado", None),
+    ("SDLC_OWNED_DRIFT", "mine", None), ("SDLC_OWNED_DRIFT", "ADO", None), ("SDLC_OWNED_DRIFT", None, None),
+]
+
+
+@pytest.mark.parametrize("cls, take, disp", TAKES, ids=[f"{c}-{t}" for c, t, _ in TAKES])
+def test_disposition_for_take(cls, take, disp):
+    assert sm.disposition_for_take(cls, take) == disp
+
+
+def test_a_take_the_machine_allows_is_off_the_books_once_it_carries_its_field():
+    for cls in bc.DRIFT_CLASSES:
+        for take in sm.RECONCILE_TAKES:
+            disp = sm.disposition_for_take(cls, take)
+            if disp is None:
+                continue
+            assert disp in sm.dispositions_for(cls), (cls, take)
+            assert sm.counts_as_open({"class": cls, "disposition": disp, **FULL[disp]}) is False, (cls, take)

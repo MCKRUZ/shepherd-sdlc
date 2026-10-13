@@ -10,8 +10,9 @@ describe('reasons', () => {
     expect(reasons.isReason('sprint home arrives with a newer plugin: lacks sprint-status')).toBe(true)
   })
 
-  it('names the ten command-center capabilities of §2.6 plus the three it already read', () => {
+  it('names the ten command-center capabilities of §2.6, the three it already read and the six Azure Boards ones', () => {
     expect(Object.values(reasons.CAPABILITIES).sort()).toEqual([
+      'ado-apply', 'ado-comment', 'ado-pull-discussion', 'ado-reconcile', 'ado-show', 'ado-status-json',
       'assign-roles', 'confirm-tier', 'decision-decide', 'decision-open', 'findings-json', 'handoff-check', 'readiness-all',
       'sprint-carry', 'sprint-edit', 'sprint-list', 'sprint-log', 'sprint-status', 'sprint-write',
     ])

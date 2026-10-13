@@ -1,0 +1,158 @@
+// The closed argv table for the Azure Boards mirror (build kit §3 and §5 B4-P0; ado-boards-mirror.md §12 items 2,
+// 7 and 8): the ONLY way a Studio request reaches `ado_sync.py`. Pure and golden-tested like `sprintVerbArgv.ts`
+// (test/adoVerbArgv.test.ts) — main validates the request here, resolves the actor itself, and spawns exactly the
+// list `buildAdoVerbArgv` returned (main adds the `--repo`/`--state` source after the verb, as `sprintWrites.ts`
+// does); the renderer only ever hands over an `AdoVerbRequest`, a closed union. `SprintVerb` is never widened.
+//
+// The rules the table holds (house rules 8 and 9):
+//   * `--by <actor>` is the LAST two elements of every write (`apply`, `reconcile`, `link`, `comment`) and absent
+//     from every read (`pull`, `pullDiscussion`, `show`); the value comes from main's actor, never the renderer.
+//   * Free text is ONE element in `--flag=<text>` form — `--message=`, `--reason=`, `--owner=` — so a text with a
+//     double quote, a newline, `$(`, non-ASCII or a leading `-` reaches argparse as one value and is never read
+//     as a flag. A comment's message is sent byte for byte (not trimmed: the preview shows the exact text).
+//   * Every argv is a list; nothing here, or in what spawns it, joins a command into a string or uses a shell.
+//   * `--json` on every verb: Studio reads the plugin's JSON, never its prose (the composer's `apply --confirm`
+//     hash comes from `comment --json`, and is checked against `HASH` here before it is sent).
+// Validation is shape only — ids, hashes, the four takes, a required field present — never a judgement; the
+// plugin stays the truth on everything else (AI `--by`, posture, identity, the stale hash, a non-A take).
+import { CAPABILITIES } from './reasons'
+
+export type AdoVerbRequest =
+  | { verb: 'apply'; confirm: string } | { verb: 'reconcile'; ref: string; field: string; take: 'ado' | 'sdlc' | 'ack' | 'not-drift'; owner?: string; reason?: string }
+  | { verb: 'link'; ref: string; workItem: string } | { verb: 'pull'; id?: string } | { verb: 'pullDiscussion'; id?: string }
+  | { verb: 'show'; ref: string } | { verb: 'comment'; ref: string; message: string }
+
+export type AdoVerb = AdoVerbRequest['verb']
+export type AdoTake = Extract<AdoVerbRequest, { verb: 'reconcile' }>['take']
+export type AdoArgvResult = { ok: true; argv: string[] } | { ok: false; errors: string[] }
+
+export const SCRIPT = 'ado_sync.py'
+/** The plan's handshake hash (`boards_contract.HASH_RE`): what `plan`/`comment --json` printed, echoed to `apply --confirm`. */
+export const HASH = /^[0-9a-f]{12}$/
+/** A repository ref (`boards_contract.REF_RE`) or a raw `#<work item>`. */
+export const REF = /^(sdlc:[a-z]+:[A-Za-z0-9-]+|#\d+)$/
+/** A work item field reference name (`ado_sync_model.REFERENCE_NAME_RE`): System.State, Custom.RiskTier. */
+export const FIELD = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/
+/** `link --work-item`: `4521` or `#4521` — never `AB#4521`. */
+export const WORK_ITEM = /^#?[1-9]\d*$/
+
+/** The flag every write carries last; the value comes from main's actor, never from the renderer. */
+export const BY_FLAG = '--by'
+export const JSON_FLAG = '--json'
+
+/** Every verb the table knows, in its order. */
+export const ADO_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment']
+/** The writes: each carries `--by <actor>` last. The other three are reads and carry no `--by`. */
+export const BY_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'comment']
+/** `reconcile --take` (the build kit's verb table; `ado_sync_model.RECONCILE_TAKES`, in its order). */
+export const TAKES: readonly AdoTake[] = ['ado', 'sdlc', 'ack', 'not-drift']
+
+/** The plugin capability (`scripts/capabilities.py`) each verb needs; a plugin without it disables the control
+ * with `newerPlugin(cap)`. The six Boards ids Studio gates on are spelled once, in `reasons.CAPABILITIES`. */
+export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string>> = {
+  apply: CAPABILITIES.adoApply,
+  reconcile: CAPABILITIES.adoReconcile,
+  link: 'ado-link',
+  pull: 'ado-pull',
+  pullDiscussion: CAPABILITIES.adoDiscussion,
+  show: CAPABILITIES.adoShow,
+  comment: CAPABILITIES.adoComment,
+}
+
+function isText(value: unknown): value is string {
+  return typeof value === 'string'
+}
+
+/** Present and non-blank, after the caller's decision to send it. */
+function given(value: unknown): value is string {
+  return isText(value) && value.trim() !== ''
+}
+
+/** The shape the plugin will accept, checked BEFORE any spawn. Returns the reasons it refuses; never throws. */
+export function validateAdoVerbRequest(req: AdoVerbRequest): string[] {
+  if (!req || typeof req !== 'object') return ['not a Boards request']
+  const errors: string[] = []
+  const ref = (value: unknown, label = 'ref') => {
+    if (!isText(value) || !REF.test(value)) errors.push(`${label} '${String(value)}' is not an sdlc:<kind>:<id> ref or a #<work item>`)
+  }
+  const required = (value: unknown, label: string) => {
+    if (!given(value)) errors.push(`${label} is required`)
+    else if (value.includes('\0')) errors.push(`${label} contains a NUL character`)
+  }
+  const optional = (value: unknown, label: string) => {
+    if (value === undefined || value === null) return
+    if (!isText(value)) errors.push(`${label} is not text`)
+    else if (value.includes('\0')) errors.push(`${label} contains a NUL character`)
+  }
+  switch (req.verb) {
+    case 'apply':
+      if (!isText(req.confirm) || !HASH.test(req.confirm)) errors.push(`confirm '${String(req.confirm)}' is not the plan's 12-hex hash`)
+      break
+    case 'reconcile':
+      ref(req.ref)
+      if (!isText(req.field) || !FIELD.test(req.field)) {
+        errors.push(`field '${String(req.field)}' is not a work item field reference name (System.State, Custom.RiskTier)`)
+      }
+      if (!TAKES.includes(req.take)) errors.push(`take '${String(req.take)}' is not ado, sdlc, ack or not-drift`)
+      // The plugin's honest counting, mirrored so the dialog shows the field: ACKNOWLEDGED needs an owner,
+      // NOT_DRIFT a reason (ado_sync_model.DISPOSITION_NEEDS).
+      if (req.take === 'ack') required(req.owner, 'owner')
+      else optional(req.owner, 'owner')
+      if (req.take === 'not-drift') required(req.reason, 'reason')
+      else optional(req.reason, 'reason')
+      break
+    case 'link':
+      if (!isText(req.ref) || !REF.test(req.ref) || !req.ref.startsWith('sdlc:')) errors.push(`ref '${String(req.ref)}' is not an sdlc:<kind>:<id> ref`)
+      if (!isText(req.workItem) || !WORK_ITEM.test(req.workItem)) {
+        errors.push(`work item '${String(req.workItem)}' is not a work item number (4521 or #4521)`)
+      }
+      break
+    case 'pull':
+    case 'pullDiscussion':
+      if (req.id !== undefined) ref(req.id, 'id')
+      break
+    case 'show':
+      ref(req.ref)
+      break
+    case 'comment':
+      ref(req.ref)
+      required(req.message, 'message')
+      break
+    default:
+      errors.push(`'${String((req as { verb?: unknown }).verb)}' is not a Boards verb Shepherd runs`)
+  }
+  return errors
+}
+
+/** The argv after the interpreter and the script path: `[verb, …positional and flags, '--json']`, then
+ * `'--by', actor` on a write. Deterministic order per verb, so the console line, the dialog's preview and the
+ * golden test read the same words. Refuses (never throws) on a bad request, or a write with no actor. */
+export function buildAdoVerbArgv(req: AdoVerbRequest, actor: string): { ok: true; argv: string[] } | { ok: false; errors: string[] } {
+  const errors = validateAdoVerbRequest(req)
+  const writes = errors.length === 0 && BY_VERBS.includes(req.verb)
+  if (writes && !given(actor)) errors.push('no actor')
+  if (errors.length > 0) return { ok: false, errors }
+  const argv: string[] = []
+  switch (req.verb) {
+    case 'apply': argv.push('apply', '--confirm', req.confirm); break
+    case 'reconcile':
+      argv.push('reconcile', req.ref, '--field', req.field, '--take', req.take)
+      if (given(req.owner)) argv.push(`--owner=${req.owner.trim()}`)
+      if (given(req.reason)) argv.push(`--reason=${req.reason.trim()}`)
+      break
+    case 'link': argv.push('link', req.ref, '--work-item', req.workItem); break
+    case 'pull':
+      argv.push('pull')
+      if (req.id !== undefined) argv.push('--id', req.id)
+      break
+    case 'pullDiscussion':
+      argv.push('pull', '--discussion')
+      if (req.id !== undefined) argv.push('--id', req.id)
+      break
+    case 'show': argv.push('show', req.ref); break
+    case 'comment': argv.push('comment', req.ref, `--message=${req.message}`); break
+  }
+  argv.push(JSON_FLAG)
+  if (writes) argv.push(BY_FLAG, actor.trim())
+  return { ok: true, argv }
+}

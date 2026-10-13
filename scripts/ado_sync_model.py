@@ -1006,3 +1006,61 @@ def recovered_comment(want_sha: str, listed: list, me_id: str | None, sent_at: s
             version = c.get("version")
             return {"comment_id": cid, "version": version if _is_count(version) else None, "recovered": True}
     return None
+
+
+# === Fold B4 (B4-P0): the reconcile disposition enums. Appended; nothing above this line changed. ================
+#
+# `reconcile <ref> --field F --take ado|sdlc|ack|not-drift` (ado_sync_reconcile.py, B4-P1a) records a disposition on
+# a drift row in these words. The machine is the design's §8 one, keyed by the state a row starts in: an ordinary
+# drift row starts OPEN; a CONFLICT row (a RETYPED one reads as a CONFLICT: it requires a take), a DELETED_IN_ADO row
+# and an ORPHAN_IN_REPO row each start in their own state with a narrower set. `validate_disposition` and
+# `counts_as_open` above decide with `DISPOSITIONS_BY_CLASS` / `DEFAULT_DISPOSITIONS`; a test holds this table equal
+# to theirs for every drift class and every word, so the named machine and the honest counting cannot drift apart.
+
+DISPOSITION_MACHINE: Final[dict[str, tuple[str, ...]]] = {
+    "OPEN": ("TAKE_ADO", "TAKE_SDLC", "ACKNOWLEDGED", "NOT_DRIFT"),
+    "CONFLICT": ("TAKE_ADO", "TAKE_SDLC"),
+    "DELETED_IN_ADO": ("RECREATE", "UNLINK", "ACKNOWLEDGED"),
+    "ORPHAN_IN_REPO": ("UNLINK", "RELINK"),
+}
+CONFLICT_CLASSES: Final = ("CONFLICT", "RETYPED")  # both start in the CONFLICT state
+# What a disposition must carry to take a row off the books (else it still counts as open): TAKE_* a recorded child
+# exit of 0, ACKNOWLEDGED a named human owner, NOT_DRIFT a reason, RELINK an sdlc:<kind>:<id> ref; None = the word.
+DISPOSITION_NEEDS: Final[dict[str, str | None]] = {
+    "TAKE_ADO": "child_exit", "TAKE_SDLC": "child_exit", "ACKNOWLEDGED": "owner", "NOT_DRIFT": "reason",
+    "RECREATE": None, "UNLINK": None, "RELINK": "relink_ref",
+}
+# `reconcile --take` (the build kit's verb table; studio/shared/adoVerbArgv.ts `TAKES` is held to this order by
+# test). The four words name the OPEN row's four dispositions; RECREATE, UNLINK and RELINK have no take word.
+RECONCILE_TAKES: Final = ("ado", "sdlc", "ack", "not-drift")
+TAKE_DISPOSITION: Final[dict[str, str]] = {"ado": "TAKE_ADO", "sdlc": "TAKE_SDLC", "ack": "ACKNOWLEDGED",
+                                           "not-drift": "NOT_DRIFT"}
+
+
+def machine_state(cls) -> str | None:
+    """The state a drift row of class `cls` starts in: "CONFLICT" for `CONFLICT_CLASSES`, the class itself for
+    DELETED_IN_ADO and ORPHAN_IN_REPO, "OPEN" for every other drift class; None for a class with nothing to dispose
+    of (`NOT_DRIFT_CLASSES`) or a value that is not a drift class."""
+    if cls not in DRIFT_CLASSES or cls in NOT_DRIFT_CLASSES:
+        return None
+    if cls in CONFLICT_CLASSES:
+        return "CONFLICT"
+    if cls in ("DELETED_IN_ADO", "ORPHAN_IN_REPO"):
+        return cls
+    return "OPEN"
+
+
+def dispositions_for(cls) -> tuple[str, ...]:
+    """The dispositions a drift row of class `cls` may take, in machine order; () when there is nothing to dispose
+    of. Equal to what `validate_disposition` allows for the class."""
+    state = machine_state(cls)
+    return DISPOSITION_MACHINE[state] if state else ()
+
+
+def disposition_for_take(cls, take) -> str | None:
+    """The disposition `reconcile --take <take>` records on a row of class `cls`, or None when `take` is not one of
+    `RECONCILE_TAKES` (case-sensitive, as argparse's choices are) or its disposition is not one the machine allows
+    for the class — `ack`/`not-drift` on a CONFLICT, `ado`/`sdlc`/`not-drift` on a DELETED_IN_ADO row, any take on
+    an ORPHAN_IN_REPO row or on a row with nothing to dispose of. The caller refuses that take; it never guesses."""
+    disp = TAKE_DISPOSITION.get(take) if isinstance(take, str) else None
+    return disp if disp is not None and disp in dispositions_for(cls) else None
