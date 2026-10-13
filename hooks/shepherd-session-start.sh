@@ -104,6 +104,14 @@ if [ -d "$sprints_dir" ]; then
     done
 fi
 
+# --- Azure Boards mirror: line 1 of the cache that /sprd-ado plan and pull write, echoed verbatim ---
+# One local file, read once: nothing is called, nothing is written. Silent when absent or empty.
+ado_status="$sdlc_dir/ado/local/hook-status.txt"
+if [ -f "$ado_status" ]; then
+    ado_line=$(head -n1 "$ado_status" 2>/dev/null | LC_ALL=C tr -d '\r\0')
+    [ -n "$ado_line" ] && echo "[SHEPHERD-ADO] $ado_line"
+fi
+
 # Take the first N whitespace-separated words of stdin, joined by single spaces
 first_words() {
     tr -s '[:space:]' ' ' | sed -E 's/^ //; s/ $//' | cut -d' ' -f1-"$1"

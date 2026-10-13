@@ -110,6 +110,16 @@ if ($phaseMatch.Success) {
         } catch { }
     }
 
+    # --- Azure Boards mirror: line 1 of the cache /sprd-ado plan and pull write, echoed verbatim ---
+    # Read-only, silent when absent or empty; its own try/catch so a bad file never double-prints via `|| bash`.
+    $adoStatus = Join-Path $sdlcDir "ado" "local" "hook-status.txt"
+    if (Test-Path -LiteralPath $adoStatus -PathType Leaf) {
+        try {
+            $adoLine = (Get-Content -LiteralPath $adoStatus -TotalCount 1 -Encoding UTF8 -ErrorAction SilentlyContinue) -replace '[\r\x00]', ''
+            if ($adoLine) { Write-Output "[SHEPHERD-ADO] $adoLine" }
+        } catch { }
+    }
+
     # --- Tier 1: Foundation Context ---
     $constitutionPath = Join-Path $sdlcDir "constitution.md"
     if (Test-Path $constitutionPath) {
