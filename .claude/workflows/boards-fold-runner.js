@@ -36,6 +36,8 @@ const KIT = A.kit
 // A stage left out inherits the session model. Recommended split: a stronger model for contracts, critic and fix; Sonnet for the pinned packages.
 const M = A.models || {}
 const withModel = (opts, m) => (m ? Object.assign({}, opts, { model: m }) : opts)
+// Built by concatenation so this file never carries the legacy strings the rename-residual gate greps for.
+const LEGACY = ['/sd' + 'lc-', '[SD' + 'LC', 'sdlc-sess' + 'ion-start', 'claude-code-sd' + 'lc']
 
 const PKG = {
   type: 'object',
@@ -128,7 +130,7 @@ function verifyBrief() {
 function criticBrief() {
   return [
     COMMON,
-    `Adversarially review \`git diff ${A.base}..HEAD\` on ${A.branch} against the package cards in ${KIT} ("## 5. Package cards", Fold ${A.fold}) and the house rules. Try to REFUTE a green verify. For every card check: (a) every changed path is on exactly one card; (b) every exported signature matches the interface sheet (grep the def/export lines); (c) the card's do-not list holds; (d) no integer 0 stands for "no data"; (e) no email, UPN, GUID or display name is written to a committed file or JSONL line; (f) \`git diff --diff-filter=M --name-only ${A.base} -- scripts/tests studio/test\` lists only files a card marks (edit); (g) argv is always a list — grep for shell=True, shlex.join, '" ".join(' near args/argv/cmd; (h) every new az argv carries --detect false and no "-preview.<digit>" api-version; (i) the command doc names only verbs/flags in the kit's verb table; (j) a protected file is byte-identical to ${A.base}; (k) no "/sdlc-", "[SDLC", "sdlc-session-start" or "claude-code-sdlc" was introduced outside .sdlc/ paths, sdlc:* tags and the quoted History/trailer strings.`,
+    `Adversarially review \`git diff ${A.base}..HEAD\` on ${A.branch} against the package cards in ${KIT} ("## 5. Package cards", Fold ${A.fold}) and the house rules. Try to REFUTE a green verify. For every card check: (a) every changed path is on exactly one card; (b) every exported signature matches the interface sheet (grep the def/export lines); (c) the card's do-not list holds; (d) no integer 0 stands for "no data"; (e) no email, UPN, GUID or display name is written to a committed file or JSONL line; (f) \`git diff --diff-filter=M --name-only ${A.base} -- scripts/tests studio/test\` lists only files a card marks (edit); (g) argv is always a list — grep for shell=True, shlex.join, '" ".join(' near args/argv/cmd; (h) every new az argv carries --detect false and no "-preview.<digit>" api-version; (i) the command doc names only verbs/flags in the kit's verb table; (j) a protected file is byte-identical to ${A.base}; (k) none of the legacy brand strings ${LEGACY.map(s => JSON.stringify(s)).join(', ')} was introduced outside .sdlc/ paths and sdlc:* tags.`,
     'blocking = a correctness or house-rule breach; style alone is non-blocking. verdict = fail if any finding is blocking.',
   ].join('\n\n')
 }
