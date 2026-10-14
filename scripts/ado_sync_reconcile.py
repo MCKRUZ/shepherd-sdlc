@@ -22,12 +22,27 @@ repository and the board and appends the ledger line.
   * `spec_proposals` / `write_batch` -- `pull --propose-specs`: ONE batch file under `.sdlc/ado/local/proposals/`
     holding, for each untagged board item, the argv LIST of `new_spec.py` (or of `link`) a person may run. Argv lists
     in JSON, never a shell string; nothing is run.
+  * `propose` (and the parts it runs: `text_target`, `is_text_proposal`, `proposal_text`, `locate_field`,
+    `spliced_value`, `write_proposed`) -- the D32 `.proposed` writer (B5-P3). `--take ado` on a board edit to a C-class text field (a requirement's Description
+    or AcceptanceCriteria, an epic's AcceptanceCriteria) lands the board's words -- or, with `--from-comment <id>`, the
+    cached comment's -- as `<artifact>.proposed`, beside the artifact, by splicing them into the document's own field
+    span through `document_shape.write_document`. The artifact itself is never written: the proposal differs from it
+    only inside that one span, keeps its line endings, and a person lands it through `/sprd-revise`. A proposal nobody
+    has landed is never overwritten, a source path that leaves the repository or a symlinked proposal is refused, text
+    holding an address or an id is refused (a proposal sits in the working tree), and a line that reads as an
+    instruction is counted and shown, never refused (D47). A kind or field with no place in a shaped document (a
+    title, an S field, a table) is refused naming the ones that have one; nothing is guessed.
+  * `ledger_reason` / `reason_sha` -- what a `reconciled` line may keep of a `--reason` (house rule 10, below).
 
 Honesty. A take that did not settle the row says so: a `TAKE_*` without a recorded child exit 0 still counts as open
 (`ado_sync_model.validate_disposition`), so `--take ado` whose child failed leaves the row open and `--take sdlc`
 leaves it open until `apply` lands the field. What is ledgered is the verb and its arguments, with every free-text
 value (a reason, a resolution) replaced by `<text>`, the child's exit and a hash of that argv -- never a comment's
-words, an address or an absolute path.
+words, an address or an absolute path. The one exception is a `--reason` the machine REQUIRES: `--take not-drift` and
+`--take ack` keep the typed words on the committed line (a NOT_DRIFT row with no reason, an ACKNOWLEDGED one with no
+owner, still counts as open). For `--take ado` and `--take sdlc` the line carries `reason: "<text>"` and `reason_sha`
+(the first 12 hex of the sha256 of the words) instead, because a resolution or an unslate reason may be a board
+comment's own words (`ledger_reason`); an address or an id in a reason is refused for every take.
 
 Other people's comments (design D52). A cached board comment is never copied into a repository artifact and never
 filled in as a verb's argument. `--from-comment <id>` only PRINTS that comment, behind the `  | ` gutter and the `⚑`
@@ -50,10 +65,13 @@ import sys
 from pathlib import Path
 from typing import Callable, Final
 
+import yaml
+
 import ado_discussion_map as dm
 import ado_sync_model as model
 import boards_contract as bc
 from check_spec import parse_frontmatter
+from document_shape import read_document, write_document
 
 SCRIPTS: Final = Path(__file__).resolve().parent
 TAKES: Final = model.RECONCILE_TAKES
@@ -595,3 +613,317 @@ def write_batch(repo_root, stamp_dt, proposals_: list[dict], write: Callable[[Pa
            "proposals": proposals_}
     write(Path(repo_root) / rel, doc)
     return rel
+
+
+# --- D32: the board's text, back as a proposal (B5-P3) ------------------------------------------------------------
+#
+# Call order for `--take ado` on a C-class text field: `is_text_proposal` (which route), then `propose`, which runs
+# `text_target` (is there a place for it), `proposal_text` (the words) and `write_proposed` (the file). Nothing here
+# reads the board, runs a process or writes the ledger: the caller hands in the board's current item (or a cached comment) and takes the result's `exit`,
+# `stdout` and `stderr` the way it takes a child's. A proposal written is a take that carries what it claims (the
+# board's words are on disk beside the artifact, the artifact is untouched, a person lands it): `exit` is 0.
+
+PROPOSED_SUFFIX: Final = ".proposed"
+MAX_PROPOSED_CHARS: Final = 8000      # characters of board text one field proposal may hold
+DESCRIPTION: Final = "System.Description"
+ACCEPTANCE: Final = "Microsoft.VSTS.Common.AcceptanceCriteria"
+TEXT_FIELDS: Final = ("System.Title", DESCRIPTION, ACCEPTANCE)
+# (kind, board field) -> the label of the shaped field that holds the same words. Only what a shape can place: a block
+# found by its id (`### FR-001`), a labelled line inside it. A title is the repository's (S) except on a decision, whose
+# row is a table cell; an NFR, rule or question is a table row: none of those is mapped, so each is refused by name.
+TEXT_TARGETS: Final[dict[tuple[str, str], str]] = {
+    ("requirement", DESCRIPTION): "Requirement",
+    ("requirement", ACCEPTANCE): "Acceptance criteria",
+    ("epic", ACCEPTANCE): "Acceptance criteria",
+}
+SHAPES_ROOT: Final = SCRIPTS.parent / "templates" / "phases"
+
+
+def text_target(kind: str | None, field: str | None) -> str | None:
+    """The label of the field in the artifact's shape that carries this board field of this kind, or None."""
+    return TEXT_TARGETS.get((kind, field))
+
+
+def is_text_proposal(field: str | None, owner: str | None) -> bool:
+    """True for a C-class text field: the route `--take ado` takes through a `.proposed` draft, not a child verb."""
+    return owner == "C" and field in TEXT_FIELDS
+
+
+def _no_place(kind, field) -> str:
+    return (f"Refused: the board's {field} on a {kind} has no place in a document this version can write. It writes a "
+            "requirement's Description and AcceptanceCriteria and an epic's AcceptanceCriteria (a labelled line of the "
+            "block `requirements.md` or `epics.md` keeps for it); read the board's text with `show`, then record that a "
+            "person read it: `--take ack --owner <you>`.")
+
+
+def _outside_the_markers(html: str) -> str:
+    """The Description with the mirror's own block (between the `sdlc` markers) taken out: what is left is a person's."""
+    begin, end = html.find(model.MARKER_BEGIN), html.find(model.MARKER_END)
+    if begin < 0 and end < 0:
+        return html
+    if begin < 0 or end < begin + len(model.MARKER_BEGIN):
+        raise Precondition("the board's Description has an sdlc marker without its pair, so the mirror's block cannot be "
+                           "told from a person's own text: fix the markers on the board, then take it again")
+    return html[:begin] + "<br>" + html[end + len(model.MARKER_END):]
+
+
+def proposal_text(remote: dict | None, field: str, *, comment: dict | None = None) -> dict:
+    """The words to propose: `{"text", "source": "board" | "comment", "flagged_lines": [int]}`.
+
+    From the board's CURRENT item (`remote["fields"][field]`, rich text read as plain text; the Description without the
+    mirror's own block) or, when `--from-comment` named one, the cached `comment`'s text -- control characters removed
+    either way, every line end `\\n`. `Precondition` when there are no words of a person's to take, `Rejected` for text
+    longer than a field takes or holding an e-mail address or an id (a proposal sits in the working tree, where a
+    committed file never holds one). A line that reads as an instruction is NOT refused: it is listed in
+    `flagged_lines` (0-based, relative to `text`) for the caller to show with the `⚑` marker (design D47)."""
+    stored: list = []
+    if comment is not None:
+        said = comment if isinstance(comment, dict) else {}
+        if said.get("deleted"):
+            raise Rejected("Refused: that comment was deleted on the board; there are no words left to propose.")
+        clean = dm.strip_control(said["text"]) if isinstance(said.get("text"), str) else ""
+        source = "comment"
+        stored = said["flagged_lines"] if isinstance(said.get("flagged_lines"), list) else []
+    else:
+        fields = remote.get("fields") if isinstance(remote, dict) else None
+        if not isinstance(fields, dict):
+            raise Precondition("the board's item was not read, so there is no text to take: pull again")
+        html = fields.get(field)
+        html = html if isinstance(html, str) else ""
+        clean = dm.html_to_text(_outside_the_markers(html) if field == DESCRIPTION else html)
+        source = "board"
+    flagged = set(dm.directive_scan(clean)) | {i for i in stored if type(i) is int and 0 <= i <= clean.count("\n")}
+    shift = clean[:len(clean) - len(clean.lstrip())].count("\n")           # blank lines trimmed off the front
+    text = "\n".join(line.rstrip() for line in clean.strip().split("\n")) if clean.strip() else ""
+    if not text:
+        where = "the comment" if comment is not None else f"{field} on the board"
+        raise Precondition(f"{where} holds no text of a person's: nothing to propose")
+    if len(text) > MAX_PROPOSED_CHARS:
+        raise Rejected(f"Refused: the text is longer than the {MAX_PROPOSED_CHARS} characters one field proposal takes; "
+                       "shorten it on the board or edit the document by hand through /sprd-revise.")
+    if bc.EMAIL_RE.search(text) or bc.GUID_RE.search(text):
+        raise Rejected("Refused: the text carries an e-mail address or an id; a proposal sits in the working tree and is "
+                       "never given one. Edit the document by hand through /sprd-revise.")
+    last = text.count("\n")
+    return {"text": text, "source": source,
+            "flagged_lines": sorted(i - shift for i in flagged if shift <= i and i - shift <= last)}
+
+
+def shape_for(artifact_rel: str) -> dict:
+    """The shape of the artifact at `artifact_rel`: `templates/phases/<its phase folder>/<name>.shape.yaml`, else the one
+    shape of that name anywhere under `templates/phases/` (a standalone repository keeps its documents anywhere).
+    `Precondition` when there is none or it cannot be read."""
+    stem, phase = Path(artifact_rel).stem, Path(artifact_rel).parent.name
+    path = SHAPES_ROOT / phase / f"{stem}.shape.yaml" if phase else None
+    if path is None or not path.is_file():
+        found = sorted(SHAPES_ROOT.glob(f"*/{stem}.shape.yaml"))
+        if len(found) != 1:
+            raise Precondition(f"{artifact_rel} has no shape the writer can read (templates/phases/*/{stem}.shape.yaml): "
+                               "text is placed only in a document whose fields a shape names")
+        path = found[0]
+    try:
+        shape = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError):
+        raise Precondition(f"the shape of {artifact_rel} could not be read") from None
+    if not isinstance(shape, dict):
+        raise Precondition(f"the shape of {artifact_rel} is not a mapping")
+    return shape
+
+
+def locate_field(text: str, shape: dict, ident: str, label: str) -> dict:
+    """The exact span of field `label` inside the block `ident` (`FR-001`) of the document `text`:
+    `{"start", "end", "anchor", "type", "value", "heading", "label", "instance"}`, offsets into `text` as
+    `document_shape.read_document` reads them. `Precondition` when the document does not read as its shape, holds the id
+    nowhere or twice, or the block lacks the labelled line; `Rejected` for a table (prose is never spliced into one)."""
+    doc = read_document(text, shape)
+    if not doc.get("matched"):
+        raise Precondition("the document does not read as its shape (" + "; ".join(doc.get("warnings") or
+                           ["no section was recognised"]) + "): nothing is placed in a document that has drifted from it")
+    hits, repeating = [], []
+    for block in doc["blocks"]:
+        if block.get("kind") != "repeating_section":
+            continue
+        repeating.append(block.get("heading"))
+        hits += [(block, inst) for inst in block["instances"]
+                 if re.match(re.escape(ident) + r"(?![A-Za-z0-9])", inst["heading_text"])]
+    if not hits:
+        where = ", ".join(f"'{h}'" for h in repeating) or "no section"
+        raise Precondition(f"{ident} is not a block the document's shape reads as fields (only {where} hold blocks of "
+                           "fields; everything else is free text): edit it by hand through /sprd-revise")
+    if len(hits) > 1:
+        raise Precondition(f"{ident} is found more than once in the document, so which block is meant is not guessed: "
+                           "an id is used once")
+    block, inst = hits[0]
+    found = inst["fields"].get(label)
+    if found is None:
+        raise Precondition(f"{ident} has no `**{label}:**` line in the document: add the line, then take it again")
+    if found["type"] == "table":
+        raise Rejected(f"Refused: {label} of {ident} is a table, and prose is never spliced into one.")
+    return {"start": found["start"], "end": found["end"], "anchor": found["anchor"], "type": found["type"],
+            "value": found["value"], "heading": block["heading"], "label": label, "instance": inst["heading_text"]}
+
+
+def _document_eol(text: str) -> str:
+    return "\r\n" if text.count("\r\n") * 2 > text.count("\n") else "\n"
+
+
+def _carry_style(original: str, lines: list[str], field_type: str) -> list[str]:
+    """The words, in the field's own list or quote style: a checklist gets its `- [ ]` boxes, a field written as a
+    blockquote keeps its `>`; anything else is taken as it is."""
+    if field_type == "checklist":
+        out = []
+        for line in lines:
+            if not line.strip() or re.match(r"[-*+] \[[ xX]\] ", line):
+                out.append(line)
+            elif re.match(r"[-*+] ", line):
+                out.append("- [ ] " + line[2:])
+            else:
+                out.append("- [ ] " + line)
+        return out
+    kept = [ln for ln in original.replace("\r\n", "\n").split("\n") if ln.strip()]
+    if kept and all(ln.startswith(">") for ln in kept):
+        return [line if line.startswith(">") else ("> " + line if line.strip() else ">") for line in lines]
+    return lines
+
+
+def spliced_value(text: str, span: dict, board_text: str) -> str:
+    """What replaces the bytes `span` covers: the board's words in the field's own style, with the span's own trailing
+    white space (the blank line before the next label) kept, every new line end the document's own (CRLF stays CRLF).
+    An inline field takes one line. `span` is `locate_field`'s answer (or any dict with `start`, `end`, `anchor`, `type`)."""
+    start, end = span["start"], span["end"]
+    original = text[start:end]
+    eol = "\r\n" if "\r\n" in original else ("\n" if "\n" in original else _document_eol(text))
+    lines = [ln.rstrip() for ln in board_text.replace("\r\n", "\n").split("\n")]
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    while lines and not lines[-1].strip():
+        lines.pop()
+    inline = span.get("anchor") == "inline"
+    body = " ".join(" ".join(lines).split()) if inline else eol.join(_carry_style(original, lines, span.get("type") or ""))
+    if original.strip():
+        lead, trail = original[:len(original) - len(original.lstrip())], original[len(original.rstrip()):]
+    else:
+        lead, trail = "", (original if "\n" in original else "")
+    if not inline and "\n" not in trail:
+        trail += eol if end >= len(text) else eol * 2           # the next label stays on its own line
+    return lead + body + trail
+
+
+def _read_text(path: Path) -> str:
+    with open(path, encoding="utf-8", newline="") as fh:      # newline="": CRLF is never translated
+        return fh.read()
+
+
+def _sha12(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
+
+
+def write_proposed(repo_root, *, proj: dict, field: str, text: str, flagged_lines=None) -> dict:
+    """Write `<artifact>.proposed` beside the artifact of `proj` (`kind`, `id`, `source_path`) for the board `field`.
+
+    The proposal is the artifact's text with ONE span replaced through `document_shape.write_document`; the artifact is
+    never written. Returns `{"exit": 0, "stdout", "stderr", "artifact", "path", "field", "label", "span": [start, end],
+    "proposed_sha", "rewritten", "flagged_lines"}` (`rewritten` False when a byte-identical proposal was already waiting).
+    `Rejected` (a refusal of the mirror's own): no place for this kind and field, a source path that leaves the
+    repository, a symlinked proposal, a table field. `Precondition` (nothing was changed): no source file, the id or the
+    labelled line absent, the artifact already saying this, another proposal waiting (one per artifact: land it with
+    /sprd-revise or delete it), the file unreadable or unwritable."""
+    kind, ident, rel = proj.get("kind"), proj.get("id"), proj.get("source_path")
+    label = text_target(kind, field)
+    if label is None:
+        raise Rejected(_no_place(kind, field))
+    if not isinstance(rel, str) or not rel.strip() or not isinstance(ident, str) or not ident:
+        raise Precondition("the item has no source file in this repository, so there is nothing to propose against")
+    root = Path(repo_root).resolve()
+    artifact = (root / rel).resolve()
+    try:
+        artifact.relative_to(root)
+    except ValueError:
+        raise Rejected(f"Refused: {rel} leaves the repository; a proposal is written only beside a file inside it.") from None
+    if not artifact.is_file():
+        raise Precondition(f"{rel} is not a file in this repository: there is nothing to propose against")
+    try:
+        original = _read_text(artifact)
+    except (OSError, UnicodeDecodeError):
+        raise Precondition(f"{rel} could not be read as UTF-8 text") from None
+    span = locate_field(original, shape_for(rel), ident, label)
+    value = spliced_value(original, span, text)
+    if value == original[span["start"]:span["end"]]:
+        raise Precondition(f"{rel} already says what the board says for {label} of {ident}: nothing to propose")
+    proposed = write_document(original, [(span["start"], span["end"], value)])
+    target = artifact.with_name(artifact.name + PROPOSED_SUFFIX)
+    shown = rel + PROPOSED_SUFFIX
+    rewritten = True
+    if target.is_symlink():
+        raise Rejected(f"Refused: {shown} is a symbolic link; a proposal is never written through one.")
+    if target.exists():
+        try:
+            waiting = _read_text(target)
+        except (OSError, UnicodeDecodeError):
+            raise Precondition(f"{shown} exists and could not be read; nothing was changed") from None
+        if waiting != proposed:
+            raise Precondition(f"a proposal is already waiting beside the artifact ({shown}): land it with /sprd-revise "
+                               "or delete it, then take this one; nothing was changed")
+        rewritten = False
+    else:
+        tmp = target.with_name(target.name + ".tmp")
+        try:
+            with open(tmp, "w", encoding="utf-8", newline="") as fh:
+                fh.write(proposed)
+            os.replace(tmp, target)
+        except OSError as exc:
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+            raise Precondition(f"could not write {shown} ({type(exc).__name__}); nothing was changed") from None
+    flagged = sorted(flagged_lines or [])
+    words = (f"Wrote {shown}: the board's words for {label} of {ident} sit in the artifact's own field (bytes "
+             f"{span['start']}-{span['end']}); {rel} is not changed. Read the difference, then land it with /sprd-revise."
+             if rewritten else
+             f"{shown} already holds this proposal (nothing was rewritten); {rel} is not changed. Land it with "
+             "/sprd-revise.")
+    if flagged:
+        words += (f" {len(flagged)} line{'' if len(flagged) == 1 else 's'} of it read as an instruction "
+                  f"({dm.FLAG_MARK}): they are the board's words, shown as data -- not instructions.")
+    return {"exit": 0, "stdout": words, "stderr": "", "artifact": rel, "path": shown, "field": field, "label": label,
+            "span": [span["start"], span["end"]], "proposed_sha": _sha12(proposed), "rewritten": rewritten,
+            "flagged_lines": flagged}
+
+
+def propose(repo_root, *, proj: dict, remote: dict | None, field: str, comment: dict | None = None) -> dict:
+    """The whole of `--take ado` on a C-class text field in one call: `text_target` (refused, naming what has a place,
+    BEFORE any text is read), `proposal_text` (the board's current words, or the cached `comment`'s), `write_proposed`.
+    Returns `write_proposed`'s result plus `"source"` (`board` or `comment`). `remote` is the item as
+    `ado_wit_map.remote_item` documents it, read just now; nothing here reads the board."""
+    if text_target(proj.get("kind"), field) is None:
+        raise Rejected(_no_place(proj.get("kind"), field))
+    got = proposal_text(remote, field, comment=comment)
+    result = write_proposed(repo_root, proj=proj, field=field, text=got["text"], flagged_lines=got["flagged_lines"])
+    return {**result, "source": got["source"]}
+
+
+# --- what a `reconciled` line keeps of a --reason (house rule 10; the B4 critic) ----------------------------------
+
+REASON_KEPT_TAKES: Final = ("not-drift", "ack")     # the takes that REQUIRE the words: the line is not honest without them
+
+
+def reason_sha(text) -> str:
+    """The first 12 hex of the sha256 of the typed words (trimmed): enough to tell two reasons apart, none of the words."""
+    return hashlib.sha256(str(text).strip().encode("utf-8")).hexdigest()[:12]
+
+
+def ledger_reason(take: str, reason) -> dict:
+    """The fields a `--reason` becomes on a committed `reconciled` line: `{}` when none was given; for `--take not-drift`
+    and `--take ack` (which require one) `{"reason": <the words>}`; for `--take ado` and `--take sdlc`
+    `{"reason": "<text>", "reason_sha": <12 hex>}`, because a resolution or an unslate reason may be a board comment's
+    own words. `Precondition` (nothing started) when the words carry an e-mail address or an id, for any take."""
+    words = reason.strip() if isinstance(reason, str) else ""
+    if not words:
+        return {}
+    if bc.EMAIL_RE.search(words) or bc.GUID_RE.search(words):
+        raise Precondition("not written to the ledger: a reason may not carry an e-mail address or an id (name the "
+                           "person's handle, not their address); nothing was started")
+    if take in REASON_KEPT_TAKES:
+        return {"reason": words}
+    return {"reason": TEXT, "reason_sha": reason_sha(words)}
