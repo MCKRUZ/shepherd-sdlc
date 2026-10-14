@@ -1598,3 +1598,72 @@ def test_a_refused_text_take_prints_no_proposed_key(repo, az, spawned, capsys):
     code, doc = reconcile_json(capsys, repo, DECISION1, "--field", "System.Title", "--take", "ado")
     assert code == 2 and doc["ok"] is False
     assert "proposed" not in doc and "proposed_sha" not in doc and proposed_files(repo) == []
+
+
+# === B5-P6 (part 2): CLAUDE.md's Testing block names only real verbs and flags ======================================
+#
+# The repository's CLAUDE.md lists one runnable line per verb under `## Testing`. Every `ado_sync.py` line there must
+# parse through the CLI's own parser (an unknown verb or flag is argparse's exit 2), the `retro_report.py` lines through
+# its own, and the Fold B5 lines must be present: a breadth kind planned with `plan --kind nfr`, a `--take ado` on a
+# text field the `.proposed` writer ships (`ado_sync_reconcile.TEXT_TARGETS`) with `--from-comment`, on a ref of the
+# form the requirement source writes (`sdlc:fr:<digits>`), and the retro report's `--json`. Parsing runs no verb.
+
+import shlex  # noqa: E402
+
+CLAUDE_MD = ROOT / "CLAUDE.md"
+
+
+def claude_md_testing_commands() -> list[list[str]]:
+    """Each line of the ```bash block under CLAUDE.md's `## Testing`, split as a shell would split it."""
+    text = CLAUDE_MD.read_text(encoding="utf-8")
+    assert "\n## Testing\n" in text, "CLAUDE.md has no `## Testing` section"
+    section = text.split("\n## Testing\n", 1)[1]
+    m = re.search(r"```bash\n(.*?)\n```", section, re.S)
+    assert m, "CLAUDE.md's Testing section has no ```bash block"
+    return [shlex.split(line) for line in m.group(1).splitlines() if line.strip()]
+
+
+def script_args(script: str) -> list[list[str]]:
+    """The arguments after `uv run scripts/<script>` on every Testing line that runs it."""
+    return [tokens[3:] for tokens in claude_md_testing_commands()
+            if tokens[:2] == ["uv", "run"] and len(tokens) > 2 and tokens[2] == f"scripts/{script}"]
+
+
+def _parses(parser, args: list[str]) -> bool:
+    try:
+        parser.parse_args(args)
+    except SystemExit:
+        return False
+    return True
+
+
+def test_every_ado_sync_line_in_the_claude_md_testing_block_parses():
+    lines = script_args("ado_sync.py")
+    assert len(lines) >= 17, lines   # the 17 lines Folds B1 to B4 listed stay listed
+    bad = [" ".join(a) for a in lines if not _parses(ado_sync.build_parser(), a)]
+    assert bad == [], f"CLAUDE.md Testing lines ado_sync.py's parser refuses: {bad}"
+
+
+def test_every_retro_report_line_in_the_claude_md_testing_block_parses():
+    import retro_report
+    lines = script_args("retro_report.py")
+    assert lines, "no retro_report.py line in CLAUDE.md's Testing block"
+    bad = [" ".join(a) for a in lines if not _parses(retro_report.build_parser(), a)]
+    assert bad == [], f"CLAUDE.md Testing lines retro_report.py's parser refuses: {bad}"
+
+
+def test_the_claude_md_testing_block_carries_the_fold_b5_lines():
+    lines = script_args("ado_sync.py")
+    plans = [a for a in lines if a[:1] == ["plan"] and "--kind" in a]
+    assert any(a[a.index("--kind") + 1] == "nfr" for a in plans), plans
+    assert "nfr" in bc.KINDS and "nfr" in model.BREADTH_KINDS
+    texts = [a for a in lines if a[:1] == ["reconcile"] and "--from-comment" in a and "--take" in a
+             and a[a.index("--take") + 1] == "ado"]
+    assert texts, "no `reconcile --take ado --from-comment` line in CLAUDE.md's Testing block"
+    for a in texts:
+        ref, field = a[1], a[a.index("--field") + 1]
+        assert re.fullmatch(r"sdlc:fr:\d+", ref), ref          # the requirement source's own ref form
+        assert rc.text_target("requirement", field) is not None, field   # a shipped `.proposed` target
+        assert a[a.index("--from-comment") + 1].isdigit() and a[-2] == "--by"
+    retro = script_args("retro_report.py")
+    assert any("--repo" in a and "--json" in a for a in retro), retro
