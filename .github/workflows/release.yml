@@ -76,6 +76,7 @@ jobs:
           if [ -z "$CSC_LINK" ]; then
             echo "no signing certificate in secrets — building unsigned"
             export CSC_IDENTITY_AUTO_DISCOVERY=false
+            unset CSC_LINK CSC_KEY_PASSWORD
           fi
           npx vite build
           npx electron-builder --mac --publish never
@@ -130,4 +131,4 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Shepherd ${{ github.event.inputs.tag || github.ref_name }}
           body_path: notes.md
-          files: artifacts/*
+          files: artifacts/*/*
