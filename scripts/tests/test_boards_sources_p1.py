@@ -531,15 +531,23 @@ def test_a_pending_decision_is_not_checked_when_there_is_no_decision_log(tmp_pat
     assert any("no decision log" in n and "DL-03" in n for n in found["BR-02"]["notes"])
 
 
-def test_rule_acceptance_criteria_are_the_condition_outcome_and_source_when_the_type_carries_them():
-    story = of("rule", cfg={"types": {"rule": "User Story"}})
-    assert story["BR-01"]["fields"][AC] == ("Condition: An order repeats an existing order id<br>"
-                                            "Outcome: Reject it with a 409<br>Source: policy §3")
-    assert story["BR-02"]["fields"][AC] == ("Condition: The order total exceeds the credit limit<br>"
-                                            "Outcome: Hold for review<br>Pending decision: DL-03")
+def test_rule_text_is_its_description_block_and_never_acceptance_criteria_whatever_the_type_carries():
+    """The condition, outcome and source ride the Description, which is C for a rule (design §6.1, `C: text ->
+    .proposed`); AcceptanceCriteria is S for a rule, so text pushed there would be overwritten on the next apply."""
+    story = of("rule", cfg={"types": {"rule": "User Story"}})            # User Story carries AcceptanceCriteria
+    assert story["BR-01"]["fields"]["System.Description"] == (
+        "<p><strong>Condition:</strong> An order repeats an existing order id</p>"
+        "<p><strong>Outcome:</strong> Reject it with a 409</p><p><strong>Source:</strong> policy §3</p>")
+    assert story["BR-02"]["fields"]["System.Description"] == (
+        "<p><strong>Condition:</strong> The order total exceeds the credit limit</p>"
+        "<p><strong>Outcome:</strong> Hold for review</p><p><strong>Pending decision:</strong> DL-03</p>")
     assert all(PRIORITY not in p["fields"] for p in story.values()), "a rule has no priority"
-    issue = of("rule", cfg={"types": {"rule": "Issue"}})
-    assert all(AC not in p["fields"] for p in issue.values())
+    for cfg, schema in (({"types": {"rule": "User Story"}}, None), ({"types": {"rule": "Issue"}}, None),
+                        ({}, None), ({}, {})):
+        found = of("rule", cfg=cfg, schema=schema)
+        assert found and all(AC not in p["fields"] for p in found.values()), (cfg, schema)
+        assert all(p["fields"]["System.Description"].startswith("<p><strong>Condition:</strong> ")
+                   for p in found.values()), (cfg, schema)
 
 
 def test_the_rule_type_defaults_to_the_requirement_category_and_a_pin_wins():
@@ -548,7 +556,54 @@ def test_the_rule_type_defaults_to_the_requirement_category_and_a_pin_wins():
         ("User Story", "RequirementCategory")}
     pinned = of("rule", cfg={"types": {"rule": "Issue"}})
     assert {(p["fields"]["type_name"], p["fields"]["type_route"]) for p in pinned.values()} == {("Issue", "types.rule")}
-    assert AC in default["BR-01"]["fields"], "the default type is the one that carries the field"
+    assert AC not in default["BR-01"]["fields"], "the default type carries the field, and a rule still never sets it"
+    assert default["BR-01"]["fields"]["System.Description"].startswith("<p><strong>Condition:</strong> ")
+
+
+# The design's §6.1 Ownership column for the text each breadth kind pushes: the lifecycle is "S all", a measurement
+# "S: title, block", an NFR and a `BR-NN` "C: text -> .proposed"; a question pushes no text at all.
+TEXT_OWNER = {"nfr": "C", "rule": "C", "question": None, "lifecycle": "S", "measurement": "S"}
+ALL_TYPED = {"types": {"nfr": "User Story", "rule": "User Story", "question": "Issue", "measurement": "Issue"}}
+
+
+def test_the_text_owner_table_covers_exactly_the_breadth_kinds():
+    assert set(TEXT_OWNER) == set(model.BREADTH_KINDS) == set(KINDS)
+
+
+@pytest.mark.parametrize("kind", KINDS)
+def test_the_text_each_breadth_kind_pushes_rides_a_field_with_the_design_s_owner_letter(kind):
+    own = model.ownership_for(kind)
+    found = rows([kind], cfg=ALL_TYPED)
+    assert found, kind
+    letters = {own[ref] for p in found for ref in p["fields"] if ref in model.FREE_TEXT_FIELDS}
+    assert letters == ({TEXT_OWNER[kind]} if TEXT_OWNER[kind] else set()), kind
+
+
+@pytest.mark.parametrize("kind", ("nfr", "rule"))
+def test_a_board_edit_to_a_co_owned_kind_s_text_is_never_an_op_the_next_apply_sends(kind):
+    """Spec 0038's Why-this-tier: a wrong owner letter would make a board edit read as drift the repository
+    overwrites. Every text field edited on the board, every other field as pushed: the push is empty, and an edit
+    to the text the row pushed is the board's change, never drift."""
+    own = model.ownership_for(kind)
+    classified = 0
+    for p in rows([kind], cfg=ALL_TYPED):
+        pushed = {ref: v for ref, v in p["fields"].items() if model.REFERENCE_NAME_RE.fullmatch(ref)}
+        typed = {ref: "<p>typed on the board</p>" for ref in model.FREE_TEXT_FIELDS - {model.HISTORY_FIELD}}
+        remote = {"id": 4601, "rev": 4, "tags": set(p["tags"]), "title": pushed["System.Title"],
+                  "fields": {**pushed, **typed}}
+        assert model.diff(p, remote, own) == [], p["ref"]
+        edits = {ref: {"oldValue": pushed[ref], "newValue": text} for ref, text in typed.items() if ref in pushed}
+        if not edits:
+            continue  # a row with no filled text pushes none (NFR-P02)
+        classified += 1
+        ledger = {"ts": "2026-10-12T09:02:00Z", "event": "applied", "ref": p["ref"], "kind": kind, "work_item": 4601,
+                  "rev_after": 3, "projection_hash": model.projection_hash(p)}
+        update = {"id": 4, "workItemId": 4601, "rev": 4, "revisedDate": "9999-01-01T00:00:00Z",
+                  "fields": {"System.Rev": {"oldValue": 3, "newValue": 4}, **edits}}
+        got = model.classify_drift(ledger, {**remote, "rev": 4}, p, [update])
+        assert got["class"] == "ADO_OWNED_CHANGE", (p["ref"], got)
+        assert {f["field"]: f["owner"] for f in got["fields"]} == dict.fromkeys(edits, "C"), p["ref"]
+    assert classified >= 2, f"the fixture holds at least two {kind} rows with text"
 
 
 def test_the_approver_is_never_read_so_no_address_or_name_leaves_the_table():

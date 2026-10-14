@@ -41,7 +41,11 @@ so `ado_sync` reads a ledgered ref back to its kind with no table of its own.
              two briefs naming it, or none, is no parent and a note, never a guess. An outcome marked `(pending
              DL-NN)` names that decision as its predecessor, in the neutral key `fields["predecessor_refs"]` (the
              design's Predecessor link: not a `Related` edge, so not in `related_refs`). The Approver column is never
-             read. Acceptance criteria as for an NFR: the condition, outcome and source, when the type carries them.
+             read. The rule's text (its condition, outcome, source and any pending decision, the filled cells only) is
+             its Description block, one escaped paragraph each: the field the model's rule row makes C (the design's
+             §6.1, `C: text -> .proposed`), so a board edit to it is the board's and comes back only as `.proposed`.
+             A rule never sets `Microsoft.VSTS.Common.AcceptanceCriteria`, whatever its type carries: that field is S
+             for a rule, so text pushed there would make a person's board edit read as drift `apply` overwrites.
   question   `#### Q-NN: <question>` entries under the Questions section, read through `question-list.shape.yaml`
              (`document_shape.read_document`; a list with no recognised Questions section is read whole, minus its
              Answer Log). A `### Block:` the shape does not declare is read all the same. Answered = an Answer line
@@ -397,6 +401,12 @@ def _criteria(lines: list[str]) -> str | None:
     return "<br>".join(html.escape(line, quote=False) for line in lines) if lines else None
 
 
+def _labelled_block(lines: list[tuple[str, str]]) -> str:
+    """A Description block: one escaped `<p><strong>label:</strong> text</p>` paragraph per (label, text) pair."""
+    return "".join(f"<p><strong>{html.escape(label, quote=False)}:</strong> {html.escape(text, quote=False)}</p>"
+                   for label, text in lines)
+
+
 # --- decisions and the domains and features a row hangs under -------------------------------------------------
 
 def _decision_ids(root: Path) -> dict[int, str] | None:
@@ -550,15 +560,15 @@ def load_rules(repo_root, cfg: dict | None = None, schema: dict | None = None) -
             body = cells[outcome] if len(cells) > outcome else ""
             pending = _PENDING.search(body)
             fields = {TITLE: _title(ident, cells[condition], notes)}
-            lines = [f"Condition: {_clean(cells[condition])}"]
+            lines = [("Condition", _clean(cells[condition]))]
             then = _clean(_PENDING_ANY.sub("", body)).strip(" *")
             if _filled(then):
-                lines.append(f"Outcome: {then}")
+                lines.append(("Outcome", then))
             if "source" in col and col["source"] < len(cells) and _filled(cells[col["source"]]):
-                lines.append(f"Source: {_clean(cells[col['source']])}")
+                lines.append(("Source", _clean(cells[col["source"]])))
             if pending:
                 wanted = int(pending.group(1))
-                lines.append(f"Pending decision: DL-{pending.group(1)}")
+                lines.append(("Pending decision", f"DL-{pending.group(1)}"))
                 name = (decisions or {}).get(wanted, f"DL-{pending.group(1)}")
                 fields["predecessor_refs"] = [f"sdlc:decision:{_suffix(name)}"]
                 if decisions is None:
@@ -566,7 +576,9 @@ def load_rules(repo_root, cfg: dict | None = None, schema: dict | None = None) -
                 elif wanted not in decisions:
                     notes.append(f"DL-{pending.group(1)} is not in the decision log")
             _typed(fields, type_name, route)
-            _only_when_carried(fields, schema, type_name, ACCEPTANCE, _criteria(lines))
+            # The text goes to the Description, which is C for a rule (ado_sync_model.KIND_OWNERSHIP["rule"]), and
+            # never to AcceptanceCriteria, which is S for a rule: a board edit there would read as drift to overwrite.
+            fields[DESCRIPTION] = _labelled_block(lines)
             sha = _digest({"header": table["header"], "cells": cells, "parent": parent})
             out.append(_row("rule", ident, cells[condition], None, fields, set(), rel, sha, notes, parent, note))
     return out
@@ -784,8 +796,7 @@ MEASUREMENT_COLUMNS = (("outcome", "Outcome"), ("threshold", "Threshold"), ("mea
 
 def _measurement_block(lines: list[tuple[str, str]]) -> str:
     """The Description block: the threshold and how-measured text, one escaped paragraph each."""
-    return "".join(f"<p><strong>{html.escape(label, quote=False)}:</strong> {html.escape(text, quote=False)}</p>"
-                   for label, text in lines)
+    return _labelled_block(lines)
 
 
 def load_measurements(repo_root, cfg: dict | None = None, schema: dict | None = None) -> list[dict]:
