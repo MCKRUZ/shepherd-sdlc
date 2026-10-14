@@ -671,7 +671,7 @@ FEED_ROUTE_KEY = "GET wit/workItemRevisions"
 
 def test_the_feed_read_keeps_the_seam_rules_every_read_here_keeps(az, tmp_path):
     ado_wit_feed.revisions_since(tmp_path, None)
-    ado_wit_feed.revisions_since(tmp_path, "T1")
+    ado_wit_feed.revisions_since(tmp_path, "token:T1")
     assert az.writes is False and az.written() == []
     assert {route_key_boards(c) for c in az.calls} == {FEED_ROUTE_KEY} and len(az.calls) == 2
     for argv in az.calls:
