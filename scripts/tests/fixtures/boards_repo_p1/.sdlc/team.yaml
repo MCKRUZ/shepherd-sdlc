@@ -1,0 +1,12 @@
+# The breadth mini repository's roster (fictional people; every address is @example.com).
+version: "1.0"
+teams:
+  - name: core
+    lead: "@priya-n"
+people:
+  - handle: "@priya-n"
+    name: "Person 1"
+    email: "priya.n@example.com"
+    team: core
+    roles: [owner, developer, checker, lead]
+    signs_off: ["0", "1", "2", "build"]

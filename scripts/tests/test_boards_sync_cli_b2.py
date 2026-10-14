@@ -476,10 +476,11 @@ def test_plan_an_unknown_kind_is_argparse_s_usage_error_and_a_kind_with_no_sourc
     with pytest.raises(SystemExit) as stop:                       # `--kind` is an argparse choice of bc.KINDS
         ado_sync.main(["plan", "--kind", "bogus", "--repo", str(repo)])
     assert stop.value.code == 2 and "bogus" in capsys.readouterr().err and az.calls == []
-    # `question` has no source until Fold B5. `finding` had none until B4 wired `ado_sync_sources_df` into the CLI
-    # (spec 0037): it is now a sourced kind, so it is planned (no findings ledger here: no rows), never skipped
+    # `question` had no source until Fold B5 (B5-P1 wired `ado_sync_sources_p1` into the CLI, spec 0038): it is now a
+    # sourced kind, so it is planned (no question list on this mini repo: no rows), never skipped. `finding` had none
+    # until B4 wired `ado_sync_sources_df` into the CLI (spec 0037): the same holds for it
     code, doc = run_json(capsys, "plan", "--kind", "question", "--repo", repo)
-    assert code == 0 and doc["rows"] == [] and any(s["kind"] == "question" for s in doc["skipped"])
+    assert code == 0 and doc["rows"] == [] and not any(s["kind"] == "question" for s in doc["skipped"])
     code, doc = run_json(capsys, "plan", "--kind", "finding", "--repo", repo)
     assert code == 0 and doc["rows"] == [] and not any(s["kind"] == "finding" for s in doc["skipped"])
 
