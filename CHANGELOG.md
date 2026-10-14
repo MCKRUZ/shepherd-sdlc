@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased — Azure Boards mirror
+## 2.1.0 — 2026-10-13
 
 This section collects the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`). It carries no
 version heading and no version bump yet; both land with the release that ships the whole mirror.
+2.1.0 is that release: Folds B1 to B5, one pull request, one version bump (`.claude-plugin/plugin.json`,
+`.claude-plugin/marketplace.json`, `studio/package.json` and both version lines of `studio/package-lock.json`).
 
 ### Fold B1 — schema, config, transport seam
 
@@ -213,6 +215,80 @@ Nothing in this Fold adds a way to write to the board: `apply` and `link-pr` are
   surfaces.
 - **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
   before the mirror except the one pin above, and the version.
+
+### Fold B5 — breadth
+
+The rest of the Phase-0, Phase-1 and Build record can now ride the board, each kind opt-in, and text a person changes
+on the board can come back as a draft a named person lands. Nothing in this Fold adds a way to write to the board:
+`apply` and `link-pr` are still the only two verbs that do.
+
+- **Five breadth kinds, all opt-in** (`scripts/ado_sync_sources_p1.py`, registered into `ado_sync_sources.SOURCES` at
+  import, extend-only): `nfr` (an `NFR-xxx` row of `non-functional-requirements.md`, parented to the Domain whose heading
+  it sits under, else `no parent` and why), `rule` (a `BR-NN` row of `business-rules.md`, parented to the one Feature
+  whose brief names it; a `(pending DL-NN)` outcome names that decision as its predecessor), `question` (a `Q-NN` entry of
+  `question-list.md`; answered is read, the answer's words are not), `lifecycle` (one item for `.sdlc/state.yaml`: the
+  phase, gate and sign-off table; a phase with no gate reads `no gate recorded`, never a zero) and `measurement` (a
+  threshold row of a `success-criteria.md` dimension, parented to its Outcome, only on a type `types.measurement` pins).
+  None is in the starter `kinds:`; `plan --kind nfr` (or the kind in `kinds:`) plans them for the same confirmed `apply`
+  as every other kind. Their tags are the refs: `sdlc:nfr:<id>` (`sdlc:nfr:P01`), `sdlc:rule:<NN>`, `sdlc:question:<NN>`,
+  `sdlc:lifecycle:project`, `sdlc:measurement:<n>-<slug>`. Priority and AcceptanceCriteria are set only when the resolved
+  type carries them; no roster is read, no AssignedTo is set, an activity-metric column is never pushed, and a rule's
+  text rides its C-owned Description, never AcceptanceCriteria.
+- **The contracts grow append-only** (`scripts/boards_contract.py`, `scripts/ado_sync_model.py`): `KINDS` has 15 members
+  ending `nfr` (`TREE_ORDER` unchanged: an NFR is a leaf), `KIND_OWNERSHIP["nfr"]` makes State the board's and the
+  Description and AcceptanceCriteria C, and `BREADTH_KINDS` names the five. An NFR's Priority is seeded at create and is
+  the board's afterwards (the default `A`), unlike a requirement's, which the repository owns.
+- **The watermark feed** (`scripts/ado_wit_feed.py`, new, read-only): `revisions_since(repo, watermark)` pages the
+  `reporting/workItemRevisions` feed through `ado_transport.invoke_body` at the new `WIT_ROUTES["workitemrevisions"]`
+  row (`verified: False` until the B0 capture). A watermark names its kind in the string — `token:<continuation token>`
+  or `since:<whole UTC time>` — and is never inferred from its shape; the first call names `startDateTime`, every later
+  call only the previous page's `continuationToken`, never both. `isLastBatch` ends the read, a page that promises more
+  but sends no token (or repeats one) is a failed read, and `MAX_FEED_PAGES` stops a runaway read with `truncated` set.
+  The module stores nothing: the caller saves the next watermark in `.sdlc/ado/local/watermark` with `save_watermark`
+  once it has used the rows, and a watermark never saved reads `None`, never 0. Identities are redacted through the
+  roster and `System.History` is dropped. `pull` does not read through it yet.
+- **`reconcile --take ado` on a co-owned text field writes `<artifact>.proposed`** (design D32;
+  `ado_sync_reconcile.propose`): the board's words — or, with `--from-comment <id>`, that cached comment's — are spliced
+  into the field's own byte span through `document_shape.write_document` and written beside the artifact, which is never
+  written; line endings and a BOM survive, and a person lands the draft through `/sprd-revise`. It writes a draft only
+  where a shape can place text (`ado_sync_reconcile.TEXT_TARGETS`): a requirement's Description and AcceptanceCriteria
+  and an epic's AcceptanceCriteria. Any other text field — a title, an outcome's, domain's or feature's text, an epic's
+  Description, an NFR's or a rule's text — is refused by name (exit 2, `no place`) until a later package adds its target.
+  A second, different proposal while one waits is exit 1 and nothing changes; a symlinked proposal, a path that leaves
+  the repository, a table field and text holding an address or an id are refused; a line that reads as an instruction
+  is counted and shown with `⚑`, never refused. No process starts: the ledger line records `child_argv ["propose",
+  <field>]`, `child_exit 0`, the proposal's path as `proposed` and `proposed_sha` (12 hex), never the words, and the
+  `--json` result carries the same `proposed` and `proposed_sha` (present only when a proposal was written), which the
+  desktop app's reconcile dialog reads. A `.proposed` file can hold a board comment's words: it belongs in the project's
+  `.gitignore`, never in a commit.
+- **A typed `--reason` on an `ado` or `sdlc` take is ledgered as `<text>` plus a 12-hex `reason_sha`**
+  (`ado_sync_reconcile.ledger_reason`), because a resolution or an unslate reason may be a board comment's words;
+  `not-drift` and `ack`, which require the words, keep them as typed. An address or an id in any reason is refused.
+- **`/sprd-retro` gains an Azure Boards section** (`scripts/retro_report.py`, additive): board comments with a line that
+  reads as an instruction, per work item, against the comments read; refused comment drafts by reason; and the drift
+  disposition rollup (`ado_sync_model.summarize`'s own numbers, and each disposition against how many of its lines carry
+  what it claims). The `boards` key and its text block appear only when `.sdlc/metrics/ado-sync-log.jsonl` holds an event
+  the mirror wrote, so a repository that never mirrored prints exactly what it printed before; inside it a block nobody
+  measured reads `no data` / `null`, and nothing is keyed by a person.
+- **The desktop app settles drift and pulls on a click.** `AdoReconcileDialog` gives each drifted field one choice
+  (leave open, take the board's, keep the repository's, acknowledge, not drift) beside its diff, previews the exact
+  `reconcile` argument line per field, and runs one `reconcile` per chosen field on one Confirm, stopping at the first
+  the plugin did not settle; a result carrying `proposed` names that file and says the artifact was not changed.
+  `PullNow` draws **Pull now** (`pull`) and **Pull discussion** (`pull --discussion`), neither on a timer; an exit 0
+  that carries an `unavailable` board or a switched-off discussion says so, with the plugin's reason, never "Done". The spec card gains a Boards row
+  (Pull now, **Plan changes**, and **Settle drift** once a pull read drift for that spec) and mounts the Discussion block
+  below its facts rail. **Plan changes** runs nothing: it shows the `ado_sync.py plan --kind spec --id <NNNN>` and
+  `apply --confirm <hash> --by <your handle>` lines, because the closed `AdoVerbRequest` table stays the seven verbs the
+  build kit pins (a plan request is refused before any spawn). Nothing under `studio/electron/**` changed; steering mode
+  draws none of these controls.
+- **One hand-written fixture** (`wit/workitemrevisions.json`, one feed page; 31 hand-written in all, each `hand-written
+  (unverified)` until a person captures them) and spec `0038-ado-boards-breadth.md` (MEDIUM).
+- **Not in this release:** mention markup (B5-P5) waits for the B0 `mention_probe` capture, so `comment --mention @h`
+  stays text only and notifies nobody; the harness pack's deny-list change waits for the upstream kit (D-OWNER-4) and
+  reaches `harness/` only through `sync_kit.py`.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed before the
+  mirror except Fold B4's one pin, and every `scripts/capabilities.py` row (the breadth kinds ride `plan --kind`, the
+  draft rides `reconcile`).
 
 ## 2.0.0 — 2026-10-12
 

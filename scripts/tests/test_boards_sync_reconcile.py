@@ -1540,3 +1540,61 @@ def test_ado_sync_still_imports_nothing_new_and_no_subprocess():
     text = (SCRIPTS / "ado_sync.py").read_text(encoding="utf-8")
     assert "rc.propose(" in text and "rc.ledger_reason(" in text and "rc.is_text_proposal(" in text
     assert not re.search(r"shell\s*=\s*True|shlex|os\.system", text)
+
+
+# === B5-P6: the `--json` result names the proposal it wrote (the desktop dialog reads it from the result) ==========
+#
+# `reconcile --json` carries `proposed` and `proposed_sha` exactly when the ledger line does: a text take that wrote
+# `<artifact>.proposed` puts the same two values on the printed result, so Shepherd's reconcile dialog can name the
+# file without reading the ledger. A take that wrote no proposal prints neither key. Everything above is unchanged.
+
+def test_the_json_result_of_a_text_take_names_the_proposal_the_ledger_line_names(repo, az, spawned, capsys):
+    epic_repo(repo, az)
+    code, doc = reconcile_json(capsys, repo, EPIC1, "--field", AC_FIELD, "--take", "ado")
+    assert code == 0, doc
+    (line,) = reconciled(repo)
+    assert doc["proposed"].endswith(".proposed") and doc["proposed"] == line["proposed"]
+    assert doc["proposed"] == EPICS_FILE + ".proposed"
+    assert doc["proposed_sha"] == line["proposed_sha"] == sha12(read_raw(repo / (EPICS_FILE + ".proposed")))
+    assert re.fullmatch(r"[0-9a-f]{12}", doc["proposed_sha"])
+    assert BOARD_AC not in json.dumps(doc["proposed"]) and str(repo) not in doc["proposed"]
+
+
+def test_the_json_result_of_a_requirement_description_take_names_its_proposal(repo, az, spawned, capsys):
+    requirement_repo(repo, az)
+    code, doc = reconcile_json(capsys, repo, FR1_REF, "--field", DESC_FIELD, "--take", "ado")
+    assert code == 0, doc
+    (line,) = reconciled(repo)
+    assert doc["proposed"] == line["proposed"] == REQ_FILE + ".proposed"
+    assert doc["proposed_sha"] == line["proposed_sha"] == sha12(read_raw(repo / (REQ_FILE + ".proposed")))
+
+
+def test_the_json_result_of_a_from_comment_text_take_names_its_proposal(repo, az, spawned, capsys):
+    epic_repo(repo, az)
+    cache_epic_comment(repo)
+    code, doc = reconcile_json(capsys, repo, EPIC1, "--field", AC_FIELD, "--take", "ado", "--from-comment", "7")
+    assert code == 0, doc
+    (line,) = reconciled(repo)
+    assert doc["proposed"] == line["proposed"] and doc["proposed"].endswith(".proposed")
+    assert doc["proposed_sha"] == line["proposed_sha"]
+    assert COMMENT_AC not in json.dumps(doc["proposed"]) and "resubmitted" not in doc["proposed"]
+
+
+def test_a_take_that_writes_no_proposal_prints_no_proposed_key(repo, az, spawned, capsys):
+    pull_spec4(repo, capsys)
+    code, doc = reconcile_json(capsys, repo, SPEC4, "--field", "System.AssignedTo", "--take", "ado")
+    assert code == 0, doc
+    assert "proposed" not in doc and "proposed_sha" not in doc
+    (line,) = reconciled(repo)
+    assert "proposed" not in line and "proposed_sha" not in line
+    code, doc = reconcile_json(capsys, repo, SPEC4, "--field", "System.IterationPath", "--take", "not-drift",
+                               "--reason", "the team renamed the sprint")
+    assert code == 0, doc
+    assert "proposed" not in doc and "proposed_sha" not in doc
+
+
+def test_a_refused_text_take_prints_no_proposed_key(repo, az, spawned, capsys):
+    decision_title_repo(repo, az)
+    code, doc = reconcile_json(capsys, repo, DECISION1, "--field", "System.Title", "--take", "ado")
+    assert code == 2 and doc["ok"] is False
+    assert "proposed" not in doc and "proposed_sha" not in doc and proposed_files(repo) == []

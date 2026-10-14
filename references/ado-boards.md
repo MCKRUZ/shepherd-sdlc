@@ -10,9 +10,10 @@ This is a **Tier-3 reference**: loaded on demand, read by nothing at runtime. Th
 (the process, the fit and the state rule), `scripts/ado_wit.py` and `scripts/ado_wit_map.py` (work-item reads),
 `scripts/ado_sync_model.py` (drift, ownership, the disposition machine, honest counting, the ledger line),
 `scripts/ado_sync_reconcile.py` (settling a drift row: the per-verb child table, the one module besides
-`ado_transport.py` that starts another process), `scripts/ado_sync_sources.py`, `scripts/ado_sync_sources_tree.py` and
-`scripts/ado_sync_sources_df.py` (the repository side), and `scripts/boards_contract.py` (every enum, path and REST
-location). The desktop app's half is `studio/shared/adoVerbArgv.ts` and `studio/electron/main/adoWrites.ts`. The
+`ado_transport.py` that starts another process, and the `.proposed` writer), `scripts/ado_sync_sources.py`,
+`scripts/ado_sync_sources_tree.py`, `scripts/ado_sync_sources_df.py` and `scripts/ado_sync_sources_p1.py` (the
+repository side), `scripts/ado_wit_feed.py` (the watermark feed), and `scripts/boards_contract.py` (every enum, path
+and REST location). The desktop app's half is `studio/shared/adoVerbArgv.ts` and `studio/electron/main/adoWrites.ts`. The
 design is `docs/proposals/ado-boards-mirror.md`; the build kit beside it pins the verbs and exit codes. When this
 page and the code disagree, the code wins and this page is the bug.
 
@@ -30,14 +31,15 @@ phase or blocks a gate.
 | B2 | `plan`, `status`, `pull`, `drift`, `link`, `adopt`, `show`, `discussion gc` | reads only — the two non-GET calls are the read POSTs `wit/wiql` and `wit/workitemsbatch`; every write in `ado_wit.py` raises `NotImplementedError("B3")` |
 | B3 | `apply`, `link-pr`, `iteration bind`, `posture`, `comment` | writes, only from a confirmed plan, as the signed-in person |
 | B4 | `reconcile`, `pull --propose-specs`, the desktop app's view; the `finding` kind | no new board write: `reconcile` records a disposition and, for `--take ado`, runs the owning repository verb; finding items (opt-in: `plan --kind finding`, or `finding` in `kinds:`) go through a confirmed `apply` like every other kind |
-| B5 | lifecycle, NFR, BR, question and measurement kinds; the harness pack change below | through a confirmed `apply` |
+| B5 | the opt-in `nfr`, `rule`, `question`, `lifecycle` and `measurement` kinds (`plan --kind …`); `reconcile --take ado` on a co-owned text field writing `<artifact>.proposed`; the watermark feed (`scripts/ado_wit_feed.py`, a library no verb reads through yet); the retro's Boards section; the desktop app's reconcile dialog and Pull now | no new board write: the new kinds go through a confirmed `apply`; the feed only reads; a `.proposed` draft is a file in the working tree. The harness pack change below waits for the upstream kit (D-OWNER-4) and has not landed |
 
 | File | Committed | Holds |
 |---|---|---|
 | `.sdlc/ado.yaml` | yes | the config (`templates/ado/ado.yaml` is the starter) |
 | `.sdlc/ado/schema.json` | yes | the discovered process: types, states, fields, areas, iterations, backlog levels |
 | `.sdlc/metrics/ado-sync-log.jsonl` | yes | the append-only ledger — event names from `boards_contract.LEDGER_EVENTS`, never renamed |
-| `.sdlc/ado/local/**` | **never** (`config init` writes a `*` `.gitignore`) | plans, the discussion cache, `me.json`, `hook-status.txt` |
+| `.sdlc/ado/local/**` | **never** (`config init` writes a `*` `.gitignore`) | plans, the discussion cache, `me.json`, `hook-status.txt`, the feed's `watermark` |
+| `<artifact>.proposed` (beside the artifact) | **never** — add `*.proposed` to the project's `.gitignore`; `config init` does not | a board text change (or a cached board comment's words) spliced into one field of the artifact, waiting for `/sprd-revise` |
 
 ---
 
@@ -65,16 +67,38 @@ nobody: their names are listed, their values never read.
 | sprint `SNN` (an iteration binding, not an item) | slate membership, sprint state | — | dates and name: an edit is reported only |
 | decision `DL-NN` | id, due | State → Completed → `track_decisions.py decide --by --resolution` (the human types the resolution; the last comment is shown, never auto-filled) | wording |
 | finding (B4) | fingerprint, severity, FIXED (`record_findings.py report --strict` stays authoritative) | Closed → a proposal only | — |
-| lifecycle (B5) | all | — | — |
-| outcome | title, block, tag, links | State | text → `.proposed` |
-| domain | title, block, tag, links | State | text → `.proposed` |
-| requirement `FR-NNN` | title, block, tag, priority | State | text and AcceptanceCriteria → `.proposed`; Approver reported only |
-| epic `EP-NNN` | title, description block, tag | State (the board's roll-up and the team's closing) | text → `.proposed` |
-| feature `FE-NN` | title, block, tag, parent | State | text → `.proposed` |
-| NFR, `BR-NN` (B5, opt-in) | — | — | text → `.proposed` |
-| measurement (B5, opt-in) | title, block | State, any actual-value field | — |
-| question `Q-NN` (B5, opt-in) | id | answered → a proposal into `question-list.md` | — |
+| lifecycle `sdlc:lifecycle:project` (B5, opt-in) | all: the phase, gate and sign-off table from `state.yaml` | — | — |
+| outcome | title, block, tag, links | State | text outside the markers: **no draft target yet** — `--take ado` is refused by name (exit 2, `no place`) until a later package adds one; read it with `show`, settle with `--take ack` |
+| domain | title, block, tag, links | State | text outside the markers: **no draft target yet** (exit 2, `no place`) |
+| requirement `FR-NNN` | title, block, tag, priority | State | Description outside the markers and AcceptanceCriteria → `<artifact>.proposed` (`ado_sync_reconcile.TEXT_TARGETS`); Approver reported only |
+| epic `EP-NNN` | title, description block, tag (and AcceptanceCriteria, by the field default — see the note below) | State (the board's roll-up and the team's closing) | Description outside the markers: **no draft target yet** (exit 2, `no place`); AcceptanceCriteria is a `TEXT_TARGETS` target, reached only by a row recorded as C |
+| feature `FE-NN` | title, block, tag, parent | State | text outside the markers: **no draft target yet** (exit 2, `no place`) |
+| NFR `sdlc:nfr:<id>` (B5, opt-in) | title, tag | State; **Priority** — seeded at create when the type carries it, the board's afterwards | Description and AcceptanceCriteria: **no draft target yet** (exit 2, `no place`) — an NFR is a table row, and no shape places text into one |
+| rule `BR-NN`, `sdlc:rule:<NN>` (B5, opt-in) | title, tag | State | Description (the rule's condition, outcome, source): **no draft target yet** (exit 2, `no place`) |
+| measurement `sdlc:measurement:<n>-<slug>` (B5, opt-in) | title, block | State, any actual-value field | — |
+| question `Q-NN`, `sdlc:question:<NN>` (B5, opt-in) | id, title, tag | State — answered on the board is reported, `--take ack` records that someone knows; nothing is proposed into `question-list.md` in this version | — |
 | **discussion**, every kind | the plugin's own comments (immutable once posted) | everyone else's comments — surfaced, never copied | — |
+| **followers**, every kind | — | not read in this version: a count of them is `no data`, never 0, and the mirror adds or removes none | — |
+
+Three deliberate choices and one gap in the table above:
+
+- **An NFR's Priority is the board's once the item exists — by choice, unlike a requirement's.**
+  `ado_sync_model.ownership_for("nfr")` gives Priority `A` (`KIND_OWNERSHIP["nfr"]` leaves it at the field default):
+  the NFR row's P0–P3 seeds it at create (1–4, only when the type carries the field), and a board change afterwards is
+  `ADO_OWNED_CHANGE`, report only, never pushed back. A requirement's Priority is `S` (`KIND_OWNERSHIP["requirement"]`):
+  the repository re-pushes it.
+- **A `.proposed` draft is written only where a shape can place text.** `ado_sync_reconcile.TEXT_TARGETS` names three:
+  a requirement's Description and AcceptanceCriteria, and an epic's AcceptanceCriteria — a labelled line inside the
+  `### FR-NNN` / `### EP-NNN` block that `requirements.md` and `epics.md` keep. Every other co-owned text field is
+  refused by name (exit 2, `no place`) until a later package adds its target; NFR and `BR-NN` text drafts wait for the
+  B0 capture.
+- **Followers are not read.** Azure DevOps notifies a work item's followers of an `apply` exactly as it does for a
+  colleague's edit; the mirror neither counts nor changes them, so any count reads `no data`.
+- **The gap: an epic's AcceptanceCriteria.** `KIND_OWNERSHIP["epic"]` names only State, so `classify_drift` reads a
+  board edit to an epic's AcceptanceCriteria under `boards_contract.OWNERSHIP`'s default `S` — `SDLC_OWNED_DRIFT`,
+  where `--take ado` is refused — and the epic source pushes no AcceptanceCriteria for `--take sdlc` to restore. The
+  `("epic", AcceptanceCriteria)` draft target is therefore reached only by a drift row recorded with owner `C`; making
+  the field `C` for an epic is an open follow-up, not something this page can promise.
 
 A board revision whose only change is `System.History` is `COMMENT`, not drift; an attachment is listed, never
 `RELATION_DRIFT`; a `WorkItemType` change is `RETYPED` and needs a disposition; a ledgered item missing from the
@@ -120,6 +144,7 @@ each is open to one owner only; `ack` and `not-drift` record a person's judgemen
 | Take | Allowed for | What happens |
 |---|---|---|
 | `ado` | an **A** field that has an owning verb: a spec's `System.AssignedTo` (draft or ready only), a spec's `System.IterationPath`, a decision's `System.State` once the board holds it in the Completed category | the owning verb is started, as an argument list, and its exit is the record |
+| `ado` | a **C** text field with a draft target (`ado_sync_reconcile.TEXT_TARGETS`: a requirement's Description or AcceptanceCriteria, an epic's AcceptanceCriteria) | no process starts: the board's words — or, with `--from-comment <id>`, that cached comment's — are written as `<artifact>.proposed` beside the artifact (below); any other C text field is refused by name, exit 2, `no place` |
 | `sdlc` | an **S** field | nothing is sent: the next `plan` carries the update that puts the repository's value back, and the confirmed `apply` lands it |
 | `ack` | any field of an `OPEN` row, and a `DELETED_IN_ADO` row | someone named in `--owner` knows and owns it |
 | `not-drift` | any field of an `OPEN` row | `--reason` says why it is not drift |
@@ -127,8 +152,9 @@ each is open to one owner only; `ack` and `not-drift` record a person's judgemen
 Never taken: a spec's `State` (written only by `spec_transition.py ready|defer`, and by `handoff.py` for `in-flight`,
 which creates a branch and a draft pull request — a board move must never do that); an assignee change on an
 `in-flight` or `merged` spec (its branch names who is building it; `assign` refuses it and a new developer is a new
-hand-off, so the row is the repository's drift and carries `assign`'s own sentence); a **C** field's text (it comes
-back as an `<artifact>.proposed` draft for `/sprd-revise`, which a later Fold writes); a relation (report only).
+hand-off, so the row is the repository's drift and carries `assign`'s own sentence); a **C** field's text into the
+artifact itself (it comes back only as an `<artifact>.proposed` draft for `/sprd-revise`, below, and only for the
+three `TEXT_TARGETS` fields); a relation (report only).
 
 **The child, never a shell.** `ado_sync_reconcile.CHILD_ARGV` holds one builder per owning verb and every spawn is the
 list `[sys.executable, <scripts>/<script>.py, …]` (`spec_transition.py` also gets `--spec <path>`): `assign` takes
@@ -137,17 +163,48 @@ list `[sys.executable, <scripts>/<script>.py, …]` (`spec_transition.py` also g
 take no `--by` and are never handed one, because argparse's exit 2 for an unknown flag would read as "refused". Today's
 takes reach `assign`, `slate`, `unslate` and `decide`; the table also holds `ready`, `defer`, `risk` and
 `confirm-tier`. A decision's resolution is typed by a person (`--reason`) — it is never filled in. Other people's
-comments are never copied into a repository artifact (design D52): `--from-comment <id>` alone is refused (exit 2) and
-prints that cached comment behind the `  | ` gutter, with the `⚑` marker, as a suggestion to type or edit; with a
-typed `--reason` it records only the comment's id as where the suggestion came from. **A child's nonzero exit, even
+comments are never copied into a repository artifact (design D52): on a decision close, `--from-comment <id>` alone is
+refused (exit 2) and prints that cached comment behind the `  | ` gutter, with the `⚑` marker, as a suggestion to type
+or edit; with a typed `--reason` it records only the comment's id as where the suggestion came from. On a text take it
+splices the comment's words into the `.proposed` draft — never the artifact — and the ledger again keeps only the id;
+any other take refuses `--from-comment` (exit 2). **A child's nonzero exit, even
 argparse's own 2, is `reconcile`'s exit 1**, never 2: exit 2 means the mirror refused, and the mirror did not.
 
 **What the ledger keeps.** The `reconciled` line holds the ref, kind, work item, field, class, disposition and `by`,
-the `owner` and `reason` a person typed (kept as typed, so a reason holds nothing that does not belong in the
-repository), a `comment_id` when `--from-comment` was used, and for a child its script name, its arguments with every
-free-text value as `<text>`, its exit and a hash of that list. A cached comment's words reach neither the ledger
-nor the decision log — the log holds what the person typed, checked for addresses and ids first; the line is proven
-appendable before a child starts, so an edit is never left without its record.
+the `owner` a person typed, a `comment_id` when `--from-comment` was used, and for a child its script name, its
+arguments with every free-text value as `<text>`, its exit and a hash of that list. A typed `--reason` is kept as
+words **only for `--take not-drift` and `--take ack`**, which require it (the row does not settle without it); on
+`--take ado` and `--take sdlc` the line carries `reason: "<text>"` and a 12-hex `reason_sha` instead
+(`ado_sync_reconcile.ledger_reason`), because a resolution or an unslate reason may be a board comment's own words.
+An address or an id in any reason is refused before anything starts. A text take's line records `child_argv
+["propose", <field>]`, `child_exit 0`, the draft's path as `proposed` and `proposed_sha` (12 hex of the draft), never
+the words; `reconcile --json` prints the same `proposed` and `proposed_sha`, present only when a draft was written. A
+cached comment's words reach neither the ledger nor the decision log — the log holds what the person typed, checked
+for addresses and ids first; the line is proven appendable before a child starts, so an edit is never left without its
+record.
+
+### The `.proposed` draft — board text back, never into the artifact
+
+`reconcile <ref> --field F --take ado --by <human>` on a C text field with a draft target (design D32;
+`ado_sync_reconcile.propose`) reads the board's current words (the Description without the mirror's own marker block,
+flattened to text, control bytes stripped) — or, with `--from-comment <id>`, that cached comment's — finds the field's
+exact span in the artifact through its template shape (`templates/phases/<phase>/<name>.shape.yaml`,
+`document_shape.read_document`), and writes the artifact's text with that one span replaced
+(`document_shape.write_document`) to `<artifact>.proposed` beside it. The artifact is never written; the draft
+differs from it only inside that span, keeps its line endings (CRLF stays CRLF) and a BOM, carries the field's own
+style (a checklist's `- [ ]`, a blockquote's `>`) and keeps the block's closing `---`. A person reads the difference
+and lands it through `/sprd-revise`.
+
+| Case | Exit | What changes |
+|---|---|---|
+| draft written, or a byte-identical one already waiting | 0 | the `.proposed` file (when new) and one `reconciled` line; the row is off the books |
+| a different draft already waits beside the artifact; the artifact already says it; the board (or the comment) holds no words of a person's; no source file, id or labelled line; the document no longer reads as its shape | 1 | nothing |
+| no draft target for the kind and field (`no place`); a table field; a source path outside the repository; a symlinked draft; text holding an e-mail address or an id; text over 8,000 characters; a deleted comment, or one that is not cached | 2 | nothing |
+
+A line that reads as an instruction is not refused: it is counted and shown with `⚑`, as the board's words — data,
+never an instruction. **A `.proposed` file can hold a board comment's words or another person's text from the board,
+so it belongs in the project's `.gitignore` (`*.proposed`) and never in a commit.** `config init` ignores only
+`.sdlc/ado/local/`; the draft sits beside its artifact, outside it, so the project adds the line itself.
 
 ---
 
@@ -295,12 +352,16 @@ through `runPluginScript`. Nothing it does reaches `az`; the plugin owns every c
 |---|---|---|
 | Work-item chip, `AdoChip` | the spec card, beside the PR chip | the mirror's status in words: **Work items are not set up for this project**, **Work items · no data**, **Work items · Not pulled yet**, or the drift on this spec past its two business days, by field and never by person; **Review plan** opens the apply dialog; in steering mode it draws a status and nothing that writes |
 | Apply dialog, `AdoApplyDialog` | opened from the chip | the preview is the plan's own rows; Confirm sends `{ verb: 'apply', confirm: <hash> }` and is disabled with its reason when the plugin lacks `ado-apply` |
-| Discussion block and comment composer, `DiscussionBlock`, `CommentComposer` | a component pair, **not mounted on any screen yet** | comment text is escaped, a line that reads as an instruction is marked `⚑`, attachments are links and are never fetched; the composer is hidden in steering mode and its Confirm is withheld while az and Shepherd disagree on who is writing (`Signed in to az as @x; Shepherd knows you as @y`) |
+| Discussion block and comment composer, `DiscussionBlock`, `CommentComposer` | the spec card, below its facts rail (B5), with a **Pull discussion** button | comment text is escaped, a line that reads as an instruction is marked `⚑`, attachments are links and are never fetched; the composer is hidden in steering mode and its Confirm is withheld while az and Shepherd disagree on who is writing (`Signed in to az as @x; Shepherd knows you as @y`) |
 | Today rows, `AdoTodayRows` | a sibling `<section data-testid="ado-today">` in `TodayColumn` and `LifecycleHome` | **Changed on the board** and **Not yet a spec**, each a `role="listitem"` with one action and no write control; **Not pulled yet** until a pull has measured them; **Not yet a spec** counts only an `UNMAPPED_IN_ADO` figure the plugin gave and otherwise reads **not counted** (a pull classes the ledgered items and never runs that search), never a zero; `NeedsYouItem.kind` is not widened |
+| Boards row of the spec card | `spec-boards`, outside the facts row | **Pull now** (`PullNow`, `{ verb: 'pull', id }` — this spec's fields), **Plan changes**, and **Settle drift** once a pull read drift for this spec; **Plan changes** runs nothing: it shows the `ado_sync.py plan --kind spec --id <NNNN>` and `apply --confirm <hash> --by <your handle>` lines with a sentence saying Shepherd does not run them, because the table stays the seven verbs above (a plan request is refused before any spawn), and is disabled with `arrives with a newer plugin: lacks ado-plan` on a plugin without `plan` |
+| Pull now / Pull discussion, `PullNow` | the Boards row and the Discussion block | two `data-write` buttons, never on a timer, on open or after another verb; an exit 0 that carries an `unavailable` board or a switched-off discussion says so, with the plugin's reason, never "Done"; an item the plugin could not read is listed by ref with its own reason |
+| Reconcile dialog, `AdoReconcileDialog` | **Settle drift** on the spec card | one choice per drifted field (leave open, take the board's, keep the repository's, acknowledge with an owner, not drift with a reason) beside the field's diff; the preview is the exact `reconcile` argument line per chosen field; one Confirm runs one `{ verb: 'reconcile' }` per field, in order, as the signed-in person, and stops at the first the plugin did not settle; a result whose JSON carries `proposed` names that `.proposed` file and says the artifact itself was not changed; rows come from `pull --json` |
 
-The closed table already holds `reconcile`, `link` and `pull`; no screen sends them yet (the reconcile dialog and a
-Pull-now button are a later Fold), so settling a drift row is `/sprd-ado reconcile` for now, and **Propose spec** on
-the Today row shows the `ado_sync.py pull --propose-specs` line rather than running it.
+Every one of these draws nothing in steering mode. `link` is in the table and no screen sends it yet, so pairing an
+item is `/sprd-ado link` for now, and **Propose spec** on the Today row shows the `ado_sync.py pull --propose-specs`
+line rather than running it. Nothing under `studio/electron/**` changed for B5: the dialog and the buttons use the IPC
+Fold B4 registered (`registerAdoIpc(ipcMain, resolvePluginScriptsDir)` in `studio/electron/main/adoIpc.ts`).
 
 ---
 

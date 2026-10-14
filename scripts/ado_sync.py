@@ -2722,6 +2722,9 @@ def _reconcile(args, repo_root: Path, *, by: str, ref: str, kind: str, owner: st
            "child": None if result is None else {"verb": child["verb"], "argv": child["shown"], "exit": exit_code,
                                                  "stdout": result["stdout"], "stderr": result["stderr"]},
            "notes": notes}
+    if "proposed" in fields:   # the `.proposed` the take wrote, as the ledger line names it (the desktop dialog reads it)
+        out["proposed"] = fields.get("proposed")
+        out["proposed_sha"] = fields.get("proposed_sha")
     if failed:
         out["exit"] = 1
     lines = [f"{'Not reconciled' if failed else 'Reconciled'} {ref} {label} ({cls}): {disposition} by {by}"]
