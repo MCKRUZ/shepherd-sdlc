@@ -15,12 +15,19 @@
 //     hash comes from `comment --json`, and is checked against `HASH` here before it is sent).
 // Validation is shape only — ids, hashes, the four takes, a required field present — never a judgement; the
 // plugin stays the truth on everything else (AI `--by`, posture, identity, the stale hash, a non-A take).
+//
+// B5-P4 appends one read, `planSpec` (`plan --kind spec --id <NNNN>`): the spec card's chip needs a plan to offer
+// "Review plan", and the table is the only way a renderer reaches `ado_sync.py` — so it is a request here, over the
+// same single channel, not a second IPC. It carries no `--by` (a read) and is never sent on a timer: `plan` writes a
+// plan file and a ledger line, so the card asks for it only when a person clicks. And `reconcile` takes an sdlc ref
+// only (`SDLC_REF`): the CLI refuses a `#<work item>` there, so the table does too.
 import { CAPABILITIES } from './reasons'
 
 export type AdoVerbRequest =
   | { verb: 'apply'; confirm: string } | { verb: 'reconcile'; ref: string; field: string; take: 'ado' | 'sdlc' | 'ack' | 'not-drift'; owner?: string; reason?: string }
   | { verb: 'link'; ref: string; workItem: string } | { verb: 'pull'; id?: string } | { verb: 'pullDiscussion'; id?: string }
   | { verb: 'show'; ref: string } | { verb: 'comment'; ref: string; message: string }
+  | { verb: 'planSpec'; spec: string }
 
 export type AdoVerb = AdoVerbRequest['verb']
 export type AdoTake = Extract<AdoVerbRequest, { verb: 'reconcile' }>['take']
@@ -31,6 +38,11 @@ export const SCRIPT = 'ado_sync.py'
 export const HASH = /^[0-9a-f]{12}$/
 /** A repository ref (`boards_contract.REF_RE`) or a raw `#<work item>`. */
 export const REF = /^(sdlc:[a-z]+:[A-Za-z0-9-]+|#\d+)$/
+/** An sdlc ref and nothing else (`boards_contract.REF_RE`): what `reconcile` and `link` take — their CLIs refuse a
+ * `#<work item>` there, so the table refuses it before a spawn. `REF` above is the wider `show`/`pull`/`comment` form. */
+export const SDLC_REF = /^sdlc:[a-z]+:[A-Za-z0-9-]+$/
+/** A spec's number as `row.spec` spells it (`0004`; four digits at least): `planSpec`'s one argument. */
+export const SPEC_ID = /^[0-9]{4,}$/
 /** A work item field reference name (`ado_sync_model.REFERENCE_NAME_RE`): System.State, Custom.RiskTier. */
 export const FIELD = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/
 /** `link --work-item`: `4521` or `#4521` — never `AB#4521`. */
@@ -41,8 +53,9 @@ export const BY_FLAG = '--by'
 export const JSON_FLAG = '--json'
 
 /** Every verb the table knows, in its order. */
-export const ADO_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment']
-/** The writes: each carries `--by <actor>` last. The other three are reads and carry no `--by`. */
+export const ADO_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment', 'planSpec']
+/** The writes: each carries `--by <actor>` last. The other four (`pull`, `pullDiscussion`, `show`, `planSpec`) are
+ * reads and carry no `--by`. */
 export const BY_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'comment']
 /** `reconcile --take` (the build kit's verb table; `ado_sync_model.RECONCILE_TAKES`, in its order). */
 export const TAKES: readonly AdoTake[] = ['ado', 'sdlc', 'ack', 'not-drift']
@@ -57,6 +70,7 @@ export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string
   pullDiscussion: CAPABILITIES.adoDiscussion,
   show: CAPABILITIES.adoShow,
   comment: CAPABILITIES.adoComment,
+  planSpec: 'ado-plan',
 }
 
 function isText(value: unknown): value is string {
@@ -89,7 +103,7 @@ export function validateAdoVerbRequest(req: AdoVerbRequest): string[] {
       if (!isText(req.confirm) || !HASH.test(req.confirm)) errors.push(`confirm '${String(req.confirm)}' is not the plan's 12-hex hash`)
       break
     case 'reconcile':
-      ref(req.ref)
+      if (!isText(req.ref) || !SDLC_REF.test(req.ref)) errors.push(`ref '${String(req.ref)}' is not an sdlc:<kind>:<id> ref`)
       if (!isText(req.field) || !FIELD.test(req.field)) {
         errors.push(`field '${String(req.field)}' is not a work item field reference name (System.State, Custom.RiskTier)`)
       }
@@ -117,6 +131,9 @@ export function validateAdoVerbRequest(req: AdoVerbRequest): string[] {
     case 'comment':
       ref(req.ref)
       required(req.message, 'message')
+      break
+    case 'planSpec':
+      if (!isText(req.spec) || !SPEC_ID.test(req.spec)) errors.push(`spec '${String(req.spec)}' is not a spec number (0004)`)
       break
     default:
       errors.push(`'${String((req as { verb?: unknown }).verb)}' is not a Boards verb Shepherd runs`)
@@ -151,6 +168,7 @@ export function buildAdoVerbArgv(req: AdoVerbRequest, actor: string): { ok: true
       break
     case 'show': argv.push('show', req.ref); break
     case 'comment': argv.push('comment', req.ref, `--message=${req.message}`); break
+    case 'planSpec': argv.push('plan', '--kind', 'spec', '--id', req.spec); break
   }
   argv.push(JSON_FLAG)
   if (writes) argv.push(BY_FLAG, actor.trim())

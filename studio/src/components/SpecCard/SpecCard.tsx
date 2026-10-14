@@ -8,11 +8,20 @@
 // the foot's reason is `handoff.py`'s own sentence. One object, ONE screen: the Board's row and a
 // lane card both open this card (plan §3.3); the old spec view's facts rail and dependency
 // neighbourhood ride in the right column under a disclosure, so nothing the Board showed is lost.
+//
+// The Azure Boards zone (B5-P4): the chip stays a status in the facts row (no write control there). Beneath that row
+// a Boards row holds `Pull now` (this spec's fields, `PullNow`), `Plan changes` and — once a pull has read drift for
+// this spec — `Settle drift`; the Discussion block (comment composer inside, `Pull discussion`) sits below the facts
+// rail. `Plan changes` is the one read that gives the chip a plan, and it is a click, not an effect: `plan` writes a
+// plan file and a ledger line, so opening a card never plans. A host that is not Azure DevOps draws none of it
+// (the chip says why); steering mode draws the chip and the read-only discussion rows and nothing that writes.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GitPullRequest } from 'lucide-react'
-import type { ActorInfo, BoardRow, DocumentSection, RosterPerson, SpecCard as SpecCardRead, SprintVerb } from '../../../shared/types'
+import type { ActorInfo, AdoVerbResult, BoardRow, DocumentSection, RosterPerson, SpecCard as SpecCardRead, SprintVerb } from '../../../shared/types'
+import { ADO_VERB_CAPABILITY } from '../../../shared/adoVerbArgv'
+import { hostFeatureReason, WORDING } from '../../../shared/codeHostModel'
 import { samePerson } from '../../../shared/identity'
-import { CAPABILITIES, NO_ACTOR, NO_DATA, NO_PR_YET, VAGUE_LINE_REWRITE } from '../../../shared/reasons'
+import { CAPABILITIES, exitHeading, NO_ACTOR, NO_DATA, NO_PR_YET, newerPlugin, VAGUE_LINE_REWRITE } from '../../../shared/reasons'
 import { slateToBoardRow } from '../../../shared/sprintModel'
 import { BackLink, Button, Card, Chip, Disclosure, Eyebrow, Icon, Notice } from '../../ui'
 import { backlogStore } from '../../stores/backlogStore'
@@ -27,6 +36,11 @@ import { stashBack } from '../../motion/choreo/sharedElement'
 import { PersonRing } from '../brand/figures'
 import { ringFor, riskTone } from '../planning/planningModel'
 import { AdoChip } from '../ado/AdoChip'
+import { BRIDGE_MISSING, pendingRowCount, readAdoPlan, unavailableSentence, type AdoPlanDoc } from '../ado/AdoApplyDialog'
+import { AdoReconcileDialog, readDriftItems, type AdoDriftItem } from '../ado/AdoReconcileDialog'
+import { DiscussionBlock } from '../ado/DiscussionBlock'
+import { PullNow, type PullKind } from '../ado/PullNow'
+import { useConnection } from '../../stores/connectionStore'
 import { ChannelDimensions } from './ChannelDimensions'
 import { FindingsLedger } from './FindingsLedger'
 import { HandoffFoot } from './HandoffFoot'
@@ -37,6 +51,12 @@ import { harnessContext, scopeSections, whyTierNotes } from './specDocument'
 export const BACK_LABEL = '← Back to the board'
 
 export const FACTS_DISCLOSURE = 'Facts and neighbourhood'
+
+/** What `Plan changes` says when the plugin's plan has nothing an apply would send. */
+export const NOTHING_TO_SEND = 'Nothing to send for this spec'
+/** After an apply: the plan the dialog showed is spent. It is NOT dropped (the dialog that is showing the plugin's
+ * answer lives under the chip and unmounts with the plan); the next `Plan changes` replaces it. */
+export const APPLIED_PLAN_AGAIN = 'Applied — plan again to see what is left'
 
 export interface SpecCardProps {
   projectPath: string
@@ -50,9 +70,11 @@ export interface SpecCardProps {
   onOpenSpec?: (row: BoardRow) => void
   /** The host's VerbDialog for the facts rail's reserved sprint verbs; absent → the slots say why. */
   onVerb?: (verb: SprintVerb, row: BoardRow) => void
+  /** Steering mode, for the Boards parts: the chip and the discussion rows, with nothing that writes or asks the board. */
+  steering?: boolean
 }
 
-export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack, onHandOff, onOpenSpec, onVerb }: SpecCardProps) {
+export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack, onHandOff, onOpenSpec, onVerb, steering = false }: SpecCardProps) {
   const root = useRef<HTMLDivElement>(null)
   const title = useRef<HTMLDivElement>(null)
   useEnter(root, 'rise')
@@ -100,7 +122,61 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
     return () => { live = false }
   }, [projectPath, row.path, row.developer, reloads])
 
+  // ── Azure Boards ─────────────────────────────────────────────────────────────────────────────────
+  const connection = useConnection()
+  const boardsOff = connection ? hostFeatureReason(connection, 'workItems') === WORDING.boardsNotConfigured : false
+  const itemRef = `sdlc:spec:${row.spec}`
+  const [plan, setPlan] = useState<AdoPlanDoc | null>(null)
+  const [planSaid, setPlanSaid] = useState<string | null>(null)
+  const [planning, setPlanning] = useState(false)
+  const [drift, setDrift] = useState<AdoDriftItem | null>(null)
+  const [settling, setSettling] = useState(false)
+  const [chipReads, setChipReads] = useState(0)
+  const settledHere = useRef(false)
+  // Another spec, another project: nothing is drawn from the last one.
+  useEffect(() => { setPlan(null); setPlanSaid(null); setDrift(null); setSettling(false) }, [row.spec, projectPath])
+
+  const planChanges = async () => {
+    if (planning) return
+    setPlanning(true)
+    setPlan(null)
+    setPlanSaid(null)
+    try {
+      const studio = window.studio as Partial<typeof window.studio> | undefined
+      if (!studio || typeof studio.runAdoVerb !== 'function') { setPlanSaid(`${exitHeading(null)} · ${BRIDGE_MISSING}`); return }
+      const result = await studio.runAdoVerb(projectPath, { verb: 'planSpec', spec: row.spec })
+      if (result.exitCode !== 0) { setPlanSaid(`${exitHeading(result.exitCode)}${result.stderr.trim() ? ` · ${result.stderr.trim()}` : ''}`); return }
+      const doc = readAdoPlan(result.json)
+      if (!doc) setPlanSaid(`${NO_DATA} — the plugin printed no plan`)
+      else if (doc.unavailable) setPlanSaid(`${unavailableSentence(doc)}${doc.reason ? ` · ${doc.reason}` : ''}`)
+      else if (pendingRowCount(doc) === 0) {
+        const why = doc.rows.map((r) => r.reason).filter((r): r is string => Boolean(r))
+        setPlanSaid(why.length > 0 ? `${NOTHING_TO_SEND} · ${why.join('; ')}` : NOTHING_TO_SEND)
+      } else setPlan(doc)
+    } catch (err) {
+      setPlanSaid(`${exitHeading(null)} · ${err instanceof Error ? err.message : 'The request did not reach the plugin.'}`)
+    } finally {
+      setPlanning(false)
+    }
+  }
+
+  // A pull of this spec's fields changed what the ledger says: the chip reads it again, a plan drawn before it may be
+  // stale (the plugin refuses a stale hash at apply, but the card should not offer it), and the drift it read is
+  // what `Settle drift` opens.
+  const pulledHere = (what: PullKind, result: AdoVerbResult) => {
+    if (what !== 'fields') return
+    setChipReads((n) => n + 1)
+    setPlan(null)
+    setPlanSaid(null)
+    setDrift(readDriftItems(result.json).find((i) => i.ref === itemRef) ?? null)
+  }
+  const closeSettle = () => {
+    setSettling(false)
+    if (settledHere.current) { settledHere.current = false; setDrift(null) }   // what settled is not offered again
+  }
+
   const has = (cap: string) => capabilities === undefined || capabilities.includes(cap)
+  const planReason = !actor ? NO_ACTOR : capabilities !== undefined && !capabilities.includes(ADO_VERB_CAPABILITY.planSpec) ? newerPlugin(ADO_VERB_CAPABILITY.planSpec) : undefined
   const writeReason = actor === null ? NO_ACTOR : undefined
   const people = roster ?? []
   const me = actor?.name ?? null
@@ -149,10 +225,26 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
         {pr ? (
           <a href={pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-ident text-accent-text hover:underline"><Icon icon={GitPullRequest} size={16} />#{pr.number}</a>
         ) : <span className="text-ink-3" data-testid="no-pr">{NO_PR_YET}</span>}
-        <AdoChip projectPath={projectPath} specId={row.spec} capabilities={capabilities} actor={actor} />
+        <AdoChip key={`ado-${chipReads}`} projectPath={projectPath} specId={row.spec} capabilities={capabilities} actor={actor} steering={steering} plan={plan} onApplied={() => setPlanSaid(APPLIED_PLAN_AGAIN)} />
         {row.engReview && <Chip tone="neutral" casing="state">eng {row.engReview}</Chip>}
         {row.dataReview && <Chip tone="neutral" casing="state">data {row.dataReview}</Chip>}
       </div>
+
+      {/* The Boards row sits OUTSIDE the facts row: the chip's pin is "no write control at rest in spec-facts". */}
+      {!steering && !boardsOff && (
+        <div data-testid="spec-boards" className="mt-2 flex flex-wrap items-start gap-2 text-xs">
+          <PullNow projectPath={projectPath} capabilities={capabilities ?? null} itemRef={itemRef} scope="fields" onPulled={pulledHere} />
+          <div className="flex min-w-0 flex-col gap-1">
+            <Button size="sm" variant="secondary" data-write="" loading={planning} loadingLabel="Planning…" disabled={Boolean(planReason)} disabledReason={planReason} onClick={planChanges}>Plan changes</Button>
+            {planSaid ? <p data-testid="plan-result" role="status" className="text-xs text-ink-2 [overflow-wrap:anywhere]">{planSaid}</p> : null}
+          </div>
+          {drift ? <Button size="sm" variant="secondary" onClick={() => setSettling(true)}>Settle drift</Button> : null}
+        </div>
+      )}
+      {/* Mounted only while it is open: every opening starts from the drift the last pull read, with nothing chosen. */}
+      {drift && settling && !steering && !boardsOff ? (
+        <AdoReconcileDialog open projectPath={projectPath} item={drift} capabilities={capabilities} actor={actor} onClose={closeSettle} onSettled={() => { settledHere.current = true; setChipReads((n) => n + 1) }} />
+      ) : null}
 
       {error && <Notice tone="error" className="mt-4">{error}</Notice>}
       {!card && !error && <p role="status" aria-busy="true" className="mt-4 text-sm text-ink-3">Reading the spec…</p>}
@@ -200,6 +292,9 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
                 <SpecNeighbourhood row={row} onOpenSpec={onOpenSpec ?? null} rowFor={rowFor} />
               </div>
             </Disclosure>
+            {!boardsOff && (
+              <DiscussionBlock projectPath={projectPath} itemRef={itemRef} capabilities={capabilities ?? null} steering={steering} pull="discussion" executedAs={plan?.executedAs ?? null} />
+            )}
           </div>
         </div>
       )}

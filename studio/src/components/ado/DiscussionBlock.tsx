@@ -1,8 +1,9 @@
 // The Azure Boards discussion block (build kit §5 B4-P4). It shows what the plugin's `ado_sync.py show --json`
 // printed for one item — and nothing it did not: a handle, a relative age, `edited ×N` / `deleted`, the
 // comment's text, a `⚑` on a line the plugin flagged as reading like an instruction, and attachments as links.
-// It reads the discussion through the closed `show` request and refreshes it with `pullDiscussion` (a
-// `data-write`, never on a timer); the renderer never opens the plugin's cache files itself.
+// It reads the discussion through the closed `show` request and refreshes it with `PullNow` — `Pull now` (the
+// item's fields) and `Pull discussion` (its comments), each a `data-write`, never on a timer; the renderer never
+// opens the plugin's cache files itself.
 //
 // Comment text is untrusted board content. It reaches the screen only as React text nodes — never markup —
 // and the plugin has already quoted every comment line (`  | `) so none can pass for the tool's own header; this
@@ -10,13 +11,15 @@
 // Attachments are links the person may open and that Shepherd never fetches: http(s) only, no media element,
 // `rel="noreferrer noopener"`; an address that is not http(s) (or none) is a name, not a link.
 //
-// Steering mode (`steering`) is read-only: the rows show, `Pull discussion` and the composer do not exist.
+// Steering mode (`steering`) is read-only: the rows show, the pull buttons and the composer do not exist.
 import { useCallback, useEffect, useState } from 'react'
 import { ADO_VERB_CAPABILITY, validateAdoVerbRequest, type AdoVerbRequest } from '../../../shared/adoVerbArgv'
 import { formatRelative } from '../../../shared/format'
 import { exitHeading, NOT_PULLED_YET, newerPlugin, UNDATED } from '../../../shared/reasons'
-import { Button, Chip, Eyebrow } from '../../ui'
+import type { AdoVerbResult } from '../../../shared/types'
+import { Chip, Eyebrow } from '../../ui'
 import { BRIDGE_MISSING, CommentComposer, runAdo } from './CommentComposer'
+import { PullNow, type PullKind, type PullScope } from './PullNow'
 
 /** The plugin's quote prefix, flag mark and flag suffix (`ado_discussion_map.QUOTE`, `FLAG_MARK`): the one
  * place a line of comment text is told from the tool's own words. */
@@ -139,8 +142,13 @@ export interface DiscussionBlockProps {
   itemRef: string
   /** `generate_status.py --json` capabilities; null while unknown. */
   capabilities: readonly string[] | null
-  /** Steering mode: rows only — no `Pull discussion`, no composer. */
+  /** Steering mode: rows only — no pull buttons, no composer. */
   steering?: boolean
+  /** Which pull buttons ride in the header: both (the default), or only `Pull discussion` when the host draws
+   * `Pull now` itself (the spec card keeps it beside the chip). */
+  pull?: PullScope
+  /** Called after a pull that read the board, with what the plugin answered. */
+  onPulled?: (what: PullKind, result: AdoVerbResult) => void
   /** Passed through to the composer: the roster handle az is signed in as, when the host knows it. */
   executedAs?: string | null
   /** Attachments the host knows for this item. Links, never fetched. */
@@ -149,10 +157,8 @@ export interface DiscussionBlockProps {
   now?: number | Date
 }
 
-export function DiscussionBlock({ projectPath, itemRef, capabilities, steering = false, executedAs, attachments = [], now }: DiscussionBlockProps) {
+export function DiscussionBlock({ projectPath, itemRef, capabilities, steering = false, pull = 'both', onPulled, executedAs, attachments = [], now }: DiscussionBlockProps) {
   const [state, setState] = useState<Phase>({ phase: 'loading' })
-  const [pulling, setPulling] = useState(false)
-  const [pullResult, setPullResult] = useState<string | null>(null)
   const missing = (cap: string) => (capabilities !== null && !capabilities.includes(cap) ? newerPlugin(cap) : null)
   const showMissing = missing(ADO_VERB_CAPABILITY.show)
 
@@ -175,30 +181,20 @@ export function DiscussionBlock({ projectPath, itemRef, capabilities, steering =
     return () => { live = false }
   }, [load, showMissing])
 
-  const pull = async () => {
-    if (pulling) return
-    setPulling(true)
-    setPullResult(null)
-    try {
-      const result = await runAdo(projectPath, { verb: 'pullDiscussion', id: itemRef })
-      if (result && result.exitCode === 0) await load()
-      else setPullResult(result ? `${exitHeading(result.exitCode)}${result.stderr.trim() ? ` · ${result.stderr.trim()}` : ''}` : `${exitHeading(null)} · ${BRIDGE_MISSING}`)
-    } finally {
-      setPulling(false)
-    }
+  // The cache a Pull discussion just wrote is what `show` reads: read it again. A fields pull changes no comment.
+  const pulled = (what: PullKind, result: AdoVerbResult) => {
+    if (what === 'discussion') void load()
+    onPulled?.(what, result)
   }
 
-  const pullReason = missing(ADO_VERB_CAPABILITY.pullDiscussion)
   const view = state.phase === 'ready' ? state.view : null
   const links = attachments.map((a) => ({ name: a.name, href: safeHref(a.url) }))
 
   return (
     <section aria-label="Board discussion" data-testid="discussion-block" className="space-y-2">
-      <div className="flex min-h-7 items-center justify-between gap-3">
+      <div className="flex min-h-7 items-start justify-between gap-3">
         <Eyebrow as="h3">Discussion</Eyebrow>
-        {!steering ? (
-          <Button size="sm" variant="secondary" data-write="" loading={pulling} loadingLabel="Pulling…" disabled={Boolean(pullReason)} disabledReason={pullReason ?? undefined} onClick={pull}>Pull discussion</Button>
-        ) : null}
+        <PullNow projectPath={projectPath} capabilities={capabilities} itemRef={itemRef} scope={pull} steering={steering} onPulled={pulled} className="items-end" />
       </div>
       {state.phase === 'loading' ? <p className="text-xs text-ink-3">Reading the discussion…</p> : null}
       {state.phase === 'unavailable' ? <p className="text-xs text-ink-3 [overflow-wrap:anywhere]" data-testid="discussion-unavailable">{state.message}</p> : null}
@@ -226,7 +222,6 @@ export function DiscussionBlock({ projectPath, itemRef, capabilities, steering =
       ) : null}
       {view?.asOf ? <p className="font-mono text-ident text-ink-3" data-testid="discussion-as-of">as of {stamp(view.asOf)}</p> : null}
       {view && view.notes.length > 0 ? <ul className="m-0 list-none space-y-0.5 p-0 text-[11px] text-ink-3">{view.notes.map((n) => <li key={n} className="[overflow-wrap:anywhere]">{n}</li>)}</ul> : null}
-      {pullResult ? <p className="text-xs text-ink-2 [overflow-wrap:anywhere]" data-testid="discussion-pull-result" role="status">{pullResult}</p> : null}
       {links.length > 0 ? (
         <div data-testid="discussion-attachments" className="space-y-0.5 text-xs">
           <p className="font-medium text-ink-2">Attachments</p>
