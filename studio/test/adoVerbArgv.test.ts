@@ -8,8 +8,8 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ADO_SYNC_COUNT_KEYS, ADO_SYNC_VIEW_KEYS, type AdoSyncView } from '../shared/adoTypes'
 import {
-  ADO_VERB_CAPABILITY, ADO_VERBS, BY_FLAG, BY_VERBS, buildAdoVerbArgv, HASH, REF, SCRIPT, TAKES, validateAdoVerbRequest,
-  type AdoVerbRequest,
+  ADO_VERB_CAPABILITY, ADO_VERBS, BY_FLAG, BY_VERBS, buildAdoVerbArgv, HASH, REF, SCRIPT, SDLC_REF, SPEC_ID, TAKES,
+  validateAdoVerbRequest, type AdoVerbRequest,
 } from '../shared/adoVerbArgv'
 import * as reasons from '../shared/reasons'
 
@@ -45,6 +45,9 @@ describe('golden argv per verb', () => {
     [{ verb: 'show', ref: '#4521' }, ['show', '#4521', '--json']],
     [{ verb: 'comment', ref: 'sdlc:spec:0004', message: 'Ready for review' },
       ['comment', 'sdlc:spec:0004', '--message=Ready for review', '--json', '--by', ACTOR]],
+    // B5-P4: the one read that gives the spec card's chip a plan (`plan --kind spec --id <NNNN>`); a read, so no --by.
+    [{ verb: 'planSpec', spec: '0004' }, ['plan', '--kind', 'spec', '--id', '0004', '--json']],
+    [{ verb: 'planSpec', spec: '10234' }, ['plan', '--kind', 'spec', '--id', '10234', '--json']],
   ]
 
   it.each(GOLDEN_ARGV)('%j', (req, expected) => {
@@ -54,7 +57,7 @@ describe('golden argv per verb', () => {
   it('covers every verb, in the order the table lists them', () => {
     const verbs = new Set(GOLDEN_ARGV.map(([req]) => req.verb))
     for (const v of ADO_VERBS) expect(verbs.has(v), v).toBe(true)
-    expect([...ADO_VERBS]).toEqual(['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment'])
+    expect([...ADO_VERBS]).toEqual(['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment', 'planSpec'])
     expect([...BY_VERBS]).toEqual(['apply', 'reconcile', 'link', 'comment'])
     expect(SCRIPT).toBe('ado_sync.py')
     expect(BY_FLAG).toBe('--by')
@@ -77,6 +80,7 @@ describe('golden argv per verb', () => {
   it('a read needs no actor; a write without one is refused before any spawn', () => {
     expect(argv({ verb: 'show', ref: '#4521' }, '')).toEqual(['show', '#4521', '--json'])
     expect(argv({ verb: 'pull' }, '   ')).toEqual(['pull', '--json'])
+    expect(argv({ verb: 'planSpec', spec: '0004' }, '')).toEqual(['plan', '--kind', 'spec', '--id', '0004', '--json'])
     for (const req of [
       { verb: 'apply', confirm: '0a1b2c3d4e5f' }, { verb: 'link', ref: 'sdlc:spec:0004', workItem: '4521' },
       { verb: 'comment', ref: 'sdlc:spec:0004', message: 'x' },
@@ -179,11 +183,68 @@ describe('refusals before any spawn — shape only, never a judgement', () => {
   })
 })
 
+describe('reconcile takes an sdlc ref only — the CLI refuses #<id> there (B5-P4)', () => {
+  const base = { verb: 'reconcile' as const, field: 'System.State', take: 'sdlc' as const }
+
+  it("SDLC_REF is the plugin's boards_contract.REF_RE: sdlc:<kind>:<id>, never a #<work item>", () => {
+    for (const ok of ['sdlc:spec:0004', 'sdlc:decision:DL-03', 'sdlc:feature:FE-02']) expect(SDLC_REF.test(ok), ok).toBe(true)
+    for (const bad of ['#4521', 'AB#4521', '4521', 'sdlc:Spec:0004', 'sdlc:spec:', 'sdlc:spec:0004; rm', '-x', 'sdlc:spec:0004\n']) {
+      expect(SDLC_REF.test(bad), bad).toBe(false)
+    }
+    // the plugin's own pattern, read as text so a change there turns this red
+    const contract = readFileSync(resolve(PLUGIN, 'scripts', 'boards_contract.py'), 'utf-8')
+    const m = /^REF_RE: Final = re\.compile\(r"([^"]+)"\)/m.exec(contract)
+    expect(m, 'REF_RE in scripts/boards_contract.py').not.toBeNull()
+    expect(SDLC_REF.source).toBe(m![1])
+  })
+
+  it('a #<work item> ref is refused for reconcile (it is still fine for show, pull and comment)', () => {
+    expect(validateAdoVerbRequest({ ...base, ref: '#4521' })).toEqual(["ref '#4521' is not an sdlc:<kind>:<id> ref"])
+    expect(buildAdoVerbArgv({ ...base, ref: '#4521' }, ACTOR)).toEqual({ ok: false, errors: ["ref '#4521' is not an sdlc:<kind>:<id> ref"] })
+    expect(validateAdoVerbRequest({ ...base, ref: 'sdlc:spec:0004' })).toEqual([])
+    expect(validateAdoVerbRequest({ verb: 'show', ref: '#4521' })).toEqual([])
+    expect(validateAdoVerbRequest({ verb: 'pull', id: '#4521' })).toEqual([])
+    expect(validateAdoVerbRequest({ verb: 'comment', ref: '#4521', message: 'm' })).toEqual([])
+  })
+
+  it('a non-text ref, or one that smuggles a flag, never builds an argv', () => {
+    for (const bad of [undefined, null, 4521, '', '--take', 'sdlc:spec:0004 --take ado']) {
+      expect(buildAdoVerbArgv({ ...base, ref: bad as never }, ACTOR).ok, String(bad)).toBe(false)
+    }
+  })
+})
+
+describe('planSpec — the one read that gives the chip a plan (B5-P4)', () => {
+  it('names a spec by its number; a ref, a short number or a flag is refused before any spawn', () => {
+    expect(SPEC_ID.test('0004')).toBe(true)
+    expect(SPEC_ID.test('10234')).toBe(true)
+    for (const bad of ['4', '004', 'sdlc:spec:0004', '#4521', '--all', '0004 --all', '0004\n', '']) expect(SPEC_ID.test(bad), JSON.stringify(bad)).toBe(false)
+    expect(validateAdoVerbRequest({ verb: 'planSpec', spec: '0004' })).toEqual([])
+    expect(validateAdoVerbRequest({ verb: 'planSpec', spec: 'sdlc:spec:0004' })).toEqual(["spec 'sdlc:spec:0004' is not a spec number (0004)"])
+    expect(validateAdoVerbRequest({ verb: 'planSpec', spec: '--all' })).toEqual(["spec '--all' is not a spec number (0004)"])
+    expect(validateAdoVerbRequest({ verb: 'planSpec', spec: 4 as never })).toEqual(["spec '4' is not a spec number (0004)"])
+  })
+
+  it('is a read: not a --by verb, no --by, one --json, always --kind spec', () => {
+    expect([...BY_VERBS]).not.toContain('planSpec')
+    const a = argv({ verb: 'planSpec', spec: '0004' })
+    expect(a).toEqual(['plan', '--kind', 'spec', '--id', '0004', '--json'])
+    expect(a.some((x) => x.startsWith('--by'))).toBe(false)
+  })
+
+  it("the plugin's plan verb has those flags (read as text: a rename there turns this red)", () => {
+    const cli = readFileSync(resolve(PLUGIN, 'scripts', 'ado_sync.py'), 'utf-8')
+    expect(cli).toMatch(/sub\.add_parser\("plan"/)
+    expect(cli).toMatch(/p\.add_argument\("--kind", action="append"/)
+    expect(cli).toMatch(/p\.add_argument\("--id", action="append", metavar="ID",\s+help="Only this item: its id \(0004/)
+  })
+})
+
 describe('each verb names the capability that gates it', () => {
   it('maps to the plugin capability ids, the six Boards ones through CAPABILITIES', () => {
     expect(ADO_VERB_CAPABILITY).toEqual({
       apply: 'ado-apply', reconcile: 'ado-reconcile', link: 'ado-link', pull: 'ado-pull', pullDiscussion: 'ado-pull-discussion',
-      show: 'ado-show', comment: 'ado-comment',
+      show: 'ado-show', comment: 'ado-comment', planSpec: 'ado-plan',
     })
     expect(ADO_VERB_CAPABILITY.apply).toBe(reasons.CAPABILITIES.adoApply)
     expect(ADO_VERB_CAPABILITY.reconcile).toBe(reasons.CAPABILITIES.adoReconcile)
