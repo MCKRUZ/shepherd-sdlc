@@ -1,13 +1,16 @@
-"""The breadth sources for the Boards mirror: NFRs, business rules, discovery questions and the lifecycle item (B5-P1).
+"""The breadth sources for the Boards mirror: NFRs, business rules, discovery questions, the lifecycle item and
+measurements (B5-P1).
 
 Fold B5 (spec 0038) opens the rest of the Phase-0, Phase-1 and Build record to the board, each kind opt-in (none is in
-the starter `kinds:`). `ado_sync_sources` reads the Build record; this module adds four kinds to its extend-only
-`SOURCES` table, so `plan --kind nfr` and friends plan them through the same handshake as every other kind:
+the starter `kinds:`). `ado_sync_sources` reads the Build record; this module adds the five kinds of
+`ado_sync_model.BREADTH_KINDS` to its extend-only `SOURCES` table, so `plan --kind nfr` and friends plan them through
+the same handshake as every other kind:
 
-    nfr        a `NFR-xxx` row of `non-functional-requirements.md`, parented to the Domain whose heading it sits under
-    rule       a `BR-NN` row of `business-rules.md`, parented to the Feature whose brief names it
-    question   a `Q-NN` entry of `question-list.md`
-    lifecycle  one item that mirrors `.sdlc/state.yaml`: the phase, gate and sign-off table in its Description
+    nfr          a `NFR-xxx` row of `non-functional-requirements.md`, parented to the Domain whose heading it sits under
+    rule         a `BR-NN` row of `business-rules.md`, parented to the Feature whose brief names it
+    question     a `Q-NN` entry of `question-list.md`
+    lifecycle    one item that mirrors `.sdlc/state.yaml`: the phase, gate and sign-off table in its Description
+    measurement  a threshold row of a `success-criteria.md` dimension, parented to that dimension's Outcome
 
 It only reads: it writes no file, spawns nothing, makes no network call and refuses a source that resolves outside
 `repo_root`. It is a library part, usable two ways like every part of the plugin:
@@ -20,8 +23,9 @@ It only reads: it writes no file, spawns nothing, makes no network call and refu
 
 A projection is the dict `ado_sync_sources` documents (`ref`, `kind`, `id`, `title`, `status`, `fields`, `tags`,
 `parent_ref`, `parent_note`, `related_refs`, `source_path`, `source_sha`, plus `notes`). A ref is `sdlc:<kind>:<id
-without its family prefix>`: `sdlc:nfr:P01`, `sdlc:rule:01`, `sdlc:question:01`, `sdlc:lifecycle:project`; the segment
-is the kind, so `ado_sync` reads a ledgered ref back to its kind with no table of its own.
+without its family prefix>`: `sdlc:nfr:P01`, `sdlc:rule:01`, `sdlc:question:01`, `sdlc:lifecycle:project`; a
+measurement's id has no family prefix, so its ref is the id whole (`sdlc:measurement:1-pass`). The segment is the kind,
+so `ado_sync` reads a ledgered ref back to its kind with no table of its own.
 
   nfr        `NFR ID | Requirement | ...` tables, found by their header (never by position). The title is the
              Requirement cell. The parent is `sdlc:domain:<slug>` of the nearest enclosing heading that is a domain of
@@ -50,14 +54,26 @@ is the kind, so `ado_sync` reads a ledgered ref back to its kind with no table o
              the signer only when it is a roster-style handle; a name or an address is never shown). A phase with no
              recorded gate reads "no gate recorded", never a zero count. `fields["description_rows"]` carries the same
              rows as data. A `state.yaml` that is absent is no row; one that is not a mapping is a `ValueError`.
+  measurement  one row per threshold row of a dimension's `| Outcome | Threshold | How We'll Measure |` table in
+             `success-criteria.md`, read through `ado_sync_sources_tree.load_outcomes` so a measurement and the
+             Outcome it hangs under read the same rows (the design's §6.1). The id is `<dimension number>-<slug of the
+             Outcome cell>` (`1-pass`); the same Outcome cell twice in one dimension is a `ValueError`. The parent is
+             that dimension's Outcome (`sdlc:outcome:<n>-<slug>`, the ref the outcome source makes). The title is the
+             row's Outcome cell; the Description block is its threshold and how-measured text (the filled cells only;
+             none filled is no block and a note). A row with no Outcome cell is not a measurement; one that still
+             holds template placeholders is listed with a note naming the columns. It lands only on the type
+             `types.measurement` pins (a Key-Result-style type, validated against the process): there is no default,
+             so without one the row has no type, `plan` shows it unmapped (no item), and a note says the threshold
+             stays in its Outcome's block. State and any actual-value field are the board's: none is pushed.
 
 Which work item type each kind lands on is chosen here, the way the findings source does, and travels as the neutral
 keys `fields["type_name"]` and `["type_route"]` that `ado_sync` reads for a row whose source names one: the kind's own
 `types.<kind>` pin when there is one (validated against the process, and never replaced by a default when the process
 lacks it); otherwise the design's default - lifecycle on the type epics land on, rule on the type specs land on
 (RequirementCategory), nfr on the type requirements land on; a question has no default (`ado_schema_map.CANDIDATES`
-lists what to pin). With no type, no type-only field and no State is set, and a note says why. `states.<kind>` is
-applied to the chosen type; `fields.<kind>` is not, and a row says so when the config names one.
+lists what to pin), and neither has a measurement (only `types.measurement`). With no type, no type-only field and no
+State is set, and a note says why. `states.<kind>` is applied to the chosen type; `fields.<kind>` is not, and a row
+says so when the config names one.
 
 Nothing a person is identified by reaches a projection. Text taken from an artifact has any e-mail address or GUID
 replaced before it is used, the roster is never read (so no `System.AssignedTo` is set), and an approver, an answerer
@@ -65,10 +81,10 @@ or a signer is never copied unless it is already a `@handle`.
 
 Honesty: a thing that is not known is absent or None with a note, never defaulted; an absent artifact is no rows.
 
-On import the module registers its four loaders with `ado_sync_sources` (`SOURCES["nfr"|"rule"|"question"|
-"lifecycle"]`), extend-only: it sets its own four keys and touches no other, and registers no parent resolver. The
-module is looked up lazily, as `ado_sync_sources_tree` and `ado_sync_sources_df` do, so the three can be imported in
-either order. If `ado_sync_sources` does not exist, or has no `SOURCES` table, nothing is registered and `_register()`
+On import the module registers its five loaders with `ado_sync_sources` (`SOURCES["nfr"|"rule"|"question"|
+"lifecycle"|"measurement"]`), extend-only: it sets its own five keys and touches no other, and registers no parent
+resolver. The module is looked up lazily, as `ado_sync_sources_tree` and `ado_sync_sources_df` do, so the three can be
+imported in either order. If `ado_sync_sources` does not exist, or has no `SOURCES` table, nothing is registered and `_register()`
 may be called again. `ado_sync.py` imports this module.
 """
 
@@ -92,7 +108,7 @@ from artifact_lineage import ID_RE
 from sprint_model import is_forbidden_field
 from track_decisions import parse_decisions
 
-__all__ = ["load_nfrs", "load_rules", "load_questions", "load_lifecycle"]
+__all__ = ["load_nfrs", "load_rules", "load_questions", "load_lifecycle", "load_measurements"]
 
 PLUGIN_ROOT = Path(__file__).resolve().parent.parent
 NFR_SHAPE = PLUGIN_ROOT / "templates" / "phases" / "01-requirements" / "non-functional-requirements.shape.yaml"
@@ -248,8 +264,8 @@ def _shape(path: Path) -> dict:
 
 
 def _row(kind: str, ident: str, title: str, status, fields: dict, tags: set, rel: str, sha: str, notes: list,
-         parent_ref=None, parent_note=None) -> dict:
-    ref = f"sdlc:{kind}:{_suffix(ident)}"
+         parent_ref=None, parent_note=None, ref=None) -> dict:
+    ref = ref or f"sdlc:{kind}:{_suffix(ident)}"
     return {"ref": ref, "kind": kind, "id": ident, "title": _clean(title), "status": status, "fields": fields,
             "tags": {ref, *tags}, "parent_ref": parent_ref, "parent_note": parent_note, "related_refs": [],
             "source_path": rel, "source_sha": sha, "notes": notes}
@@ -761,10 +777,76 @@ def load_lifecycle(repo_root, cfg: dict | None = None, schema: dict | None = Non
                  STATE_REL, sha, notes)]
 
 
+# --- measurements ---------------------------------------------------------------------------------------------
+
+MEASUREMENT_COLUMNS = (("outcome", "Outcome"), ("threshold", "Threshold"), ("measure", "How We'll Measure"))
+
+
+def _measurement_block(lines: list[tuple[str, str]]) -> str:
+    """The Description block: the threshold and how-measured text, one escaped paragraph each."""
+    return "".join(f"<p><strong>{html.escape(label, quote=False)}:</strong> {html.escape(text, quote=False)}</p>"
+                   for label, text in lines)
+
+
+def load_measurements(repo_root, cfg: dict | None = None, schema: dict | None = None) -> list[dict]:
+    """One projection per threshold row of each `success-criteria.md` dimension, in document order, parented to that
+    dimension's Outcome; [] when there is no file, no dimension or no threshold table. Lands only on the type
+    `types.measurement` pins; without one a row has no type and a note says it stays in its Outcome's block."""
+    root, cfg, schema = Path(repo_root), cfg or {}, schema or {}
+    tree = importlib.import_module("ado_sync_sources_tree")
+    path = root / tree.SUCCESS_REL
+    if not path.is_file():
+        return []
+    _read(root, path)  # refuses a file that resolves outside the repository, or one that is not UTF-8
+    rel = _rel(root, path)
+    name, why = resolve_type(schema, "measurement", cfg)
+    base_notes: list[str] = []
+    _unapplied("measurement", cfg, base_notes)
+    out, seen = [], {}
+    for outcome in tree.load_outcomes(root):
+        number = str(outcome["id"]).split("-", 1)[0]
+        where = _clean(outcome["fields"].get(TITLE) or outcome["title"])
+        rows = outcome["fields"].get("description_rows") or []
+        for position, raw in enumerate(rows, start=1):
+            cell = raw.get("outcome", "")
+            if _blank(cell):
+                continue  # no Outcome cell: not a measurement (nothing to title it by)
+            notes = list(base_notes)
+            slug = _slug(_clean(cell))
+            if not slug:
+                slug = f"row-{position}"
+                notes.append(f"the Outcome cell has no letter or digit to name it by, so it is named by its position "
+                             f"({slug})")
+            ident = f"{number}-{slug}"
+            _unique("measurement", seen, ident, rel)
+            marked = [label for key, label in MEASUREMENT_COLUMNS if _has_placeholder(raw.get(key, ""))]
+            if marked:
+                notes.append(f"the row still holds template placeholders ({', '.join(marked)}); fill it in before it "
+                             "goes on a board")
+            fields = {TITLE: _cut(_clean(cell), notes)}
+            if name is None:
+                notes.append(f"no item: {why}; the threshold stays in the block of {where} (pin types.measurement to "
+                             "a Key-Result-style type to make it an item)")
+            else:
+                _typed(fields, name, "types.measurement")
+            lines = [(label, _clean(raw.get(key, ""))) for key, label in MEASUREMENT_COLUMNS[1:]
+                     if _filled(raw.get(key, ""))]
+            if lines:
+                fields[DESCRIPTION] = _measurement_block(lines)
+            else:
+                notes.append("no threshold or how-measured text is filled in, so no block is written")
+            fields["description_rows"] = [{key: _clean(raw.get(key, "")) for key, _ in MEASUREMENT_COLUMNS}]
+            parent = outcome["ref"]
+            sha = _digest({"parent": parent, "row": raw})
+            out.append(_row("measurement", ident, cell, None, fields, set(), rel, sha, notes, parent, None,
+                            ref=f"sdlc:measurement:{ident}"))
+    return out
+
+
 # --- registration -----------------------------------------------------------------------------------------
 
 def _register(hooks=None) -> bool:
-    """Add this module's four entries to `ado_sync_sources`' extend-only table; True when they were added.
+    """Add this module's five entries to `ado_sync_sources`' extend-only table; True when they were added.
 
     `hooks` is the module (or any object with a `SOURCES` dict); by default it is looked up in `sys.modules` and
     imported lazily. A module that does not exist yet, or lacks the table, registers nothing and returns False -
@@ -781,7 +863,8 @@ def _register(hooks=None) -> bool:
     sources = getattr(hooks, "SOURCES", None)
     if not isinstance(sources, dict):
         return False
-    sources.update({"nfr": load_nfrs, "rule": load_rules, "question": load_questions, "lifecycle": load_lifecycle})
+    sources.update({"nfr": load_nfrs, "rule": load_rules, "question": load_questions, "lifecycle": load_lifecycle,
+                    "measurement": load_measurements})
     return True
 
 

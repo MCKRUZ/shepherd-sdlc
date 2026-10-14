@@ -1,13 +1,17 @@
-"""The breadth sources for the Boards mirror: NFRs, business rules, discovery questions and the lifecycle item (B5-P1).
+"""The breadth sources for the Boards mirror: NFRs, business rules, discovery questions, the lifecycle item and
+measurements (B5-P1).
 
-`scripts/ado_sync_sources_p1.py` reads four opt-in kinds out of the repository and registers a loader for each with
-`ado_sync_sources.SOURCES` when it is imported (`ado_sync.py` imports it, so `plan --kind nfr` plans NFRs):
+`scripts/ado_sync_sources_p1.py` reads the five opt-in kinds of `ado_sync_model.BREADTH_KINDS` out of the repository
+and registers a loader for each with `ado_sync_sources.SOURCES` when it is imported (`ado_sync.py` imports it, so
+`plan --kind nfr` plans NFRs):
 
   * `nfr`        a row of `non-functional-requirements.md`; its parent is the Domain whose heading it sits under
   * `rule`       a `BR-NN` row of `business-rules.md` (a table with no `## ` heading, read by its columns); its parent
                  is the Feature whose brief names it; a rule `pending DL-NN` names that decision as its predecessor
   * `question`   a `Q-NN` entry of `question-list.md`, read through the shape `question-list.shape.yaml`
   * `lifecycle`  the one item that mirrors `.sdlc/state.yaml`: the phase, gate and sign-off table in its Description
+  * `measurement` a threshold row of a `success-criteria.md` dimension; its parent is that dimension's Outcome, and it
+                 is an item only on the type `types.measurement` pins (otherwise it stays in the Outcome's block)
 
 Every test runs against the mini repository under `fixtures/boards_repo_p1/` (generic names; every address is
 @example.com) or a copy of it in `tmp_path`. The rules held most firmly: a loader reads and never writes (the sha256 of
@@ -39,6 +43,7 @@ import ado_sync
 import ado_sync_model as model
 import ado_sync_sources as src
 import ado_sync_sources_p1 as breadth
+import ado_sync_sources_tree as tree
 import boards_contract as bc
 
 HERE = Path(__file__).resolve().parent
@@ -50,7 +55,8 @@ NFR_REL = f"{ARTIFACTS}/01-requirements/non-functional-requirements.md"
 RULES_REL = f"{ARTIFACTS}/01-requirements/business-rules.md"
 QUESTIONS_REL = f"{ARTIFACTS}/00-discovery/question-list.md"
 STATE_REL = ".sdlc/state.yaml"
-KINDS = ("nfr", "rule", "question", "lifecycle")
+SUCCESS_REL = f"{ARTIFACTS}/00-discovery/success-criteria.md"
+KINDS = ("nfr", "rule", "question", "lifecycle", "measurement")
 PINNED = {"ref", "kind", "id", "title", "status", "fields", "tags", "parent_ref", "parent_note", "related_refs",
           "source_path", "source_sha"}
 PRIORITY = "Microsoft.VSTS.Common.Priority"
@@ -132,6 +138,10 @@ def strings(value):
             yield from strings(v)
 
 
+def src_slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+
+
 def assert_no_identity(obj) -> None:
     for text in strings(obj):
         assert not bc.EMAIL_RE.search(text), f"an address in {text!r}"
@@ -165,10 +175,11 @@ def p1(monkeypatch, hooks):
 
 # --- registration through ado_sync_sources' extend-only tables --------------------------------------------------------
 
-def test_importing_the_module_registers_the_four_breadth_kinds_and_nothing_else(hooks, p1):
-    assert set(hooks.SOURCES) == set(KINDS)
+def test_importing_the_module_registers_the_five_breadth_kinds_and_nothing_else(hooks, p1):
+    assert set(hooks.SOURCES) == set(KINDS) == set(model.BREADTH_KINDS)
     assert hooks.SOURCES["nfr"] is p1.load_nfrs and hooks.SOURCES["rule"] is p1.load_rules
     assert hooks.SOURCES["question"] is p1.load_questions and hooks.SOURCES["lifecycle"] is p1.load_lifecycle
+    assert hooks.SOURCES["measurement"] is p1.load_measurements
     assert hooks.PARENT_RESOLVERS == {}, "each loader names its own parent: no resolver is registered"
 
 
@@ -192,10 +203,11 @@ def test_the_fresh_import_leaves_the_real_hook_table_and_sys_modules_as_they_wer
     assert sys.modules["ado_sync_sources"] is src
 
 
-def test_the_cli_imports_the_module_so_the_real_table_has_the_four_breadth_kinds():
-    assert {"nfr", "rule", "question", "lifecycle"} <= set(src.SOURCES)
+def test_the_cli_imports_the_module_so_the_real_table_has_every_breadth_kind():
+    assert set(model.BREADTH_KINDS) <= set(src.SOURCES), sorted(set(model.BREADTH_KINDS) - set(src.SOURCES))
     assert src.SOURCES["nfr"] is breadth.load_nfrs and src.SOURCES["lifecycle"] is breadth.load_lifecycle
-    assert set(KINDS) <= set(model.BREADTH_KINDS) and set(KINDS) <= set(bc.KINDS)
+    assert src.SOURCES["measurement"] is breadth.load_measurements
+    assert set(KINDS) == set(model.BREADTH_KINDS) and set(KINDS) <= set(bc.KINDS)
     assert re.search(r"^import ado_sync_sources_p1\b", Path(ado_sync.__file__).read_text(encoding="utf-8"), re.M)
 
 
@@ -203,6 +215,7 @@ def test_the_loaders_answer_through_projections_and_standalone_with_the_reposito
     assert {p["kind"] for p in rows()} == set(KINDS)
     assert [p["kind"] for p in breadth.load_nfrs(REPO)][:1] == ["nfr"]
     assert [p["kind"] for p in breadth.load_lifecycle(REPO)] == ["lifecycle"], "cfg and schema are optional standalone"
+    assert {p["kind"] for p in breadth.load_measurements(REPO)} == {"measurement"}
 
 
 # --- the contract every projection keeps -------------------------------------------------------------------------------
@@ -217,15 +230,19 @@ def test_every_projection_carries_the_sheets_keys_and_a_valid_ref():
         assert bc.HASH_RE.fullmatch(p["source_sha"])
         assert not Path(p["source_path"]).is_absolute() and "\\" not in p["source_path"]
         assert (REPO / p["source_path"]).is_file()
-        assert "System.Title" in p["fields"] and p["fields"]["System.Title"].startswith(p["id"] if p["kind"] != "lifecycle"
-                                                                                       else "Sample")
+        assert "System.Title" in p["fields"]
+        if p["kind"] == "measurement":  # the design's §6.1: the title is the row's Outcome cell, the id is not in it
+            assert p["fields"]["System.Title"] == p["title"] and p["id"].endswith(src_slug(p["title"]))
+        else:
+            assert p["fields"]["System.Title"].startswith(p["id"] if p["kind"] != "lifecycle" else "Sample")
 
 
 def test_projections_write_nothing_and_leave_every_fixture_byte_identical():
     before = tree_sha(REPO)
     assert len(before) >= 9
     rows()
-    for loader in (breadth.load_nfrs, breadth.load_rules, breadth.load_questions, breadth.load_lifecycle):
+    for loader in (breadth.load_nfrs, breadth.load_rules, breadth.load_questions, breadth.load_lifecycle,
+                   breadth.load_measurements):
         loader(REPO)
         loader(REPO, CFG, SCHEMA)
     assert tree_sha(REPO) == before
@@ -807,6 +824,162 @@ def test_the_signer_is_shown_only_as_a_roster_style_handle(tmp_path):
                                                                       "2 discipline sign-offs")
 
 
+# --- measurements --------------------------------------------------------------------------------------------------------
+
+MEASURE_CFG = {"types": {"measurement": "Issue"}}
+
+
+def test_measurement_rows_are_the_threshold_rows_of_each_dimension_in_document_order():
+    assert [p["id"] for p in breadth.load_measurements(REPO)] == [
+        "1-pass-exceeds-expectations", "1-partial", "1-fail", "2-pass", "2-partial"]
+    found = of("measurement")
+    assert set(found) == {"1-pass-exceeds-expectations", "1-partial", "1-fail", "2-pass", "2-partial"}
+    assert all(p["ref"] == f"sdlc:measurement:{p['id']}" for p in found.values()), "the id is the ref whole"
+    assert not any(i.startswith("3-") for i in found), "a dimension with no threshold table has no measurement"
+
+
+def test_a_threshold_row_with_no_outcome_cell_is_not_a_measurement():
+    found = of("measurement")
+    assert {i for i in found if i.startswith("2-")} == {"2-pass", "2-partial"}
+    assert not any("Under 50%" in p["title"] for p in found.values())
+
+
+def test_a_measurement_is_parented_to_its_dimension_s_outcome_the_ref_the_outcome_source_makes():
+    outcomes = {o["id"].split("-", 1)[0]: o["ref"] for o in tree.load_outcomes(REPO)}
+    assert outcomes == {"1": "sdlc:outcome:1-turnaround-time", "2": "sdlc:outcome:2-adoption",
+                        "3": "sdlc:outcome:3-data-quality"}
+    for p in of("measurement").values():
+        assert p["parent_ref"] == outcomes[p["id"].split("-", 1)[0]] and p["parent_note"] is None, p["ref"]
+
+
+def test_a_measurement_reads_exactly_the_threshold_rows_its_outcome_carries_in_its_block():
+    by_outcome = {o["ref"]: o["fields"]["description_rows"] for o in tree.load_outcomes(REPO)}
+    for p in of("measurement").values():
+        (row,) = p["fields"]["description_rows"]
+        assert row in by_outcome[p["parent_ref"]], p["ref"]
+
+
+def test_the_title_is_the_row_s_outcome_cell_and_the_block_is_its_threshold_and_how_measured():
+    first = of("measurement")["1-pass-exceeds-expectations"]
+    assert first["title"] == first["fields"]["System.Title"] == "Pass (exceeds expectations)"
+    assert first["fields"]["System.Description"] == (
+        "<p><strong>Threshold:</strong> Median under 2 minutes</p>"
+        "<p><strong>How We'll Measure:</strong> Timestamp difference in the order log</p>")
+    assert first["status"] is None and first["tags"] == {first["ref"]}
+
+
+def test_a_placeholder_cell_is_left_out_of_the_block_and_the_row_says_which_column(tmp_path):
+    partial = of("measurement")["2-partial"]
+    assert "[Specific" not in partial["fields"]["System.Description"]
+    assert "Sign-in count" in partial["fields"]["System.Description"]
+    assert any("template placeholders (Threshold)" in n for n in partial["notes"]), partial["notes"]
+    root = copy_repo(tmp_path)
+    edit(root, SUCCESS_REL, "| Pass | 80% of desks active weekly | Sign-in count against the desk list |",
+         "| Pass | [Specific number/condition] | [Measurement method] |")
+    bare = of("measurement", root=root)["2-pass"]
+    assert "System.Description" not in bare["fields"], "nothing filled: no block, never an empty or invented one"
+    assert any("no threshold or how-measured text" in n for n in bare["notes"]), bare["notes"]
+
+
+def test_without_a_types_measurement_pin_a_row_has_no_type_and_stays_in_its_outcome_s_block():
+    for p in of("measurement").values():
+        assert "type_name" not in p["fields"] and "type_route" not in p["fields"], p["ref"]
+        assert "System.State" not in p["fields"]
+        (note,) = [n for n in p["notes"] if n.startswith("no item: ")]
+        assert "types.measurement not set" in note and "stays in the block of Outcome " in note, note
+    one = of("measurement")["1-fail"]
+    assert any("stays in the block of Outcome 1 · Turnaround time" in n for n in one["notes"]), one["notes"]
+
+
+def test_a_measurement_never_falls_back_to_a_default_type_even_when_the_process_has_one():
+    cfg = {"types": {"requirement": "User Story", "epic": "Epic", "spec": "User Story"}}
+    for p in of("measurement", cfg=cfg).values():
+        assert "type_name" not in p["fields"] and any(n.startswith("no item: ") for n in p["notes"]), p["ref"]
+
+
+def test_a_pinned_measurement_type_travels_with_the_row_and_no_state_is_ever_set():
+    found = of("measurement", cfg=MEASURE_CFG)
+    for p in found.values():
+        assert (p["fields"]["type_name"], p["fields"]["type_route"]) == ("Issue", "types.measurement"), p["ref"]
+        assert "System.State" not in p["fields"], "State is the board's (A); a measurement has no status to push"
+        assert not any(n.startswith("no item: ") for n in p["notes"]), p["notes"]
+    assert model.ownership_for("measurement")["System.State"] == "A"
+
+
+def test_a_measurement_pin_the_process_lacks_is_not_replaced_and_says_so():
+    cfg = {"types": {"measurement": "Key Result"}}
+    for p in of("measurement", cfg=cfg).values():
+        assert "type_name" not in p["fields"]
+        assert any("pins 'Key Result' but the process has no such type" in n for n in p["notes"]), p["notes"]
+
+
+def test_fields_for_measurements_are_not_applied_and_the_row_says_so():
+    cfg = {**MEASURE_CFG, "fields": {"measurement": {"actual": "Custom.Actual"}}}
+    for p in of("measurement", cfg=cfg).values():
+        assert "Custom.Actual" not in p["fields"]
+        assert any(n.startswith("fields.measurement is not applied") for n in p["notes"]), p["notes"]
+
+
+def test_the_same_outcome_cell_twice_in_one_dimension_is_refused_naming_it(tmp_path):
+    root = copy_repo(tmp_path)
+    edit(root, SUCCESS_REL, "| Fail | Median over 5 minutes |", "| Partial | Median over 5 minutes |")
+    with pytest.raises(ValueError, match="measurement 1-partial is defined twice"):
+        rows(["measurement"], root=root)
+
+
+def test_the_same_outcome_cell_in_two_dimensions_is_two_measurements():
+    found = of("measurement")
+    assert {"1-partial", "2-partial"} <= set(found)
+    assert found["1-partial"]["parent_ref"] != found["2-partial"]["parent_ref"]
+
+
+def test_editing_one_threshold_row_moves_the_source_sha_of_that_row_only(tmp_path):
+    root = copy_repo(tmp_path)
+    before = {i: p["source_sha"] for i, p in of("measurement", root=root).items()}
+    edit(root, SUCCESS_REL, "Median 2 to 5 minutes", "Median 2 to 6 minutes")
+    after = {i: p["source_sha"] for i, p in of("measurement", root=root).items()}
+    assert {i for i in before if before[i] != after[i]} == {"1-partial"}
+
+
+def test_measurement_text_is_scrubbed_and_escaped_before_it_reaches_a_field(tmp_path):
+    root = copy_repo(tmp_path)
+    edit(root, SUCCESS_REL, "| Median under 2 minutes | Timestamp difference in the order log |",
+         "| Median under 2 minutes | Report <b>sent</b> to ops.lead@example.com, 0f8fad5b-d9cb-469f-a165-70867728950e |")
+    first = of("measurement", root=root)["1-pass-exceeds-expectations"]
+    assert_no_identity(first)
+    block = first["fields"]["System.Description"]
+    assert "&lt;b&gt;sent&lt;/b&gt;" in block and "<b>" not in block
+    assert "[address removed]" in block and "[id removed]" in block
+
+
+def test_measurements_read_the_file_the_outcome_source_reads_and_nothing_else(tmp_path):
+    root = copy_repo(tmp_path)
+    (root / SUCCESS_REL).rename(root / "success-criteria.md")
+    assert tree.load_outcomes(root) == [] and rows(["measurement"], root=root) == [], \
+        "a measurement whose Outcome the outcome source cannot see would point at a parent that does not exist"
+
+
+def test_a_success_criteria_file_with_crlf_line_endings_reads_the_same(tmp_path):
+    root = copy_repo(tmp_path)
+    path = root / SUCCESS_REL
+    path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    assert {i: p["title"] for i, p in of("measurement", root=root).items()} == \
+        {i: p["title"] for i, p in of("measurement").items()}
+
+
+def test_a_success_criteria_file_that_resolves_outside_the_repository_is_refused(tmp_path):
+    root = copy_repo(tmp_path)
+    outside = tmp_path / "outside.md"
+    outside.write_text((root / SUCCESS_REL).read_text(encoding="utf-8"), encoding="utf-8")
+    (root / SUCCESS_REL).unlink()
+    try:
+        (root / SUCCESS_REL).symlink_to(outside)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks are not available here")
+    with pytest.raises(ValueError, match="outside the repository"):
+        rows(["measurement"], root=root)
+
+
 # --- through the CLI -----------------------------------------------------------------------------------------------------
 
 def cli_repo(tmp_path, az, capsys, **pins) -> Path:
@@ -866,17 +1039,48 @@ def test_plan_with_no_pin_for_a_question_leaves_it_unmapped_with_the_process_s_c
     assert all(r["type"] is None and not r["ops"] for r in doc["rows"]), "no type: nothing to create"
 
 
+def test_plan_creates_measurements_on_the_pinned_type_under_their_outcome(tmp_path, az, capsys):
+    root = cli_repo(tmp_path, az, capsys, measurement="Issue")
+    code, doc = plan(capsys, root, "measurement")
+    assert code == 0 and doc["skipped"] == [], doc.get("skipped")
+    by_ref = {r["ref"]: r for r in doc["rows"]}
+    assert set(by_ref) == {f"sdlc:measurement:{i}" for i in
+                           ("1-pass-exceeds-expectations", "1-partial", "1-fail", "2-pass", "2-partial")}
+    assert {r["action"] for r in doc["rows"]} == {"create"}, {r["ref"]: r.get("reason") for r in doc["rows"]}
+    assert {r["type"] for r in doc["rows"]} == {"Issue"}
+    first = by_ref["sdlc:measurement:1-pass-exceeds-expectations"]
+    paths = {op["path"] for op in first["ops"]}
+    assert {"/fields/System.Title", "/fields/System.Description"} <= paths
+    assert "/fields/System.State" not in paths, "State is the board's: a measurement never pushes one"
+    leaked = {"type_name", "type_route", "description_rows"}
+    for r in doc["rows"]:
+        assert not {op["path"].rsplit("/", 1)[-1] for op in r["ops"]} & leaked, r["ref"]
+    assert first["parent"]["ref"] == "sdlc:outcome:1-turnaround-time"
+    assert by_ref["sdlc:measurement:2-pass"]["parent"]["ref"] == "sdlc:outcome:2-adoption"
+    assert_no_identity(doc)
+
+
+def test_plan_with_no_measurement_pin_shows_every_row_unmapped_with_no_item_and_a_note(tmp_path, az, capsys):
+    root = cli_repo(tmp_path, az, capsys)
+    code, doc = plan(capsys, root, "measurement")
+    assert code == 0 and doc["skipped"] == [], "measurement has a source: it is planned, never 'no source'"
+    assert len(doc["rows"]) == 5 and {r["action"] for r in doc["rows"]} == {"unmapped"}
+    assert all("types.measurement not set" in r["reason"] for r in doc["rows"]), doc["rows"][0]["reason"]
+    assert all(r["type"] is None and not r["ops"] for r in doc["rows"]), "no type: no item, nothing to create"
+    assert all(any("stays in the block of Outcome " in n for n in r["notes"]) for r in doc["rows"])
+
+
 def test_plan_of_a_kind_whose_artifact_is_absent_is_no_rows_not_an_error(tmp_path, az, capsys):
     root = cli_repo(tmp_path, az, capsys)
-    for rel in (NFR_REL, RULES_REL, QUESTIONS_REL, STATE_REL):
+    for rel in (NFR_REL, RULES_REL, QUESTIONS_REL, STATE_REL, SUCCESS_REL):
         (root / rel).unlink()
-    code, doc = plan(capsys, root, "nfr", "rule", "question", "lifecycle")
+    code, doc = plan(capsys, root, "nfr", "rule", "question", "lifecycle", "measurement")
     assert code == 0 and doc["rows"] == [] and doc["skipped"] == []
 
 
 def test_every_az_call_a_breadth_plan_makes_is_a_read_that_detects_nothing(tmp_path, az, capsys):
-    root = cli_repo(tmp_path, az, capsys)
-    code, _ = plan(capsys, root, "lifecycle", "nfr", "rule", "question")
+    root = cli_repo(tmp_path, az, capsys, measurement="Issue")
+    code, _ = plan(capsys, root, "lifecycle", "nfr", "rule", "question", "measurement")
     assert code == 0
     assert az.written() == [], "a plan sends no write"
     assert all("--detect" in call and call[call.index("--detect") + 1] == "false" for call in az.calls)

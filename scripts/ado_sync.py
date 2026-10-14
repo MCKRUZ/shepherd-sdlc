@@ -177,7 +177,7 @@ import ado_sync_reconcile as rc  # noqa: E402  (the one module that starts the o
 import ado_sync_sources as sources  # noqa: E402
 import ado_sync_sources_tree  # noqa: E402,F401  (registers outcome, domain, requirement and the epic parent)
 import ado_sync_sources_df  # noqa: E402,F401  (registers finding: review findings as BugCategory items)
-import ado_sync_sources_p1  # noqa: E402,F401  (registers nfr, rule, question and lifecycle: the breadth sources)
+import ado_sync_sources_p1  # noqa: E402,F401  (registers the breadth sources: nfr, rule, question, lifecycle, measurement)
 import ado_transport  # noqa: E402
 import ado_wit  # noqa: E402
 import ado_wit_map as wm  # noqa: E402
