@@ -277,8 +277,9 @@ def _rule_for(kind: str, field: str) -> str:
 
 def ado_route(kind: str, field: str | None, owner: str | None) -> str:
     """Which owning verb `--take ado` relays to for this field -- `assign`, `iteration` or `decide` -- or `Rejected`.
-    Refused for every field the board does not own (D11): an `S` field names the owning rule, a `C` field says the
-    text lands through a `.proposed` draft, and a field with no owning verb says so."""
+    Refused for every field the board does not own (D11): an `S` field names the owning rule, a `C` field says only
+    co-owned text is taken (as a `.proposed` draft: `ado_sync.py` asks `is_text_proposal` first and routes that text
+    to `propose`, so a `C` field reaching here is not text), and a field with no owning verb says so."""
     if field is None:
         raise Rejected("Refused: --take ado is for a field the board owns; this row is about the item itself.")
     if owner == "S":
@@ -286,9 +287,10 @@ def ado_route(kind: str, field: str | None, owner: str | None) -> str:
                        f"is drift the repository puts back; `--take sdlc` records that choice, `--take ack` that "
                        "someone knows.")
     if owner == "C":
-        raise Rejected(f"Refused: {field} on a {kind} is written once at create and is the board's after: taking the "
-                       "board's text lands through a `.proposed` draft and /sprd-revise, which this version does not "
-                       "write yet. Record that a person read it with `--take ack --owner <you>`.")
+        raise Rejected(f"Refused: {field} on a {kind} is the board's once the item exists, and it is not text a "
+                       "document holds: only co-owned text (a requirement's Description or AcceptanceCriteria, an "
+                       "epic's AcceptanceCriteria) is taken, as a `.proposed` draft beside its artifact that a person "
+                       "lands through /sprd-revise. Record that a person read it with `--take ack --owner <you>`.")
     if owner != "A":
         raise Rejected(f"Refused: {field} has no owning verb to take it through (relation drift is report only); "
                        "`--take ack --owner <you>` records that someone knows.")
@@ -497,9 +499,13 @@ def _propose_field(ref: str, kind: str, f: dict, proj: dict | None, remote: dict
         return "report", ("record the disposition in the review report's `## Gate Results`; `record_findings.py "
                           "report --strict` still checks the target changed")
     if field in ("System.Title", "System.Description", "Microsoft.VSTS.Common.AcceptanceCriteria"):
+        if owner == "C" and text_target(kind, field) is not None:
+            return "reconcile", (f"{take} writes the board's words as `<artifact>.proposed` beside the artifact (never "
+                                 "the artifact itself); a person lands it through /sprd-revise (--from-comment <id> "
+                                 "proposes a cached comment's words instead)")
         if owner == "C":
-            return "report", ("the board's text is the board's; landing it is a `.proposed` draft through /sprd-revise "
-                              "(not written in this version): read it with `show`, then `--take ack`")
+            return "report", ("the board's text is the board's and has no place in a document this version writes: "
+                              "read it with `show`, then `--take ack --owner <you>`")
         return "report", "the repository's text is re-pushed on the next apply; `--take sdlc` records that choice"
     if field == "System.Tags":
         return "report", "an `sdlc:*` tag was removed: it is added back on the next push"
@@ -786,10 +792,28 @@ def _carry_style(original: str, lines: list[str], field_type: str) -> list[str]:
     return lines
 
 
+# A thematic break (`---`, `***`, `___`, spaced or longer): the rule that closes one block before the next. A field's
+# span runs to the next label or heading, so the LAST field of a block covers that rule too; it is the document's.
+_BREAK_LINE: Final = re.compile(r" {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})")
+
+
+def _words_end(original: str) -> int:
+    """Where a block field's own words end inside its span: before the trailing white space and any separator lines
+    after them (kept, byte for byte, as the span's tail). 0 when the span holds nothing but white space and rules."""
+    end = len(original.rstrip())
+    while end:
+        start = original.rfind("\n", 0, end) + 1
+        if not _BREAK_LINE.fullmatch(original[start:end]):
+            return end
+        end = len(original[:start].rstrip())
+    return 0
+
+
 def spliced_value(text: str, span: dict, board_text: str) -> str:
     """What replaces the bytes `span` covers: the board's words in the field's own style, with the span's own trailing
-    white space (the blank line before the next label) kept, every new line end the document's own (CRLF stays CRLF).
-    An inline field takes one line. `span` is `locate_field`'s answer (or any dict with `start`, `end`, `anchor`, `type`)."""
+    white space (the blank line before the next label) and any block separator after the words (`---`) kept, every new
+    line end the document's own (CRLF stays CRLF). An inline field takes one line. `span` is `locate_field`'s answer
+    (or any dict with `start`, `end`, `anchor`, `type`)."""
     start, end = span["start"], span["end"]
     original = text[start:end]
     eol = "\r\n" if "\r\n" in original else ("\n" if "\n" in original else _document_eol(text))
@@ -801,7 +825,9 @@ def spliced_value(text: str, span: dict, board_text: str) -> str:
     inline = span.get("anchor") == "inline"
     body = " ".join(" ".join(lines).split()) if inline else eol.join(_carry_style(original, lines, span.get("type") or ""))
     if original.strip():
-        lead, trail = original[:len(original) - len(original.lstrip())], original[len(original.rstrip()):]
+        lead = original[:len(original) - len(original.lstrip())]
+        cut = len(original.rstrip()) if inline else _words_end(original)
+        trail = original[cut:] if cut else eol * 2 + original[len(lead):]   # only a `---`: the words go before it
     else:
         lead, trail = "", (original if "\n" in original else "")
     if not inline and "\n" not in trail:

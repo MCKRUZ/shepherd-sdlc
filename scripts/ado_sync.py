@@ -2649,6 +2649,9 @@ def _plan_child(repo_root: Path, route: str, ref: str, kind: str, row: dict, by:
         raise Illegal(f"#{wid} is gone from the board (deleted, or not visible to this az login): pull again")
     # D52: the cached comment is only ever SHOWN as a suggestion; the resolution is the --reason a person typed
     comment = rc.cached_comment(cache.load_cache(repo_root, wid), comment_id) if comment_id is not None else None
+    if route == "propose":   # D32: the board's words (or that comment's) become `<artifact>.proposed`; no child starts
+        return {"verb": "propose", "argv": None, "shown": ["propose", row["field"]], "cwd": repo_root,
+                "propose": {"proj": proj, "remote": items[wid], "field": row["field"], "comment": comment}}
     return rc.plan_child(route, repo_root=repo_root, ref=ref, proj=proj, remote=items[wid], cfg=cfg, schema=schema,
                          by=by, reason=reason, comment=comment, comment_id=comment_id)
 
@@ -2680,18 +2683,18 @@ def _reconcile(args, repo_root: Path, *, by: str, ref: str, kind: str, owner: st
         notes.append("the next `plan` carries the update that puts the repository's value back; `apply` lands it and "
                      "closes the row")
     elif take == "ado":
-        route = rc.ado_route(kind, field, field_owner)
-    if comment_id is not None and route != "decide":
-        raise rc.Rejected("Refused: --from-comment is for closing a decision (--take ado on its State); it is not "
-                          "used for anything else.")
+        route = "propose" if rc.is_text_proposal(field, field_owner) else rc.ado_route(kind, field, field_owner)
+    if comment_id is not None and route not in ("decide", "propose"):
+        raise rc.Rejected("Refused: --from-comment is for closing a decision (--take ado on its State) or proposing "
+                          "a comment's words for a co-owned text field (--take ado on it); it is not used for "
+                          "anything else.")
     child = _plan_child(repo_root, route, ref, kind, row, by, reason, comment_id) if route else None
     ts = _stamp()
     fields = {"ref": ref, "kind": kind, "work_item": row["work_item"], "field": field, "class": cls,
               "disposition": disposition, "by": by}
     if owner:
         fields["owner"] = owner
-    if reason:
-        fields["reason"] = reason
+    fields.update(rc.ledger_reason(take, reason))   # `<text>` + reason_sha for ado/sdlc; the words for not-drift/ack
     if comment_id is not None:
         fields["comment_id"] = comment_id
     if child:
@@ -2701,7 +2704,11 @@ def _reconcile(args, repo_root: Path, *, by: str, ref: str, kind: str, owner: st
         fields["notes"] = notes
     _event(ts, "reconciled", **fields, **({"child_exit": 0} if child else {}))   # the model refuses an address, first
     _ledger_appendable(repo_root)
-    result = rc.run_child(child["argv"], child["cwd"]) if child else None
+    if child and child["verb"] == "propose":   # Rejected / Precondition here: nothing written, nothing ledgered
+        result = rc.propose(repo_root, **child["propose"])
+        fields.update({"proposed": result["path"], "proposed_sha": result["proposed_sha"]})
+    else:
+        result = rc.run_child(child["argv"], child["cwd"]) if child else None
     if result is not None:
         fields["child_exit"] = result["exit"]
     append_ledger(repo_root, [_event(ts, "reconciled", **fields)])   # LedgerDrift -> main: `DRIFT: ...`, exit 1

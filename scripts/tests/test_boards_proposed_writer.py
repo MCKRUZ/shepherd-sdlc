@@ -299,8 +299,9 @@ def test_a_checklist_field_gets_its_checkboxes(repo):
     text = read(repo / REQ_REL)
     span = value_of(text, "FR-001", "Acceptance criteria")
     assert rc.spliced_value(text, span, "- Given a\n- Given b\nGiven c") == (
-        "- [ ] Given a\n- [ ] Given b\n- [ ] Given c\n\n")
-    assert rc.spliced_value(text, span, "- [x] done already\n* Given e") == "- [x] done already\n- [ ] Given e\n\n"
+        "- [ ] Given a\n- [ ] Given b\n- [ ] Given c\n\n---\n\n")           # the block's own `---` rule stays
+    assert rc.spliced_value(text, span, "- [x] done already\n* Given e") == (
+        "- [x] done already\n- [ ] Given e\n\n---\n\n")
 
 
 def test_a_field_with_no_style_to_carry_takes_the_lines_as_they_are():
@@ -330,6 +331,51 @@ def test_the_document_s_own_line_ending_is_used_for_every_new_line():
     start = text.index("> old")
     span = {"start": start, "end": text.index("**Next"), "anchor": "labeled_block", "type": "longtext"}
     assert rc.spliced_value(text, span, "a\nb") == "> a\r\n> b\r\n\r\n"
+
+
+def test_a_block_separator_after_the_field_s_words_is_kept_outside_them(repo):
+    """A field's span runs to the next label or heading, so the last field of a block also covers the `---` rule
+    that closes the block. That rule is the document's, not the field's: the board's words replace only the field's
+    own words, and the separator (and the white space around it) is kept byte for byte."""
+    text = "### EP-001: x\n\n**Acceptance criteria:**\n- [ ] old\n\n---\n\n## Next\n"
+    start = text.index("- [ ] old")
+    span = {"start": start, "end": text.index("## Next"), "anchor": "labeled_block", "type": "checklist"}
+    assert rc.spliced_value(text, span, "Given new") == "- [ ] Given new\n\n---\n\n"
+    for rule in ("***", "___", "- - -", "  ----"):
+        other = text.replace("\n---\n", f"\n{rule}\n")
+        span = {**span, "end": other.index("## Next")}
+        assert rc.spliced_value(other, span, "Given new") == f"- [ ] Given new\n\n{rule}\n\n"
+    crlf = text.replace("\n", "\r\n")
+    span = {"start": crlf.index("- [ ] old"), "end": crlf.index("## Next"), "anchor": "labeled_block",
+            "type": "checklist"}
+    assert rc.spliced_value(crlf, span, "Given new") == "- [ ] Given new\r\n\r\n---\r\n\r\n"
+
+
+def test_a_field_holding_only_the_separator_gets_its_words_before_it(repo):
+    text = "**Acceptance criteria:**\n\n---\n\n## Next\n"
+    start = text.index("---")
+    span = {"start": start, "end": text.index("## Next"), "anchor": "labeled_block", "type": "checklist"}
+    assert rc.spliced_value(text, span, "Given new") == "- [ ] Given new\n\n---\n\n"
+    original = read(repo / EPICS_REL)
+    emptied = original.replace("- [ ] **Given** an existing claim id, **when** it is submitted again, **then** the API "
+                               "returns 409\n", "")
+    put(repo / EPICS_REL, emptied)
+    rc.write_proposed(repo, proj=EP1, field=AC, text="- Given a repeat submission, then a 409")
+    start, end = span_of(emptied, "epics", "EP-001", "Acceptance criteria")
+    assert emptied[start:end] == "---\n\n"
+    assert read(repo / (EPICS_REL + ".proposed")) == write_document(
+        emptied, [(start, end, "- [ ] Given a repeat submission, then a 409\n\n---\n\n")])
+
+
+def test_a_separator_inside_the_words_and_an_inline_value_are_replaced_as_words():
+    text = "**Notes:**\nfirst\n\n---\n\nsecond\n\n**Next:** y\n"
+    start = text.index("first")
+    span = {"start": start, "end": text.index("**Next"), "anchor": "labeled_block", "type": "longtext"}
+    assert rc.spliced_value(text, span, "only") == "only\n\n"            # a rule between words is not trailing
+    inline = "**Estimate:** ---\n**Next:** y\n"
+    at = inline.index("---")
+    span = {"start": at, "end": inline.index("\n", at), "anchor": "inline", "type": "text"}
+    assert rc.spliced_value(inline, span, "three") == "three"
 
 
 # --- writing the proposal ------------------------------------------------------------------------------------------
@@ -370,7 +416,7 @@ def test_acceptance_criteria_lands_in_its_own_field_as_a_checklist(repo):
     original = read(repo / REQ_REL)
     result = rc.write_proposed(repo, proj=FR1, field=AC, text="- Given a duplicate\n- Given a new order")
     start, end = span_of(original, "requirements", "FR-001", "Acceptance criteria")
-    new = "- [ ] Given a duplicate\n- [ ] Given a new order\n\n"
+    new = "- [ ] Given a duplicate\n- [ ] Given a new order\n\n---\n\n"
     assert read(repo / (REQ_REL + ".proposed")) == write_document(original, [(start, end, new)])
     assert result["label"] == "Acceptance criteria"
 
@@ -380,7 +426,7 @@ def test_an_epic_s_acceptance_criteria_is_proposed_the_same_way(repo):
     rc.write_proposed(repo, proj=EP1, field=AC, text="- Given a repeat submission, then a 409")
     start, end = span_of(original, "epics", "EP-001", "Acceptance criteria")
     assert read(repo / (EPICS_REL + ".proposed")) == write_document(
-        original, [(start, end, "- [ ] Given a repeat submission, then a 409\n\n")])
+        original, [(start, end, "- [ ] Given a repeat submission, then a 409\n\n---\n\n")])
 
 
 def test_a_crlf_document_keeps_its_line_endings(repo):
