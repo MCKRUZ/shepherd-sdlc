@@ -9,12 +9,13 @@
  *
  * `DiscussionBlock` mounts it; `SpecCard` mounts the block below the facts rail (composer inside) and a Boards row
  * (`Pull now`, `Plan changes`) that is NOT inside the facts row — the chip's own pin ("no write control at rest in
- * `spec-facts`") still holds. `Plan changes` is the one read that gives `AdoChip` a plan (`planSpec` →
- * `plan --kind spec --id <NNNN> --json`), explicit because `plan` writes a plan file and a ledger line: looking at
- * a card never ledgers. `window.studio` is a PARTIAL double.
+ * `spec-facts`") still holds. `Plan changes` RUNS NOTHING: the closed `AdoVerbRequest` table is the build kit's
+ * seven verbs and `plan` is not one of them (it writes a plan file and a ledger line), so the card shows the plugin
+ * lines that plan this spec and send that plan — as the Today row's Propose spec does — and the chip is never
+ * handed a plan from here. `window.studio` is a PARTIAL double.
  *
  * Every plugin document below is HAND-WRITTEN (unverified): its shape is read from `ado_sync.py` (`cmd_pull`,
- * `_pull_discussion`, `cmd_plan`), not captured from a live board. */
+ * `_pull_discussion`), not captured from a live board. */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -23,16 +24,14 @@ import type { AdoSyncView } from '../shared/adoTypes'
 import type { AdoVerbRequest } from '../shared/adoVerbArgv'
 import type { ActorInfo, AdoVerbResult, BoardRow, CommandCenter, ConnectionInfo, SourcedBlock, SpecCard as SpecCardRead } from '../shared/types'
 import {
-  BOARDS_UNREACHABLE, CAPABILITIES, EXIT_HEADING, NO_ACTOR, newerPlugin, SCHEMA_NOT_DISCOVERED, WORK_ITEMS_NOT_SET_UP,
+  BOARDS_UNREACHABLE, CAPABILITIES, EXIT_HEADING, newerPlugin, SCHEMA_NOT_DISCOVERED, WORK_ITEMS_NOT_SET_UP,
 } from '../shared/reasons'
 import { PullNow, PULL_RUNNING } from '../src/components/ado/PullNow'
 import { DiscussionBlock } from '../src/components/ado/DiscussionBlock'
-import { APPLY_CONFIRM } from '../src/components/ado/AdoApplyDialog'
-import { APPLIED_PLAN_AGAIN, SpecCard } from '../src/components/SpecCard/SpecCard'
+import { PLAN_CAPABILITY, PLAN_NOT_RUN, planLines, SpecCard } from '../src/components/SpecCard/SpecCard'
 import { connectionStore, resetConnectionStore } from '../src/stores/connectionStore'
 
 const REF = 'sdlc:spec:0008'
-const HASH = '1d0617c03373'
 const ACTOR: ActorInfo = { name: '@sam-k', source: 'roster' }
 const CAPS = ['ado-pull', 'ado-pull-discussion'] as const
 const ALL_CAPS = [CAPABILITIES.adoStatus, 'ado-pull', 'ado-pull-discussion', 'ado-show', 'ado-comment', 'ado-apply', 'ado-plan', 'ado-reconcile'] as const
@@ -325,12 +324,6 @@ const STATUS: AdoSyncView = {
   as_of: '2026-10-12T09:00:00Z', by_class: {}, counts: { conflicts: 0, debt: 0, drifted: 0, linked: 12, open: 0, pending: 1 }, debt: [],
   hook_line: 'ado: 12 linked · 1 pending', last_plan: null, ledger: '.sdlc/metrics/ado-sync-log.jsonl', notes: [], schema: 1,
 }
-/** `plan --kind spec --id 0008 --json` (hand-written, unverified): one update row for this spec. */
-const PLAN = {
-  ok: true, unavailable: false, reason: null, plan: HASH, posture: 'assisted', executed_as: '@sam-k',
-  rows: [{ ref: REF, kind: 'spec', id: '0008', action: 'update', reason: null, work_item: 4521, rev: 7, type: 'User Story', ops: [{ op: 'replace', path: '/fields/System.State', old: 'Active', new: 'Ready' }], notes: [] }],
-}
-const NOTHING_TO_SEND = { ok: true, unavailable: false, reason: null, plan: HASH, posture: 'assisted', executed_as: '@sam-k', rows: [] }
 
 const AZURE: ConnectionInfo = {
   repo: 'acme/app', branch: 'main', localFolder: '/p', account: '@sam-k', accountSource: 'roster', rosterHandle: '@sam-k',
@@ -344,7 +337,6 @@ describe('SpecCard: the Boards zone', () => {
     getCommandCenter = vi.fn().mockResolvedValue({ ado: block(STATUS) } as unknown as CommandCenter)
     runAdoVerb.mockImplementation(async (_p, request) => {
       if (request.verb === 'show') return res('show', 0, SHOW)
-      if (request.verb === 'planSpec') return res('planSpec', 0, PLAN)
       if (request.verb === 'pull') return res('pull', 0, PULLED)
       return res(request.verb, 0, {})
     })
@@ -380,7 +372,8 @@ describe('SpecCard: the Boards zone', () => {
     expect(screen.getByTestId('spec-facts').contains(boards)).toBe(false)
     expect(follows(screen.getByTestId('spec-facts'), boards)).toBe(true)
     expect(within(boards).getByRole('button', { name: /^Pull now/ }).hasAttribute('data-write')).toBe(true)
-    expect(within(boards).getByRole('button', { name: /^Plan changes/ }).hasAttribute('data-write')).toBe(true)
+    // Plan changes runs nothing (it shows the plugin lines), so it is not a write control either
+    expect(within(boards).getByRole('button', { name: /^Plan changes/ }).hasAttribute('data-write')).toBe(false)
   })
 
   it('opening the card never plans or pulls: only the discussion is read, and no timer changes that', async () => {
@@ -391,75 +384,83 @@ describe('SpecCard: the Boards zone', () => {
     expect(new Set(verbsCalled().map((r) => r.verb))).toEqual(new Set(['show']))
   })
 
-  it('Plan changes asks for this spec\'s plan; the chip then offers Review plan, and the dialog\'s Confirm sends the hash it printed', async () => {
+  it('Plan changes shows this spec\'s plugin lines and runs nothing: no request, no Review plan, nothing ledgered', async () => {
     await mountCard()
     await waitFor(() => expect(chip().getAttribute('data-state')).toBe('status'))
+    await screen.findByTestId('discussion-list')
+    const before = runAdoVerb.mock.calls.length
     expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: /^Plan changes/ }))
-    await screen.findByRole('button', { name: /^Review plan/ })
-    expect(verbsCalled()).toContainEqual({ verb: 'planSpec', spec: '0008' })
-    expect(verbsCalled().filter((r) => r.verb === 'planSpec')).toHaveLength(1)
-    fireEvent.click(screen.getByRole('button', { name: /^Review plan/ }))
-    const dialog = await screen.findByTestId('ado-apply-dialog')
-    expect(within(dialog).getByTestId('ado-apply-sender').textContent).toContain('@sam-k')
-    fireEvent.click(within(dialog).getByRole('button', { name: new RegExp(`^${APPLY_CONFIRM}`) }))
-    await screen.findByTestId('ado-apply-result')
-    expect(verbsCalled().filter((r) => r.verb === 'apply')).toEqual([{ verb: 'apply', confirm: HASH }])
-    // the dialog keeps showing the plugin's answer: the spent plan is not pulled out from under it
-    expect(screen.getByTestId('ado-apply-dialog')).toBeTruthy()
-    expect(screen.getByTestId('plan-result').textContent).toBe(APPLIED_PLAN_AGAIN)
+    const button = within(screen.getByTestId('spec-boards')).getByRole('button', { name: /^Plan changes/ })
+    expect(button.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.queryByTestId('plan-lines')).toBeNull()
+    fireEvent.click(button)
+    const shown = screen.getByTestId('plan-lines')
+    expect(button.getAttribute('aria-expanded')).toBe('true')
+    expect(shown.textContent).toContain(PLAN_NOT_RUN)
+    expect([...shown.querySelectorAll('code')].map((c) => c.textContent)).toEqual(planLines('0008'))
+    expect(planLines('0008')).toEqual(['ado_sync.py plan --kind spec --id 0008', 'ado_sync.py apply --confirm <hash> --by <your handle>'])
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    // nothing was asked of the plugin by the click: the only requests are the discussion read the card made on open
+    expect(runAdoVerb.mock.calls.length).toBe(before)
+    expect(new Set(verbsCalled().map((r) => r.verb))).toEqual(new Set(['show']))
+    expect(verbsCalled().some((r) => /plan/i.test(String(r.verb)))).toBe(false)
+    expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
+    fireEvent.click(button)
+    expect(screen.queryByTestId('plan-lines')).toBeNull()
+    expect(button.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it('Plan changes that finds nothing to send says so and offers no Review plan; an unreadable plan says why, in digit-free words', async () => {
-    runAdoVerb.mockImplementation(async (_p, request) => (request.verb === 'planSpec' ? res('planSpec', 0, NOTHING_TO_SEND) : res(request.verb, 0, request.verb === 'show' ? SHOW : {})))
-    await mountCard()
-    fireEvent.click(screen.getByRole('button', { name: /^Plan changes/ }))
-    expect((await screen.findByTestId('plan-result')).textContent).toContain('Nothing to send for this spec')
-    expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
-    runAdoVerb.mockImplementation(async (_p, request) => (request.verb === 'planSpec'
-      ? res('planSpec', 0, { ok: true, unavailable: true, reason: 'no discovered schema: run `ado_sync.py discover` first', host: null, plan: null, rows: [], counts: null })
-      : res(request.verb, 0, request.verb === 'show' ? SHOW : {})))
-    fireEvent.click(screen.getByRole('button', { name: /^Plan changes/ }))
-    await waitFor(() => expect(screen.getByTestId('plan-result').textContent).toContain(SCHEMA_NOT_DISCOVERED))
-    expect(screen.getByTestId('plan-result').textContent).toContain('no discovered schema')
-    expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
+  it('the lines it shows are the plugin\'s own: plan --kind spec --id, apply --confirm --by, and ado-plan a declared capability', () => {
+    const PLUGIN = resolve(__dirname, '..', '..')
+    const cli = readFileSync(resolve(PLUGIN, 'scripts', 'ado_sync.py'), 'utf-8')
+    expect(cli).toMatch(/sub\.add_parser\("plan"/)
+    expect(cli).toMatch(/p\.add_argument\("--kind", action="append"/)
+    expect(cli).toMatch(/p\.add_argument\("--id", action="append", metavar="ID",\s+help="Only this item: its id \(0004/)
+    expect(cli).toMatch(/sub\.add_parser\("apply"[\s\S]{0,400}p\.add_argument\("--confirm"[\s\S]{0,300}p\.add_argument\("--by"/)
+    const contract = readFileSync(resolve(PLUGIN, 'scripts', 'boards_contract.py'), 'utf-8')
+    expect(contract).toMatch(/^KINDS[^=]*= \([^)]*"spec"/m)
+    const caps = readFileSync(resolve(PLUGIN, 'scripts', 'capabilities.py'), 'utf-8')
+    expect(caps).toMatch(new RegExp(`"${PLAN_CAPABILITY}": \\{"script": "ado_sync\\.py", "argv": \\["plan"\\]`))
   })
 
-  it('a plan the plugin refused is said under its exit heading with its stderr; no plan is kept', async () => {
-    runAdoVerb.mockImplementation(async (_p, request) => (request.verb === 'planSpec' ? res('planSpec', null, null, { stderr: NO_ACTOR }) : res(request.verb, 0, request.verb === 'show' ? SHOW : {})))
-    await mountCard()
-    fireEvent.click(screen.getByRole('button', { name: /^Plan changes/ }))
-    const said = await screen.findByTestId('plan-result')
-    expect(said.textContent).toContain(EXIT_HEADING[1])
-    expect(said.textContent).toContain(NO_ACTOR)
-    expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
-  })
-
-  it('Pull now pulls this spec only, re-reads the chip, and drops a plan drawn before the pull', async () => {
+  it('Pull now pulls this spec only and re-reads the chip; the chip is never handed a plan from the card', async () => {
     await mountCard()
     await waitFor(() => expect(chip().getAttribute('data-state')).toBe('status'))
     fireEvent.click(screen.getByRole('button', { name: /^Plan changes/ }))
-    await screen.findByRole('button', { name: /^Review plan/ })
     expect(getCommandCenter).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole('button', { name: /^Pull now/ }))
     await screen.findByTestId('fields-pull-result')
     expect(verbsCalled()).toContainEqual({ verb: 'pull', id: REF })
     await waitFor(() => expect(getCommandCenter).toHaveBeenCalledTimes(2))
-    await waitFor(() => expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull())
+    expect(screen.queryByRole('button', { name: /^Review plan/ })).toBeNull()
+    expect(new Set(verbsCalled().map((r) => r.verb))).toEqual(new Set(['show', 'pull']))
   })
 
   it('every disabled Boards control carries a reason: no actor, and a plugin without the capability', async () => {
     await mountCard({ actor: null, capabilities: [CAPABILITIES.adoStatus, 'ado-show'] })
     await screen.findByTestId('discussion-block')
     const boards = screen.getByTestId('spec-boards')
+    // Plan changes' reason is the verb the plugin lacks, never the missing person: showing a line runs nothing
     const plan = within(boards).getByRole('button', { name: /^Plan changes/ }) as HTMLButtonElement
     expect(plan.disabled).toBe(true)
-    expect(plan.getAttribute('title')).toBe(NO_ACTOR)
+    expect(plan.getAttribute('title')).toBe(newerPlugin('ado-plan'))
     const pull = within(boards).getByRole('button', { name: /^Pull now/ }) as HTMLButtonElement
     expect(pull.getAttribute('title')).toBe(newerPlugin('ado-pull'))
     cleanup()
+    await mountCard({ actor: null })
+    const open = within(screen.getByTestId('spec-boards')).getByRole('button', { name: /^Plan changes/ }) as HTMLButtonElement
+    expect(open.disabled).toBe(false)
+    fireEvent.click(open)
+    expect([...screen.getByTestId('plan-lines').querySelectorAll('code')].map((c) => c.textContent)).toEqual(planLines('0008'))
+    expect(verbsCalled().some((r) => /plan/i.test(String(r.verb)))).toBe(false)
+    cleanup()
     await mountCard({ capabilities: [CAPABILITIES.adoStatus, 'ado-show'] })
-    expect((within(screen.getByTestId('spec-boards')).getByRole('button', { name: /^Plan changes/ })).getAttribute('title')).toBe(newerPlugin('ado-plan'))
+    const lacking = within(screen.getByTestId('spec-boards')).getByRole('button', { name: /^Plan changes/ }) as HTMLButtonElement
+    expect(lacking.disabled).toBe(true)
+    expect(lacking.getAttribute('title')).toBe(newerPlugin('ado-plan'))
+    expect(PLAN_CAPABILITY).toBe('ado-plan')
+    fireEvent.click(lacking)
+    expect(screen.queryByTestId('plan-lines')).toBeNull()   // a line the plugin cannot run is never shown
     const sweep = [...screen.getByTestId('spec-boards').querySelectorAll<HTMLElement>('button[disabled]'), ...screen.getByTestId('discussion-block').querySelectorAll<HTMLElement>('button[disabled], textarea[disabled]')]
     expect(sweep.length).toBeGreaterThan(0)
     for (const el of sweep) expect((el.getAttribute('title') ?? '').trim(), el.textContent ?? '').not.toBe('')
@@ -500,10 +501,12 @@ describe('PullNow and the Boards row hold no timer and add no channel', () => {
     expect(body).not.toMatch(/window\.studio|child_process|['"`]az['"`]/)
   })
 
-  it('the spec card\'s new code reaches the plugin only through runAdoVerb, and the preload still exposes one Ado channel', () => {
+  it('the spec card itself reaches the plugin for no Boards verb (its Boards components do, through runAdoVerb), and the preload still exposes one Ado channel', () => {
     const card = code(readFileSync(resolve(root, 'src', 'components', 'SpecCard', 'SpecCard.tsx'), 'utf-8'))
     const studioCalls = [...new Set([...card.matchAll(/studio\.(\w+)/g)].map((m) => m[1]))].sort()
-    expect(studioCalls).toEqual(['getSpecCard', 'openDocument', 'runAdoVerb'])
+    expect(studioCalls).toEqual(['getSpecCard', 'openDocument'])
+    expect(card).not.toMatch(/verb: '/)
+    expect(card).not.toMatch(/planSpec/)
     const preload = readFileSync(resolve(root, 'electron', 'preload', 'index.ts'), 'utf-8')
     expect(preload.match(/studio:\w*Ado\w*/g)).toEqual(['studio:runAdoVerb'])
   })

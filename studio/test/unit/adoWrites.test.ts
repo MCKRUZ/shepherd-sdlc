@@ -54,8 +54,6 @@ const EVERY_VERB: ReadonlyArray<{ req: AdoVerbRequest; argv: string[] }> = [
   { req: { verb: 'pullDiscussion', id: REF }, argv: ['pull', '--repo', PROJECT, '--discussion', '--id', REF, '--json'] },
   { req: { verb: 'show', ref: REF }, argv: ['show', '--repo', PROJECT, REF, '--json'] },
   { req: { verb: 'comment', ref: REF, message: 'Looks right.' }, argv: ['comment', '--repo', PROJECT, REF, '--message=Looks right.', '--json', '--by', '@priya-n'] },
-  // B5-P4: the spec card's one plan read — `plan --kind spec --id <NNNN>`, no --by, over the same single channel.
-  { req: { verb: 'planSpec', spec: '0001' }, argv: ['plan', '--repo', PROJECT, '--kind', 'spec', '--id', '0001', '--json'] },
 ]
 
 beforeEach(() => {
@@ -143,35 +141,20 @@ describe('runAdoVerb', () => {
     expect((await runAdoVerb(PROJECT, SCRIPTS, { verb: 'pull' }, ACTOR)).json).toBeNull()
   })
 
-  it('the plan read (planSpec) is one spawn of `plan --kind spec --id <NNNN> --json` with no --by, and hands the plan document over', async () => {
-    const plan = { ok: true, unavailable: false, reason: null, plan: HASH, posture: 'assisted', executed_as: '@priya-n', rows: [] }
-    run.mockResolvedValue(entry(0, JSON.stringify(plan)))
-    const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'planSpec', spec: '0001' }, ACTOR)
-    expect(run).toHaveBeenCalledTimes(1)
-    expect(run).toHaveBeenCalledWith(SCRIPTS, 'ado_sync.py', ['plan', '--repo', PROJECT, '--kind', 'spec', '--id', '0001', '--json'])
-    expect(r).toMatchObject({ ok: true, exitCode: 0, verb: 'planSpec', json: plan })
-    expect(r.argv.includes('--by')).toBe(false)
-    // plan writes local files only (a plan file, a ledger line): the command center's local blocks are re-read after it
-    expect(invalidateCommandCenter).toHaveBeenCalledWith(PROJECT)
-  })
-
-  it('the plan read is refused with newerPlugin(ado-plan) on a plugin that lacks it, and never for a ref or a flag', async () => {
-    const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'planSpec', spec: '0001' }, ACTOR, ['ado-status-json'])
-    expect(r).toMatchObject({ ok: false, exitCode: null, stderr: newerPlugin('ado-plan') })
-    for (const spec of ['sdlc:spec:0001', '--all', '1']) {
-      const bad = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'planSpec', spec }, ACTOR)
-      expect(bad.exitCode, spec).toBeNull(); expect(bad.stderr, spec).toMatch(/is not a spec number/)
-    }
-    expect(run).not.toHaveBeenCalled()
-  })
-
-  it('reconcile refuses a #<work item> ref here too — before any spawn', async () => {
+  it('reconcile refuses a #<work item> ref here too — before any spawn (B5-P4)', async () => {
     const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'reconcile', ref: '#4521', field: 'System.State', take: 'sdlc' }, ACTOR)
     expect(r.exitCode).toBeNull(); expect(r.stderr).toBe("ref '#4521' is not an sdlc:<kind>:<id> ref")
-    expect(run).not.toHaveBeenCalled()
+    expect(run).not.toHaveBeenCalled(); expect(invalidateCommandCenter).not.toHaveBeenCalled()
   })
 
-  it('runs ado_sync.py once per verb, whichever of the table\'s verbs it is, and never az', async () => {
+  it('a plan request (planSpec) is not one of the seven: refused before any spawn, nothing invalidated (B5-P4)', async () => {
+    const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'planSpec', spec: '0001' } as unknown as AdoVerbRequest, ACTOR)
+    expect(r).toEqual({ ok: false, exitCode: null, refused: false, stdout: '', stderr: 'That is not a Boards verb Shepherd runs.', argv: [], verb: 'show', json: null })
+    expect(run).not.toHaveBeenCalled(); expect(invalidateCommandCenter).not.toHaveBeenCalled()
+    expect(ADO_VERBS).toHaveLength(7)
+  })
+
+  it('runs ado_sync.py once per verb, whichever of the seven it is, and never az', async () => {
     run.mockResolvedValue(entry(0, '{}'))
     for (const { req, argv } of EVERY_VERB) {
       run.mockClear()
