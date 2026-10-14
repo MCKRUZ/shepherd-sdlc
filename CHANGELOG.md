@@ -1,10 +1,9 @@
 # Changelog
 
-## 2.1.0 — 2026-10-13
+## 2.1.0 — 2026-10-14
 
-This section collects the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`). It carries no
-version heading and no version bump yet; both land with the release that ships the whole mirror.
-2.1.0 is that release: Folds B1 to B5, one pull request, one version bump (`.claude-plugin/plugin.json`,
+This section is the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`): Folds B1 to B5,
+one pull request, one version bump (`.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `studio/package.json` and both version lines of `studio/package-lock.json`).
 
 ### Fold B1 — schema, config, transport seam
