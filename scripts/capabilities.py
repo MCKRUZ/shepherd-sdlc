@@ -67,6 +67,11 @@ CAPABILITIES: dict[str, dict] = {
     "findings-json": {"script": "record_findings.py", "argv": ["report"], "flags": ["--json", "--spec"]},
     # Its presence also means `--spec --json` carries `ladder{}`: both landed in the same change.
     "readiness-all": {"script": "spec_readiness.py", "flags": ["--all", "--json"]},
+    # Data specs (spec 0039): a spec the data team owns, linked to the build spec it serves. Each name
+    # disables one control on an older plugin; `decision-open-all-branches` is the branch-safe `DL-NN`.
+    "data-spec": {"script": "data_spec.py", "argv": ["new"], "flags": ["--serves", "--name", "--all-branches", "--json"]},
+    "data-spec-status": {"script": "data_spec.py", "argv": ["status"], "flags": ["--repo", "--state", "--json"]},
+    "decision-open-all-branches": {"script": "track_decisions.py", "argv": ["open"], "flags": ["--all-branches"]},
 }
 
 

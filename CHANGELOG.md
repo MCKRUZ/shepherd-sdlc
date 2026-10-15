@@ -1,5 +1,65 @@
 # Changelog
 
+## Unreleased
+
+No version is claimed here: 2.1.0–2.5.0 belong to the Azure Boards folds that have not merged, so
+numbering is decided at release (`docs/proposals/data-specs.md`, D9).
+
+### Data specs — a linked spec the data team works to live data (spec 0039)
+
+A **data spec** is an ordinary spec (one spec = one branch = one PR) whose work is data: the source
+objects, transformation code, serving object and documents a build spec needs. The Data discipline
+owns it, `/sprd-data` works it, and it is done only when the data really flows. The contract is
+`references/data-specs.md`; the reasons are `docs/proposals/data-specs.md`.
+
+- **The data spec and its link.** A data spec is marked `type: data` (the existing `type` field,
+  never `kind:`) plus `serves: "<parent id>"`, from `templates/phases/build/data-spec.md`, and
+  `check_spec.py` holds it to the same Definition of Ready as any spec. `data_spec.py
+  new|target|status|check` drives it. `new` creates the data spec and, in the same call, changes
+  exactly two lines of the parent: its `depends_on` gains the data id (so the sprint layer builds
+  the data first) and its `data_review` becomes `pending`, unless it was already `accepted`, which
+  is kept and reported in `data_review_note`. Acceptance stays `sprint.py verdict --lane data
+  --verdict accepted --by <named human>`; a tool never writes it. `target` turns a spec that
+  already exists into a data spec. A self-link, a data-spec parent or a `depends_on` cycle is
+  refused (exit 2) and nothing is written.
+- **A `## Context` bundle.** It lists the parent, a dated read-only copy of its acceptance checks,
+  and every business rule (`BR-NN`), decision (`DL-NN`), decision record (`ADR-NNN`) and intake
+  document (`DOC-NNN`) the parent cites, each resolved to the file that defines it. One that cannot
+  be found reads `not found in this repository`, never a guessed path. `/sprd-data` loads it before
+  any interview question.
+- **Done means the data flows.** Six acceptance checks come pre-seeded (the pipeline runs end to
+  end, the serving object returns a real row, a dictionary row per input cites its profile query,
+  a lineage path per serving object, linked smoke tests, an owned `DL-NN` per readiness gap), each
+  concrete enough to pass the vague-line lint. `data_spec.py check` is the early, advisory look
+  (`context-coverage`, `readiness-gaps-owned`, `handoff-present`): exit 0 always, and
+  `passed: null` with "not measured" when its source file is absent. `status` reads
+  `has_data: false` with no data spec, never a zero.
+- **Three new documents under `templates/phases/02-design/data/`**, each with a shape and a
+  round-trip fixture: `data-dictionary.md` (per input: derivation, null %, distinct, min–max,
+  median; a cell nobody measured reads `not measured`, never `0`), `decision-memo.md` (constraints,
+  options with evidence, a scorecard, and a decision a named human makes) and `data-handoff.md`
+  (what is live, how to call it, degraded results, smoke tests, what is left, owners).
+- **Branch-safe ids.** `track_decisions.py open --all-branches` and `data_spec.py new
+  --all-branches` take the highest `DL-NN` or spec id on every local ref plus one, so two branches
+  can no longer both name a decision `DL-07`. They read local refs only and never fetch; the help
+  says "run `git fetch` first", and a ref that could not be read is named in `unread`, never
+  counted. Without the flag, `open`'s output is byte-identical.
+- **`/sprd-data` drives a data spec; the agent keeps its tools.** The command loads `## Context`
+  first, authors six artifacts instead of three, opens routed gaps with `--all-branches`, and
+  offers to scaffold a data spec for a build spec that has none; `phases/activities.yaml` declares
+  the three new paths and a `data-spec` activity in the build stage. The `data-analyst` agent keeps
+  `Read, Write, Edit, Grep, Glob`: no shell, no platform queries. `--live` (read-only platform
+  queries) and platform packs are a written design in `docs/proposals/data-specs.md` §Deferred, not
+  built; until they are, a number with no cited query reads `not measured`.
+- **Three capabilities** — `data-spec`, `data-spec-status` and `decision-open-all-branches` — so
+  Shepherd, the desktop app, can tell a current plugin from an older one.
+- **The protected core is byte-for-byte unchanged** (`new_spec.py`, `check_spec.py`, `sprint.py`,
+  `sprint_model.py`, `spec_transition.py`, `spec.md` and its shape, `harness/**`, and the rest of
+  the list in the kit's §6). One existing test was edited: the build-phase activities pin in
+  `test_activities_model.py` gained `data-spec`. The full suite passes: 4029 passed, 19 skipped.
+
+---
+
 ## 2.0.0 — 2026-10-12
 
 ### Shepherd — the brand update
