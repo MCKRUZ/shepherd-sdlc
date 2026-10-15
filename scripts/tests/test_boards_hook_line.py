@@ -530,6 +530,8 @@ VERB_FLAGS: dict[tuple[str, ...], set[str]] = {
 DOCUMENTED_BY_B2 = [v for v in VERB_FLAGS if v[0] in {"config", "discover", "validate", "plan", "status", "pull",
                                                       "drift", "link", "adopt", "show", "discussion"}]
 NAMES_A_PERSON = {("link",), ("adopt",)}
+# Fold B6 (spec 0040): the read verb that runs pull, drift and plan in one pass. It has no --by and no --full.
+VERB_FLAGS[("sync",)] = {"--kind", "--id", "--sprint", "--all", "--discussion", "--no-comments"}
 
 
 def _fenced_blocks(text: str) -> list[str]:
