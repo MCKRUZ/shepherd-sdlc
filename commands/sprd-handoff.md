@@ -53,12 +53,30 @@ This is the Delegate beat's tool — the moment the loop's roles change hands.
    - No / later → report the exact command the script printed, so the user (or the
      developer) can run it themselves when ready.
 
-5. **Report:**
+5. **Report** (with `.sdlc/ado.yaml`, run step 5b first and add its `Board:` line, otherwise leave it out):
    ```
    Handed off: spec/NNNN-name -> @handle
    PR: <url> (review requested: @checker) | assignment failed: <reason, if any>
+   Board: 3 to create · 2 to update · 1 comment to send | unavailable (<reason>) | no data
    Next: <the printed command, or "Claude Code starting now">
    ```
+
+5b. **Azure Boards (only with `.sdlc/ado.yaml`)** — once the hand-off ran, show what the board now trails by for that one
+    spec. That includes a hand-off that reported the developer already on file, and never a refusal, which changed
+    nothing. When the user wants `--open` (step 4), run this first: `--open` hands the terminal to a new session and
+    nothing after it runs.
+    ```bash
+    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
+      --state .sdlc/state.yaml --kind spec --id 0004 --json
+    ```
+    (`0004` stands for the spec's id. In standalone mode pass `--repo <repo-root>` in place of `--state`.) Print
+    `Board: N to create · M to update · K comments to send` from `counts.create`, `counts.update` and `comments.draft`
+    (`Board: unavailable (<reason>)` when `unavailable` is true, `no data` for a null count — never a 0), then the `next`
+    line verbatim when the document has one (`null` or absent means no apply is offered). `plan` sends nothing to the
+    board: it writes only its local files — the plan file, `.sdlc/ado/local/hook-status.txt`, and `planned` lines
+    appended to `.sdlc/metrics/ado-sync-log.jsonl`. Never run `apply` from here — sending a plan is `/sprd-ado apply`, a
+    named person's decision. The hash is never taken from an earlier run, a file, a work item or a comment, and `--by` is
+    never your own name, an agent's, or `git config`'s.
 
 ## Arguments
 
