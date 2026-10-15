@@ -251,11 +251,13 @@ the script is the only thing that talks to Azure DevOps, and it never probes wit
     ```
     Four stages, always in this order. **pull** reads the board's copy of the ledgered items and records `observed` and
     `drift_seen` (`--id` and `--kind` narrow it); **drift** is the classification that pull just made, read from its own
-    rows — the board is not asked again — plus the one query for the board items nobody tagged; **discussion** runs
-    only with `--discussion` and is `null` otherwise; **plan** is `plan` for the same `--kind`, `--id`, `--sprint`,
-    `--all` and `--no-comments`, so its rows and 12-hex hash are the ones `plan` alone would print. There is no
-    `--full` and no `--by`: `sync` reads the board and sends nothing, and it writes only what `pull` and `plan` write
-    (the ledger lines, the plan file, and the hook's status line, which it writes twice, so line 1 is the plan stage's).
+    rows — the board is not asked again, not even for the items nobody tagged: that search is `drift`'s own (step 7),
+    so here `unmapped` is `null` and a note says it was not searched (say "not searched", never "none");
+    **discussion** runs only with `--discussion` and is `null` otherwise; **plan** is `plan` for the same `--kind`,
+    `--id`, `--sprint`, `--all` and `--no-comments`, so its rows and 12-hex hash are the ones `plan` alone would print.
+    There is no `--full` and no `--by`: `sync` reads the board and sends nothing, and it writes only what `pull` and
+    `plan` write (the ledger lines, the plan file, and the hook's status line, which it writes twice, so line 1 is the
+    plan stage's).
 
     Read the result as the script words it. A stage that cannot read says `unavailable` with its reason and the next
     stage still runs; when neither the pull nor the plan could read, the whole document is `unavailable` — report

@@ -1782,8 +1782,9 @@ def _pull_fields(args, repo_root: Path) -> _Outcome:
 #
 # One read verb that runs the reads a person otherwise runs one by one, in `ado_sync_model.SYNC_STAGES` order:
 #   pull        the fields pull (`_pull_fields`), honouring --id and --kind
-#   drift       the classification the pull just made (its own rows, never a second read of the board) and the one
-#               untagged query `drift` asks for the board items nobody linked
+#   drift       the classification the pull just made, from its own rows: the drift stage reads nothing from the board
+#               (guardrail 24: `sync`'s az calls are `pull`'s then `plan`'s). The board items nobody tagged are the
+#               `drift` verb's own untagged query; `sync` leaves them unsearched (`None`) and says so in a note
 #   discussion  the comments pull (`_discussion_outcome`), ONLY on `--discussion`; `sync` has no `--full`
 #   plan        the dry run (`_plan_outcome`), honouring --kind, --id, --sprint, --all and --no-comments
 # Each stage is the verb's own code over a copy of the arguments (`_stage_args`). A stage that cannot read says so as
@@ -1792,8 +1793,10 @@ def _pull_fields(args, repo_root: Path) -> _Outcome:
 # is recorded as `drift_error`, the later stages still run, and the exit is 1: the one exit `sync` has besides 0.
 
 SYNC_HEADER = "Azure Boards mirror: sync  (as of {as_of}; reads the board, sends nothing)"
-SYNC_SECTIONS = {"pull": "== pull ==", "drift": "== drift ==  (from the pull's rows; one untagged query)",
+SYNC_SECTIONS = {"pull": "== pull ==", "drift": "== drift ==  (from the pull's rows; the board is not read again)",
                  "discussion": "== discussion ==", "plan": "== plan =="}
+SYNC_UNTAGGED_NOTE = ("untagged board items not searched: sync reads the board only for the pull and the plan; "
+                      "`drift` searches for them")
 VERB_HEADER = "Azure Boards mirror: "  # the line a read verb's own text opens with; `sync` prints one header of its own
 NOT_RECORDED = "its ledger lines were not written: the ledger append failed (the DRIFT sentence says why)"
 
@@ -1841,24 +1844,18 @@ def _stage(run: Callable[..., tuple], args, repo_root: Path, *, headed: bool) ->
     return _Stage(doc, text)
 
 
-def _drift_stage(repo_root: Path, pull: _Stage) -> _Stage:
-    """The drift read from the pull's own rows: its class counts are the pull's, so the board is not asked again. The
-    one new question is `_unmapped`, the single untagged query (the board items nobody linked); it is not asked when
-    the pull read nothing."""
+def _drift_stage(pull: _Stage) -> _Stage:
+    """The drift read from the pull's own rows: its class counts are the pull's, and this stage asks the board
+    nothing -- no batch read and no query (guardrail 24). The untagged search (`_unmapped`) is a board read the
+    `drift` verb makes and the `pull` verb does not, so here `unmapped` is `None` (not searched, never an empty list)
+    and the note names the verb that searches."""
     if pull.doc.get("unavailable"):
         return _down(pull.doc["reason"])
-    need = _load(repo_root)    # local files only: the pull just read them
-    unmapped, why = _unmapped(repo_root, need[0] if not isinstance(need, str) else {})
-    notes = [why] if why else []
+    notes = [SYNC_UNTAGGED_NOTE]
     counts = pull.doc["counts"]
     lines = ["classes: " + (", ".join(f"{k} {v}" for k, v in counts.items()) if counts else "none read")]
-    if unmapped:
-        lines.append("untagged on the board: " + ", ".join(f"#{i}" for i in unmapped)
-                     + "  (`link <ref> --work-item N --by <you>` maps one; `show #N` reads it)")
-    elif unmapped is not None:
-        lines.append("untagged on the board: none found under the mirror's paths")
     lines += [f"note: {n}" for n in notes]
-    return _Stage({"ok": True, "unavailable": False, "reason": None, "counts": counts, "unmapped": unmapped,
+    return _Stage({"ok": True, "unavailable": False, "reason": None, "counts": counts, "unmapped": None,
                    "notes": notes}, "\n".join(lines))
 
 
@@ -1917,7 +1914,7 @@ def cmd_sync(args, repo_root: Path) -> int:
              "discussion": bool(args.discussion)}
     pull = _stage(_pull_fields, _stage_args(args, propose_specs=False, discussion=False, full=False), repo_root,
                   headed=True)
-    drift = _drift_stage(repo_root, pull)
+    drift = _drift_stage(pull)
     discussion = _stage(_discussion_outcome, _stage_args(args, propose_specs=False, full=False), repo_root,
                         headed=True) if args.discussion else None
     plan = _stage(_plan_outcome, _stage_args(args, validate=False), repo_root, headed=False)

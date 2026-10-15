@@ -5,9 +5,9 @@ from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS, route_key_boards
 #
 # What this pins, and why each line exists (build kit sections 1 K9/K11/K28, 4, 9 guardrails 24-27; spec 0040):
 #   * `sync` is a READ verb that runs four stages in `SYNC_STAGES` order: the fields pull, the drift read FROM THE
-#     PULL'S OWN ROWS (the board is never asked twice: `az.calls` of `sync` are `pull`'s, one untagged query, then
-#     `plan`'s), the discussion pull ONLY on `--discussion` (and it has no `--full`, `--by`, `--validate` or
-#     `--propose-specs`), then the plan;
+#     PULL'S OWN ROWS (the drift stage asks the board nothing: `az.calls` of `sync` are exactly `pull`'s then
+#     `plan`'s, guardrail 24 and spec 0040's fourth acceptance check), the discussion pull ONLY on `--discussion` (and
+#     it has no `--full`, `--by`, `--validate` or `--propose-specs`), then the plan;
 #   * exit 0 on every path except a pull-stage ledger `DRIFT` (1); a stage that cannot read says so and the next
 #     stage still runs; with nothing readable the document is `SYNC_NODATA` with only the `reason` strings filled;
 #   * the hook line is written twice (the pull stage's, then the plan stage's), so line 1 is the plan stage's;
@@ -289,52 +289,70 @@ def test_sync_runs_the_stages_and_its_plan_is_the_plain_plan(repo, az, capsys):
     assert az.written() == []
 
 
-def test_sync_drift_comes_from_the_pull_rows_and_asks_the_board_one_untagged_query(repo, az, capsys):
+def test_sync_drift_comes_from_the_pull_rows_and_asks_the_board_nothing(repo, az, capsys):
+    """The drift stage classifies the pull's own rows and makes no board read of its own: not the batch read, and not
+    `drift`'s untagged query either. Untagged items on the board stay `drift`'s question; here they are `None`
+    (never searched) with a note saying so, never an empty list."""
     seed(repo, linked(SPEC4, 4521, rev=1))                # the board moved from rev 1 to 7: a real drift to classify
-    az.answers["boards query"] = tagged([4530, 4531])
+    az.answers["boards query"] = tagged([4530, 4531])     # untagged items exist; sync must not go looking for them
     doc = sync_json(capsys, repo)
     assert doc["pull"]["counts"] == {"SDLC_OWNED_DRIFT": 1} == doc["drift"]["counts"]
-    assert doc["drift"]["unmapped"] == [4530, 4531] and doc["drift"]["notes"] == []
-    assert az.count("boards", "query") == 1
-    wiql = next(c for c in az.calls if c[:2] == ["boards", "query"])
-    assert "sdlc-repo:claims-api" in wiql[wiql.index("--wiql") + 1] and "--repository" not in wiql
+    assert doc["drift"]["unmapped"] is None
+    assert doc["drift"]["notes"] == [ado_sync.SYNC_UNTAGGED_NOTE]
+    assert "not searched" in ado_sync.SYNC_UNTAGGED_NOTE and "`drift`" in ado_sync.SYNC_UNTAGGED_NOTE
+    assert az.count("boards", "query") == 0
     assert doc["counts"]["drifted"] == 1
+    code, text = run(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0 and "#4530" not in text and "untagged on the board:" not in text
+    assert f"note: {ado_sync.SYNC_UNTAGGED_NOTE}" in text
 
 
 def test_sync_drift_says_not_searched_when_the_config_has_no_path_to_look_under(repo, az, capsys):
     seed(repo, linked(SPEC4, 4521))
     set_config(repo, area_path=None, iterations={})
     doc = sync_json(capsys, repo)
-    assert doc["drift"]["unmapped"] is None and any("not searched" in n for n in doc["drift"]["notes"])
+    assert doc["drift"]["unmapped"] is None and doc["drift"]["notes"] == [ado_sync.SYNC_UNTAGGED_NOTE]
     assert az.count("boards", "query") == 0
 
 
-def test_the_board_is_read_once_for_the_fields_az_calls_of_sync_are_pull_then_one_query_then_plan(tmp_path, az, capsys):
-    """Guardrail 24: the drift stage adds no batch read. Three fresh copies so each verb meets the same state."""
+def test_the_board_is_read_once_for_the_fields_az_calls_of_sync_are_pull_then_plan(tmp_path, az, capsys):
+    """Guardrail 24 and spec 0040's fourth acceptance check: the `az.calls` recorded by `sync` equal those recorded by
+    `pull` then `plan` over the same fixtures, so the drift stage adds 0 board reads -- no batch read and no query.
+    Three fresh copies so each verb meets the same state; the untagged query has an answer, so a stray one would
+    have been made and recorded, not silently refused."""
     calls = {}
     for name, argv in (("pull", ["pull", "--id", "0004"]), ("plan", ["plan", "--kind", "spec", "--id", "0004"]),
                        ("sync", ["sync", "--kind", "spec", "--id", "0004"])):
         root = build_repo(tmp_path / name, capsys, az)
         seed(root, linked(SPEC4, 4521))
+        az.answers["boards query"] = tagged([4530, 4531])
         code, _ = run(capsys, *argv, "--repo", root)
         assert code == 0
         calls[name] = board_calls(az)
         az.calls.clear()
-    assert az.count("boards", "query") == 0
-    queries = [c for c in calls["sync"] if c[:2] == ["boards", "query"]]
-    assert len(queries) == 1
-    assert calls["sync"] == calls["pull"] + queries + calls["plan"]
+    assert calls["sync"] == calls["pull"] + calls["plan"]
+    assert [c for c in calls["sync"] if c[:2] == ["boards", "query"]] == []
     batch = [c for c in calls["sync"] if route_key_boards(c) == "POST wit/workitemsbatch"]
     assert len(batch) == 2                                 # one for the pull, one for the plan: none for the drift
 
 
 def test_discussion_is_read_only_on_discussion_and_adds_exactly_the_discussion_pull_calls(tmp_path, az, capsys):
+    stage_calls = {}
+    for name, argv in (("pull", ["pull", "--id", "0004"]), ("plan", ["plan", "--kind", "spec", "--id", "0004"])):
+        root = build_repo(tmp_path / f"alone-{name}", capsys, az)
+        seed(root, linked(SPEC4, 4521))
+        code, _ = run(capsys, *argv, "--repo", root)
+        assert code == 0
+        stage_calls[name] = board_calls(az)
+        az.calls.clear()
+
     plain_root = build_repo(tmp_path / "plain", capsys, az)
     seed(plain_root, linked(SPEC4, 4521))
     code, doc = run_json(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", plain_root)
     assert code == 0 and doc["discussion"] is None
     plain_calls = board_calls(az)
     assert not [c for c in plain_calls if "wit/comments" in route_key_boards(c)]       # a bare sync never reads comments
+    assert plain_calls == stage_calls["pull"] + stage_calls["plan"]
     az.calls.clear()
 
     only_root = build_repo(tmp_path / "only", capsys, az)
@@ -351,11 +369,8 @@ def test_discussion_is_read_only_on_discussion_and_adds_exactly_the_discussion_p
     assert code == 0 and isinstance(doc["discussion"], dict) and doc["discussion"]["discussion"] == "pulled"
     assert doc["scope"]["discussion"] is True
     with_calls = board_calls(az)
-    pull_n = next(i for i, c in enumerate(with_calls) if c[:2] == ["boards", "query"])
-    assert with_calls[:pull_n] == plain_calls[:pull_n]                                 # the pull stage first
-    assert with_calls[pull_n] == plain_calls[pull_n]                                   # then the one query
-    assert with_calls[pull_n + 1:pull_n + 1 + len(discussion_calls)] == discussion_calls     # then the discussion pull
-    assert with_calls[pull_n + 1 + len(discussion_calls):] == plain_calls[pull_n + 1:]       # then the plan
+    # the pull stage, then the discussion pull, then the plan; the drift stage between them asks the board nothing
+    assert with_calls == stage_calls["pull"] + discussion_calls + stage_calls["plan"]
     assert az.written() == []
 
 
@@ -366,7 +381,8 @@ def test_the_stages_appear_in_the_documented_order_in_the_text(repo, az, capsys)
     marks = [text.index(m) for m in ("== pull ==", "== drift ==", "== discussion ==", "== plan ==")]
     assert marks == sorted(marks)
     assert text.splitlines()[0] == (f"Azure Boards mirror: sync  (as of {STAMP}; reads the board, sends nothing)")
-    assert "== drift ==  (from the pull's rows; one untagged query)" in text
+    assert "== drift ==  (from the pull's rows; the board is not read again)" in text
+    assert ado_sync.SYNC_SECTIONS["drift"] == "== drift ==  (from the pull's rows; the board is not read again)"
     code, text = run(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", repo)
     assert "== discussion ==" not in text
 
@@ -461,7 +477,7 @@ def test_when_az_cannot_be_reached_every_stage_is_unavailable_exit_0_and_nothing
     code, doc = run_json(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", repo)
     assert code == 0 and blank_reasons(doc) == model.SYNC_NODATA and zeros(doc) == []
     assert "not installed" in doc["pull"]["reason"] and "not installed" in doc["plan"]["reason"]
-    assert snapshot(repo) == before and az.count("boards", "query") == 0       # no untagged query when nothing was read
+    assert snapshot(repo) == before and az.count("boards", "query") == 0       # the drift stage never queries the board
     code, text = run(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", repo)
     assert code == 0 and "not_installed" in text and "== plan ==" in text
 
@@ -662,9 +678,10 @@ def test_sync_prints_no_footer_on_a_plan_only_clone(repo, az, capsys):
 
 def test_the_text_form_is_the_golden_byte_for_byte(repo, az, capsys):
     seed(repo, linked(SPEC4, 4521))
-    az.answers["boards query"] = tagged([4530, 4531])     # the untagged query's answer, stated here and not borrowed
+    az.answers["boards query"] = tagged([4530, 4531])     # untagged items exist; the golden holds none of them
     code, text = run(capsys, "sync", "--kind", "spec", "--id", "0004", "--repo", repo)
     assert code == 0 and text == GOLDEN_SYNC.read_text(encoding="utf-8")
+    assert az.count("boards", "query") == 0 and "#4530" not in text
     plan_golden = GOLDEN_PLAN.read_text(encoding="utf-8").rstrip("\n")
     assert plan_golden in text                      # the plan section is the plan's own text, verbatim
     assert not bc.EMAIL_RE.search(text) and not bc.GUID_RE.search(text)
