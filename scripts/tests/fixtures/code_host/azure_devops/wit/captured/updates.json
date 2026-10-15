@@ -1,0 +1,232 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "updates",
+  "--route-parameters",
+  "project=Claims",
+  "id=1",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 2,
+  "value": [
+   {
+    "fields": {
+     "Microsoft.VSTS.Common.AcceptanceCriteria": {
+      "newValue": "Given a duplicate order, when it is submitted, then it is refused"
+     },
+     "Microsoft.VSTS.Common.Priority": {
+      "newValue": 1
+     },
+     "Microsoft.VSTS.Common.StateChangeDate": {
+      "newValue": "2026-10-15T12:59:21.213Z"
+     },
+     "Microsoft.VSTS.Common.ValueArea": {
+      "newValue": "Business"
+     },
+     "System.AreaId": {
+      "newValue": 2104
+     },
+     "System.AreaLevel1": {
+      "newValue": "Claims"
+     },
+     "System.AreaPath": {
+      "newValue": "Claims"
+     },
+     "System.AssignedTo": {},
+     "System.AuthorizedAs": {
+      "newValue": {
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+        }
+       },
+       "descriptor": "aad.anonymised-1",
+       "displayName": "Participant 1",
+       "id": "00000000-0000-0000-0000-000000000001",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+       "uniqueName": "person1@example.com",
+       "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+      }
+     },
+     "System.AuthorizedDate": {
+      "newValue": "2026-10-15T12:59:21.213Z"
+     },
+     "System.ChangedBy": {
+      "newValue": {
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+        }
+       },
+       "descriptor": "aad.anonymised-1",
+       "displayName": "Participant 1",
+       "id": "00000000-0000-0000-0000-000000000001",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+       "uniqueName": "person1@example.com",
+       "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+      }
+     },
+     "System.ChangedDate": {
+      "newValue": "2026-10-15T12:59:21.213Z"
+     },
+     "System.CommentCount": {
+      "newValue": 1
+     },
+     "System.CreatedBy": {
+      "newValue": {
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+        }
+       },
+       "descriptor": "aad.anonymised-1",
+       "displayName": "Participant 1",
+       "id": "00000000-0000-0000-0000-000000000001",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+       "uniqueName": "person1@example.com",
+       "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+      }
+     },
+     "System.CreatedDate": {
+      "newValue": "2026-10-15T12:59:21.213Z"
+     },
+     "System.History": {
+      "newValue": "[redacted: free text]"
+     },
+     "System.Id": {
+      "newValue": 1
+     },
+     "System.IsDeleted": {
+      "newValue": false
+     },
+     "System.IterationId": {
+      "newValue": 2104
+     },
+     "System.IterationLevel1": {
+      "newValue": "Claims"
+     },
+     "System.IterationPath": {
+      "newValue": "Claims"
+     },
+     "System.NodeName": {
+      "newValue": "Claims"
+     },
+     "System.PersonId": {
+      "newValue": 1
+     },
+     "System.Reason": {
+      "newValue": "New"
+     },
+     "System.Rev": {
+      "newValue": 1
+     },
+     "System.RevisedDate": {
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.State": {
+      "newValue": "New"
+     },
+     "System.Tags": {
+      "newValue": "domain:order-intake; fr:001; fr:002; sdlc:epic:001; sdlc-repo:test-repo"
+     },
+     "System.TeamProject": {
+      "newValue": "Claims"
+     },
+     "System.Title": {
+      "newValue": "EP-001 · Orders are accepted once"
+     },
+     "System.Watermark": {
+      "newValue": 828003
+     },
+     "System.WorkItemType": {
+      "newValue": "Epic"
+     }
+    },
+    "id": 1,
+    "relations": {
+     "added": [
+      {
+       "attributes": {
+        "authorizedDate": "2026-10-15T12:59:21.213Z",
+        "comment": "source file",
+        "id": 1,
+        "resourceCreatedDate": "2026-10-15T12:59:21.213Z",
+        "resourceModifiedDate": "2026-10-15T12:59:21.213Z",
+        "revisedDate": "9999-01-01T00:00:00Z"
+       },
+       "rel": "Hyperlink",
+       "url": "https://dev.azure.com/contoso/Claims/_git/test-repo"
+      }
+     ]
+    },
+    "rev": 1,
+    "revisedBy": {
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "descriptor": "aad.anonymised-1",
+     "displayName": "Participant 1",
+     "id": "00000000-0000-0000-0000-000000000001",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "name": "Participant 1 <person1@example.com>",
+     "uniqueName": "person1@example.com",
+     "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+    },
+    "revisedDate": "9999-01-01T00:00:00Z",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/workItems/1/updates/1",
+    "workItemId": 1
+   },
+   {
+    "id": 2,
+    "relations": {
+     "added": [
+      {
+       "attributes": {
+        "isLocked": false,
+        "name": "Child"
+       },
+       "rel": "System.LinkTypes.Hierarchy-Forward",
+       "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/workItems/2"
+      }
+     ]
+    },
+    "rev": 1,
+    "revisedBy": {
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "descriptor": "aad.anonymised-1",
+     "displayName": "Participant 1",
+     "id": "00000000-0000-0000-0000-000000000001",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "name": "Participant 1 <person1@example.com>",
+     "uniqueName": "person1@example.com",
+     "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+    },
+    "revisedDate": "2026-10-15T12:59:24.84Z",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/workItems/1/updates/2",
+    "workItemId": 1
+   }
+  ]
+ }
+}

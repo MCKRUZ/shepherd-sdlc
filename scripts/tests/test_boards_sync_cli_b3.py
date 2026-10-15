@@ -29,6 +29,7 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `board` stands
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
 from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import FakeBoardsAz, is_identity_rest_read, load_wit, load_wit_error, route_key_boards, route_params
+from tests.ado_boards_fixtures import body_file
 
 import copy
 import itertools
@@ -116,7 +117,8 @@ def clock(monkeypatch):
 
 
 def _body(args):
-    return json.loads(Path(args[args.index("--in-file") + 1]).read_text(encoding="utf-8"))
+    # `--in-file <path>`, or since the B0 write fixes an update's `az rest --body @<path>`
+    return json.loads(Path(body_file(args)).read_text(encoding="utf-8"))
 
 
 def board_row(doc: dict, wid: int = 4521) -> dict:
@@ -161,7 +163,7 @@ def board(monkeypatch) -> FakeBoardsAz:
     fake.ids = itertools.count(5001)
 
     def record(args):
-        fake.sent.append((route_key_boards(args), list(args), _body(args) if "--in-file" in args else None))
+        fake.sent.append((route_key_boards(args), list(args), _body(args) if body_file(args) else None))
 
     def on_create(args):
         record(args)
@@ -281,6 +283,10 @@ def assert_clean_record(root: Path, *extra: str) -> None:
 def assert_detect_false(board) -> None:
     for call in board.calls:
         if is_identity_rest_read(call):  # B0: the one `az rest` (the identity read) has no --detect flag
+            continue
+        if call[:3] == ["rest", "--method", "patch"]:   # B0 write fixes: nor has the update, `az rest` of its URL
+            assert route_key_boards(call) == "PATCH wit/workItems" and "--detect" not in call, call
+            assert call[call.index("--resource") + 1] == bc.ADO_RESOURCE_ID, call
             continue
         assert "--detect" in call and call[call.index("--detect") + 1] == "false", call
 
@@ -869,7 +875,7 @@ def test_apply_a_board_that_moved_is_a_conflict_row_exit_1_and_nothing_is_writte
 
 
 def test_apply_a_permission_failure_stops_the_run_and_exits_1_without_the_boards_words(repo, board, planned, capsys):
-    board.fail["--http-method PATCH"] = load_wit_error("permission")
+    board.fail["rest --method patch"] = load_wit_error("permission")   # an update is `az rest` (B0 write fixes)
     code, out = run(capsys, *apply_args(planned["plan"]), "--repo", repo)
     assert code == 1 and "permission" in out and events_of(repo, "applied") == []
     assert load_wit_error("permission") not in out                    # a fixed sentence, never the board's own words

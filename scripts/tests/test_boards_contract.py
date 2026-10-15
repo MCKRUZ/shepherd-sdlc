@@ -63,6 +63,16 @@ def test_wit_routes_keys_are_the_discovery_and_item_routes():
 # Exactly these are verified; every item, write, discussion and identity row is still not — the capture did not reach
 # them, and the identity read is no `devops invoke` location at all (REST_ROUTES).
 VERIFIED_BY_B0 = DISCOVERY_ROUTES | FEED_ROUTES | {"workitem_create"}   # the create POST was reached by probe 17 (2026-10-14)
+# B0 write fixes (2026-10-15, the first live apply and its probes): the batch read, the history read, the comments POST
+# and GET, and the update — reached through `az rest` (REST_ROUTES["workitem_update"]), since `devops invoke` cannot
+# PATCH a work item. `comment_versions` was not reached; `connection_data` is no invoke location at all.
+VERIFIED_BY_B0 |= {"workitemsbatch", "updates", "comments", "workitem_update"}
+UNVERIFIED_AFTER_B0 = {"comment_versions", "connection_data"}
+
+
+def test_exactly_the_rows_no_capture_reached_are_unverified():
+    assert {n for n, row in bc.WIT_ROUTES.items() if not row["verified"]} == UNVERIFIED_AFTER_B0
+    assert set(bc.WIT_ROUTES) == VERIFIED_BY_B0 | UNVERIFIED_AFTER_B0
 
 
 @pytest.mark.parametrize("name", sorted(DISCOVERY_ROUTES | ITEM_ROUTES))
@@ -259,12 +269,23 @@ def test_the_org_level_row_really_has_no_project_in_its_template():
     assert "{project}" not in loc["routeTemplate"] and loc["routeTemplate"].startswith("_apis/")
 
 
-def test_rest_routes_are_the_identity_read_only_and_agree_with_the_transport():
-    assert set(bc.REST_ROUTES) == {"connection_data"} and set(bc.REST_ROUTES) <= set(bc.WIT_ROUTES)
+def test_rest_routes_are_the_identity_read_and_the_update_and_agree_with_the_transport():
+    """B0 (2026-10-14) the identity read; B0 write fixes (2026-10-15) the update, which `devops invoke` cannot send."""
+    assert set(bc.REST_ROUTES) == {"connection_data", "workitem_update"} and set(bc.REST_ROUTES) <= set(bc.WIT_ROUTES)
     row = bc.REST_ROUTES["connection_data"]
     assert row == {"path": "_apis/connectionData", "method": "GET", "api_version": ado_transport.PREVIEW_API_VERSION,
                    "verified": True}
-    assert {r["path"] for r in bc.REST_ROUTES.values()} == ado_transport.REST_READS
-    assert {r["method"] for r in bc.REST_ROUTES.values()} == {"GET"}
+    update = bc.REST_ROUTES["workitem_update"]
+    assert update == {"path": "{project}/_apis/wit/workitems/{id}", "method": "PATCH",
+                      "api_version": ado_transport.API_VERSION, "verified": True}
+    assert {r["path"] for r in bc.REST_ROUTES.values() if r["method"] == "GET"} == ado_transport.REST_READS
+    assert {r["path"] for r in bc.REST_ROUTES.values() if r["method"] == "PATCH"} == ado_transport.REST_WRITES
+    assert {r["method"] for r in bc.REST_ROUTES.values()} == {"GET", "PATCH"}
+    assert update["method"] == bc.WIT_ROUTES["workitem_update"]["method"]   # the same write, by another transport
+    assert re.findall(r"\{([a-z]+)\}", update["path"]) == list(bc.WIT_ROUTES["workitem_update"]["route"])
     assert bc.ADO_RESOURCE_ID == ado_transport.ADO_RESOURCE_ID == "499b84ac-1321-427f-aa17-267ca6975798"
-    assert not re.search(r"-preview\.\d", row["api_version"])
+    assert not any(re.search(r"-preview\.\d", r["api_version"]) for r in bc.REST_ROUTES.values())
+
+
+def test_page_tokens_are_read_body_first_then_the_extensions_own_key():
+    assert bc.PAGE_TOKEN_KEYS == ("continuationToken", "continuation_token")

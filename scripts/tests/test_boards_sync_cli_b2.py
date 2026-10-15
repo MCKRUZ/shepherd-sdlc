@@ -416,7 +416,9 @@ def test_plan_spends_one_by_tag_query_and_one_batch_read_however_many_items_it_c
     refs = [r["ref"] for r in out["rows"]]
     assert len(refs) > 6 and az.count("boards", "query") == 1 and az.count("devops", "invoke") == 1
     wiql = az.calls[0][az.calls[0].index("--wiql") + 1]
-    assert wiql.startswith("SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND (")
+    # B0 (2026-10-15): the project as a literal, never the `@project` macro (az printed zero bytes for it)
+    assert wiql.startswith("SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND (")
+    assert "@project" not in wiql
     assert all(f"[System.Tags] CONTAINS '{ref}'" in wiql for ref in refs if ref.split(":")[1] != "sprint")
     actions = {r["ref"]: (r["action"], r["work_item"]) for r in out["rows"]}
     assert actions[SPEC4] == ("link", 4521) and actions[FEATURE3] == ("link", 4410)     # read back from the tags

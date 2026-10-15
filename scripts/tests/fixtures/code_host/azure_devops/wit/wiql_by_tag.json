@@ -11,7 +11,7 @@
   "--project",
   "Claims",
   "--wiql",
-  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = @project AND [System.Tags] CONTAINS 'sdlc:spec:0004'",
+  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND [System.Tags] CONTAINS 'sdlc:spec:0004'",
   "--only-show-errors",
   "-o",
   "json"

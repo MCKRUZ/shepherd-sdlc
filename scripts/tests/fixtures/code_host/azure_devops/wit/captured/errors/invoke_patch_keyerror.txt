@@ -1,0 +1,4 @@
+# captured 2026-10-15 (org anonymised); the first 3 lines of the stderr of `devops invoke --resource workItems --http-method PATCH` (the traceback below them names the capturing machine's paths)
+ERROR: The command failed with an unexpected error. Here is the traceback:
+ERROR: 'type'
+Traceback (most recent call last):

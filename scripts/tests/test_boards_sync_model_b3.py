@@ -10,6 +10,7 @@ signatures do not move. The e-mail addresses the cases need are assembled from p
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import ast
 import copy
@@ -25,6 +26,11 @@ import ado_sync_model as sm
 import ado_wit_map as wm
 import boards_contract as bc
 from tests import ado_boards_fixtures as abf
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 MODULE = Path(sm.__file__)
 PLUGIN_ROOT = MODULE.parent.parent
@@ -491,7 +497,7 @@ def test_raw_stderr_never_rides_in_a_result():
 
 # --- recovery on an unknown outcome (design §7) --------------------------------------------------------------
 
-POSTED = abf.load_wit("comment_add_response")
+POSTED = abf.load_wit("comment_add_response", hand_written=True)   # read at import: `BOARDS_ITEMS` is per test
 RECENT = abf.load_wit("comments_recent")["comments"]
 ME = abf.load_wit("connection_data")["authenticatedUser"]["id"]
 SENT = "2026-10-12T09:04:30Z"

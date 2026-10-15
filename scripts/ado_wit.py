@@ -26,9 +26,16 @@ and identity routes use. The module imports no subprocess: `az` is spawned only 
 The one exception is the identity read. The B0 capture (2026-10-14) found that `connectionData` is not an
 `az devops invoke` location at all, so it is `ado_transport.rest_get` of `boards_contract.REST_ROUTES` —
 `az rest --method get --resource <Azure DevOps' resource id> --url <org>/_apis/connectionData?api-version=
-7.1-preview -o json`, the only `az rest` the plugin sends (no `--detect`: `az rest` has no such flag). It needs
+7.1-preview -o json`, the only `az rest` read the plugin sends (no `--detect`: `az rest` has no such flag). It needs
 an Entra sign-in: with a personal access token alone the read fails, the failure says the identity is
 UNKNOWN (never "signed out", never a guess), and every write that needs it refuses as `identity_unknown`.
+The one write of the same kind is `update` (and `add_history`, which is an update): the second capture (2026-10-15)
+found that `az devops invoke` cannot PATCH a work item, so it is `ado_transport.rest_patch` (see `update`).
+
+The tag queries scope by the project NAME, never the WIQL current-project macro: `az boards query` with
+`[System.TeamProject] = @project` printed zero bytes (exit 0) on a board where items matched (B0, 2026-10-15),
+while the literal project name, or no clause with `--project`, returned the rows. A query that prints nothing is
+read as no rows (`QueryIds.printed_nothing`), never as a crash: empty stdout is not JSON.
 
 What it returns. Rows as Azure DevOps sent them: a revision's `revisedBy`, a comment's `createdBy` and an
 item's `AssignedTo` name people, and comment text is whatever its author typed. Nothing here redacts,
@@ -52,7 +59,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ado_transport  # noqa: E402
 from ado_map import AdoImportError, _require  # noqa: E402
-from boards_contract import REF_RE, REST_ROUTES, WIT_ROUTES  # noqa: E402
+from boards_contract import PAGE_TOKEN_KEYS, REF_RE, REST_ROUTES, WIT_ROUTES  # noqa: E402
 
 BATCH_SIZE = 200          # ids per `workitemsbatch` POST: the REST limit
 PAGE_SIZE = 200           # `$top` for the updates and comments reads
@@ -60,8 +67,6 @@ MAX_COMMENT_PAGES = 5     # 1,000 comments; `comments` says when it stopped here
 MAX_UPDATE_PAGES = 50     # 10,000 revisions, the most Azure DevOps keeps for one item
 
 _BODY_MEDIA_TYPE = "application/json"  # the batch read's request body (a JSON object, not a JSON Patch)
-_QUERY_COLUMNS = ("[System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],"
-                  "[System.AssignedTo]")
 
 # Every argv prefix the reads issue, in the order of the list above (placeholders: P project, U organisation URL,
 # Q a WIQL text, N a work item id, C a comment id, F the request body file, T a continuation token). Checked
@@ -150,27 +155,45 @@ def _list_in(doc, key: str, what: str) -> list:
 
 def find_by_ref(repo_root, ref: str) -> list[int]:
     """The ids of the work items tagged with `ref` (`sdlc:<kind>:<id>`), in the board's order; `[]` when none is.
-    `ref` is checked against `boards_contract.REF_RE` first: it is placed inside a WIQL string literal."""
+    `ref` is checked against `boards_contract.REF_RE` first: it is placed inside a WIQL string literal. The query names
+    the remote's project as a literal (`ado_wit_map.wiql_ref_lookup`), never the current-project macro."""
     if not isinstance(ref, str) or not REF_RE.fullmatch(ref):
         raise ValueError(f"not a ref of the form sdlc:<kind>:<id>: {ref!r}")
-    wiql = (f"SELECT {_QUERY_COLUMNS} FROM WorkItems WHERE [System.TeamProject] = @project "
-            f"AND [System.Tags] CONTAINS '{ref}'")
-    return query_ids(repo_root, wiql)
+    from ado_wit_map import wiql_ref_lookup  # pure; imported here as the write bodies import `classify_write_error`
+    return query_ids(repo_root, wiql_ref_lookup(ref, _project(repo_root)))
+
+
+class QueryIds(list):
+    """The ids a `boards query` returned, in order — a plain list, plus whether `az` printed nothing at all.
+
+    `printed_nothing`: the stdout was empty (zero bytes). `az boards query` prints nothing when no work item matches,
+    and it also printed nothing for a query the board could not scope (the current-project macro, B0 2026-10-15), so
+    an empty answer is read as no rows and a caller may say so; it is never parsed as JSON."""
+
+    printed_nothing: bool = False
+
+
+QUERY_PRINTED_NOTHING = ("`az boards query` printed nothing (zero bytes, read as no matching work item; an empty "
+                         "stdout is not JSON)")
 
 
 def query_ids(repo_root, wiql: str) -> list[int]:
-    """`az boards query --wiql <wiql>`: the `id` of each work item it returns, in order. An empty stdout (az prints
-    nothing when no work item matches) is `[]`. The caller owns the WIQL; build it with `ado_wit_map`."""
+    """`az boards query --wiql <wiql>`: the `id` of each work item it returns, in order (a `QueryIds`). An empty stdout
+    (az prints nothing when no work item matches) is `[]` with `.printed_nothing` set. The caller owns the WIQL; build
+    it with `ado_wit_map`."""
     if not isinstance(wiql, str) or not wiql.strip():
         raise ValueError("wiql must be a non-empty string")
     try:
-        rows = ado_transport.az_json(["boards", "query", *ado_transport.scope(repo_root, with_repository=False),
-                                      "--wiql", wiql], repo_root)
+        rows, nothing = ado_transport.az_json_read(["boards", "query",
+                                                    *ado_transport.scope(repo_root, with_repository=False),
+                                                    "--wiql", wiql], repo_root)
     except AdoImportError as exc:
         raise AdoImportError(f"boards query: {exc}") from exc
     if not isinstance(rows, list):
         raise AdoImportError("unexpected az shape: `az boards query` did not print a list of work items")
-    return [_id_in(_require(row, "id", "boards query row"), "boards query row.id") for row in rows]
+    out = QueryIds(_id_in(_require(row, "id", "boards query row"), "boards query row.id") for row in rows)
+    out.printed_nothing = nothing
+    return out
 
 
 def get_batch(repo_root, ids: list[int]) -> tuple[list[dict], list[int]]:
@@ -253,9 +276,10 @@ class CommentList(list):
 
 def comments(repo_root, wid: int) -> list[dict]:
     """Every comment on work item `wid`, deleted ones included, oldest first (`order=asc`, `$top=200`,
-    `includeDeleted=true`; no `since` filter exists). The next page is asked for with the `continuationToken` in
-    the response BODY — `devops invoke` does not surface response headers. At most `MAX_COMMENT_PAGES` pages are
-    read; if the board still had more, the result's `.truncated` is True. Text is returned exactly as sent."""
+    `includeDeleted=true`; no `since` filter exists). The next page is asked for with the token the answer carries:
+    the body's `continuationToken`, else the `continuation_token` key the extension adds itself (its spelling; the
+    capture of 2026-10-15 answered only that one) — `boards_contract.PAGE_TOKEN_KEYS`. At most `MAX_COMMENT_PAGES`
+    pages are read; if the board still had more, the result's `.truncated` is True. Text is returned exactly as sent."""
     wid = _positive(wid, "a work item id")
     project = _project(repo_root)
     out = CommentList()
@@ -268,7 +292,7 @@ def comments(repo_root, wid: int) -> list[dict]:
         out.extend(_list_in(doc, "comments", "comments"))
         if page_no == 0 and _is_int(doc.get("totalCount")):
             out.total_count = doc["totalCount"]
-        token = doc.get("continuationToken")
+        token = next((doc[k] for k in PAGE_TOKEN_KEYS if doc.get(k) not in (None, "")), None)
         if token is not None and not isinstance(token, str):
             raise AdoImportError("unexpected az shape: comments.continuationToken is not text")
         if not token:
@@ -349,9 +373,14 @@ def update(repo_root, wid: int, patch: list[dict]) -> dict:
     caller read), so a board that has moved on answers a refusal (`conflict`) instead of being overwritten; a patch
     that does not is a `ValueError` before any call. Returns `{"id", "rev"}` (the new revision) and nothing else.
 
-    The location is `WIT_ROUTES["workitem_update"]` (route `project=<P> id=<wid>`), `application/json-patch+json`.
-    Errors as `create`: a failed write carries `error_class`, an unreadable reply (or one for another item) is
-    `unknown`. Never retried."""
+    The location is `WIT_ROUTES["workitem_update"]` (`{project}/_apis/wit/workItems/{id}`), sent NOT through
+    `az devops invoke` — for a PATCH the extension binds the other `workItems` location (`…/workItems/${type}`) and
+    dies with `ERROR: 'type'` (B0, 2026-10-15) — but as `ado_transport.rest_patch` of `REST_ROUTES["workitem_update"]`:
+    `az rest --method patch --resource <Azure DevOps' resource id> --url <org>/<project>/_apis/wit/workitems/<id>?
+    api-version=7.1 --headers Content-Type=application/json-patch+json --body @<file> -o json`. That needs an Entra
+    sign-in; under a personal access token alone the error is `ado_transport.REST_NO_TOKEN_WRITE` (nothing was sent).
+    Errors as `create`: a failed write carries `error_class` (a stale `test /rev` answers `Precondition Failed …
+    VS403351`, which reads `conflict`), an unreadable reply (or one for another item) is `unknown`. Never retried."""
     wid = _positive(wid, "a work item id")
     first = patch[0] if isinstance(patch, list) and patch else None
     if not (isinstance(first, dict) and first.get("op") == "test" and first.get("path") == "/rev"
@@ -359,13 +388,12 @@ def update(repo_root, wid: int, patch: list[dict]) -> dict:
         raise ValueError("an update patch must begin with {'op': 'test', 'path': '/rev', 'value': <the revision read>}")
     if not all(isinstance(op, dict) for op in patch):
         raise ValueError("patch must be a list of JSON Patch operations")
-    row = WIT_ROUTES["workitem_update"]
+    row, rest = WIT_ROUTES["workitem_update"], REST_ROUTES["workitem_update"]
     params = {"project": _project(repo_root), "id": wid}
     label = f"{row['area']}/{row['resource']} (work item {wid})"
     try:
-        doc = ado_transport.invoke_body(repo_root, row["area"], row["resource"],
-                                        {key: params[key] for key in row["route"]}, method=row["method"], body=patch,
-                                        media_type="application/json-patch+json", api_version=row["api_version"])
+        doc = ado_transport.rest_patch(repo_root, rest["path"], {key: params[key] for key in row["route"]}, patch,
+                                       api_version=rest["api_version"])
     except AdoImportError as exc:
         from ado_wit_map import classify_write_error  # here, not at the top: Fold B3 changes only these six bodies
         error_class = classify_write_error(str(exc))

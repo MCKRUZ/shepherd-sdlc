@@ -11,7 +11,7 @@
   "--project",
   "Claims",
   "--wiql",
-  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = @project AND ([System.AreaPath] UNDER 'Claims\\SDLC' OR [System.IterationPath] UNDER 'Claims\\Sprint 7') AND NOT [System.Tags] CONTAINS 'sdlc-repo:claims-api'",
+  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND ([System.AreaPath] UNDER 'Claims\\SDLC' OR [System.IterationPath] UNDER 'Claims\\Sprint 7') AND NOT [System.Tags] CONTAINS 'sdlc-repo:claims-api'",
   "--only-show-errors",
   "-o",
   "json"

@@ -26,6 +26,7 @@ real-script tests start `spec_transition.py` on a temporary copy of the mini rep
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import load_wit
 
 import ast
@@ -46,6 +47,11 @@ import ado_sync
 import ado_sync_model as model
 import ado_sync_reconcile as rc
 import boards_contract as bc
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = ROOT / "scripts"

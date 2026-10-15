@@ -64,7 +64,7 @@ import ado_transport  # noqa: E402
 import validate_team  # noqa: E402
 import yaml  # noqa: E402
 from ado_map import AdoImportError, _require  # noqa: E402
-from boards_contract import EMAIL_RE, GUID_RE, LOCAL_DIR, WIT_ROUTES  # noqa: E402
+from boards_contract import EMAIL_RE, GUID_RE, LOCAL_DIR, PAGE_TOKEN_KEYS, WIT_ROUTES  # noqa: E402
 
 TOKEN_PREFIX = "token:"               # a watermark's two kinds, named in the string itself (never inferred)
 SINCE_PREFIX = "since:"
@@ -171,7 +171,9 @@ def _read_page(doc) -> tuple[list, bool, str | None]:
     last = _require(doc, "isLastBatch", "feed page")
     if not isinstance(last, bool):
         raise AdoImportError("unexpected az shape: feed page.isLastBatch is not true or false")
-    token = doc.get("continuationToken")
+    # the body's `continuationToken`, else the `continuation_token` the az extension adds (its own spelling, B0 2026-10-15)
+    token = next((doc[k] for k in PAGE_TOKEN_KEYS
+                  if doc.get(k) is not None and not (isinstance(doc[k], str) and not doc[k].strip())), None)
     if isinstance(token, str) and not token.strip():
         token = None
     if token is not None and not (isinstance(token, str) and _TOKEN_RE.fullmatch(token)):

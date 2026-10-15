@@ -1,0 +1,66 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "boards",
+  "query",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--project",
+  "Claims",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--wiql",
+  "SELECT [System.Id],[System.State] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND [System.Tags] CONTAINS 'sdlc-repo:test-repo'"
+ ],
+ "_note": "the run recorded the answer, not the exact WIQL: the select list here is the fields the answer carries, the tag is the one only that item holds, and the project is named as a literal (the current-project macro answered zero bytes)",
+ "value": [
+  {
+   "fields": {
+    "System.Id": 1,
+    "System.State": "New"
+   },
+   "id": 1,
+   "multilineFieldsFormat": {},
+   "relations": null,
+   "rev": 2,
+   "url": "https://dev.azure.com/contoso/_apis/wit/workItems/1"
+  },
+  {
+   "fields": {
+    "System.Id": 2,
+    "System.State": "New"
+   },
+   "id": 2,
+   "multilineFieldsFormat": {},
+   "relations": null,
+   "rev": 2,
+   "url": "https://dev.azure.com/contoso/_apis/wit/workItems/2"
+  },
+  {
+   "fields": {
+    "System.Id": 3,
+    "System.State": "New"
+   },
+   "id": 3,
+   "multilineFieldsFormat": {},
+   "relations": null,
+   "rev": 2,
+   "url": "https://dev.azure.com/contoso/_apis/wit/workItems/3"
+  },
+  {
+   "fields": {
+    "System.Id": 4,
+    "System.State": "New"
+   },
+   "id": 4,
+   "multilineFieldsFormat": {},
+   "relations": null,
+   "rev": 2,
+   "url": "https://dev.azure.com/contoso/_apis/wit/workItems/4"
+  }
+ ]
+}

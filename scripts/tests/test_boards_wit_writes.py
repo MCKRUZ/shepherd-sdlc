@@ -1,9 +1,11 @@
 """B3-P1 — the work-item writes (`ado_wit`): create, update, comment, history, recovery re-list, PR link.
 
 What this pins, and why each line exists (build kit §5 card B3-P1; house rules 2, 9, 10, 11; guardrails 2, 7, 8, 10):
-  * `create` is `POST wit/workItems` (route `project=<P> type=$<Type>`), `update` is `PATCH wit/workItems` (route
-    `project=<P> id=<N>`), both `application/json-patch+json` at `API_VERSION`, both answering `{id, rev}` and
-    nothing else (the board's reply names people: it never rides out of this module);
+  * `create` is `POST wit/workItems` (route `project=<P> type=<Type>`, bare since B0 2026-10-14), `update` is
+    `PATCH wit/workItems` — since the B0 write fixes (2026-10-15) as `az rest --method patch` of
+    `<org>/<P>/_apis/wit/workitems/<N>`, because `devops invoke` binds the `${type}` location for a PATCH and dies —
+    both `application/json-patch+json` at `API_VERSION`, both answering `{id, rev}` and nothing else (the board's
+    reply names people: it never rides out of this module);
   * an `update` patch always begins with `test /rev` (optimistic concurrency) — a patch that does not is refused
     before a call is made, and `add_history` is the same PATCH with `[test /rev, add /fields/System.History]`;
   * `add_comment` is `POST wit/comments` (route `project=<P> workItemId=<N>`), `--query-parameters format=markdown`,
@@ -23,7 +25,9 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam; `az` and `wr` swa
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import FakeBoardsAz, load_wit, load_wit_error, route_key_boards, route_params
+from tests.ado_boards_fixtures import body_file
 
 import inspect
 import json
@@ -38,6 +42,11 @@ import ado_wit
 import ado_wit_map
 import boards_contract
 from ado_map import AdoImportError
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 ORG = "https://dev.azure.com/contoso"  # what tests.ado_fixtures.ADO_REMOTE parses to
 PROJECT = "Claims"
@@ -63,10 +72,10 @@ def wr(monkeypatch) -> FakeBoardsAz:
 
 
 def spy(seen: list, answer):
-    """An answer that records the request body (read from the `--in-file` the seam wrote) and the argv, then
-    answers `answer` (a fixture name or a document)."""
+    """An answer that records the request body (read from the `--in-file`, or since the B0 write fixes the `az rest`
+    `--body @<file>`, the seam wrote) and the argv, then answers `answer` (a fixture name or a document)."""
     def answer_with(args):
-        path = Path(args[args.index("--in-file") + 1])
+        path = Path(body_file(args))
         seen.append({"argv": args, "path": path, "body": json.loads(path.read_text(encoding="utf-8"))})
         return answer
     return answer_with
@@ -93,9 +102,10 @@ WRITE_CALLS = {
     "link_pr": lambda repo: ado_wit.link_pr(repo, 12, 4521),
 }
 WRITE_NAMES = list(WRITE_CALLS)
-# the needle in the joined argv that makes the fake raise, per write (`fail=` matches on it)
-FAIL_NEEDLE = {"create": "devops invoke", "update": "devops invoke", "add_comment": "devops invoke",
-               "add_history": "devops invoke", "link_pr": "work-item add"}
+# the needle in the joined argv that makes the fake raise, per write (`fail=` matches on it); an update is `az rest`
+# since the B0 write fixes (2026-10-15: `devops invoke` cannot PATCH a work item)
+FAIL_NEEDLE = {"create": "devops invoke", "update": "rest --method patch", "add_comment": "devops invoke",
+               "add_history": "rest --method patch", "link_pr": "work-item add"}
 
 
 def run_every_write(repo) -> None:
@@ -112,8 +122,9 @@ def test_create_is_a_post_of_a_json_patch_to_wit_workitems_and_returns_id_and_re
     out = ado_wit.create(tmp_path, "Task", CREATE_PATCH)
     assert out == {"id": 4560, "rev": 1}  # nothing else: the reply's CreatedBy/ChangedBy name people
     argv = seen[0]["argv"]
+    # bare: the extension's template is `{project}/_apis/wit/workItems/${type}` (B0, 2026-10-14: `$Task` 404ed)
     assert argv[:argv.index("--in-file")] == ["devops", "invoke", "--area", "wit", "--resource", "workItems",
-                                              "--route-parameters", f"project={PROJECT}", "type=$Task",
+                                              "--route-parameters", f"project={PROJECT}", "type=Task",
                                               "--http-method", "POST"]
     assert argv[argv.index("--in-file") + 2:] == ["--media-type", "application/json-patch+json",
                                                   "--api-version", GA, "--detect", "false", "--org", ORG,
@@ -126,8 +137,8 @@ def test_create_keeps_a_type_name_with_spaces_as_one_route_parameter(wr, tmp_pat
     seen: list = []
     wr.answers["POST wit/workItems"] = spy(seen, "workitem_create_response")
     ado_wit.create(tmp_path, "Product Backlog Item", CREATE_PATCH)
-    assert words_after(seen[0]["argv"], "--route-parameters") == [f"project={PROJECT}", "type=$Product Backlog Item"]
-    assert route_params(seen[0]["argv"])["type"] == "$Product Backlog Item"
+    assert words_after(seen[0]["argv"], "--route-parameters") == [f"project={PROJECT}", "type=Product Backlog Item"]
+    assert route_params(seen[0]["argv"])["type"] == "Product Backlog Item"
 
 
 @pytest.mark.parametrize("type_name", ["", "   ", None, 7, "$Task", "a/b", "a\\b", "a?b", "a#b", "a%b", "a\nb", "a\x00b"])
@@ -168,14 +179,16 @@ def test_update_is_a_patch_of_a_json_patch_that_begins_with_test_rev(wr, tmp_pat
     out = ado_wit.update(tmp_path, 4560, UPDATE_PATCH)
     assert out == {"id": 4560, "rev": 2}
     argv = seen[0]["argv"]
-    assert argv[:argv.index("--in-file")] == ["devops", "invoke", "--area", "wit", "--resource", "workItems",
-                                              "--route-parameters", f"project={PROJECT}", "id=4560",
-                                              "--http-method", "PATCH"]
-    assert argv[argv.index("--in-file") + 2:] == ["--media-type", "application/json-patch+json",
-                                                  "--api-version", GA, "--detect", "false", "--org", ORG,
-                                                  "-o", "json"]
+    # B0 write fixes (2026-10-15): `az rest`, not `devops invoke` (which binds `…/workItems/${type}` for a PATCH and
+    # dies with `ERROR: 'type'`); no `--detect` (az rest has no such flag), the body as `--body @<file>`
+    assert argv == ["rest", "--method", "patch", "--resource", boards_contract.ADO_RESOURCE_ID, "--url",
+                    f"{ORG}/{PROJECT}/_apis/wit/workitems/4560?api-version={GA}",
+                    "--headers", "Content-Type=application/json-patch+json", "--body", f"@{seen[0]['path']}",
+                    "-o", "json"]
     assert seen[0]["body"] == UPDATE_PATCH
     assert seen[0]["body"][0] == {"op": "test", "path": "/rev", "value": 1}
+    assert route_key_boards(argv) == "PATCH wit/workItems" and route_params(argv) == {"project": PROJECT, "id": "4560"}
+    assert not any(a[:2] == ["devops", "invoke"] for a in wr.calls)
 
 
 @pytest.mark.parametrize("patch", [
@@ -240,7 +253,7 @@ def test_add_history_refuses_a_bad_revision_or_text_before_calling(wr, tmp_path,
 
 
 def test_add_history_stale_revision_is_a_conflict(wr, tmp_path):
-    wr.fail["devops invoke"] = load_wit_error("stale_rev")
+    wr.fail["rest --method patch"] = load_wit_error("stale_rev")   # captured 2026-10-15: `Precondition Failed … VS403351`
     with pytest.raises(AdoImportError) as info:
         ado_wit.add_history(tmp_path, 4560, 1, "<p>x</p>")
     assert info.value.error_class == "conflict"
@@ -429,7 +442,7 @@ def test_a_failed_write_is_an_adoimporterror_carrying_the_class_of_its_stderr(wr
 
 
 def test_the_stale_revision_text_is_a_conflict_on_update(wr, tmp_path):
-    wr.fail["devops invoke"] = load_wit_error("stale_rev")
+    wr.fail["rest --method patch"] = load_wit_error("stale_rev")
     with pytest.raises(AdoImportError, match=r"wit/workItems \(work item 4560\)") as info:
         ado_wit.update(tmp_path, 4560, UPDATE_PATCH)
     assert info.value.error_class == "conflict"
@@ -450,7 +463,8 @@ def test_a_failure_nothing_recognises_is_unknown_never_a_guess(wr, tmp_path, wri
 
 
 def test_not_found_is_its_own_class(wr, tmp_path):
-    wr.fail["devops invoke"] = "ERROR: TF401232: Work item 4560 does not exist, or you do not have permissions to read it."
+    wr.fail["rest --method patch"] = ("ERROR: TF401232: Work item 4560 does not exist, or you do not have permissions "
+                                      "to read it.")
     with pytest.raises(AdoImportError) as info:
         ado_wit.update(tmp_path, 4560, UPDATE_PATCH)
     assert info.value.error_class == "not_found"
@@ -490,16 +504,16 @@ def test_a_refused_write_leaves_no_request_body_file_behind(az, tmp_path, write)
         spy(seen, None))
     with pytest.raises(AssertionError, match="unexpected az write"):
         WRITE_CALLS[write](tmp_path)
-    path = Path(az.calls[0][az.calls[0].index("--in-file") + 1])
+    path = Path(body_file(az.calls[0]))   # `--in-file <path>`, or `az rest`'s `--body @<path>` for an update
     assert not path.exists()
 
 
 @pytest.mark.parametrize("write", [w for w in WRITE_NAMES if w != "link_pr"])
 def test_a_failed_write_leaves_no_request_body_file_behind(wr, tmp_path, write):
-    wr.fail["devops invoke"] = load_wit_error("rule_violation")
+    wr.fail[FAIL_NEEDLE[write]] = load_wit_error("rule_violation")
     with pytest.raises(AdoImportError):
         WRITE_CALLS[write](tmp_path)
-    assert not Path(wr.calls[0][wr.calls[0].index("--in-file") + 1]).exists()
+    assert not Path(body_file(wr.calls[0])).exists()
 
 
 def test_a_successful_write_leaves_no_request_body_file_behind(wr, tmp_path):
@@ -520,20 +534,32 @@ FORBIDDEN_WORDS = ("suppressNotifications", "bypassRules", "validateOnly", "reac
                    "notification")
 
 
+def _is_update_rest(argv: list[str]) -> bool:
+    """B0 write fixes: the one `az rest` write, the update PATCH of `<ORG>/<project>/_apis/wit/workitems/<id>`."""
+    return (argv[:4] == ["rest", "--method", "patch", "--resource"] and arg_after(argv, "--resource")
+            == boards_contract.ADO_RESOURCE_ID and arg_after(argv, "--url").startswith(f"{ORG}/{PROJECT}/_apis/wit/"
+                                                                                       "workitems/")
+            and arg_after(argv, "--url").endswith(f"?api-version={GA}"))
+
+
 def test_every_argv_the_six_emit_carries_detect_false_ends_json_and_never_a_preview_revision(wr, tmp_path):
     run_every_write(tmp_path)
     assert len(wr.calls) == 6
     for argv in wr.calls:
-        assert argv[argv.index("--detect") + 1] == "false"
         assert argv[-2:] == ["-o", "json"]
         assert "--only-show-errors" not in argv  # `run_az` appends it; a fake standing in for it never sees it
-        assert arg_after(argv, "--org") == ORG
-        if "--api-version" in argv:
-            assert arg_after(argv, "--api-version") in (GA, PREVIEW)
         joined = " ".join(argv)
         assert not re.search(r"-preview\.\d", joined)
         assert not any(word in joined for word in FORBIDDEN_WORDS)
         assert "--repository" not in argv and "--project" not in argv  # the project is a route parameter, never a flag
+        if argv[0] == "rest":   # `az rest` has no --detect and no --org: the URL names the organisation
+            assert _is_update_rest(argv), argv
+            continue
+        assert argv[argv.index("--detect") + 1] == "false"
+        assert arg_after(argv, "--org") == ORG
+        if "--api-version" in argv:
+            assert arg_after(argv, "--api-version") in (GA, PREVIEW)
+    assert sum(1 for argv in wr.calls if argv[0] == "rest") == 2   # the update and the History entry
 
 
 def test_no_write_patches_or_deletes_a_comment_and_none_deletes_anything(wr, tmp_path):
@@ -543,7 +569,11 @@ def test_no_write_patches_or_deletes_a_comment_and_none_deletes_anything(wr, tmp
             method = arg_after(argv, "--http-method")
             assert method in ("GET", "POST", "PATCH")
             assert not (arg_after(argv, "--resource") == "comments" and method in ("PATCH", "PUT", "DELETE"))
+        if argv[0] == "rest":
+            assert arg_after(argv, "--method") == "patch" and "comments" not in arg_after(argv, "--url").lower()
     assert not any("delete" in " ".join(argv).lower() for argv in wr.calls)
+    # no write PATCHes a work item through `devops invoke`, which binds `…/workItems/${type}` and crashes (B0)
+    assert not any(argv[:2] == ["devops", "invoke"] and "PATCH" in argv for argv in wr.calls)
 
 
 def test_the_six_issue_exactly_these_route_keys(wr, tmp_path):
@@ -556,7 +586,10 @@ def test_the_six_issue_exactly_these_route_keys(wr, tmp_path):
 def test_the_write_argv_never_names_a_person_or_a_guid(wr, tmp_path):
     run_every_write(tmp_path)
     for argv in wr.calls:
-        for word in argv:
+        for i, word in enumerate(argv):
+            if argv[0] == "rest" and i and argv[i - 1] == "--resource":
+                assert word == boards_contract.ADO_RESOURCE_ID   # the fixed Entra resource id: vocabulary, not a person
+                continue
             assert not boards_contract.EMAIL_RE.search(word) and not boards_contract.GUID_RE.search(word)
 
 
@@ -565,20 +598,35 @@ def test_the_write_argv_never_names_a_person_or_a_guid(wr, tmp_path):
 @pytest.mark.parametrize("row, call, key, reply", [
     ("workitem_create", lambda repo: ado_wit.create(repo, "Task", CREATE_PATCH), "POST wit/corrected",
      {"id": 4560, "rev": 1}),
-    ("workitem_update", lambda repo: ado_wit.update(repo, 4560, UPDATE_PATCH), "PATCH wit/corrected",
-     {"id": 4560, "rev": 2}),
-    ("workitem_update", lambda repo: ado_wit.add_history(repo, 4560, 1, "<p>x</p>"), "PATCH wit/corrected",
-     {"id": 4560, "rev": 2}),
     ("comments", lambda repo: ado_wit.add_comment(repo, 4521, "x", "markdown"), "POST wit/corrected",
      {"id": 504, "version": 1}),
     ("comments", lambda repo: ado_wit.list_recent_comments(repo, 4521), "GET wit/corrected order=desc",
      {"comments": []}),
-], ids=["create", "update", "add_history", "add_comment", "list_recent_comments"])
+], ids=["create", "add_comment", "list_recent_comments"])
 def test_a_corrected_wit_routes_row_is_followed_with_no_change_here(wr, tmp_path, monkeypatch, row, call, key, reply):
     monkeypatch.setitem(boards_contract.WIT_ROUTES, row, {**boards_contract.WIT_ROUTES[row], "resource": "corrected"})
     wr.answers[key] = reply
     call(tmp_path)
     assert arg_after(wr.calls[0], "--resource") == "corrected"
+
+
+@pytest.mark.parametrize("call", [lambda repo: ado_wit.update(repo, 4560, UPDATE_PATCH),
+                                  lambda repo: ado_wit.add_history(repo, 4560, 1, "<p>x</p>")],
+                         ids=["update", "add_history"])
+def test_a_corrected_rest_routes_row_is_followed_once_the_transport_allows_it(wr, tmp_path, monkeypatch, call):
+    """B0 write fixes: an update's location is `REST_ROUTES["workitem_update"]` (an `az rest` URL), not the invoke row's
+    resource; a corrected path is followed with no change in `ado_wit`, and only once `ado_transport.REST_WRITES`
+    allow-lists it too (the transport sends no `az rest` PATCH it does not know)."""
+    corrected = "{project}/_apis/wit/corrected/{id}"
+    monkeypatch.setitem(boards_contract.REST_ROUTES, "workitem_update",
+                        {**boards_contract.REST_ROUTES["workitem_update"], "path": corrected})
+    with pytest.raises(AdoImportError, match="writes only"):
+        call(tmp_path)
+    assert wr.calls == []   # refused before any file or az call
+    monkeypatch.setattr(ado_transport, "REST_WRITES", frozenset({corrected}))
+    wr.answers["PATCH wit/workItems"] = {"id": 4560, "rev": 2}   # the harness names the corrected row the same
+    call(tmp_path)
+    assert arg_after(wr.calls[0], "--url") == f"{ORG}/{PROJECT}/_apis/wit/corrected/4560?api-version={GA}"
 
 
 def test_add_comment_posts_whatever_method_the_read_row_says(wr, tmp_path, monkeypatch):

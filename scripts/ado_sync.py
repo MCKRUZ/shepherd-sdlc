@@ -819,22 +819,26 @@ def _read_items(repo_root: Path, ids: list[int], emails: dict[str, str]) -> tupl
 FIND_CHUNK = 40  # refs per by-tag query: far under the length WIQL accepts
 
 
-def _by_tag_wiql(refs: list[str]) -> str:
-    """One query for the work items tagged with any of `refs`. Every ref is checked against `REF_RE` first (it is
+def _by_tag_wiql(refs: list[str], project: str | None = None) -> str:
+    """One query for the work items tagged with any of `refs`, in `project` (the remote's project NAME, as a literal:
+    `ado_wit_map.project_clause`). Never the current-project macro: `az boards query` answered a query using it with
+    zero bytes on a board where items matched (B0, 2026-10-15). Every ref is checked against `REF_RE` first (it is
     `sdlc:` plus letters, digits and dashes, so it cannot end the string it sits in)."""
     for ref in refs:
         if not REF_RE.fullmatch(ref):
             raise ValueError(f"not a ref of the form sdlc:<kind>:<id>: {ref!r}")
     clauses = " OR ".join(f"[System.Tags] CONTAINS '{ref}'" for ref in refs)
-    return f"SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = @project AND ({clauses})"
+    scope = wm.project_clause(project)
+    return f"SELECT [System.Id] FROM WorkItems WHERE {f'{scope} AND ' if scope else ''}({clauses})"
 
 
 def _query_tagged(repo_root: Path, refs: list[str]) -> list[int]:
     """The ids of the work items tagged with any of `refs`: one query per `FIND_CHUNK` refs, so a plan costs one query
     and one batch read however many items it covers, not one query each. No refs, no call."""
     ids: list[int] = []
+    project = ado_transport.remote(repo_root).project if refs else None
     for start in range(0, len(refs), FIND_CHUNK):
-        ids += ado_wit.query_ids(repo_root, _by_tag_wiql(refs[start:start + FIND_CHUNK]))
+        ids += ado_wit.query_ids(repo_root, _by_tag_wiql(refs[start:start + FIND_CHUNK], project))
     return list(dict.fromkeys(ids))
 
 
@@ -1054,6 +1058,7 @@ class _Board(NamedTuple):
     missing: set      # ledgered ids the board no longer has
     emails: dict      # lower-case address -> @handle
     web_url: str      # the repository's web address: what a create's hyperlink is validated with
+    area_path: str | None = None   # `wm.configured_area(cfg)`: every create sets it (B0 write fixes, 2026-10-15)
 
 
 def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | None, board: _Board) -> dict:
@@ -1092,10 +1097,13 @@ def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | Non
                     reason=f"#{ids[0]}{f' ({kind_of_item})' if kind_of_item else ''} is tagged {p['ref']} but is not in "
                     f"this clone's ledger; `ado_sync.py link {p['ref']} --work-item {ids[0]} --by <you>` maps it")
     try:
-        wm.build_create_patch(p, schema, board.web_url, PLACEHOLDER_HISTORY, None)  # validated, then thrown away
+        wm.build_create_patch(p, schema, board.web_url, PLACEHOLDER_HISTORY, None,   # validated, then thrown away
+                              area_path=board.area_path)
+        shown = wm.with_create_fields(p, board.area_path)   # the area a create sets is shown, as it is sent
     except ValueError as exc:
         return _row(p, _unwritable(exc), type_name, reason=_tidy(exc))
-    return _row(p, "create", type_name, ops=_create_ops(p, board.emails), notes=_required_notes(schema, type_name, p))
+    return _row(p, "create", type_name, ops=_create_ops(shown, board.emails),
+                notes=_required_notes(schema, type_name, p))
 
 
 def _kind_order(kind: str) -> int:
@@ -1315,7 +1323,8 @@ def cmd_plan(args, repo_root: Path) -> int:
         items, missing = _read_items(repo_root, ledgered_ids + _query_tagged(repo_root, unledgered), emails)
     except AdoImportError as exc:
         return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
-    board = _Board(links, _tag_map(items, unledgered), items, set(missing) & set(ledgered_ids), emails, web_url)
+    board = _Board(links, _tag_map(items, unledgered), items, set(missing) & set(ledgered_ids), emails, web_url,
+                   wm.configured_area(cfg))
     pairs = [(p, _plan_row(p, *_row_type(p, schema, cfg, typed), schema, refusals[0] if refusals else None, board))
              for p in selected]
     in_sync = sum(1 for _, r in pairs if r["action"] == "in_sync")
@@ -1517,17 +1526,20 @@ def _drift_context(args, repo_root: Path, verb: str):
 
 def _unmapped(repo_root: Path, cfg: dict) -> tuple[list[int] | None, str | None]:
     """The work items under the mirror's area and iteration paths that this repository has not tagged
-    (`UNMAPPED_IN_ADO`: candidates for `link` and `adopt`), as ids; or None and why they were not searched."""
+    (`UNMAPPED_IN_ADO`: candidates for `link` and `adopt`), as ids — with a note when `az boards query` printed nothing
+    (read as none found) — or None and why they were not searched."""
     areas = [cfg["area_path"]] if isinstance(cfg.get("area_path"), str) and cfg["area_path"].strip() else []
     iterations = cfg.get("iterations") if isinstance(cfg.get("iterations"), dict) else {}
     paths = [v for v in iterations.values() if isinstance(v, str) and v.strip()]
     if not areas and not paths:
         return None, "not searched: no area_path or iterations in the config to look under"
     try:
-        wiql = wm.wiql_untagged(areas, paths, ado_transport.remote(repo_root).repo)
-        return ado_wit.query_ids(repo_root, wiql), None
+        here = ado_transport.remote(repo_root)
+        ids = ado_wit.query_ids(repo_root, wm.wiql_untagged(areas, paths, here.repo, here.project))
     except (AdoImportError, ValueError) as exc:
         return None, f"not searched: {_tidy(exc)}"
+    # zero bytes is no rows, said in words (it is also what a query the board cannot scope prints, B0 2026-10-15)
+    return ids, (ado_wit.QUERY_PRINTED_NOTHING if getattr(ids, "printed_nothing", False) else None)
 
 
 def _class_counts(results: list[dict]) -> dict:
@@ -2143,6 +2155,10 @@ APPLY_REFUSAL_WORDS: dict[str, str] = {
     "needs_disposition": "a comment in the plan is for an item the board no longer has or has retyped; reconcile it "
                          "first, or re-plan with --no-comments to apply the field ops",
 }
+# Said after `identity_unknown` when the plan would PATCH a work item: the reason is the same, the remedy is not.
+UPDATE_NEEDS_ENTRA = ("This plan updates work items, and an update is sent through `az rest` (az devops invoke cannot "
+                      "PATCH a work item), which needs an Entra sign-in to the Azure CLI as --by: a personal access "
+                      "token alone cannot send an update (creates and comments still go through az devops invoke).")
 
 
 # Why the board could not be asked or did not answer, by a closed word: never `az`'s own words, which can carry a UPN, an
@@ -2263,12 +2279,15 @@ def _failed_line(f: dict) -> str:
     return f"{f['action']} {where}  {f['class']}{why}" + ("" if f["class"] == "drift" else f": {f['detail']}")
 
 
-def _apply_report(args, plan: str, by: str, result: dict) -> int:
+def _apply_report(args, plan: str, by: str, result: dict, *, rest_writes: bool = False) -> int:
     code, reason = result["exit"], result["refused_reason"]
     applied, failed, deferred = result["applied"], result["failed"], result["deferred"]
     counts = {"applied": len(applied), "failed": len(failed), "deferred": len(deferred)}
     if reason is not None:  # nothing was sent: the whole plan is refused
-        return _error(args, f"Refused: apply sent nothing. {APPLY_REFUSAL_WORDS[reason]} (reason: {reason})", 2,
+        words = APPLY_REFUSAL_WORDS[reason]
+        if reason == "identity_unknown" and rest_writes:
+            words = f"{words}. {UPDATE_NEEDS_ENTRA}"
+        return _error(args, f"Refused: apply sent nothing. {words} (reason: {reason})", 2,
                       plan=plan, by=by, refused_reason=reason, applied=[], failed=[], deferred=[], counts=counts,
                       drift=None)
     drift = next((f["detail"] for f in failed if f["class"] == "drift"), None)   # begins `DRIFT: `
@@ -2313,7 +2332,7 @@ def cmd_apply(args, repo_root: Path) -> int:
     except AdoImportError as exc:  # a fixed sentence: the board's own words can name people (house rule 10)
         raise Illegal(f"the board could not be read before the first write, so nothing was sent: {_board_failure(exc)}; "
                       "`ado_sync.py plan` shows what the board answers") from None
-    return _apply_report(args, confirm, by, result)
+    return _apply_report(args, confirm, by, result, rest_writes=apply_mod.needs_rest_writes(plan.get("rows"), cfg))
 
 
 # --- link-pr ---------------------------------------------------------------------------------------------------------

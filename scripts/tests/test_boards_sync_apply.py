@@ -30,6 +30,7 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `board` stands
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
 from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import FakeBoardsAz, is_identity_rest_read, load_wit, load_wit_error, route_key_boards, route_params
+from tests.ado_boards_fixtures import body_file
 
 import ast
 import builtins
@@ -97,7 +98,8 @@ def clock(monkeypatch):
 
 
 def _body(args):
-    return json.loads(Path(args[args.index("--in-file") + 1]).read_text(encoding="utf-8"))
+    # `--in-file <path>`, or since the B0 write fixes an update's `az rest --body @<path>`
+    return json.loads(Path(body_file(args)).read_text(encoding="utf-8"))
 
 
 def tagged_none(args):
@@ -112,7 +114,7 @@ def make_board(monkeypatch) -> FakeBoardsAz:
     fake.ids = itertools.count(5001)
 
     def record(args):
-        fake.sent.append((route_key_boards(args), list(args), _body(args) if "--in-file" in args else None))
+        fake.sent.append((route_key_boards(args), list(args), _body(args) if body_file(args) else None))
 
     def on_create(args):
         record(args)
@@ -388,7 +390,10 @@ def test_an_update_tests_the_revision_the_plan_showed_and_ledgers_both_revisions
     line = events_of(repo, "applied")[0]
     assert (line["action"], line["rev_before"], line["rev_after"], line["plan"]) == ("update", 7, 8, two_updates["plan"])
     assert sorted(line["fields"]) == ["Custom.RiskTier", "System.State", "System.Tags"]
-    assert board.count("devops", "invoke") == 3 and route_key_boards(board.calls[0]) == "POST wit/workitemsbatch"
+    # B0 write fixes (2026-10-15): az call 0 is the sign-in check of the update transport, then the one batch read, then
+    # each PATCH as `az rest` (`devops invoke` binds `…/workItems/${type}` for a PATCH and dies)
+    assert is_identity_rest_read(board.calls[0]) and route_key_boards(board.calls[1]) == "POST wit/workitemsbatch"
+    assert board.count("devops", "invoke") == 1 and board.count("rest", "--method", "patch") == 2
 
 
 def test_a_row_the_board_moved_since_the_plan_is_skipped_without_a_write_and_the_next_runs(repo, board, two_updates):
@@ -685,9 +690,31 @@ def test_an_account_that_is_not_on_the_roster_is_identity_unknown(repo, board, t
     assert (res["exit"], res["refused_reason"]) == (2, "identity_unknown") and len(board.calls) == 1
 
 
-def test_a_plan_with_only_field_ops_never_reads_the_identity(repo, board, two_updates):
-    assert apply(repo, two_updates, by="@dev-two")["exit"] == 0            # no comment, so no comment into anyone's name
+def test_a_plan_with_only_field_ops_is_never_held_to_the_identity(repo, board, two_updates):
+    # no comment, so no comment into anyone's name: `--by` need not be who az is signed in as. B0 write fixes
+    # (2026-10-15): an update is an `az rest` PATCH, so the identity read is still made — as the check that `az rest`
+    # can sign in at all (`test_an_update_under_a_pat_only_sign_in_...`) — and only that
+    assert apply(repo, two_updates, by="@dev-two")["exit"] == 0
+    assert [route_key_boards(c) for c in board.calls].count("GET core/connectionData") == 1
+    assert is_identity_rest_read(board.calls[0]) and cache.load_me(repo) is None   # read, not saved: not a comment's
+
+
+def test_a_plan_with_only_creates_never_reads_the_identity(repo, board, capsys):
+    doc = plan_doc(repo, capsys, "--kind", "epic", "--id", "EP-001")
+    assert {r["action"] for r in doc["rows"]} == {"create"}
+    board.calls.clear()
+    assert apply(repo, doc, by="@dev-two")["exit"] == 0     # a create is `devops invoke`: a token alone can send it
     assert not any(route_key_boards(c) == "GET core/connectionData" for c in board.calls)
+
+
+def test_an_update_under_a_pat_only_sign_in_is_refused_whole_and_nothing_is_sent(repo, board, two_updates):
+    """B0 write fixes: `az rest` cannot mint an Entra token from a personal access token, so no update can be sent. The
+    whole plan is refused `identity_unknown` (exit 2) after one az call — the identity read — and nothing is written."""
+    board.fail["_apis/connectionData"] = "ERROR: Please run 'az login' to setup account."
+    res = apply(repo, two_updates)
+    assert (res["exit"], res["refused_reason"], res["applied"], res["failed"]) == (2, "identity_unknown", [], [])
+    assert len(board.calls) == 1 and is_identity_rest_read(board.calls[0]) and written(board) == []
+    assert [e["reason"] for e in events_of(repo, "refused")] == ["identity_unknown"]
 
 
 # --- comments ----------------------------------------------------------------------------------------------
@@ -860,8 +887,12 @@ def test_every_recorded_argv_carries_detect_false_and_the_seam_adds_the_rest(rep
         assert not any(re.search(r"-preview\.\d", word) for word in argv)
         if is_identity_rest_read(argv):  # B0: the one `az rest` (the identity read) has no --detect flag
             continue
+        if argv[:3] == ["rest", "--method", "patch"]:   # B0 write fixes: nor has the update, `az rest` of its URL
+            assert route_key_boards(argv) == "PATCH wit/workItems" and "--detect" not in argv
+            continue
         assert argv[argv.index("--detect") + 1] == "false"
     assert [is_identity_rest_read(argv) for argv in board.calls].count(True) == 1   # the comment row's identity read
+    assert sum(1 for argv in board.calls if argv[:3] == ["rest", "--method", "patch"]) == 2   # the two updates
     assert_clean_record(repo, res)
 
 

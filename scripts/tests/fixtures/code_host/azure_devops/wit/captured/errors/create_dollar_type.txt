@@ -1,0 +1,2 @@
+# captured 2026-10-15 (org anonymised); stderr of the create POST with route parameter type=$Task (the template already carries the $)
+ERROR: The controller for path '/Claims/_apis/wit/workItems/$$Task' was not found or does not implement IController.  Operation returned a 404 status code.

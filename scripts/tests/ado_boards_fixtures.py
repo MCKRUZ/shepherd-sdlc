@@ -48,11 +48,19 @@ reads: still `GET core/connectionData`, so every test that answers or counts tha
 capture also brought names no hand-written file stood in for — the Epic, Feature, `Spec` and `RAID` per-type
 reads (this process has custom `Spec` and `RAID` types) — and two documents no read answers with
 (`WIT_CAPTURED_REFERENCE`): the locations list and the team's field values, kept for the record.
+
+The second capture (2026-10-15, the first live `apply`) replaced the item, write and comment answers
+(`WIT_CAPTURED_ITEMS`) and two write errors, so a scenario that pins the hand-written ids (4521, ...) sets
+`BOARDS_PROCESS = HAND_WRITTEN_PROCESS`. It also moved the update to `az rest --method patch` of
+`<org>/<project>/_apis/wit/workitems/<id>`: `route_key_boards` names that `PATCH wit/workItems` (the
+`REST_ROUTES["workitem_update"]` row's namesake), `route_params` reads its `project` and `id` from the URL, and
+`body_file` finds the body behind either `--in-file <path>` or `--body @<path>`.
 """
 
 import json
+import re
 from pathlib import Path
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl, unquote, urlsplit
 
 import pytest
 
@@ -93,10 +101,26 @@ def wit_source_of(name: str) -> str:
     return "synthetic" if parent == WIT_SYNTHETIC else "hand-written"
 
 
+# B0 (2026-10-15): True while a test of a module that reads the hand-written ITEM fixtures runs (`BOARDS_ITEMS` or
+# `BOARDS_PROCESS` set to HAND_WRITTEN_PROCESS; `boards_env` sets it per test). The second capture shadowed the item,
+# write and comment answers (`WIT_CAPTURED_ITEMS`) that those modules' scenarios pin ids and texts of; for them
+# `load_wit(name)` and every fake answer of such a name stay hand-written. The captures are read by name elsewhere.
+_HAND_WRITTEN_ITEMS = [False]
+
+
 def load_wit(name: str, hand_written: bool = False):
     """The az document a fixture stands for (`doc["value"]`). A `value` of null is an empty
-    stdout and comes back as `[]`, exactly as `ado_transport.az_json` would read it."""
+    stdout and comes back as `[]`, exactly as `ado_transport.az_json` would read it. In a module that reads the
+    hand-written item fixtures (`_HAND_WRITTEN_ITEMS`), a `WIT_CAPTURED_ITEMS` name is read hand-written."""
+    hand_written = hand_written or (_HAND_WRITTEN_ITEMS[0] and name in WIT_CAPTURED_ITEMS)
     doc = json.loads(wit_path(name, hand_written).read_text(encoding="utf-8"))
+    return [] if doc["value"] is None else doc["value"]
+
+
+def load_captured(name: str):
+    """B0 (2026-10-15): the CAPTURED document of `name` (`captured/<name>.json`'s `value`), whatever the module reads
+    by default; a name nothing captured is a FileNotFoundError."""
+    doc = json.loads((WIT_CAPTURED / f"{name}.json").read_text(encoding="utf-8"))
     return [] if doc["value"] is None else doc["value"]
 
 
@@ -104,8 +128,43 @@ def _arg_after(args: list[str], flag: str) -> str | None:
     return args[args.index(flag) + 1] if flag in args and args.index(flag) + 1 < len(args) else None
 
 
+def _rest_template_re(template: str) -> re.Pattern:
+    """B0 write fixes: a `boards_contract.REST_ROUTES` path template as a regex over an `az rest --url` path, each
+    `{name}` a named group of one path segment (the URL's own spelling, percent-decoded by the caller)."""
+    parts = re.split(r"\{([a-z]+)\}", template)
+    pattern = "".join(re.escape(p) if i % 2 == 0 else f"(?P<{p}>[^/]+)" for i, p in enumerate(parts))
+    return re.compile(rf"(?:^|/){pattern}$")
+
+
+def rest_route(args: list[str]) -> tuple[str, dict[str, str]] | None:
+    """B0 write fixes: `(REST_ROUTES name, the values its template's `{name}`s took)` for an `az rest` argv whose
+    `--url` path matches one row's template, else None. The method is not matched: the route key carries the argv's
+    own method, so a POST of the identity URL is still named (and refused as) a write of that row."""
+    if args[:1] != ["rest"]:
+        return None
+    path = urlsplit(_arg_after(args, "--url") or "").path
+    for name, row in REST_ROUTES.items():
+        found = _rest_template_re(row["path"]).search(path)
+        if found:
+            return name, {k: unquote(v) for k, v in found.groupdict().items()}
+    return None
+
+
+def body_file(args: list[str]) -> str | None:
+    """B0 write fixes: the request body file an argv carries — `--in-file <path>` (`devops invoke`) or `--body @<path>`
+    (`az rest`) — or None."""
+    if "--in-file" in args:
+        return _arg_after(args, "--in-file")
+    body = _arg_after(args, "--body") if args[:1] == ["rest"] else None
+    return body[1:] if isinstance(body, str) and body.startswith("@") else None
+
+
 def route_params(args: list[str]) -> dict[str, str]:
-    """`k=v` words after `--route-parameters`, up to the next flag."""
+    """`k=v` words after `--route-parameters`, up to the next flag; for `az rest` of a REST_ROUTES template, the values
+    its `{name}`s took in the `--url` (B0 write fixes: the update is `az rest`, its route is in its URL)."""
+    found = rest_route(args)
+    if found is not None:
+        return found[1]
     if "--route-parameters" not in args:
         return {}
     out = {}
@@ -177,15 +236,15 @@ def route_key_boards(args: list[str]) -> str:
 
 
 def rest_route_key(args: list[str]) -> str:
-    """B0: an `az rest` call is named by the `boards_contract.REST_ROUTES` row whose path its `--url` ends with, as
-    that row's `WIT_ROUTES` namesake (`GET core/connectionData`); any other URL is `<METHOD> rest <path>`, which no
-    default answers."""
+    """B0: an `az rest` call is named by the `boards_contract.REST_ROUTES` row whose method and path template its
+    `--method` and `--url` match, as that row's `WIT_ROUTES` namesake (`GET core/connectionData`; since the B0 write
+    fixes also `PATCH wit/workItems`, the update); any other is `<METHOD> rest <path>`, which no default answers."""
     method = (_arg_after(args, "--method") or "GET").upper()
-    path = urlsplit(_arg_after(args, "--url") or "").path
-    for name, row in REST_ROUTES.items():
-        if path.endswith("/" + row["path"]):
-            return f"{method} {WIT_ROUTES[name]['area']}/{WIT_ROUTES[name]['resource']}"
-    return f"{method} rest {path}"
+    found = rest_route(args)
+    if found is not None:
+        name = found[0]
+        return f"{method} {WIT_ROUTES[name]['area']}/{WIT_ROUTES[name]['resource']}"
+    return f"{method} rest {urlsplit(_arg_after(args, '--url') or '').path}"
 
 
 FIXTURE_ORG_URL = "https://dev.azure.com/contoso"  # what tests.ado_fixtures.ADO_REMOTE parses to
@@ -262,8 +321,15 @@ WIT_FIXTURE_NAMES: tuple[str, ...] = tuple(sorted(set(DEFAULT_WIT_ANSWERS.values
 WIT_CAPTURED_ONLY: tuple[str, ...] = ("type_fields_epic", "type_fields_feature", "type_fields_spec", "type_states_epic",
                                       "type_states_feature", "type_states_raid", "type_states_spec")
 # B0: captured documents no read answers with — the `devops invoke` locations list (its wit/work/core subset) and
-# the team's area settings (`work/teamfieldvalues`, which the plugin does not read). Loaded by name, never routed.
-WIT_CAPTURED_REFERENCE: tuple[str, ...] = ("invoke_locations", "team_field_values")
+# the team's area settings (`work/teamfieldvalues`, which the plugin does not read); and from the second capture
+# (2026-10-15) a query for every item one repository tagged and a `Spec` create with a parent. Loaded by name, never
+# routed.
+WIT_CAPTURED_REFERENCE: tuple[str, ...] = ("invoke_locations", "team_field_values", "wiql_repo_tag",
+                                           "workitem_create_response_spec")
+# B0 (2026-10-15): the item, write and discussion names the second capture replaced (each has a hand-written twin)
+WIT_CAPTURED_ITEMS: tuple[str, ...] = ("comment_add_response", "comments", "updates", "wiql_by_tag",
+                                       "workitem_create_response", "workitem_show_relations",
+                                       "workitem_update_response", "workitems_batch")
 
 
 def route_name_of(fixture: str) -> str:
@@ -375,14 +441,16 @@ def _forbid(*args, **kwargs):
 
 
 @pytest.fixture(autouse=True)
-def boards_env(monkeypatch):
+def boards_env(monkeypatch, request):
     ado_transport.clear_caches()
     for name in code_host.CODE_HOST_ENV_VARS:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(code_host, "origin_url", lambda root: ADO_REMOTE)
     monkeypatch.setattr(ado_transport, "az_binary", lambda: FORBIDDEN_AZ)
     monkeypatch.setattr(ado_transport, "run_az", _forbid)
+    _HAND_WRITTEN_ITEMS[0] = uses_hand_written_items(request.module)
     yield
+    _HAND_WRITTEN_ITEMS[0] = False
     ado_transport.clear_caches()
 
 
@@ -395,6 +463,12 @@ HAND_WRITTEN_PROCESS = "hand-written"
 
 def uses_hand_written_process(module) -> bool:
     return getattr(module, "BOARDS_PROCESS", None) == HAND_WRITTEN_PROCESS
+
+
+def uses_hand_written_items(module) -> bool:
+    """B0 (2026-10-15): a module that sets `BOARDS_ITEMS = HAND_WRITTEN_PROCESS` (or the whole `BOARDS_PROCESS`) reads
+    the hand-written item, write and comment fixtures, whose ids and texts its scenarios pin, not the capture."""
+    return uses_hand_written_process(module) or getattr(module, "BOARDS_ITEMS", None) == HAND_WRITTEN_PROCESS
 
 
 @pytest.fixture
@@ -416,6 +490,15 @@ WIT_ERROR_NAMES: tuple[str, ...] = tuple(sorted(WIT_ERROR_CLASSES))
 # `connectionData` through `devops invoke` (area core, area Location), and through `az rest` at `7.1`
 WIT_CAPTURED_ERROR_NAMES: tuple[str, ...] = ("connection_data_core", "connection_data_location",
                                              "connection_data_rest_7.1", "states_wrong_resource")
+# B0 write fixes (2026-10-15): what the first live apply and its probes met. Two replace a hand-written text of the
+# same name (`stale_rev`, `rule_violation`: `load_wit_error` serves the capture); the rest have no twin.
+WIT_CAPTURED_WRITE_ERROR_NAMES: tuple[str, ...] = ("create_dollar_type", "identity_unknown", "invoke_patch_keyerror",
+                                                   "preview_rev", "rule_violation", "stale_rev")
+# a captured write error -> the `classify_write_error` class it must read as (`invoke_patch_keyerror` and
+# `preview_rev` are the extension failing inside itself, before any request: `unknown`)
+WIT_CAPTURED_ERROR_CLASSES: dict[str, str] = {"stale_rev": "conflict", "rule_violation": "rule",
+                                              "identity_unknown": "rule", "create_dollar_type": "not_found",
+                                              "invoke_patch_keyerror": "unknown", "preview_rev": "unknown"}
 
 
 def wit_error_path(name: str, hand_written: bool = False) -> Path:

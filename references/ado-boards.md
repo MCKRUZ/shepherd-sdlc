@@ -399,12 +399,73 @@ Two layers, and both must agree before anything reaches the board.
   is changed only by `posture <plan-only|assisted> --by <human>` (B3), and the change is a ledger line.
 
 Whatever the posture, every Fold B2 verb only reads. `--by` is always a named human: blank exits 1, an AI or an
-agent id (`shepherd:<agent>`) exits 2. Before a confirmed plan is sent, the signed-in `az` identity is read and
-must be the `--by` person, or the whole plan is refused and nothing is sent.
+agent id (`shepherd:<agent>`) exits 2. Before a confirmed plan with a comment is sent, the signed-in `az` identity is
+read and must be the `--by` person, or the whole plan is refused and nothing is sent. Before a plan that updates a
+work item is sent, the same identity is read too — not to hold `--by` to it, but because an update travels by
+`az rest`, which needs an Entra sign-in (see the next section).
 
 **Claude Code's permission rules** — the Azure DevOps harness pack (`harness/packs/cicd/azure-devops/`), see
 the deny-list change below. The plugin never runs `az` from a command page; only `scripts/ado_transport.py`
 spawns it, as an argv list, never through a shell.
+
+---
+
+## How a write reaches the board, and what a real board answered
+
+The first live `apply` against a real organisation (2026-10-15: Entra sign-in, az 2.87.0, azure-devops extension
+1.0.8, an inherited Agile process with a custom `Spec` type) settled these; the redacted evidence is
+`scripts/tests/fixtures/code_host/azure_devops/wit/captured/` and its `CAPTURE-NOTES.md`.
+
+| Write | Sent as | Why |
+|---|---|---|
+| create | `az devops invoke --area wit --resource workItems --route-parameters project=<P> type=<Type> --http-method POST --in-file <body>` | the location template is `{project}/_apis/wit/workItems/${type}`, so the type goes bare (`$Task` reached the board as `$$Task` and 404ed) |
+| update, and a comment on the History fallback | `az rest --method patch --resource 499b84ac-1321-427f-aa17-267ca6975798 --url <org>/<project>/_apis/wit/workitems/<id>?api-version=7.1 --headers Content-Type=application/json-patch+json --body` plus the at-sign and the body file | `workItems` has two locations (`…/workItems/${type}` and `…/workItems/{id}`); for a PATCH the extension binds the first and dies (`ERROR: 'type'`), so `az devops invoke` can never send an update. `ado_transport.rest_patch` is the only `az rest` write: one allow-listed path template (`boards_contract.REST_ROUTES["workitem_update"]`), filled from a percent-encoded project name and a positive id, at `7.1` |
+| comment (comments API) | `az devops invoke --area wit --resource comments … --http-method POST --query-parameters format=markdown --api-version 7.1-preview` | reached as the plugin sends it; the reply carries `id`, `version`, `format`, `text` |
+| link a pull request | `az repos pr work-item add` | a native verb |
+
+**An update needs an Entra sign-in.** `az rest` mints its own Entra token for Azure DevOps' resource id; a personal
+access token alone cannot. So a plan that would PATCH a work item (an update row, or a drafted comment under
+`comments.transport: history`) reads `connectionData` through `az rest` before anything else, and when that read
+fails `apply` refuses the whole plan as `identity_unknown` — exit 2, nothing sent — and says that the update
+transport needs an Entra sign-in to the Azure CLI as `--by`. Creates still go through `az devops invoke`; a plan
+with a comment needs the identity read anyway; so under a personal access token alone only a plan of creates can be
+applied. A successful read does not bind `--by` for an update (no words are written in anybody's name).
+
+**What a refusal reads as** (`ado_wit_map.classify_write_error`, each from a captured stderr):
+
+- a stale `test /rev` — `Precondition Failed(… VS403351: Test Operation for path /rev failed …)` — is `conflict`:
+  the row is skipped, ledgered, and the next op runs;
+- a value outside a picklist — `Bad Request(… RuleValidationErrors …)` — is `rule`, and the failed row names the field
+  (`field: System.State`, `reason: value_not_allowed`);
+- an `AssignedTo` the organisation does not know — `The identity value '…' for field 'Assigned To' is an unknown
+  identity.` — is `rule` too: that row fails with `field: System.AssignedTo`, `reason: unknown_identity`, and the run
+  goes on. (It was `unknown`, a stop class: one unknown roster address deferred every row after it.) The plan cannot
+  warn ahead: the discovered schema holds no identity by design, so whether a roster e-mail is a user of the
+  organisation is known only when the board answers. Fix `people[].email` in `.sdlc/team.yaml`, or leave the person
+  off the item;
+- `api-version` pinned to a preview revision fails inside the extension (`could not convert string to float`) and is
+  refused at the seam before any call.
+
+**A tag query names the project, never the current-project macro.** `az boards query` with
+`[System.TeamProject] = ` followed by the macro printed zero bytes (exit 0) on a board where items matched; the literal
+project name returned the rows. Every query the mirror builds (`plan`, `pull`, `drift`, `link`, `adopt`, `pull
+--propose-specs`) names the remote's project as a whitelisted, quote-doubled literal (`ado_wit_map.project_clause`).
+A query that prints nothing is read as no rows (`ado_wit.QueryIds.printed_nothing`), never as a JSON error, and
+`drift` says so in a note.
+
+**The area path is set at create, and only then.** Every create sets `System.AreaPath` from `area_path` in
+`.sdlc/ado.yaml` (the plan shows the op); without it the live run's items landed at the project root, outside the
+team's board. An update never sends it, and a board-side move is the board's (`C`): `ADO_OWNED_CHANGE`, never drift.
+
+**A comment moves the item's revision** (rev 2 to 3, `System.CommentCount` 1), and the comments API does not say to
+what. A plan read before someone's comment is stale after it (`rev_moved`: plan again); within one apply, an item this
+run commented on is re-read before this run PATCHes it again. A child linked from its own side adds a revision to the
+parent's history with no fields and the same `rev`.
+
+**Reads.** A live comment carries no `isDeleted` key (the board leaves the false flag out), and a page's continuation
+token rides as `continuation_token`, the extension's own spelling, beside or instead of the body's
+`continuationToken` (`boards_contract.PAGE_TOKEN_KEYS`, body first). `workitemsbatch` with `errorPolicy: omit` answers
+a missing id as a `null` entry, counted in `count`.
 
 ---
 
