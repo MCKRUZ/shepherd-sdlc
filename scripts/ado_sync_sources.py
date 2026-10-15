@@ -28,12 +28,19 @@ A projection is the dict the interface sheet pins, plus `notes`:
     `fields`     by reference name, only what the repository knows: `System.Title`; `System.State` when the
                  process can say which state the status is (`ado_schema_map.resolve_state`, with `states`
                  narrowed to this kind); `System.AssignedTo` only through the roster's `email_for`;
-                 `System.IterationPath` from `iterations`; an epic's `Microsoft.VSTS.Common.Priority` when
-                 the type carries it; and each `fields.<kind>` entry the config names. Never an effort,
-                 estimate, date or size, and no `System.Description`: that block is built from the file's
-                 hyperlink by the patch builder.
+                 `System.IterationPath` from `iterations`; an epic's `Microsoft.VSTS.Common.Priority` (P0..P3
+                 as 1..4) and `Microsoft.VSTS.Common.AcceptanceCriteria` (its `**Acceptance criteria:**` items,
+                 escaped, one per line) when the type carries them; each `fields.<kind>` entry the config
+                 names; and each constant `fields.<kind>.<key>: {field, value}` for every kind, verbatim, named
+                 in the extra key `constant_fields` (the model fills it on update only while the board's field
+                 is empty and reads a board change to it as the board's). Never an effort, estimate, date or
+                 size, and no `System.Description`: that block is built from the file's hyperlink by the patch
+                 builder.
     `tags`       a set: the item's own `sdlc:<kind>:<id>`, a spec's `sdlc:status:`, `risk:`, `channel:`,
-                 `eng-review:`, `data-review:` and `carried-from:` (every one a `PLUGIN_TAG_PREFIXES`).
+                 `eng-review:`, `data-review:` and `carried-from:`, and — for a parent or `Related` ref whose
+                 requirements-tree kind rides as a tag on this process (`ride_fit`, `ride_tag`) — `domain:<slug>`,
+                 `fr:<id>`, and the `outcome:<id>` of each outcome a riding domain maps to (every one a
+                 `PLUGIN_TAG_PREFIXES`).
     `parent_ref` the one parent edge the repository declares, or None with `parent_note` saying why (a
                  spec's `FE-NN` in `source:`; a feature's `(epic: …)` header, by id, else by exact title).
     `related_refs`  `Related` edges: a spec's `Traces to` FRs when `tree.spec_traces` is on, else [].
@@ -60,20 +67,28 @@ loader read (a spec's frontmatter; an epic's `{"Epic ID", "Title", "Priority", "
 resolvers also work on a bare row, re-reading the file at `source_path`. Whoever registers
 `PARENT_RESOLVERS["epic"]` must import their module before calling `projections`: with none registered an
 epic says so in `parent_note`.
+
+After its loader and resolver, every row of every kind gets two passes, so `plan`, `apply`, `drift` and `pull` see
+one projection: the kind's constants (`_constants`, `_apply_constants`) and the tags of the requirements-tree kinds
+that ride as tags on this process (`_Rides`: `ride_fit` reads the fit once, `ride_tag` names the tag, and a riding
+domain's outcomes come from `ado_sync_sources_tree.load_domains`, imported lazily, only when a row needs them).
 """
 
 import functools
 import hashlib
+import html
+import importlib
 import inspect
 import json
 import re
+import unicodedata
 from pathlib import Path
 
 import yaml
 
 import boards_contract as bc
 import risk_model as rm
-from ado_schema_map import field_on_type, resolve_state, resolve_type
+from ado_schema_map import configured_kinds, field_on_type, fit_levels, resolve_state, resolve_type
 from artifact_lineage import ID_RE
 from check_spec import parse_frontmatter
 from document_shape import read_document
@@ -88,6 +103,7 @@ SHAPES = PLUGIN_ROOT / "templates" / "phases" / "01-requirements"
 MAX_TITLE = 255                                  # the work item title limit
 SEP = " · "                                      # `<id> · <title>`
 PRIORITY = "Microsoft.VSTS.Common.Priority"
+ACCEPTANCE = "Microsoft.VSTS.Common.AcceptanceCriteria"
 ITERATION = "System.IterationPath"
 PRIORITY_VALUE = {"P0": 1, "P1": 2, "P2": 3, "P3": 4}   # the board's 1 (most urgent) to 4
 SCHEDULING = "microsoft.vsts.scheduling."
@@ -110,6 +126,9 @@ _EPIC_HEADING = re.compile(r"^###[ \t]+(EP-[A-Z]*\d+)[ \t]*:[ \t]*(.*?)[ \t]*$",
 _ANY_HEADING = re.compile(r"^#{1,3}[ \t]+\S", re.MULTILINE)
 _EPIC_PRIORITY = re.compile(r"^\*\*Priority:\*\*[ \t]*(P\d)\b", re.MULTILINE | re.IGNORECASE)
 _EPIC_LINKED = re.compile(r"^\*\*Linked requirement:\*\*[ \t]*(.*?)[ \t]*$", re.MULTILINE)
+_EPIC_CRITERIA = re.compile(r"^\*\*Acceptance criteria:\*\*[ \t]*$", re.MULTILINE | re.IGNORECASE)
+_LIST_ITEM = re.compile(r"^[ \t]*[-*+][ \t]+(?:\[[ xX]\][ \t]+)?(.*?)[ \t]*$")
+_STAND_IN = re.compile(r"\[[^\]\n]+\](?!\()")  # a template stand-in such as `[condition]`; `[text](url)` is a link
 _BRIEF_H1 = re.compile(r"^#[ \t]+Feature Brief\b[ \t]*[—–-]*[ \t]*(FE-[A-Z]*\d+)[ \t]*:[ \t]*(.*?)[ \t]*$",
                        re.IGNORECASE)
 _BRIEF_EPIC = re.compile(r"\([ \t]*epic[ \t]*:[ \t]*(.*)\)[ \t]*$", re.IGNORECASE)
@@ -280,6 +299,8 @@ def _extra_fields(kind: str, raw: dict, cfg: dict, notes: list) -> dict:
         return out
     for key in sorted(rules):
         rule = rules[key]
+        if isinstance(rule, dict) and "value" in rule:
+            continue  # a constant: no source value; `projections` writes it for every kind (`_constants`)
         ref = rule.get("field") if isinstance(rule, dict) else rule
         table = rule.get("values") if isinstance(rule, dict) else None
         if not isinstance(ref, str) or not ref.strip():
@@ -357,6 +378,7 @@ def _epic_records(root: Path) -> tuple[list[dict], str | None]:
         priority, linked = _EPIC_PRIORITY.search(body), _EPIC_LINKED.search(body)
         heads[ident] = {"title": m.group(2), "priority": priority.group(1).upper() if priority else "",
                         "linked": "" if not linked or _blank(linked.group(1)) else _one_line(linked.group(1)),
+                        "criteria": _epic_criteria(body),
                         "slice": text[m.start():nxt.start() if nxt else len(text)]}
     rows: dict[str, dict] = {}
     row_at: dict[str, str] = {}
@@ -376,8 +398,34 @@ def _epic_records(root: Path) -> tuple[list[dict], str | None]:
         fr_link = "" if _blank(row.get("FR Link")) else _one_line(row.get("FR Link"))
         own = head.get("slice", "") + "\n" + "|".join(f"{k}={v}" for k, v in row.items())
         out.append({"id": ident, "title": _one_line(title), "priority": priority if re.fullmatch(r"P\d", priority) else "",
-                    "fr_link": fr_link or head.get("linked", ""), "sha": _fingerprint(own.encode("utf-8"))})
+                    "fr_link": fr_link or head.get("linked", ""), "criteria": head.get("criteria", ([], 0)),
+                    "sha": _fingerprint(own.encode("utf-8"))})
     return out, where
+
+
+def _epic_criteria(body: str) -> tuple[list[str], int]:
+    """`(criteria, placeholders)` of an epic's `**Acceptance criteria:**` list: each item's text on one line, its
+    checkbox and bold markers removed, in order; the list ends at the first line that is neither an item nor blank
+    (the `**Definition of Done:**` label, a `---`). An item that still holds a template stand-in (`[condition]`;
+    a markdown link is not one) is left out and counted, so the note can say how many. A CRLF checkout reads as the LF
+    one (Git for Windows' autocrlf), so the field -- and the projection hash -- is the same on every machine."""
+    body = body.replace("\r\n", "\n")
+    found = _EPIC_CRITERIA.search(body)
+    if not found:
+        return [], 0
+    items, placeholders = [], 0
+    for line in body[found.end():].split("\n")[1:]:
+        if not line.strip():
+            continue
+        item = _LIST_ITEM.match(line)
+        if not item:
+            break
+        text = _one_line(item.group(1).replace("**", ""))
+        if _STAND_IN.search(text) or _PLACEHOLDER.match(text):
+            placeholders += 1
+        elif not _blank(text):
+            items.append(text)
+    return items, placeholders
 
 
 def _brief_paths(root: Path) -> list[Path]:
@@ -547,12 +595,19 @@ def load_epics(repo_root, cfg: dict, schema: dict) -> list[dict]:
     records, rel = _epic_records(root)
     type_name = resolve_type(schema, "epic", cfg)[0] if records else None
     has_priority = type_name is not None and field_on_type(schema, type_name, PRIORITY) is not None
+    has_criteria = type_name is not None and field_on_type(schema, type_name, ACCEPTANCE) is not None
     out = []
     for e in records:
         notes: list = []
         fields = {"System.Title": _title(e["id"], e["title"], notes)}
         if has_priority and e["priority"] in PRIORITY_VALUE:
             fields[PRIORITY] = PRIORITY_VALUE[e["priority"]]
+        criteria, stand_ins = e["criteria"]
+        if has_criteria and criteria:
+            fields[ACCEPTANCE] = "<br>".join(html.escape(c, quote=False) for c in criteria)
+        if has_criteria and stand_ins:
+            notes.append(f"{stand_ins} acceptance criteri{'on' if stand_ins == 1 else 'a'} left out: "
+                         "still a template stand-in")
         row = _row("epic", e["id"], e["title"], None, fields, {f"sdlc:epic:{_suffix(e['id'])}"}, rel, e["sha"], notes,
                    {"Epic ID": e["id"], "Title": e["title"], "Priority": e["priority"], "FR Link": e["fr_link"]})
         row["parent_note"] = NO_TREE  # replaced when the tree's resolver is registered
@@ -714,14 +769,150 @@ def projections(repo_root, cfg: dict, schema: dict, kinds: list[str]) -> list[di
         if kind not in SOURCES:
             raise ValueError(f"kind {kind!r} has no source loaded (SOURCES has: {', '.join(sorted(SOURCES))})")
     out: list[dict] = []
+    rides = _Rides(root, cfg, schema)
     for kind in wanted:
         resolver = PARENT_RESOLVERS.get(kind)
+        constants = _constants(kind, cfg)
         rows = []
         for raw in _call(SOURCES[kind], root, cfg, schema):
             row = _checked(kind, raw)
             if resolver is not None:
                 _resolve(kind, resolver, root, row)
             row.pop("source_row", None)
+            _apply_constants(kind, row, constants)
+            rides.apply(row)
             rows.append(row)
         out.extend(sorted(rows, key=lambda r: _natural(r["id"])))
     return out
+
+
+# --- constants and the tree kinds that ride as tags ---------------------------------------------------------------
+
+def _constants(kind: str, cfg: dict) -> dict:
+    """`{reference name: value}` of the kind's constant rules, `fields.<kind>.<key>: {field, value}`: a value no
+    artifact carries (a process's always-required ValueArea, say), written verbatim. A rule naming an activity metric
+    or a scheduling field is left out here as in `_extra_fields` (`config check` refuses it, and a refused config
+    plans nothing)."""
+    rules = _dig(cfg, "fields", kind)
+    out: dict = {}
+    for key in sorted(rules) if isinstance(rules, dict) else []:
+        rule = rules[key]
+        if not (isinstance(rule, dict) and "value" in rule and "values" not in rule):
+            continue
+        ref, value = rule.get("field"), rule.get("value")
+        if (not isinstance(ref, str) or not ref.strip() or isinstance(value, (dict, list)) or value is None
+                or is_forbidden_field(key) or is_forbidden_field(ref) or ref.lower().startswith(SCHEDULING)):
+            continue
+        out[ref.strip()] = value
+    return out
+
+
+def _apply_constants(kind: str, row: dict, constants: dict) -> None:
+    """Write each constant into the row's `fields` and name it in `constant_fields`, which `ado_sync_model` reads: a
+    constant is set at create and filled on update only while the board's field is empty, and a board-side change to it
+    is the board's (never drift). The repository's own value wins: a field the source already set keeps it, noted."""
+    applied = []
+    for ref, value in constants.items():
+        if ref in row["fields"]:
+            row["notes"].append(f"fields.{kind} constant for {ref} not used: the source sets {ref} itself")
+            continue
+        row["fields"][ref] = value
+        applied.append(ref)
+    if applied:
+        row["constant_fields"] = sorted(applied)
+
+
+RIDE_SEGMENTS = {"outcome": "outcome", "domain": "domain", "fr": "requirement"}  # a ref's segment -> its tree kind
+
+
+def ride_fit(cfg: dict, schema: dict) -> dict:
+    """`{tree kind: its fit entry}` (`ado_schema_map.fit_levels`) for the requirements-tree kinds this config mirrors
+    (`configured_kinds`); {} when it mirrors none. Only a kind fitted as `tag` (or `area`) rides."""
+    kinds = [k for k in bc.RIDE_TAG_PREFIXES if k in configured_kinds(cfg)]
+    if not kinds:
+        return {}
+    fit = fit_levels(schema or {}, cfg or {})
+    return {k: fit[k] for k in kinds}
+
+
+def ride_tag(ref, fits: dict) -> str | None:
+    """The tag a requirements-tree ref rides as on the item that points at it -- `sdlc:domain:order-intake` ->
+    `domain:order-intake`, `sdlc:fr:001` -> `fr:001`, `sdlc:outcome:1-turnaround-time` -> `outcome:1-turnaround-time`
+    -- when its kind is mirrored and fitted as a tag (`fits` is `ride_fit`); None when it is an item, its fit is not
+    known (backlog levels never read), or it is not a tree ref. A domain fitted to an Area Path also rides as its tag:
+    setting `System.AreaPath` from the fit is not implemented, and the item says so (`_Rides`)."""
+    parts = str(ref or "").split(":")
+    kind = RIDE_SEGMENTS.get(parts[1]) if len(parts) == 3 and parts[0] == "sdlc" else None
+    entry = fits.get(kind) if kind else None
+    if not isinstance(entry, dict) or entry.get("mode") not in ("tag", "area"):
+        return None
+    return f"{bc.RIDE_TAG_PREFIXES[kind]}{parts[2]}"
+
+
+def _domain_slug(name: str) -> str:
+    """The slug `ado_sync_sources_tree` makes of a domain name, so a configured name matches the ref it names."""
+    folded = unicodedata.normalize("NFKD", str(name)).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"[^a-z0-9]+", "-", folded.lower()).strip("-")
+
+
+class _Rides:
+    """The tags a projection gains for the tree kinds that ride (design D36 on a process with nothing above Epic): for
+    its parent and each `Related` ref of a riding kind, that ref's tag; and for each domain that rides, the tag of each
+    outcome the domain maps to (`ado_sync_sources_tree.load_domains`: `tree.domain_outcomes` and the Summary Table's
+    Outcome column, never inferred) when outcomes ride too -- the domain has no item to carry that edge. The fit and the
+    domain map are read once per `projections` call, and only when a row points at a riding kind."""
+
+    def __init__(self, root: Path, cfg: dict, schema: dict):
+        self.root, self.cfg, self.schema = root, cfg, schema
+        self._fits = None
+        self._outcomes = None
+        self._why_not = None  # why the domain -> outcome map could not be read (the row says so; nothing is guessed)
+
+    @property
+    def fits(self) -> dict:
+        if self._fits is None:
+            self._fits = ride_fit(self.cfg, self.schema)
+        return self._fits
+
+    def outcomes_of(self, domain_ref: str) -> list[str]:
+        """The outcome refs a domain maps to. A map that contradicts the artifacts (`tree.domain_outcomes` naming a
+        domain or an outcome nobody defined) adds no outcome tag and leaves the reason in `_why_not`: the domain and
+        FR tags still ride, and `plan --kind domain` stops on the same contradiction."""
+        if self._outcomes is None:
+            tree = importlib.import_module("ado_sync_sources_tree")  # lazily: importing it registers it
+            try:
+                domains = tree.load_domains(self.root, self.cfg)
+            except ValueError as exc:
+                domains, self._why_not = [], str(exc)
+            self._outcomes = {d["ref"]: [r for r in [d["parent_ref"], *d["related_refs"]] if r] for d in domains}
+        return self._outcomes.get(domain_ref, [])
+
+    def apply(self, row: dict) -> None:
+        refs = [str(r) for r in [row.get("parent_ref"), *row.get("related_refs", [])] if r]
+        if not any(r.split(":")[1] in RIDE_SEGMENTS for r in refs if r.count(":") == 2) or not self.fits:
+            return  # no tree ref on the row (most rows): the fit is not even computed
+        tags: list[str] = []
+        for ref in refs:
+            tag = ride_tag(ref, self.fits)
+            if tag is None:
+                continue
+            tags.append(tag)
+            if not ref.startswith("sdlc:domain:"):
+                continue
+            area = self._area_path(ref)
+            if area:
+                row["notes"].append(f"{ref} matches the Area Path {area}, but setting System.AreaPath from the fit is "
+                                    f"not implemented; it rides as the tag {tag}")
+            if (self.fits.get("outcome") or {}).get("mode") == "tag":  # an outcome item would hold the edge itself
+                tags += [t for t in (ride_tag(o, self.fits) for o in self.outcomes_of(ref)) if t]
+                if self._why_not:
+                    row["notes"].append(f"no outcome tags for {ref}: {self._why_not}")
+        row["tags"] = set(row["tags"]) | set(tags)
+
+    def _area_path(self, domain_ref: str) -> str | None:
+        entry = self.fits.get("domain") or {}
+        if entry.get("mode") != "area":
+            return None
+        slug = domain_ref.split(":", 2)[2]
+        return next((v.get("area_path") for name, v in (entry.get("names") or {}).items()
+                     if isinstance(v, dict) and v.get("mode") == "area" and _domain_slug(name) == slug), None)

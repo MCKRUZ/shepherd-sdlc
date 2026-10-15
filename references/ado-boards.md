@@ -96,8 +96,9 @@ Three deliberate choices and one gap in the table above:
   colleague's edit; the mirror neither counts nor changes them, so any count reads `no data`.
 - **The gap: an epic's AcceptanceCriteria.** `KIND_OWNERSHIP["epic"]` names only State, so `classify_drift` reads a
   board edit to an epic's AcceptanceCriteria under `boards_contract.OWNERSHIP`'s default `S` — `SDLC_OWNED_DRIFT`,
-  where `--take ado` is refused — and the epic source pushes no AcceptanceCriteria for `--take sdlc` to restore. The
-  `("epic", AcceptanceCriteria)` draft target is therefore reached only by a drift row recorded with owner `C`; making
+  where `--take ado` is refused. Since the B0 plan fixes the epic source pushes the epic's `**Acceptance criteria:**`
+  items when the type carries the field, so `--take sdlc` (the next confirmed apply) restores them. The
+  `("epic", AcceptanceCriteria)` draft target is still reached only by a drift row recorded with owner `C`; making
   the field `C` for an epic is an open follow-up, not something this page can promise.
 
 A board revision whose only change is `System.History` is `COMMENT`, not drift; an attachment is listed, never
@@ -269,6 +270,41 @@ and adds `Related` links once both ends exist, so no item is created and then pa
 `tree.fit.<kind>` pins a mode (`item`, `area` — domain only — or `tag`); a pin the process cannot meet falls back
 to a tag and says so. The fit table prints on every `plan` and `validate`.
 
+### When a tree kind rides as a tag
+
+A kind the fit lands as `tag` is never a work item, so its edges ride on the items that point at it
+(`ado_sync_sources.ride_fit` / `ride_tag`, applied in `projections`, so `plan`, `apply`, `drift` and `pull` all see
+the same projection). For each parent or `Related` ref of a riding kind, the item gains that ref's tag:
+
+| The item points at | It gains |
+|---|---|
+| its domain (an epic's single-domain parent, an FR's or NFR's parent) | `domain:<slug>` — `domain:order-intake` |
+| each domain it spans (a cross-domain epic's `Related` domains) | `domain:<slug>` for each |
+| each FR it fulfils (an epic's `FR Link`; a spec's `Traces to` with `tree.spec_traces: true`) | `fr:<digits>` — `fr:001` |
+| a riding domain's outcomes (`tree.domain_outcomes`, or the Summary Table's `Outcome` column), when outcomes ride too | `outcome:<id>` — `outcome:1-turnaround-time` |
+| an outcome directly (a domain item's `Related` outcomes) | `outcome:<id>` |
+
+Only kinds the config mirrors ride (`kinds:`, or the starter's list when the key is absent): drop `requirement`
+from `kinds` and no `fr:` tag is written. A kind whose fit is `unknown` (backlog levels never read) does not ride —
+not known is not a tag. The plan row says where each edge went: `parent.state` reads `rides as tag
+domain:order-intake` (never `not planned`, and `apply` links no parent for it), and a row with `Related` refs
+carries `related: [{ref, state}]` the same way (`rides as tag fr:001`; an item-mode `Related` ref is `not planned`,
+since `apply` sends no `Related` link yet). A domain → outcome map that contradicts the artifacts adds no outcome
+tag and a row note says why (`plan --kind domain` stops on the same contradiction); the domain and FR tags still ride.
+
+`outcome:`, `domain:` and `fr:` are in `boards_contract.PLUGIN_TAG_PREFIXES` (as `boards_contract.RIDE_TAG_PREFIXES`):
+they are the repository's tags like every `sdlc:` one, so `merge_tags` replaces them and keeps a person's tags, a
+board-side removal of one is `SDLC_OWNED_DRIFT` that the next confirmed apply puts back, and a person's own tag
+(`team-alpha`) moving is still the board's. A board that already holds a person's tag spelled `domain:…` will have
+it treated as the mirror's.
+
+**Area mode is not implemented.** A domain fitted to an Area Path (`fit.domain.mode: area`, which needs domain
+names the fit can match to area nodes) still rides as its `domain:<slug>` tag, and the item's note says
+`matches the Area Path <path>, but setting System.AreaPath from the fit is not implemented`. Setting
+`System.AreaPath` at create is a small write on its own (it is `C`); what is missing is a valid place for the
+names — `tree.domains` is not a key of `.sdlc/ado.yaml` (`config check` refuses it), and filling it from
+`requirements.md`'s Summary Table would change every fit table — so it waits for its own package.
+
 **`unknown` mode.** Backlog levels are a *team* setting. When they were never read — no `--team`, no `team` in
 the config, no default team — a tree kind whose answer waits on them fits as `unknown`, printed **not
 discovered**. It is not a fallback, not a gap, and not a count of zero levels: a count that was never taken is
@@ -281,6 +317,49 @@ additions an administrator would make to the process (a portfolio backlog level,
 board gains. **The plugin never alters a process** — it creates no work item type, level, field, state, area or
 iteration, and writes `identity_field` only when `discover` found it. A fallback fit is not a gap; a pinned type
 the process lacks is.
+
+---
+
+## Field facts, and the values a process requires
+
+**Every landed type is read.** `discover` reads one `wit/workItemTypesField` (`$expand=allowedValues`) per work item
+type a kind of the config lands on (`ado_schema_map.landed_types`): the spec's type first, then — in
+`boards_contract.KINDS` order — the type of each configured kind (Epic and Feature from their backlog categories, a
+tree kind only when it fits as an item), each `types.<kind>` pin and each `fields.<kind>` block, and the
+`BugCategory` default when findings are mirrored. Eight fixed reads, then one per landed type (on the captured
+process with spec/spike/decision pinned: Spec, Epic, Feature, Task, Issue — thirteen calls), each type once; a
+schema saved before a landed type was read is not reused. Those facts are what let a plan:
+
+- write an epic's `Microsoft.VSTS.Common.Priority` from its `**Priority:**` line or Epic Summary column (P0..P3 as
+  1..4) and its `Microsoft.VSTS.Common.AcceptanceCriteria` from its `**Acceptance criteria:**` items (escaped, one per
+  line; an item still holding a template stand-in is left out with a note) — each only when the type carries the
+  field;
+- tell a required field the process defaults (the captured Epic: Priority `2`, ValueArea `Business`, an
+  AcceptanceCriteria template) from one a create would leave empty. A note `required field … create would fail` now
+  means exactly that; when a type's fields were never read the note says the default is **not known** and names
+  `discover --refresh`, rather than claiming a failure;
+- check a value against the field's allowed values as text (`plan --validate`; Azure DevOps answers an integer
+  field's picklist as `"1"`, `"2"`, …).
+
+**A constant, for a value no artifact carries.** `fields.<kind>.<key>: {field, value}` writes `value` verbatim on
+every item of the kind:
+
+```yaml
+fields:
+  epic:
+    value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
+  feature:
+    value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
+```
+
+It is set at create; on an existing item only while the board's field is empty; and whatever the board holds there
+afterwards is the board's (`C`, `ADO_OWNED_CHANGE`, never drift), whatever `OWNERSHIP` says of the field — the
+projection names it in `constant_fields`, which `ado_sync_model.diff` and `classify_drift` read. The repository's
+own value wins (a constant for a field the source already sets is unused, with a note). `config check` refuses
+(exit 2) a constant outside the field's discovered allowed values, one aimed at a field the mirror builds itself
+(Title, State, Tags, Description, History) or at an identity field, a value holding an address or a GUID, and —
+like every field write — the effort/estimate family; a constant that also carries a `values` table is invalid
+(exit 1). A required field a constant supplies is no longer a `create would fail` note.
 
 ---
 

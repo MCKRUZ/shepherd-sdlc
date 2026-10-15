@@ -12,20 +12,29 @@ What `discover` reads, in order (each a `devops invoke` GET; the project is a ro
 `--project`; every route comes from `boards_contract.WIT_ROUTES`, the one place a capture corrects):
   projects, workItemTypeCategories, workItemTypes, fields (project-wide), the team's backlog
   configuration, classificationNodes (areas and iterations, depth 3), the team's iterations,
-  workItemRelationTypes — then, for each type the config writes to, that type's fields with their allowed
+  workItemRelationTypes — then, for each type a kind lands on, that type's fields with their allowed
   values (`workItemTypesField`, `$expand=allowedValues`). The type's states are taken from the
   workItemTypes answer, which carries every type's `states` exactly as `workItemTypeStates` answers them
   (B0 capture, 2026-10-14: equal for all seven types read), so they cost no call of their own.
+
+The call count is bounded: eight fixed reads (six when no team is known), then exactly one
+`workItemTypesField` read per landed type (`ado_schema_map.landed_types`) — at most one per kind the
+mirror knows plus one, and on the captured process with the starter config four (Spec, Epic, Feature, Issue).
 
 Three rules decide the parts that are not fixed:
   * The team is `--team`, else `team:` in `.sdlc/ado.yaml`, else the project's default team (the one
     Azure DevOps itself uses when none is named); with none of those the two team reads are skipped
     and the schema says so (`backlog: null`, `team: null`, `team_iterations: null`) instead of guessing.
-  * A type's states and fields are read for the spec's type and for every type a `types.<kind>` pin or a
-    `fields.<kind>` block lands on, resolved by `ado_schema_map.resolve_type` against what was already
-    read. A pin the process lacks is skipped here (`validate` reports it). A type that was never read
-    carries `states: null` / `fields: null` — unknown, not empty — and an Epic or Feature gets its states
-    from the backlog configuration's own state mapping.
+  * A type's states and fields are read for every type a kind of the config lands on
+    (`ado_schema_map.landed_types`: the spec's type first, then — in `KINDS` order — the type each configured
+    kind, each `types.<kind>` pin and each `fields.<kind>` block resolves to, so Epic and Feature from their
+    backlog categories as well as the pinned ones), resolved by `ado_schema_map.resolve_type` against what was
+    already read. Without those facts a plan cannot tell a required field the process defaults (Priority 2 and
+    ValueArea Business on the captured Epic) from one a create would leave empty, nor write a field such as an
+    epic's Priority only where the type carries it. A pin the process lacks is skipped here (`validate` reports
+    it), and a kind that rides as a tag lands nowhere. A type that was never read carries `states: null` /
+    `fields: null` — unknown, not empty — and an Epic or Feature gets its states from the backlog
+    configuration's own state mapping when its own were not read.
   * Nothing that names a person is saved. The project and team are reduced to their names, the only GUIDs
     are the classification nodes' `identifier`s (the join key for an iteration, not a person), and a
     picklist or default that holds an e-mail address or a GUID is withheld and noted. `save_schema` checks
@@ -50,7 +59,7 @@ import ado_schema_map as sm  # noqa: E402
 import ado_sync_config as cfgmod  # noqa: E402
 import ado_transport  # noqa: E402
 from ado_map import AdoImportError  # noqa: E402
-from boards_contract import CONFIG_FILE, EMAIL_RE, GUID_RE, KINDS, SCHEMA_FILE, WIT_ROUTES  # noqa: E402
+from boards_contract import CONFIG_FILE, EMAIL_RE, GUID_RE, SCHEMA_FILE, WIT_ROUTES  # noqa: E402
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
@@ -220,26 +229,17 @@ def discovery_config(repo_root) -> tuple[dict, str | None]:
 
 
 def types_to_read(schema: dict, cfg: dict) -> list[str]:
-    """The work item types whose states and fields are read one by one: the type of `spec`, plus the type every
-    `types.<kind>` pin and every `fields.<kind>` block lands on, in `KINDS` order, each once. `schema` is what
-    has been read so far (or a saved one); a kind that resolves to no type is left out."""
-    wanted = {"spec"}
-    for section in ("types", "fields"):
-        block = cfg.get(section)
-        if isinstance(block, dict):
-            wanted.update(k for k in block if isinstance(k, str) and k in KINDS)
-    names: list[str] = []
-    for kind in KINDS:
-        if kind in wanted:
-            name, _ = sm.resolve_type(schema, kind, cfg)
-            if name is not None and name not in names:
-                names.append(name)
-    return names
+    """The work item types whose states and fields are read one by one, each once: every type a kind of the config
+    lands on (`ado_schema_map.landed_types`: the spec's type first, then in `KINDS` order the type of each configured
+    kind, each `types.<kind>` pin and each `fields.<kind>` block, and the BugCategory default when findings are
+    mirrored). `schema` is what has been read so far (or a saved one); a kind that resolves to no type is left out."""
+    return sm.landed_types(schema, cfg)
 
 
 def is_reusable(schema: dict, cfg: dict, team: str | None, today) -> bool:
     """Whether a saved schema can stand in for a fresh read: it was read today, is for the team asked for (any
-    team when none was), and already holds the states and fields of every type the config writes to."""
+    team when none was), and already holds the states and fields of every type a kind of the config lands on (a
+    schema saved before every landed type was read is read again)."""
     if schema_age_days(schema, today) != 0:
         return False
     cached = schema.get("team")

@@ -194,7 +194,7 @@ AGENT_PREFIX = model.AGENT_PREFIX  # "shepherd:", the only prefix `ai_by` strips
 # The kinds `validate` checks as work item types without a fit: the config must name the type.
 PINNED_KINDS = ("spike", "decision", "finding", "question")
 # The starter's `kinds` (templates/ado/ado.yaml); a config without the key means this set.
-DEFAULT_KINDS = ("outcome", "domain", "requirement", "epic", "feature", "spec", "spike", "sprint", "decision")
+DEFAULT_KINDS = bc.DEFAULT_KINDS
 RESULT_WORDS = {0: "resolvable", 1: "gaps", 2: "refused"}
 # How a fit mode reads in the text table; `--json` keeps the mode itself. A tree kind whose backlog levels were
 # never read is "not discovered" -- not known, never a 0 and never a gap.
@@ -507,10 +507,7 @@ def cmd_discover(args, repo_root: Path) -> int:
 # --- validate --------------------------------------------------------------------------------------------------------
 
 def _configured_kinds(cfg: dict) -> tuple[str, ...]:
-    if "kinds" not in cfg:
-        return DEFAULT_KINDS
-    raw = cfg["kinds"]
-    return tuple(k for k in raw if isinstance(k, str) and k in KINDS) if isinstance(raw, (list, tuple)) else ()
+    return sm.configured_kinds(cfg)
 
 
 def _fit_view(schema: dict, cfg: dict, kinds: tuple[str, ...]) -> tuple[dict, dict, list[str], list[str]]:
@@ -973,17 +970,25 @@ def _create_ops(projection: dict, emails: dict[str, str]) -> list[dict]:
 
 
 def _required_notes(schema: dict, type_name: str, proj: dict) -> list[str]:
-    """A field the type always requires that the create would leave empty: it would fail on the board."""
+    """A field the type always requires that the create would leave empty: it would fail on the board. A field the
+    projection sets -- from the repository or a `fields.<kind>` constant -- or the process defaults is not one. When the
+    type's fields were never read, whether the process defaults it is not known, and the note says that instead of
+    claiming the create would fail (`discover` reads every type a kind lands on)."""
     info = (schema.get("types") or {}).get(type_name) or {}
+    read = isinstance(info.get("fields"), dict)
     notes = []
     for ref in info.get("required_fields") or []:
         if ref.startswith(SYSTEM_FILLED) or ref in proj["fields"]:
+            continue
+        if not read:
+            notes.append(f"required field {ref}: {type_name}'s fields were not read, so whether the process gives it "
+                         "a default is not known; `ado_sync.py discover --refresh` reads them")
             continue
         facts = sm.field_on_type(schema, type_name, ref)
         if facts is not None and facts.get("default") is not None:
             continue
         notes.append(f"required field {ref} has no value -> create would fail; add it under fields.{proj['kind']} "
-                     "or give it a process default")
+                     "(a constant `{field, value}` when no artifact carries it) or give it a process default")
     return notes
 
 
@@ -1004,7 +1009,8 @@ def _validation(schema: dict, type_name: str, ops: list[dict], creating: bool) -
             continue
         new = op.get("new")
         allowed = facts.get("allowed_values")
-        if isinstance(allowed, list) and new is not None and new not in allowed:
+        # as text: an integer field's allowed values are answered "1", "2", ... (the captured Priority), its value 1
+        if isinstance(allowed, list) and new is not None and str(new) not in {str(a) for a in allowed}:
             found.append(f"{ref}: {new!r} is not one of the allowed values ({', '.join(str(a) for a in allowed)})")
         if ref == "System.State" and isinstance(new, str):
             frm = "" if creating else str(op.get("old") or "")
@@ -1189,7 +1195,10 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
         lines += [_op_line(o, width) for o in r["ops"]]
         parent = r["parent"]
         if parent is not None and r["action"] == "create":
-            target = f"#{parent['work_item']}" if parent["work_item"] else f"no work item yet ({parent['state']})"
+            if parent["state"].startswith("rides as "):
+                target = parent["state"]           # on the item's own tags, never a work item
+            else:
+                target = f"#{parent['work_item']}" if parent["work_item"] else f"no work item yet ({parent['state']})"
             lines.append(f"  parent {parent['ref']} -> {target}")
         lines += [f"  note: {n}" for n in r["notes"]]
         lines += [f"  validate: {v}" for v in r.get("validation", [])]
@@ -1233,6 +1242,16 @@ def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, co
         notes.append(f"{_plural(pending, 'row')} is over limits.writes_per_run ({per_run}); an apply stops at "
                      f"{per_run}, and the next plan covers the rest")
     return notes
+
+
+def _edge_state(ref: str, fits: dict, links: dict, creating: set) -> str:
+    """Where a parent or Related ref stands: `rides as tag domain:order-intake` when its tree kind rides as a tag on
+    this process (it is on the item's own tags, never a work item), else `linked` (the ledger maps it), `in this plan`
+    (a create of this plan), or `not planned`. `apply` links a parent only when it is `linked` or `in this plan`."""
+    tag = sources.ride_tag(ref, fits)
+    if tag is not None:
+        return f"rides as tag {tag}"
+    return "linked" if ref in links else "in this plan" if ref in creating else "not planned"
 
 
 def _open_conflicts(ledger: list[dict]) -> dict[str, list[dict]]:
@@ -1303,6 +1322,7 @@ def cmd_plan(args, repo_root: Path) -> int:
     pairs = sorted(((p, r) for p, r in pairs if r["action"] != "in_sync"), key=lambda pr: _kind_order(pr[1]["kind"]))
     creating = {r["ref"] for _, r in pairs if r["action"] == "create"}
     conflicts = _open_conflicts(ledger)
+    fits = sources.ride_fit(cfg, schema)   # the tree kinds that ride as tags: their refs are never a work item
     for p, r in pairs:
         if r["action"] == "update":
             r["notes"] += [f"open {c['class']} on {c.get('field') or 'the item'} since {c.get('ts')}: the board and the "
@@ -1310,11 +1330,13 @@ def cmd_plan(args, repo_root: Path) -> int:
                            for c in conflicts.get(r["ref"], [])]
         parent = p.get("parent_ref")
         if parent:
-            state = "linked" if parent in links else "in this plan" if parent in creating else "not planned"
             r["parent"] = {"ref": parent, "work_item": links[parent]["work_item"] if parent in links else None,
-                           "state": state}
+                           "state": _edge_state(parent, fits, links, creating)}
         elif p.get("parent_note"):
             r["notes"].append(p["parent_note"])
+        if r["related_refs"]:  # a row with no Related edge has no key, so its plan hash is what it always was
+            # a Related edge is only ever a tag today: apply sends no Related link, so an item-mode ref is "not planned"
+            r["related"] = [{"ref": ref, "state": _edge_state(ref, fits, {}, set())} for ref in r["related_refs"]]
         if args.validate and r["action"] in PENDING_ACTIONS:
             r["validation"] = _validation(schema, r["type"], r["ops"], r["action"] == "create")
     narrowed = bool(args.kind or ids or sprint)  # a selector: a comment row is in scope only for the items it chose

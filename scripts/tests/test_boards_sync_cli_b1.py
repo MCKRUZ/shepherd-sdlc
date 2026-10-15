@@ -65,6 +65,9 @@ DEFAULT_CALLS = [
     ("GET wit/workItemRelationTypes", {"project": "Claims"}),
     # B0: the spec type's fields at the corrected location; its states come from the workItemTypes answer
     ("GET wit/workItemTypesField", {"project": "Claims", "type": SPEC_TYPE}),
+    # B0 plan fixes: then every other type a default kind lands on -- Epic and Feature, from their categories
+    ("GET wit/workItemTypesField", {"project": "Claims", "type": "Epic"}),
+    ("GET wit/workItemTypesField", {"project": "Claims", "type": "Feature"}),
 ]
 
 
@@ -148,10 +151,12 @@ def test_discover_reads_the_process_serially_and_nothing_else(az, tmp_path, caps
     schema = read_schema(tmp_path)
     assert schema["commands"] == ["core/projects", "wit/workItemTypeCategories", "wit/workItemTypes", "wit/fields",
                                   "work/backlogconfiguration", "wit/classificationNodes", "work/iterations",
-                                  "wit/workItemRelationTypes", f"wit/workItemTypesField type={SPEC_TYPE}"]
-    story, epic = schema["types"][SPEC_TYPE], schema["types"]["Epic"]
+                                  "wit/workItemRelationTypes", f"wit/workItemTypesField type={SPEC_TYPE}",
+                                  "wit/workItemTypesField type=Epic", "wit/workItemTypesField type=Feature"]
+    story, epic, raid = schema["types"][SPEC_TYPE], schema["types"]["Epic"], schema["types"]["RAID"]
     assert story["states"] and story["fields"]                       # read for the spec's type
-    assert epic["states"] is None and epic["fields"] is None          # never read is unknown, not empty
+    assert epic["states"] and epic["fields"]                         # and for every type a kind lands on
+    assert raid["states"] is None and raid["fields"] is None          # never read is unknown, not empty
 
 
 def test_every_recorded_argv_has_the_seam_shape(az, tmp_path, capsys):
@@ -241,8 +246,8 @@ def test_discover_reads_the_types_the_config_writes_to_and_skips_pins_the_proces
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0, out
     typed = [(k, p["type"]) for k, p in seen(az) if "type" in p]
-    assert typed == [("GET wit/workItemTypesField", SPEC_TYPE), ("GET wit/workItemTypesField", "Issue")]
-    assert out["per_type_reads"] == [SPEC_TYPE, "Issue"]
+    assert typed == [("GET wit/workItemTypesField", t) for t in (SPEC_TYPE, "Epic", "Feature", "Issue")]
+    assert out["per_type_reads"] == [SPEC_TYPE, "Epic", "Feature", "Issue"]  # the spec's type, the landed, the pin
     schema = read_schema(tmp_path)
     assert schema["types"]["Issue"]["states"] and "Objective" not in schema["types"]
 
@@ -251,7 +256,8 @@ def test_discover_ignores_an_unusable_config_and_says_so(az, tmp_path, capsys):
     write_cfg(tmp_path, "version: [unclosed\n")
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0 and any("ado.yaml" in note for note in out["notes"])
-    assert [k for k, p in seen(az) if "type" in p] == ["GET wit/workItemTypesField"]  # only the spec's type
+    # only what the default kinds land on: the spec's type, Epic and Feature (no pin of the unusable file is read)
+    assert [p["type"] for k, p in seen(az) if "type" in p] == [SPEC_TYPE, "Epic", "Feature"]
 
 
 def test_discover_withholds_a_person_from_a_picklist_and_a_default(az, tmp_path, capsys):

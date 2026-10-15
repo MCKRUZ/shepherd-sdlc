@@ -161,6 +161,16 @@ def _plugin_tags(tags) -> set[str]:
     return {t for t in _tags(tags) if t.startswith(bc.PLUGIN_TAG_PREFIXES)}
 
 
+def constant_fields(projection: dict | None) -> frozenset[str]:
+    """The fields a projection carries as constants (`constant_fields`, set by `ado_sync_sources` for each
+    `fields.<kind>.<key>: {field, value}` rule it applied): written at create, filled on update only while the
+    board's field is empty, and the board's afterwards (`C`), whatever `OWNERSHIP` says of the field."""
+    named = (projection or {}).get("constant_fields")
+    if not isinstance(named, (list, tuple, set, frozenset)):
+        return frozenset()
+    return frozenset(r for r in named if isinstance(r, str))
+
+
 def _marker_block(html) -> str | None:
     """The text between the sdlc markers, or None when the markers are absent."""
     text = str(html or "")
@@ -212,7 +222,10 @@ def diff(projection: dict, remote: dict | None, ownership: dict = bc.OWNERSHIP) 
     existing item: only an `S` field (by `ownership`; a pushed field the map does not name is the repo's) that
     differs after normalisation (trimmed text, case-folded e-mail, tag sets, the Description's marker block) is an
     op (`SDLC_OWNED_DRIFT`); an `A`/`C` field is the board's after create, so it never is. A field the remote
-    document does not carry is not compared (the B2-P1 patch builder reads the whole item)."""
+    document does not carry is not compared (the B2-P1 patch builder reads the whole item). A constant (a field the
+    projection names in `constant_fields`, from a `fields.<kind>.<key>: {field, value}` rule) is pushed at create and,
+    on an existing item, only while the board's field is empty (`NEVER_PUSHED`): whatever the board holds there
+    afterwards is the board's, whatever `ownership` says of the field."""
     want = {ref: value for ref, value in (projection.get("fields") or {}).items()
             if isinstance(ref, str) and REFERENCE_NAME_RE.fullmatch(ref)}
     tags = sorted(_plugin_tags(projection.get("tags")))
@@ -224,7 +237,13 @@ def diff(projection: dict, remote: dict | None, ownership: dict = bc.OWNERSHIP) 
                         "class": "NEVER_PUSHED"})
         return sorted(ops, key=lambda o: o["path"])
     ops = []
+    constants = constant_fields(projection)
     for ref, new in want.items():
+        if ref in constants:
+            held = remote.get("fields")
+            if isinstance(held, dict) and new is not None and _remote_value(remote, ref) in (None, ""):
+                ops.append({"op": "add", "path": f"/fields/{ref}", "old": None, "new": new, "class": "NEVER_PUSHED"})
+            continue
         if ref == "System.Tags" or ownership.get(ref, "S") != "S" or not _knows(remote, ref):
             continue
         old = _remote_value(remote, ref)
@@ -256,6 +275,8 @@ def _field_class(kind: str | None, own: dict, ref: str, change: dict, projection
         return "MOVED", "C"
     if ref == "System.Tags":
         owner = "S" if _plugin_tags(old) != _plugin_tags(new) else "C"  # human tags are the board's
+    elif ref in constant_fields(projection):
+        owner = "C"  # a constant is written once; what the board does with it afterwards is the board's
     elif ref == "System.Description":
         owner = own.get(ref, "S")
         if owner == "S" and _marker_block(old) == _marker_block(new):

@@ -17,13 +17,15 @@ the key. The level is what the CLI maps to an exit code:
                 an activity metric (`sprint_model.is_forbidden_field`, anything under
                 `Microsoft.VSTS.Scheduling.`) or that the discovered process refuses; free text or
                 full descriptions switched on without a named `pii_reviewed_by`; directory lookups
-                without a named `identity_scope_acknowledged_by`; a value outside a closed set or a
+                without a named `identity_scope_acknowledged_by`; a constant `fields.<kind>.<key>:
+                {field, value}` aimed at a field the mirror builds itself or at an identity, holding an
+                address or a GUID, or (with a schema) outside its field's allowed values; a value outside a closed set or a
                 range (the shape file's `additionalProperties`, `enum`, `const`, `minimum`,
                 `maximum` and `pattern` rows).
   unresolvable  exit 1 — only when a schema is given: a `types.<kind>` pin or a
                 `states.<kind>.<status>.prefer` name the discovered process does not have.
   invalid       exit 1 — a key has the wrong type or a required key is missing (the shape file's
-                `type` and `required` rows). A missing or unparseable file is `load_config`'s
+                `type` and `required` rows), or a constant also carries a `values` table. A missing or unparseable file is `load_config`'s
                 `ConfigError`, not a row.
 
 `schema` is the document `.sdlc/ado/schema.json` holds (the shape `ado_schema_map.build_schema`
@@ -46,7 +48,7 @@ from pathlib import Path
 import jsonschema
 import yaml
 
-from boards_contract import CONFIG_FILE, HOOK_STATUS, LOCAL_DIR
+from boards_contract import CONFIG_FILE, EMAIL_RE, GUID_RE, HOOK_STATUS, LOCAL_DIR
 from sprint_model import is_forbidden_field
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates" / "ado"
@@ -59,6 +61,12 @@ _SCHEDULING_PREFIX = "microsoft.vsts.scheduling."
 _METRICS = "an activity metric the standard never tracks (velocity, story points, PR count, lines of code)"
 # A kind's default work item type comes from its process category (epic, feature, spec only).
 _DEFAULT_CATEGORY = {"epic": "EpicCategory", "feature": "FeatureCategory", "spec": "RequirementCategory"}
+# What a constant `{field, value}` may not set: the fields the mirror builds itself from the repository (a title, a
+# state, the plugin tags, the description block, the History line), and the identity fields — a person reaches the
+# board only through the roster (`validate_team.email_for`), never as a value typed into this file. Lower-cased.
+_MIRROR_BUILT = frozenset({"system.title", "system.state", "system.tags", "system.description", "system.history",
+                           "system.workitemtype", "system.id", "system.rev"})
+_IDENTITY_FIELDS = frozenset({"system.assignedto", "system.createdby", "system.changedby", "system.authorizedas"})
 
 # A shape violation of these kinds is `refused` (outside a closed set or range, or an unknown key);
 # every other kind (a wrong type, a missing key) is `invalid`.
@@ -267,9 +275,40 @@ def _field_rows(cfg: dict, schema: dict | None) -> list[dict]:
             elif target is not None and target.lower() in refs:
                 rows.append(_row("refused", f"`{where}` targets `{target}`, which the discovered process lists as "
                                             "a field the mirror never writes; it is refused."))
+            elif isinstance(rule, dict) and "value" in rule:
+                rows.extend(_constant_rows(cfg, schema, types, kind, base, target, rule))
             elif types is not None and target is not None and isinstance(rule, dict):
                 rows.extend(_value_rows(cfg, schema, types, kind, base, target, rule.get("values")))
     return rows
+
+
+def _constant_rows(cfg, schema, types, kind, base, target, rule: dict) -> list[dict]:
+    """A constant `{field, value}`: one value written verbatim to every item of the kind, so it may not also carry a
+    `values` table, may not set a field the mirror builds itself or one that names a person (a person reaches the
+    board only through the roster), may not be an address or a GUID, and — with a schema — must be one of the
+    field's allowed values where the discovered type has a picklist."""
+    value = rule.get("value")
+    if target is None or isinstance(value, (dict, list)) or value is None:
+        return []  # the shape rows already name a missing field or a value of the wrong type
+    if "values" in rule:
+        return [_row("invalid", f"`{base}` has both `value` (a constant) and `values` (a table from the source's "
+                                "own value); give one of them.")]
+    if target.lower() in _MIRROR_BUILT:
+        return [_row("refused", f"`{base}.field` targets `{target}`, which the mirror builds itself from the "
+                                "repository; a constant cannot set it.")]
+    project_field = _mapping(_mapping(schema.get("fields")).get(target)) if schema is not None else {}
+    if project_field.get("is_identity") is True or target.lower() in _IDENTITY_FIELDS:
+        return [_row("refused", f"`{base}.field` targets `{target}`, an identity field; a person reaches the board "
+                                "only through the roster, never as a constant.")]
+    if isinstance(value, str) and (EMAIL_RE.search(value) or GUID_RE.search(value)):
+        return [_row("refused", f"`{base}.value` holds an address or a GUID; a constant is board-visible on every "
+                                "item and never names a person or an object.")]
+    allowed = _allowed_values(cfg, schema, types, kind, target) if types is not None else None
+    # compared as text: Azure DevOps answers an integer field's `allowedValues` as "1", "2", ... (captured Priority)
+    if allowed is not None and str(value) not in {str(a) for a in allowed}:
+        return [_row("refused", f"`{base}.value` is {_show(value)}, which is not an allowed value of `{target}`; "
+                                f"the allowed values are {', '.join(map(str, allowed))}.")]
+    return []
 
 
 def _value_rows(cfg, schema, types, kind, base, target, values) -> list[dict]:

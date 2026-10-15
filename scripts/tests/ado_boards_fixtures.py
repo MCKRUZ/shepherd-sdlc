@@ -141,6 +141,9 @@ WIQL_UNTAGGED_NEEDLE = "sdlc-repo:"                               # key `boards 
 # B3-P0: query parameters whose VALUE tells same-route fixtures apart (key `<route> order=desc`), tried after the
 # any-value ones and before the route parameters: the recovery re-list of any item is one fixture.
 REFINE_QUERY_VALUES: tuple[str, ...] = ("order", "connectOptions")
+# B0 (plan fixes): the per-type fields read, and the answer it is derived from for a type no fixture was written for
+TYPE_FIELDS_KEY = "GET wit/workItemTypesField"
+TYPES_KEY = "GET wit/workItemTypes"
 
 
 def refined_keys(key: str, args: list[str]) -> list[str]:
@@ -290,7 +293,13 @@ class FakeBoardsAz:
     even when answered. Every call is recorded first, refused or not.
 
     `hand_written=True` (B0) answers a fixture name from the hand-written file even where a capture exists
-    (`load_wit(name, hand_written=True)`): the process the item fixtures were written for (see `BOARDS_PROCESS`)."""
+    (`load_wit(name, hand_written=True)`): the process the item fixtures were written for (see `BOARDS_PROCESS`).
+
+    One read is answered without a fixture: a per-type fields read (`GET wit/workItemTypesField type=<T>`) for a type
+    no file was written for in this provenance is derived from the same fake's workItemTypes answer
+    (`_type_fields_from_types`), because `discover` reads every type a kind lands on and the hand-written and
+    synthetic processes only ever had User Story and Issue written out. A type that answer does not name is still
+    unexpected."""
 
     def __init__(self, answers: dict | None = None, fail: dict | None = None, *, writes: bool = False,
                  hand_written: bool = False):
@@ -315,6 +324,10 @@ class FakeBoardsAz:
         candidates = [f"{key} type={wit_type}", key] if wit_type is not None else [key]
         candidates = [*self._refinements(key, args), *candidates]
         found = next((k for k in candidates if k in self.answers), None)
+        if key == TYPE_FIELDS_KEY and wit_type is not None and (
+                found is None or (isinstance(self.answers[found], str)
+                                  and not wit_path(self.answers[found], self.hand_written).is_file())):
+            return json.dumps(self._type_fields_from_types(wit_type))
         if found is None:
             raise AssertionError(f"unexpected az call: {key}")
         answer = self.answers[found]
@@ -325,6 +338,22 @@ class FakeBoardsAz:
         if isinstance(answer, str):
             answer = load_wit(answer, self.hand_written)
         return json.dumps(answer)
+
+    def _type_fields_from_types(self, wit_type: str) -> dict:
+        """B0 (plan fixes): the per-type fields answer of a type no fixture was written for, derived from the
+        workItemTypes answer this fake gives for the same process: that type's `fieldInstances` (reference name,
+        `alwaysRequired`, `defaultValue`), each with `allowedValues: []` (unrestricted, since that answer carries
+        none). `discover` reads every type a kind lands on (Epic and Feature too), and the hand-written and synthetic
+        processes never had those per-type documents written; a type the answer does not name is still
+        `AssertionError("unexpected az call")`."""
+        types = self.answers.get(TYPES_KEY)
+        doc = load_wit(types, self.hand_written) if isinstance(types, str) else types
+        entries = doc.get("value") if isinstance(doc, dict) else None
+        entry = next((t for t in entries or [] if isinstance(t, dict) and t.get("name") == wit_type), None)
+        if entry is None:
+            raise AssertionError(f"unexpected az call: {TYPE_FIELDS_KEY} type={wit_type}")
+        fields = [{**f, "allowedValues": [], "dependentFields": []} for f in entry.get("fieldInstances") or []]
+        return {"count": len(fields), "value": fields, "continuation_token": None}
 
     def _refinements(self, key: str, args: list[str]) -> list[str]:
         """B2-P0: the refined keys answered for this call. When the bare key no longer carries its default
