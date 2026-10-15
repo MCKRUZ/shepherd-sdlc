@@ -46,7 +46,7 @@ owns it, `/sprd-data` works it, and it is done only when the data really flows. 
   cannot be read (a treeless partial clone) goes to `unread`, a git that cannot answer (not
   installed, `safe.directory`, timeout) reads `could not read refs: …` with one `(all refs)`
   entry rather than "not a git repository", only symbolic refs are skipped (a branch named
-  `rel/HEAD` is read), and a partial clone on git older than 2.46 is refused rather than risk a
+  `rel/HEAD` is read), and a partial clone on git older than 2.45 (the first release with `GIT_NO_LAZY_FETCH`) is refused rather than risk a
   lazy fetch. Without the flag, `open`'s output is byte-identical.
 - **`/sprd-data` drives a data spec; the agent keeps its tools.** The command loads `## Context`
   first, authors six artifacts instead of three, opens routed gaps with `--all-branches`, and

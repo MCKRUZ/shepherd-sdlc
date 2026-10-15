@@ -42,7 +42,7 @@ refusals go to stderr; exit codes are unchanged by the flag).
   acceptance_due}`; `acceptance_due` is true when the data spec is merged and the parent's `data_review`
   is not `accepted`. With no data spec, `status --json` is exactly `{"has_data": false, "specs": []}`.
 - **`check`** reports `passed: null` and `not measured` when its source file is absent, never a pass or a
-  fail. `readiness-gaps-owned`: every `DL-NN` in `data-readiness.md`'s Gaps table has a decision-log owner; a Gaps table with no real rows (template placeholder rows do not count) reads `no gaps recorded`, real rows that cite no `DL-NN` fail as `<N> gap(s), 0 reference a DL-NN`.
+  fail. `readiness-gaps-owned`: every `DL-NN` in `data-readiness.md`'s Gaps table has a decision-log owner; a Gaps table with no real rows (template placeholder rows do not count) reads `no gaps recorded`, every real row must cite its own `DL-NN`: none do → `<N> gap(s), 0 reference a DL-NN`; some do not → `<k> of <N> gap(s) reference no DL-NN: <first cell of each>`.
   `handoff-present`: `data-handoff.md` exists and `## Smoke tests` holds no `[bracketed]` placeholder.
 
 ## 3. The `data_review` transition (D4)
@@ -65,7 +65,7 @@ A tool never writes `accepted` or any `status`. Acceptance is only
 `## Context` is the bundle `/sprd-data` loads first, rewritten in place (bytes outside it are untouched).
 It lists the parent, a dated read-only copy of its acceptance checks, and every reference the parent's
 **body** cites: `BR-NN` business rules, `DL-NN` decisions, `ADR-NNN` decision records, `DOC-NNN` intake
-documents. A reference resolves to the Markdown file under `.sdlc/context`, `.sdlc/artifacts`, `.sdlc`, `docs`, `specs`
+documents. A reference resolves to the Markdown file that defines it — a heading or a table row starting with the id — searching `.sdlc/artifacts`, `.sdlc`, `docs`, `specs`; a `DOC-NNN` looks in `.sdlc/context/intake` first (its summary, not the registry row that lists it) and a `DL-NN` in the decision log first (`.sdlc/decision-log.md`, else `decision-log.md`), so a frozen layer's summary row never outranks the defining file for those kinds
 (searched in that order) that *defines* it: a heading naming it, or a table row starting with it.
 
 ```

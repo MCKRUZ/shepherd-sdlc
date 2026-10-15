@@ -54,16 +54,19 @@ REF_LABELS = {
     "ADR": "Decision records",
     "DOC": "Intake documents",
 }
-# The CLI (another package) searches these, in this order, *.md only, to resolve a cited id to a
-# file. The model only declares them: it reads no file. `.sdlc/context` comes first so a DOC-NNN
-# resolves to its summary (`.sdlc/context/intake/DOC-NNN-<slug>.md`), not to the registry row that
-# `/sprd-intake --registry` writes under `.sdlc/artifacts` (which would otherwise win as the first match).
+# Where a cited id is looked up, in order (`roots_for` picks the list by the id's kind). A definition is
+# a heading or a table row that STARTS with the id (`is_definition_line`); the first file found wins.
 RESOLVE_ROOTS = (".sdlc/artifacts", ".sdlc", "docs", "specs")
 # A DOC-NNN is defined by its intake summary (`.sdlc/context/intake/DOC-NNN-<slug>.md`), which the
 # document registry under .sdlc/artifacts only LISTS as a table row — so that kind looks there first.
 # Every other kind keeps the artifacts-first order: a frozen layer under .sdlc/context/layers/ may
 # summarise a BR or ADR in a table row, and a summary is not the definition.
-RESOLVE_ROOTS_BY_KIND = {"DOC": (".sdlc/context/intake",) + RESOLVE_ROOTS}
+RESOLVE_ROOTS_BY_KIND = {
+    "DOC": (".sdlc/context/intake",) + RESOLVE_ROOTS,
+    # A decision is defined by the decision log itself (either place track_decisions.py keeps it); a frozen
+    # layer under .sdlc/context/layers/ may quote a DL row, and the `.sdlc` root would reach it first.
+    "DL": (".sdlc/decision-log.md", "decision-log.md") + RESOLVE_ROOTS,
+}
 
 
 def ref_kind(ref: str) -> str | None:
@@ -106,7 +109,9 @@ def depends_on_ids_lenient(text: str) -> list[str]:
                 m = _BLOCK_ITEM_VALUE_RE.match(nxt)
                 if not m:
                     break
-                ids.extend(re.findall(r"\b\d{4,}\b", m.group(1) or ""))
+                item = m.group(1) or ""
+                item = item.split(" #", 1)[0] if " #" in item else item   # a comment on the item is not a dependency
+                ids.extend(re.findall(r"\b\d{4,}\b", item))
         break
     out: list[str] = []
     for sid in ids:

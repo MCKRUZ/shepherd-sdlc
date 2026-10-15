@@ -257,9 +257,13 @@ class RefResolver:
             paths: list[Path] = []
             for root in roots:
                 base = self.repo_root / root
-                if not base.is_dir():
+                if base.is_file():          # a root may name one file (the decision log)
+                    found = [base]
+                elif base.is_dir():
+                    found = sorted(base.rglob("*.md"))
+                else:
                     continue
-                for path in sorted(base.rglob("*.md")):
+                for path in found:
                     if path in seen or not path.is_file():
                         continue
                     seen.add(path)
@@ -594,7 +598,7 @@ def check_context_coverage(index, spec_text: str) -> dict:
 
 def _first_cell(row: str) -> str:
     """The first non-empty cell of a table row, trimmed to 60 characters — how a gap is named in a finding."""
-    cells = [c.strip() for c in row.strip().strip("|").split("|")]
+    cells = [c.strip().replace("\\|", "|") for c in re.split(r"(?<!\\)\|", row.strip().strip("|"))]
     text = next((c for c in cells if c), row.strip())
     return text if len(text) <= 60 else text[:57] + "..."
 

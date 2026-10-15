@@ -1019,3 +1019,33 @@ class TestReviewRoundTwo:
         assert proc.returncode == 2, proc.stderr
         assert "cycle" in proc.stderr
         assert snapshot(repo / "specs") == before
+
+
+# --- review round 3: a comment on a list item is not an edge; a DL is defined by the log; `\|` in a cell
+
+class TestReviewRoundThree:
+    def test_a_number_in_a_block_item_comment_is_not_a_dependency(self, repo):
+        parent = build_spec(repo, name="one")                     # 0001
+        middle = build_spec(repo, name="two")                     # 0002, depends on 0003
+        third = build_spec(repo, name="three")                    # 0003, depends on 0004 with a comment naming 0001
+        write(middle, read(middle).replace('depends_on: ""', 'depends_on: "0003"', 1))
+        write(third, read(third).replace('depends_on: ""', 'depends_on:\n  - "0004"  # superseded 0001', 1))
+        assert dm.depends_on_ids_lenient(read(third)) == ["0004"]
+        proc = data(repo, "target", "--spec", "0002", "--serves", "0001", "--json")
+        assert proc.returncode == 0, proc.stderr                  # no cycle: 0001 -> 0002 -> 0003 -> 0004
+
+    def test_a_decision_resolves_to_the_decision_log_not_a_frozen_layer_row(self, repo):
+        layers = repo / ".sdlc" / "context" / "layers"
+        layers.mkdir(parents=True)
+        (layers / "phase1-requirements.md").write_text("| DL-01 | fail closed? |\n", encoding="utf-8")
+        (repo / ".sdlc" / "decision-log.md").write_text(decision_log([
+            ["DL-01", "fail closed?", "@priya-n", "2026-10-01", "2026-10-03", "open"]]), encoding="utf-8")
+        assert data_spec.resolve_ref(repo, "DL-01") == ".sdlc/decision-log.md"
+        (repo / ".sdlc" / "decision-log.md").unlink()
+        (repo / "decision-log.md").write_text(decision_log([
+            ["DL-01", "fail closed?", "@priya-n", "2026-10-01", "2026-10-03", "open"]]), encoding="utf-8")
+        assert data_spec.resolve_ref(repo, "DL-01") == "decision-log.md"
+
+    def test_an_uncited_gap_whose_first_cell_holds_an_escaped_pipe_is_named_whole(self):
+        assert data_spec._first_cell("| payer \\| plan has no source | impact | high | |") == "payer | plan has no source"
+        assert data_spec._first_cell("|  | second cell |") == "second cell"
