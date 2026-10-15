@@ -20,6 +20,11 @@ With no verb it reports (advisory, always exit 0). Two verbs own the clock so no
   - decide close a row: status -> decided, resolution and decider recorded in the decision cell
 Both are targeted text edits: every byte of the log they do not mean to change is unchanged, and a
 refusal (exit 1, message on stderr) leaves the file untouched.
+
+`open --all-branches` also reads the log on every local branch and remote-tracking ref (through
+branch_scan.py) so the new id is unused on all of them: two branches opening "the next" decision
+would otherwise both write DL-07. It never fetches (run `git fetch` first), a ref whose log cannot
+be used is named in `unread` rather than ignored, and without the flag nothing about `open` changes.
 """
 
 import argparse
@@ -359,7 +364,20 @@ def _validated_date(value: str | None, flag: str) -> date:
     return parsed
 
 
-def open_decision(log_path: Path, decision: str, owner: str, opened: date) -> dict:
+def _highest_in_logs(texts) -> int:
+    """Highest DL-NN used in any of these other logs (each judged against its own table and
+    placeholder rows, exactly as the local log is). A text with no usable table raises LogError:
+    the caller filters those out first, because naming them is its job, not this function's."""
+    highest = 0
+    for text in texts:
+        lines = _split_lines(text)
+        table = _find_table(lines)
+        placeholders = {k for k in table.rows if _is_placeholder(_row_cells(lines[k]))}
+        highest = max(highest, _highest_used(lines, table, placeholders))
+    return highest
+
+
+def open_decision(log_path: Path, decision: str, owner: str, opened: date, other_logs: list[str] = ()) -> dict:
     """Append one open row (creating the log from the template when absent); returns its fields."""
     decision, owner = _clean(decision), _clean(owner)
     if not decision:
@@ -376,6 +394,8 @@ def open_decision(log_path: Path, decision: str, owner: str, opened: date) -> di
     placeholders = {k for k in table.rows if _is_placeholder(_row_cells(lines[k]))}
 
     ident = f"DL-{_highest_used(lines, table, placeholders) + 1:02d}"
+    if other_logs:  # --all-branches: the id must also clear every other branch's log
+        ident = f"DL-{max(int(ident[3:]), _highest_in_logs(other_logs) + 1):02d}"
     due = add_business_days(opened, CLOCK_BUSINESS_DAYS)
     values = {"id": ident, "decision": decision, "owner": owner,
               "opened": opened.isoformat(), "due": due.isoformat(), "status": "open"}
@@ -450,12 +470,57 @@ def resolve_write_target(args) -> tuple[Path, Path]:
     return repo / ".sdlc" / "decision-log.md", repo
 
 
+def run_open_all_branches(args, log_path: Path, repo_root: Path, shown: str) -> None:
+    """`open --all-branches`: the same verb, with an id that clears every local ref's decision log.
+
+    The scan is read-only and never fetches. A ref whose log has no usable table is named in
+    `unread` (and is not counted as checked); outside a git repository the verb proceeds on the
+    local log alone, and says so. The base text lines are the ones `run_verb` prints without the
+    flag; a test pins that the two cannot drift apart.
+    """
+    import branch_scan  # only this flag needs it, so every other importer of this module is unaffected
+
+    scan = branch_scan.scan_file(repo_root, shown)
+    readable: dict[str, str] = {}
+    unread = list(scan.unread)
+    for ref, text in scan.texts.items():
+        try:
+            _find_table(_split_lines(text))
+        except LogError as e:
+            unread.append({"ref": ref, "reason": str(e)})
+        else:
+            readable[ref] = text
+    unread.sort(key=lambda u: u["ref"])
+    unusable = {u["ref"] for u in unread}
+    refs_scanned = [r for r in scan.refs_scanned if r not in unusable]
+
+    result = open_decision(log_path, args.decision, args.owner, _validated_date(args.opened, "--opened"),
+                           other_logs=list(readable.values()))
+    result["path"] = shown
+    result["refs_scanned"] = refs_scanned
+    result["unread"] = unread
+    text = (f"Decision opened: {result['id']}  [{result['owner']}]\n"
+            f"  Due {result['due']} ({CLOCK_BUSINESS_DAYS} business days after {result['opened']})")
+    if scan.is_git:
+        text += f"\n  Ids checked on {len(refs_scanned)} branch(es)"
+    else:
+        text += "\n  Ids checked on 0 branches (not a git repository)"
+    if unread and not args.json:  # stdout keeps its one extra line; what was skipped goes to stderr
+        print("Warning: could not use the decision log on " + ", ".join(
+            f"{u['ref']} ({u['reason']})" for u in unread), file=sys.stderr)
+    print(json.dumps(result, indent=2) if args.json else text)
+
+
 def run_verb(args) -> None:
     log_path, repo_root = resolve_write_target(args)
     try:
         shown = log_path.relative_to(repo_root).as_posix()
     except ValueError:
         shown = log_path.as_posix()
+
+    if args.verb == "open" and getattr(args, "all_branches", False):
+        run_open_all_branches(args, log_path, repo_root, shown)
+        return
 
     if args.verb == "open":
         result = open_decision(log_path, args.decision, args.owner, _validated_date(args.opened, "--opened"))
@@ -493,6 +558,9 @@ def build_parser() -> argparse.ArgumentParser:
     op.add_argument("--owner", required=True, help="Named owner (person or role)")
     op.add_argument("--phase", help="Phase the decision opens in (accepted for context; not stored)")
     op.add_argument("--opened", help="Opened date YYYY-MM-DD (default: today)")
+    op.add_argument("--all-branches", action="store_true",
+                    help="Also read decision-log.md on every local branch and remote-tracking ref "
+                         "(run `git fetch` first) so the new id is unused on all of them")
 
     de = verbs.add_parser("decide", parents=[common],
                           help="Close a decision: status -> decided, resolution recorded in the row")
@@ -508,6 +576,7 @@ def main():
     args = parser.parse_args()
     args.state = getattr(args, "state", None)
     args.json = getattr(args, "json", False)
+    args.all_branches = getattr(args, "all_branches", False)
     explicit_repo = hasattr(args, "repo")
     if args.state and explicit_repo:
         parser.error("argument --repo: not allowed with argument --state")
