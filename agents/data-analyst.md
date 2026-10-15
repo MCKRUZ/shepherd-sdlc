@@ -86,8 +86,9 @@ data-analyst ▸ For any gap: who owns closing it, and what does the feature do 
 2. Cite the `DL-NN` the command layer reports for each routed gap (use **provisional** ids only until it
    has run); note the missing engagement context in each artifact header.
 3. Read `channels/<id>.yaml` from the plugin's `channels/` library if a channel is in scope.
-4. Write the artifacts to the given output path (default alongside the repo) and the decision-log to
-   `<repo>/decision-log.md`.
+4. Write the artifacts to the given output path (default alongside the repo). The decision log is the
+   command layer's: `track_decisions.py open` writes `<repo>/.sdlc/decision-log.md` (or an existing
+   `<repo>/decision-log.md`); you cite the ids it reports and never keep a second log.
 
 ### When driven for a data spec
 A data spec (`type: data`, `serves: "<parent>"`) is an ordinary spec whose work is the data a build spec

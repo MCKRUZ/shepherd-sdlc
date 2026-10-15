@@ -95,8 +95,8 @@ really flows — the pipeline runs end to end and the build team can call the re
    In workflow mode pass `--state .sdlc/state.yaml` instead of `--repo`. `--all-branches` reads the
    decision log on every local ref, so two branches never allocate the same `DL-NN`; it never fetches,
    so run `git fetch` first. The script allocates the next `DL-NN`, stamps `opened` and the
-   two-business-day `due`, and creates the log when absent — workflow writes `.sdlc/decision-log.md`,
-   standalone writes `<repo>/decision-log.md`. These surface in `/sprd-status` and `track_decisions.py`.
+   two-business-day `due`, and creates the log when absent — `.sdlc/decision-log.md` under the repository in both modes
+   (an existing `<repo>/decision-log.md` is used when that is where the log already lives). These surface in `/sprd-status` and `track_decisions.py`.
 
 5a. **Check the data spec (data spec only):** Look at where it stands. Both reads are advisory and exit 0
    — they never gate:

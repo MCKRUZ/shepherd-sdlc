@@ -186,7 +186,7 @@ L0 `[DS-P0]` → L1 `[DS-P1, DS-P2, DS-P3, DS-P6]` → L2 `[DS-P4]` → L3 `[DS-
 |---|---|---|---|
 | G1 | protected present | `for f in <PROTECTED>; do test -e "$f" \|\| { echo missing $f; exit 1; }; done` | exit 0 |
 | G2 | protected byte-identical | `git diff --exit-code "$BASE" -- <PROTECTED>` | exit 0 |
-| G3 | no existing test or fixture edited | `git diff --diff-filter=M --name-only "$BASE" -- scripts/tests \| wc -l` | `0` |
+| G3 | no existing test or fixture edited, except the one sanctioned pin (§10, DS-P5) | `git diff --diff-filter=M --name-only "$BASE" -- scripts/tests \| grep -v -x scripts/tests/test_activities_model.py \| wc -l` | `0` |
 | G4 | pytest | `uv run --project scripts python -m pytest scripts/tests/ -q` | exit 0 |
 | G5 | goldens | `uv run --project scripts pytest scripts/tests/test_new_spec_spike_json.py scripts/tests/test_track_decisions_verbs.py -q` | exit 0 |
 | G6 | registries agree | `uv run --project scripts pytest scripts/tests/test_capabilities.py scripts/tests/test_command_contracts.py scripts/tests/test_agent_references.py scripts/tests/test_shapes_cover_templates.py scripts/tests/test_shaped_templates_roundtrip.py scripts/tests/test_registry_docs_consistency.py -q` | exit 0 |

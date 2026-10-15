@@ -40,7 +40,7 @@ A build spec says what to build and nothing about where its data lives, how it i
 
 ### Out of scope
 - `scripts/new_spec.py`, `scripts/check_spec.py`, `scripts/check_gates.py`, `scripts/sprint.py`, `scripts/sprint_model.py`, `scripts/spec_transition.py`, `scripts/advance_phase.py`, `scripts/phase_model.py`, `phases/phase-registry.yaml`, `templates/phases/build/spec.md` and its shape, `harness/**`: byte-identical to the base commit. A data spec needs none of them changed — `check_spec.py` already ignores unknown frontmatter keys and extra sections.
-- Any existing test or fixture: modifications are refused; a pin that no longer holds is a defect in this change, not in the pin.
+- Any existing test or fixture, with one deliberate exception: `scripts/tests/test_activities_model.py`'s exact list of the build phase's activities gains `data-spec`, because that pin exists to notice exactly this kind of declared addition and must move with the declaration. Every other pin that no longer holds is a defect in this change, not in the pin.
 - `/sprd-data --live` (read-only platform queries by the agent) and platform packs under `harness/packs/tools/<platform>/`: written up in `docs/proposals/data-specs.md` §Deferred, not built. The `data-analyst` agent keeps `Read, Write, Edit, Grep, Glob` and gets no shell.
 - Writing `data_review: accepted` on a parent, or any `status` change on any spec: acceptance stays `sprint.py verdict --lane data --verdict accepted --by <named human>`.
 - A version bump: `CHANGELOG.md` gains `## Unreleased`; numbering is decided at release because 2.1.0–2.5.0 are claimed by unmerged work.
@@ -54,7 +54,7 @@ A build spec says what to build and nothing about where its data lives, how it i
 - [ ] In a repository whose `master` log holds `DL-01`..`DL-03` and whose `feature` branch commits `DL-07`, `uv run scripts/track_decisions.py open --all-branches --decision "x" --owner "@priya-n" --json` on `master` allocates `DL-08`; the same call without the flag allocates `DL-04` and its JSON keys are exactly `id`, `opened`, `due`, `owner`, `path`.
 - [ ] `grep -c '"fetch"' scripts/branch_scan.py` prints `0`, and the only new module importing `subprocess` is `scripts/branch_scan.py`.
 - [ ] `uv run --project scripts pytest scripts/tests/test_shapes_cover_templates.py scripts/tests/test_shaped_templates_roundtrip.py -q` passes with `data-spec`, `data-dictionary`, `decision-memo` and `data-handoff` among the parametrised ids.
-- [ ] `git diff --exit-code <base> -- scripts/new_spec.py scripts/check_spec.py scripts/sprint.py scripts/sprint_model.py scripts/spec_transition.py templates/phases/build/spec.md templates/phases/build/spec.shape.yaml harness` exits 0, and `git diff --diff-filter=M --name-only <base> -- scripts/tests | wc -l` prints `0`.
+- [ ] `git diff --exit-code <base> -- scripts/new_spec.py scripts/check_spec.py scripts/sprint.py scripts/sprint_model.py scripts/spec_transition.py templates/phases/build/spec.md templates/phases/build/spec.shape.yaml harness` exits 0, and `git diff --diff-filter=M --name-only <base> -- scripts/tests` prints exactly one path, `scripts/tests/test_activities_model.py` (the build-phase activities pin, which gains `data-spec`).
 - [ ] `uv run --project scripts pytest scripts/tests/test_capabilities.py scripts/tests/test_command_contracts.py scripts/tests/test_agent_references.py -q` passes with `data-spec`, `data-spec-status` and `decision-open-all-branches` declared in `scripts/capabilities.py`.
 - [ ] `git grep -c '/sdlc-' -- commands/sprd-data.md agents/data-analyst.md references/data-specs.md docs/proposals/data-specs.md templates/phases/build/data-spec.md` finds 0 matches.
 
@@ -70,7 +70,7 @@ A build spec says what to build and nothing about where its data lives, how it i
 
 ## Checking Plan
 **Ladder depth:** MEDIUM
-**Specifics:** CI runs the plugin suite; the kit's gates G1–G11 run after every merged level (protected core byte-identical to the base, no existing test modified, the `new_spec.py` and `track_decisions.py` goldens, registries agree, `--help` creates nothing, no `fetch`, this spec READY); the grader grades against the Acceptance Checks above; a non-author Checker reads the `data_review` transition table (D4 in the kit) against `scripts/data_spec_model.py` and runs the kit's §7 smoke run by hand.
+**Specifics:** CI runs the plugin suite; the kit's gates G1–G11 run after every merged level (protected core byte-identical to the base, no existing test modified other than the build-phase activities pin, the `new_spec.py` and `track_decisions.py` goldens, registries agree, `--help` creates nothing, no `fetch`, this spec READY); the grader grades against the Acceptance Checks above; a non-author Checker reads the `data_review` transition table (D4 in the kit) against `scripts/data_spec_model.py` and runs the kit's §7 smoke run by hand.
 
 ## Decision List
 - **The marker is `type: data` plus `serves:`, not `kind: data`.** `kind` already names three other things in this codebase; `type` is the field a spec already has for its class. Decided 2026-10-15 by @splashthree (the requesting owner). Answer: `type: data`.

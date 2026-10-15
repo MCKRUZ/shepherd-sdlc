@@ -119,9 +119,6 @@
       - .sdlc/artifacts/02-design/data/data-contract.md
       - .sdlc/artifacts/02-design/data/data-readiness.md
       - .sdlc/artifacts/02-design/data/lineage-audit.md
-      - .sdlc/artifacts/02-design/data/data-dictionary.md
-      - .sdlc/artifacts/02-design/data/decision-memo.md
-      - .sdlc/artifacts/02-design/data/data-handoff.md
     done_when:
       exists_all:
         - .sdlc/artifacts/02-design/data/data-contract.md
