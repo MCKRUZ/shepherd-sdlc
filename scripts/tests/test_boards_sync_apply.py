@@ -314,7 +314,9 @@ def test_creates_run_in_tree_order_with_the_parent_in_the_childs_own_patch(repo,
     assert [a["ref"].split(":")[1] for a in res["applied"]] == ["epic"] * 3 + ["feature"] + ["spec"] * 3
     ids = {a["ref"]: a["work_item"] for a in res["applied"]}
     posts = [s for s in written(board) if s[0] == "POST wit/workItems"]
-    assert [route_params(argv)["type"] for _, argv, _ in posts] == ["$Epic"] * 3 + ["$Feature"] + ["$User Story"] * 3
+    # bare type names: the extension's template is `{project}/_apis/wit/workItems/${type}`, so a leading `$` reached
+    # the board as `$$Epic` and 404ed (B0 capture, 2026-10-14)
+    assert [route_params(argv)["type"] for _, argv, _ in posts] == ["Epic"] * 3 + ["Feature"] + ["User Story"] * 3
 
     def parent(ref):
         body = posts[[a["ref"] for a in res["applied"]].index(ref)][2]

@@ -62,7 +62,7 @@ def test_wit_routes_keys_are_the_discovery_and_item_routes():
 # B0 (2026-10-14): the rows the capture read (or, for the reporting feed, found released in its locations list).
 # Exactly these are verified; every item, write, discussion and identity row is still not — the capture did not reach
 # them, and the identity read is no `devops invoke` location at all (REST_ROUTES).
-VERIFIED_BY_B0 = DISCOVERY_ROUTES | FEED_ROUTES
+VERIFIED_BY_B0 = DISCOVERY_ROUTES | FEED_ROUTES | {"workitem_create"}   # the create POST was reached by probe 17 (2026-10-14)
 
 
 @pytest.mark.parametrize("name", sorted(DISCOVERY_ROUTES | ITEM_ROUTES))

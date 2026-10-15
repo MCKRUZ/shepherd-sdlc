@@ -125,7 +125,7 @@ WIT_ROUTES: Final[dict[str, dict]] = {
     # an organisation-level location (_apis/wit/workItemRelationTypes): the `project` it is sent is not used
     "relation_types": _route("wit", "workItemRelationTypes", ("project",), verified=_CAPTURED),
     # items
-    "workitem_create": _route("wit", "workItems", ("project", "type"), "POST"),  # type=$<Type>
+    "workitem_create": _route("wit", "workItems", ("project", "type"), "POST", verified=True),  # type=<Type>, bare: the template is `…/workItems/${type}` (B0 2026-10-14)
     "workitem_update": _route("wit", "workItems", ("project", "id"), "PATCH"),
     "workitemsbatch": _route("wit", "workitemsbatch", ("project",), "POST"),  # a read (READ_POSTS)
     "updates": _route("wit", "updates", ("project", "id")),

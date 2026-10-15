@@ -309,7 +309,9 @@ def create(repo_root, type_name: str, patch: list[dict]) -> dict:
     """`POST wit/workItems` of a JSON Patch: a new item of `type_name`. Returns `{"id", "rev"}` and nothing else — the
     board's reply names the people who created it, and that never leaves this module.
 
-    The location is `WIT_ROUTES["workitem_create"]` (route `project=<P> type=$<type_name>`); the body goes
+    The location is `WIT_ROUTES["workitem_create"]` (route `project=<P> type=<type_name>` — bare: the extension's
+    template is `{project}/_apis/wit/workItems/${type}`, so a leading `$` reaches the board doubled and 404s; found by
+    the 2026-10-14 B0 capture); the body goes
     `application/json-patch+json`. A failure is an `AdoImportError` carrying `error_class`: what
     `ado_wit_map.classify_write_error` reads its stderr as (`conflict`, `rule`, `permission`, `throttled`,
     `not_found`, else `unknown`). A reply this module cannot read is `unknown` too: the board said yes, so the item
@@ -321,7 +323,7 @@ def create(repo_root, type_name: str, patch: list[dict]) -> dict:
     if not isinstance(patch, list) or not patch or not all(isinstance(op, dict) for op in patch):
         raise ValueError("patch must be a non-empty list of JSON Patch operations")
     row = WIT_ROUTES["workitem_create"]
-    params = {"project": _project(repo_root), "type": f"${type_name}"}
+    params = {"project": _project(repo_root), "type": type_name}   # bare: the location template already carries the `$`
     label = f"{row['area']}/{row['resource']} (create {type_name})"
     try:
         doc = ado_transport.invoke_body(repo_root, row["area"], row["resource"],
