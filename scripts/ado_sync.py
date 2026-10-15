@@ -30,8 +30,9 @@ starts the verb that owns the field (through `ado_sync_reconcile`). A write verb
                           the same classification as `pull`, printed, and the board items nobody has linked
   sync [--kind K] [--id ID] [--sprint SNN] [--all] [--discussion] [--no-comments]
                           the catch-up in one read, four stages in order: `pull` (the fields), `drift` classified from
-                          that pull's own rows (the board is not asked again; one query for the items nobody has
-                          tagged), the discussion pull ONLY on `--discussion` (there is no `--full`), then `plan`;
+                          that pull's own rows (the board is not asked again — the untagged-items query is not
+                          run, and the stage says so), the discussion pull ONLY on `--discussion` (there is no
+                          `--full`), then `plan`;
                           ends with the same `Next:` line `plan` and `comment` print where an apply is offered
   link <ref> --work-item N --by H | adopt --all --by H
                           map a repository item to a work item that exists (the ledger's `linked`)

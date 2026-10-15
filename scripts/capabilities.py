@@ -93,7 +93,8 @@ CAPABILITIES: dict[str, dict] = {
     # The catch-up (Fold B6): `sync` runs pull, drift, (the discussion pull, only on `--discussion`) and plan in one
     # read and ends with the same `Next:` line `plan` and `comment` print where an apply is offered. It sends nothing.
     "ado-sync": {"script": "ado_sync.py", "argv": ["sync"],
-                 "flags": ["--kind", "--id", "--sprint", "--all", "--discussion", "--no-comments"]},
+                 "flags": ["--repo", "--state", "--json", "--kind", "--id", "--sprint", "--all", "--discussion",
+                           "--no-comments"]},
     # Its write verbs (Fold B3). `apply` is the one verb that sends a plan to the board, and only a named person
     # (`--by`) who typed the plan's 12-hex hash (`--confirm`) on a clone whose posture is `assisted`; `--limit` caps a
     # first seed. `comment` only DRAFTS one comment into a plan file, so it is safe on a `plan-only` clone: nothing

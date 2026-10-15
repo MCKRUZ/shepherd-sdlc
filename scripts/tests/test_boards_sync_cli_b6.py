@@ -260,7 +260,8 @@ def test_sync_help_leaves_an_empty_cwd_empty_in_process_and_in_a_subprocess(tmp_
 def test_the_capability_row_is_declared_and_lists_every_sync_flag():
     row = capabilities.CAPABILITIES["ado-sync"]
     assert row == {"script": "ado_sync.py", "argv": ["sync"],
-                   "flags": ["--kind", "--id", "--sprint", "--all", "--discussion", "--no-comments"]}
+                   "flags": ["--repo", "--state", "--json",                      # the common parent, like every sibling row
+                             "--kind", "--id", "--sprint", "--all", "--discussion", "--no-comments"]}
     assert "ado-sync" in capabilities.list_capabilities()
 
 

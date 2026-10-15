@@ -1045,13 +1045,18 @@ def test_plan_counts_a_skipped_comment_without_planning_it(repo, board, capsys):
 
 def test_a_plan_with_no_comment_row_reads_as_it_did_before_comments_were_planned(repo, board, capsys):
     """The B2 golden (`ado_plan_spec_0004.txt`) stays byte-equal in its own test; here the same plan under
-    `assisted` differs from it only in the hash and the posture word."""
+    `assisted` differs from it only in the hash, the posture word and — since Fold B6 (spec 0040, acceptance
+    check 6) — the one `Next:` footer an offered apply adds as the last line: under `assisted` with a pending
+    row the text ends with `ado_sync_model.apply_next_line(<hash>)`. Pin extended 2026-10-15 (the test postdates
+    325ac2b); the plan-only golden itself gains no footer."""
+    import ado_sync_model as model
     seed(repo, linked(SPEC4, 4521))
     code, text = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
     golden = GOLDEN_PLAN.read_text(encoding="utf-8")
     plan = re.match(r"plan ([0-9a-f]{12})", text).group(1)
-    assert code == 0 and text == golden.replace("plan 1d0617c03373", f"plan {plan}") \
+    expected = golden.replace("plan 1d0617c03373", f"plan {plan}") \
         .replace("posture plan-only", "posture assisted").replace("1d0617c03373.json", f"{plan}.json")
+    assert code == 0 and text == expected + model.apply_next_line(plan) + "\n"
 
 
 def test_plan_a_comment_already_posted_is_never_drafted_again(repo, board, capsys):
