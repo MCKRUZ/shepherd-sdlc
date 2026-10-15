@@ -1,0 +1,131 @@
+template: data-spec
+version: "1.0"
+description: "The data work one build spec needs — where the data lives, how it is prepared and served, and the proof that it really flows — owned by the Data discipline and linked to the spec it serves."
+
+# A data spec is a spec: the same frontmatter contract check_spec.py enforces, the same seven
+# required sections, read and written field by field with the same byte-exact guarantee. It adds
+# two sections of its own, both declared here so test_shapes_cover_templates.py keeps the template
+# and this shape in step:
+#
+#   Context      — the bundle /sprd-data loads first (the parent spec and every BR / DL / ADR / DOC
+#                  it cites). ONE section-anchored field, not six: the template writes it as bold
+#                  labels over lists, and the library's inline anchor needs a label alone on its
+#                  line — the same limitation spec.shape.yaml records for the Delegation Plan.
+#   Deliverables — one table, edited as a block.
+#
+# Two sections are deliberately NOT declared as fields, exactly as in spec.shape.yaml:
+#
+#   Scope        — it carries no prose of its own; everything under it lives in the two
+#                  subsections, which are declared as subheading-scoped fields instead.
+#   Frontmatter  — id, name, status, type, serves, risk, owner and team are YAML above the first
+#                  heading. check_spec.py and data_spec.py own them; they are not body content.
+
+sections:
+  - heading: Goal
+    fields:
+      - label: Goal
+        anchor: section
+        type: longtext
+        required: true
+        guidance: One sentence - what data exists, where it is served from, and who calls it when this is done
+
+  - heading: Why
+    fields:
+      - label: Why
+        anchor: section
+        type: longtext
+        required: true
+        guidance: Why the parent spec cannot ship without this data - the outcome, not the mechanics
+
+  - heading: Context
+    fields:
+      - label: Context
+        anchor: section
+        type: longtext
+        required: true
+        guidance: >-
+          The parent spec and its acceptance checks, and every business rule, decision, decision
+          record and intake document the parent cites for data - the bundle /sprd-data loads first
+
+  - heading: Scope
+    fields:
+      - label: In scope
+        subheading: In scope
+        anchor: section
+        type: checklist
+        required: true
+        guidance: The source objects, transformation code, serving objects and documents this change may touch
+      - label: Out of scope
+        subheading: Out of scope
+        anchor: section
+        type: checklist
+        required: true
+        guidance: What this change must NOT touch - the parent's own code, other teams' tables, production writes
+
+  - heading: Acceptance Checks
+    fields:
+      - label: Acceptance Checks
+        anchor: section
+        type: checklist
+        required: true
+        guidance: >-
+          The proof the data really flows - the pipeline runs, the serving object returns rows for a
+          real record, every input is profiled, every gap has an owned decision - each check specific
+          enough that two people could not build different things from it
+
+  - heading: Deliverables
+    fields:
+      - label: Deliverables
+        anchor: section
+        type: table
+        required: true
+        guidance: What this spec hands the build team - each document and piece of code, where it lives, and whether it is not started, drafted or live
+
+  - heading: Risk Tier
+    fields:
+      - label: Tier
+        anchor: inline
+        type: enum
+        required: true
+        values: [LOW, MEDIUM, HIGH]
+        guidance: Must match the risk field in the frontmatter; PII or a production write makes it HIGH
+      - label: Why this tier
+        anchor: labeled_block
+        type: longtext
+        required: true
+        guidance: What about this data work earns that tier
+
+  - heading: Delegation Plan
+    fields:
+      - label: Delegation Plan
+        anchor: section
+        type: checklist
+        required: true
+        guidance: >-
+          The box the agent works inside - what it may touch, the one pattern to reuse, what is
+          auto-allowed versus confirm-required (every platform write is confirm-required), and
+          which gated paths are involved
+
+  - heading: Checking Plan
+    fields:
+      - label: Ladder depth
+        anchor: inline
+        type: enum
+        required: true
+        values: [LOW, MEDIUM, HIGH]
+        guidance: How high this change climbs the checking ladder, set by its risk tier
+      - label: Specifics
+        anchor: labeled_block
+        type: longtext
+        required: true
+        guidance: Which checks specifically, who signs off, and who records the parent's data verdict
+
+  - heading: Decision List
+    fields:
+      - label: Decision List
+        anchor: section
+        type: checklist
+        required: true
+        guidance: >-
+          Silent data decisions this change leaves unwritten, each with a named human to answer
+          it - or "none" only once you have genuinely checked
