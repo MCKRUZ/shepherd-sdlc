@@ -54,6 +54,7 @@ const EVERY_VERB: ReadonlyArray<{ req: AdoVerbRequest; argv: string[] }> = [
   { req: { verb: 'pullDiscussion', id: REF }, argv: ['pull', '--repo', PROJECT, '--discussion', '--id', REF, '--json'] },
   { req: { verb: 'show', ref: REF }, argv: ['show', '--repo', PROJECT, REF, '--json'] },
   { req: { verb: 'comment', ref: REF, message: 'Looks right.' }, argv: ['comment', '--repo', PROJECT, REF, '--message=Looks right.', '--json', '--by', '@priya-n'] },
+  { req: { verb: 'plan', kind: 'spec', id: '0001' }, argv: ['plan', '--repo', PROJECT, '--kind', 'spec', '--id', '0001', '--json'] },
 ]
 
 beforeEach(() => {
@@ -147,14 +148,21 @@ describe('runAdoVerb', () => {
     expect(run).not.toHaveBeenCalled(); expect(invalidateCommandCenter).not.toHaveBeenCalled()
   })
 
-  it('a plan request (planSpec) is not one of the seven: refused before any spawn, nothing invalidated (B5-P4)', async () => {
+  it('a plan request (planSpec) is not one of the eight: refused before any spawn, nothing invalidated (B5-P4)', async () => {
     const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'planSpec', spec: '0001' } as unknown as AdoVerbRequest, ACTOR)
     expect(r).toEqual({ ok: false, exitCode: null, refused: false, stdout: '', stderr: 'That is not a Boards verb Shepherd runs.', argv: [], verb: 'show', json: null })
     expect(run).not.toHaveBeenCalled(); expect(invalidateCommandCenter).not.toHaveBeenCalled()
-    expect(ADO_VERBS).toHaveLength(7)
+    expect(ADO_VERBS).toHaveLength(8)
   })
 
-  it('runs ado_sync.py once per verb, whichever of the seven it is, and never az', async () => {
+  it('plan with no scope is the one read B6 added, refused by the table before any spawn, nothing invalidated (B6-P0)', async () => {
+    const r = await runAdoVerb(PROJECT, SCRIPTS, { verb: 'plan' } as unknown as AdoVerbRequest, ACTOR)
+    expect(r).toMatchObject({ ok: false, exitCode: null, refused: false, stdout: '', argv: [], verb: 'plan', json: null })
+    expect(r.stderr).not.toBe('That is not a Boards verb Shepherd runs.'); expect(r.stderr).not.toBe('')
+    expect(run).not.toHaveBeenCalled(); expect(invalidateCommandCenter).not.toHaveBeenCalled()
+  })
+
+  it('runs ado_sync.py once per verb, whichever of the eight it is, and never az', async () => {
     run.mockResolvedValue(entry(0, '{}'))
     for (const { req, argv } of EVERY_VERB) {
       run.mockClear()
@@ -200,7 +208,7 @@ describe('runAdoVerb', () => {
   })
 
   it('something that is not a Boards verb is refused, never spawned, with a sentence that says Shepherd', async () => {
-    for (const bad of [{ verb: 'plan' }, { verb: 'config' }, { verb: 'status' }, {}, null, undefined, 'apply'] as unknown[]) {
+    for (const bad of [{ verb: 'planSpec' }, { verb: 'config' }, { verb: 'status' }, {}, null, undefined, 'apply'] as unknown[]) {
       const r = await runAdoVerb(PROJECT, SCRIPTS, bad as AdoVerbRequest, ACTOR)
       expect(r.ok).toBe(false); expect(r.exitCode).toBeNull(); expect(r.refused).toBe(false)
       expect(r.stderr).toBe('That is not a Boards verb Shepherd runs.')

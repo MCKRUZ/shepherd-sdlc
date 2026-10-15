@@ -39,11 +39,11 @@ The orchestrator is whoever drives the Workflow tool — a Sonnet session with u
 | K6 | NEW pure data module `scripts/boards_contract.py` (imports `re`, `typing` only) owns every enum, regex, path and `WIT_ROUTES`, plus a `DISCIPLINE_AGENTS` **literal** kept equal to `audit_artifacts.DISCIPLINE_AGENTS` by a test. `ado_sync_model.py` imports ⊆ `{re, hashlib, json, datetime, typing, boards_contract, findings_model, artifact_model, track_decisions}` — proven by an AST test | a "pure" model importing a 1,945-line CLI |
 | K7 | `ai_by(name, agent_stems) -> bool` strips a leading `shepherd:` **only** (no legacy prefix — the old id was never a `--by` value), then refuses on `is_ai_actor(stem)`, `stem in agent_stems` (every `agents/*.md` stem), or `stem.lower() in DISCIPLINE_AGENTS` | `is_ai_actor("shepherd:feature-architect")` is `False` (verified); a `claude-code-sdlc:` literal would break the rename-residual gate |
 | K8 | `HANDLE_RE = ^@[A-Za-z0-9][A-Za-z0-9-]*$` (case-insensitive) with a test row for `@MCKRUZ` | the only roster handle is upper-case (`.sdlc/team.yaml:12`) |
-| K9 | Exit codes are `ado_sync.py`'s own: `class Refused → 2`, `class Illegal → 1` copied from `sprint.py:73-77`; the handshake is `apply --confirm <12hex> --by <human>`. `spec_transition` (always 1), `audit_artifacts` (always 0), `track_decisions` are never inherited. `discover` → 1 on any `AdoImportError` (host block still printed); `plan`/`status`/`drift`/`show` → 0 always; `pull`/`discussion gc` → 0, or 1 on a ledger `DRIFT` | two Sonnet agents encoding different codes for one verb |
+| K9 | Exit codes are `ado_sync.py`'s own: `class Refused → 2`, `class Illegal → 1` copied from `sprint.py:73-77`; the handshake is `apply --confirm <12hex> --by <human>`. `spec_transition` (always 1), `audit_artifacts` (always 0), `track_decisions` are never inherited. `discover` → 1 on any `AdoImportError` (host block still printed); `plan`/`status`/`drift`/`show` → 0 always; `pull`/`discussion gc` → 0, or 1 on a ledger `DRIFT`. **B6:** `sync` → 0 (every stage unavailable still exits 0), or 1 on a pull-stage ledger `DRIFT` | two Sonnet agents encoding different codes for one verb |
 | K10 | `reconcile --take ado` spawns the owning verb with a **per-verb child argv table**: `assign: ['--developer', h, '--by', by]`, `confirm-tier: [..., '--by', by]`, `defer: ['--reason', r]`, `ready: []`, `risk: [tier, '--authorised-by', by]`, `track_decisions.py decide: ['--id', id, '--by', by, '--resolution', r]`, `sprint.py slate: ['--sprint', SNN, '--spec', id, '--by', by]`, `sprint.py unslate: ['--sprint', SNN, '--spec', id, '--by', by, '--reason', r]`; a child's exit 1 maps to **1**, never 2 | `ready`/`defer` take no `--by` (verified) — relaying it is argparse exit 2 read as "refused" |
-| K11 | `hook_line(pending, drifted, as_of)` has **one** golden form: `3 rows pending · 1 drifted · as of 2026-10-12T09:02Z`; never pulled → `no data (never pulled)`. `plan`/`pull` write it as line 1 of `.sdlc/ado/local/hook-status.txt`; `status` writes nothing; the hook twins print `[SHEPHERD-ADO] ` + line 1 via `head -n1 \| tr -d '\r'` | two goldens, twin parity red on a real file |
+| K11 | `hook_line(pending, drifted, as_of)` has **one** golden form: `3 rows pending · 1 drifted · as of 2026-10-12T09:02Z`; never pulled → `no data (never pulled)`. `plan`/`pull` write it as line 1 of `.sdlc/ado/local/hook-status.txt`; `status` writes nothing; the hook twins print `[SHEPHERD-ADO] ` + line 1 via `head -n1 \| tr -d '\r'`. **B6:** `sync` writes the hook line twice — the pull stage's, then the plan stage's — so line 1 is the plan stage's when `sync` ends | two goldens, twin parity red on a real file |
 | K12 | Versions: every Fold PR bumps **minor** from 2.0.0 — B1 2.1.0, B2 2.2.0, B3 2.3.0, B4 2.4.0, B5 2.5.0. Four files + the CHANGELOG heading: `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `studio/package.json`, `studio/package-lock.json` (two lines) | a half-bump; `test_release_manifest_agreement.py` pins only the first two and the heading |
-| K13 | Specs 0034–0038 are **pre-assigned** (B1..B5); each Fold's P0 writes its spec file by hand (never `new_spec.py` — it picks max+1 and collides across worktrees) | two worktrees both creating 0034 |
+| K13 | Specs 0034–0038 are **pre-assigned** (B1..B5); each Fold's P0 writes its spec file by hand (never `new_spec.py` — it picks max+1 and collides across worktrees). **B6:** the pre-assigned ids are 0034–0038 + 0040 (B6); 0039 is taken by another branch (`spec/0039-data-specs`) | two worktrees both creating 0034 |
 | K14 | New tests are `scripts/tests/test_boards_*.py` only; helper `scripts/tests/ado_boards_fixtures.py`; fixtures under `scripts/tests/fixtures/code_host/azure_devops/wit/{,captured/,synthetic/,errors/}`; NEW `test_wit_fixture_provenance.py` globs them (the existing provenance test is non-recursive, verified). `redact.py` untouched; NEW `redact_wit.py` beside it (B2) | the "no existing test or fixture edited" gate becomes a one-line `--diff-filter=M` check |
 | K15 | G3 = `git diff --diff-filter=M --name-only $BASE -- scripts/tests studio/test` must be empty except the sanctioned list: **B4 only** `studio/test/reasons.test.ts` (the exact-list pin; evidence paragraph in the PR) | editing `test_ado_*.py` to go green |
 | K16 | G8 matches **import lines**, not the word `subprocess` (three pre-existing `ado_*.py` files mention it in docstrings, verified) | a gate red on day one that only a protected-file edit could clear |
@@ -58,6 +58,7 @@ The orchestrator is whoever drives the Workflow tool — a Sonnet session with u
 | K25 | **Two trees joined by fulfils links, fitted to the process** (decided 2026-10-13): the requirements tree Outcome ⟵`Related`⟶ Domain → FR (kinds `outcome` = one per `### Dimension N:` of `success-criteria.md`, `domain` = one per `\| Domain \|` Summary-Table row == the `### <Domain>` headings, `requirement` = one per `### FR-NNN` under its heading) and the delivery tree Epic → Feature → Spec. An epic is `Related` to every FR in its `FR Link` (never parented under one — the live data has an epic spanning two domains); a single-domain epic parents under its Domain item, a cross-domain epic links to each. **Level fitting** (`ado_schema_map.fit_levels`): FR → the first portfolio level above Epic else `fr:<id>` tags; Domain → the second level else a matching Area Path node else a `domain:<slug>` tag; Outcome → `types.outcome` else the next level else an `outcome:<slug>` tag; `plan` prints the fit table every run and `validate` prints `recommendations()` — the exact process additions an admin would make — **the plugin never alters a process.** `apply` creates outcome → domain → requirement → epic → feature → spec. NEW `scripts/ado_sync_sources_tree.py` (B2-P3b) owns the three loaders and `epic_links` (parent + fulfils), registered through extend-only hooks (`SOURCES[...]`, `PARENT_RESOLVERS["epic"]`) so B2-P3 and B2-P3b stay disjoint | FR as the parent of an epic (one parent; inverted granularity); a process-admin prerequisite before anything lands; Epic at the top; guessing the domain ⟷ outcome edge from prose |
 | K27 | **Board-visible prose tokens are Shepherd** (D-OWNER-6, decided 2026-10-13): the comment trailer is `· sprd <12hex>` and the create-time History line `sprd · created …`; `plugin: "claimed"` recognition matches `· sprd <12hex>`. Machine tags (`sdlc:*`, `sdlc-repo:*`), markers and `.sdlc/` paths stay `sdlc` | `· sdlc` on the board (brand rule: what people read is Shepherd) |
 | K26 | **Models** (decided 2026-10-13): mixed — the orchestrating session and `models.contracts`/`critic`/`fix` on Opus (or Fable), `models.packages`/`merge`/`verify` on Sonnet | one model everywhere |
+| K28 | B6 widens `AdoVerbRequest` by exactly one read verb `plan` (no `--by`); the pinned count is 8; no later Fold widens it without a kit amendment (owner decision 2026-10-15). Its scope is `--sprint SNN` alone, or `--kind K` with `--id ID`; `ADO_VERB_CAPABILITY.plan` is the literal `'ado-plan'`, so `studio/shared/reasons.ts` and its exact-list test keep their 19 ids | a desktop button that can only show a plugin line; a ninth verb slipped in "while we are here" |
 
 ---
 
@@ -221,6 +222,10 @@ def ledger_entry(ts: str, event: str, **fields) -> dict   # ValueError on an unk
 def hook_line(pending: int | None, drifted: int | None, as_of: str | None) -> str
 STATUS_NODATA: dict   # the never-pulled `status --json` document (golden; contains no integer 0)
 def summarize(ledger: list[dict], today) -> dict
+# B6-P0 appends (still pure; the import set is unchanged, pinned equal by test_boards_sync_model_b6.py):
+SYNC_STAGES = ("pull", "drift", "discussion", "plan")   # the order `sync` runs them; discussion only on an explicit --discussion
+def apply_next_line(plan: str) -> str   # "Next: `ado_sync.py apply --confirm <plan> --by <you>` sends it, as whoever az is signed in as"; ValueError unless 12-hex
+SYNC_NODATA: dict   # the `sync --json` document when nothing could be read (golden: scripts/tests/golden/ado_sync_unavailable.json; no integer 0)
 
 # scripts/ado_wit_map.py (B2-P1, pure)
 def remote_item(row: dict) -> dict        # {"id","rev","type","state","assigned_to_handle"|None,"iteration","area","tags": set,"title","relations": [...]} via _require
@@ -297,15 +302,19 @@ CHILD_ARGV: dict[str, Callable[..., list[str]]]   # the K10 table; every spawn i
 
 ```ts
 // studio/shared/adoVerbArgv.ts (B4-P0)
+// exactly these eight requests: B4 pinned seven; B6-P0 appended the eighth, one read verb with no --by (K28); no later Fold widens it
 export type AdoVerbRequest =
   | { verb: 'apply'; confirm: string } | { verb: 'reconcile'; ref: string; field: string; take: 'ado' | 'sdlc' | 'ack' | 'not-drift'; owner?: string; reason?: string }
   | { verb: 'link'; ref: string; workItem: string } | { verb: 'pull'; id?: string } | { verb: 'pullDiscussion'; id?: string }
   | { verb: 'show'; ref: string } | { verb: 'comment'; ref: string; message: string }
+  | { verb: 'plan'; kind?: string; id?: string; sprint?: string }
 export const SCRIPT = 'ado_sync.py'; export const HASH = /^[0-9a-f]{12}$/; export const REF = /^(sdlc:[a-z]+:[A-Za-z0-9-]+|#\d+)$/
+export const SPRINT = /^S\d{2,}$/; export const KIND = /^[a-z]+$/; export const ITEM_ID = /^[A-Za-z0-9-]+$/   // plan's scope, shape only: --sprint SNN alone, or --kind K with --id ID (never a leading -)
 export function validateAdoVerbRequest(req: AdoVerbRequest): string[]
 export function buildAdoVerbArgv(req: AdoVerbRequest, actor: string): { ok: true; argv: string[] } | { ok: false; errors: string[] }
 // `--by` last on writes, absent on reads; message as ONE element via `--message=<text>`; never shell-joined
-export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string>>
+// plan -> ['plan','--kind',kind,'--id',id,'--json'] or ['plan','--sprint',sprint,'--json']; main splices --repo/--state after the verb
+export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string>>   // plan: 'ado-plan' (a literal, like link/pull)
 ```
 
 ---
@@ -332,6 +341,7 @@ export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string
 | B3 | `posture <plan-only\|assisted>` | `--by` | changed (or already that value) / no config, `DRIFT` / AI or an address off the roster only; works under `plan-only` (it is how a clone leaves it) |
 | B3 | `comment <ref\|#id>` | `--message`, `--by`, `--mention @h` (repeat), `--event <name>` | plan written (also under `plan-only`) / not ledgered, empty / the `COMMENT_REFUSALS` enum |
 | B4 | `reconcile <ref>` | `--field F`, `--take ado\|sdlc\|ack\|not-drift`, `--by`, `--owner`, `--reason`, `--from-comment <id>` | taken / child failed (child 1 → 1) / AI, non-A `--take ado`, missing owner/reason |
+| B6 | `sync` | `--kind K` (repeat), `--id ID` (repeat), `--sprint SNN`, `--all`, `--discussion`, `--no-comments` | 0 always (every stage unavailable still exits 0) / 1 on a pull-stage ledger DRIFT / — |
 
 ---
 
@@ -391,6 +401,20 @@ Conventions: every card is one Sonnet session (≤ ~600 lines incl. tests); **Ow
 ### Fold B5 — breadth · 2.5.0 · spec 0038 · branch `spec/0038-ado-boards-breadth` · cards finalised after B0 captures (13)–(28)
 
 B5-P0 contracts (`wit/workitemrevisions.json`, model append-only, the spec) · B5-P1 `scripts/ado_sync_sources_p1.py` (NFR/BR/Q via `document_shape`, lifecycle projection; `SOURCES` rows — FRs moved to B2-P3b) · B5-P2 `scripts/ado_wit_feed.py` (`reporting/workitemrevisions` watermark; `continuationToken` vs `startDateTime` exclusivity test) · B5-P3 the `.proposed` writer inside `ado_sync_reconcile.py` (append-only; byte-span splice round-trip via `document_shape.write_document`) + `scripts/retro_report.py` additive section ("no data" when absent; no actor key) · B5-P4 desktop `AdoReconcileDialog` + `Pull now` · B5-P5 mention markup (`mention_markup` from the B0 (27) winner; `identities_by_mail` never spawned under `cache`) — **gated on `present` containing `mention_probe`** · B5-P6 integration + the pack fragment **only via `sync_kit.py`** after the kit change merges upstream (K20). Same conventions, same gates, plus G17.
+
+### Fold B6 — sync, catch-up, plan from the desktop · 2.1.0 (no bump) · spec 0040
+
+Owner decisions 2026-10-15: the closed `AdoVerbRequest` table widens by exactly one read verb, `plan` (K28); a board catch-up is ask-first; nothing reads the board on project open. Order: P0 first, then P1 ∥ P2 ∥ P3, then P4. Same conventions and gates as B5 (G1–G17), plus guardrails 24–28.
+
+B6-P0 contracts · `scripts/ado_sync_model.py` (append-only: `SYNC_STAGES`, `apply_next_line(plan)` — the one golden footer `comment`, `plan` and `sync` print — and `SYNC_NODATA`, the `sync --json` document when nothing could be read) with `scripts/tests/test_boards_sync_model_b6.py` and `scripts/tests/golden/ado_sync_unavailable.json` (no integer 0; the module's import set pinned equal) · `studio/shared/adoVerbArgv.ts` (the eighth member `plan`, a read with no `--by`; `ADO_VERB_CAPABILITY.plan = 'ado-plan'`) with the B4/B5 pins in `studio/test/adoVerbArgv.test.ts` and `studio/test/unit/adoWrites.test.ts` extended to eight (`planSpec` still refused) · this kit (K28; the K9, K11 and K13 notes; the §3 and §4 rows; this block; guardrails 24–28) · `specs/0040-ado-boards-sync-and-catch-up.md` written by hand (K13).
+
+B6-P1 the `sync` verb · `scripts/ado_sync.py` `(edit)` + a new `scripts/tests/test_boards_*.py`: the stages in `SYNC_STAGES` order — the fields pull, drift classified from the pull's own rows (the board is not read again: `az.calls` pinned equal, guardrail 24), the discussion pull only on an explicit `--discussion` (`sync` has no `--full`), then the plan (`--no-comments` relayed); exit codes per §4 and K9; the hook line written twice, line 1 the plan stage's (K11); the footer is `apply_next_line(plan)` wherever an apply is offered, and the plan-only golden `golden/ado_plan_spec_0004.txt` stays byte-identical (guardrail 25); with nothing readable `sync --json` has `SYNC_NODATA`'s keys and exits 0.
+
+B6-P2 catch-up prose · the command files that start a working session gain an ask-first catch-up prompt: the command asks the person in one line whether to catch up with the board, and runs `ado_sync.py sync` only on a yes; the prose never adds `--discussion` on its own (the discussion is read only on the person's own ask: the prose pin requires the words "only on", guardrail 27); `test_command_contracts.py` proves every `sync` flag the prose names against `--help`. The protected `commands/sprd-coach.md` and `commands/sprd-spec.md` are not touched.
+
+B6-P3 plan from the desktop · the spec card's `Plan changes` runs `{ verb: 'plan', kind: 'spec', id }` through the existing `runAdoVerb` on the person's click only (no `useEffect` runs `plan` on card open: a source regex pin + G18, guardrail 26) and hands the plugin's `plan --json` to the existing `AdoApplyDialog` (B4-P3), whose Confirm sends `apply --confirm <hash>`; the request is a closed `AdoVerbRequest` built outside `SpecCard.tsx` and main builds the argv from the table (`SpecCard` has no `verb: '`, guardrail 28); nothing under `studio/electron/**` changes, since main already runs every verb in `ADO_VERBS`.
+
+B6-P4 integration (last) · `CHANGELOG.md` (a `### Fold B6` block under the existing `## 2.1.0` heading — no version-file change), `CLAUDE.md` (the Boards bullet and the Testing lines gain `sync`), `references/ado-boards.md` (`sync` and the ask-first catch-up), and the build kit's Status line; `scripts/capabilities.py` only if its card names a `sync` capability (`ado-plan` is already declared).
 
 ---
 
@@ -504,6 +528,11 @@ Replace `<PROTECTED>` in the two gate commands with the space-joined `protectedL
 | 21 | Reports skipped tests as passed; `bundleSize` silently skipped | `tests_run[].skipped` is required in the return schema; G15 uses `npm test` (pretest build) and expects "bundleSize ran" |
 | 22 | Measures G2/G3 from `origin/master` while #106 is unmerged | `$BASE` substituted from `args.base`; `git rev-parse --verify` guards an empty diff from a bad sha |
 | 23 | A merge "succeeds" but the worktree commit is unreachable | `git update-ref refs/pkg/<id>` in every brief; the merge agent merges the ref |
+| 24 | Lets `sync` re-read the board to classify drift | the drift stage reads the pull stage's rows: an `az.calls` equality pin (B6-P1) — `sync`'s calls equal `pull`'s then `plan`'s over the same fixtures, the drift stage adding none |
+| 25 | Adds the `Next:` footer to the plan-only output | `golden/ado_plan_spec_0004.txt` (posture plan-only) is byte-pinned by its B2 test; the footer is `apply_next_line(plan)` only where an apply is offered |
+| 26 | Runs `plan` when a spec card opens | a source regex pin (no `useEffect` whose body names `plan`) + G18; the B5-P4 click-count pin extended to one request per click |
+| 27 | Implies `--discussion` from `--full`, or adds it in command prose | `sync` has no `--full` (its parser is pinned); the prose pin requires the words 'only on' beside `--discussion` |
+| 28 | Builds the `plan` argv in the renderer | the request is a closed `AdoVerbRequest` and main builds the argv from the pure table; `SpecCard.tsx` has no `verb: '` (source pin) |
 
 ---
 

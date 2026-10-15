@@ -1105,3 +1105,48 @@ KIND_OWNERSHIP["nfr"] = {"System.State": "A", "System.Description": "C",
 
 # The kinds Fold B5 adds sources for, in the order the design's §6.1 lists them; each is opt-in.
 BREADTH_KINDS: Final = ("lifecycle", "nfr", "rule", "question", "measurement")
+
+
+# === Fold B6 (B6-P0): the sync verb's contracts. Appended; nothing above this line changed. ========================
+#
+# Fold B6 (spec 0040) adds one read verb, `ado_sync.py sync`, that runs the mirror's reads in one pass so a person can
+# catch up with the board in one step: the fields pull, then the drift read from that pull's own rows (the board is
+# never asked twice), then — only when the person gave `--discussion` — the discussion pull, then the plan. Three
+# contracts are pinned here so the CLI (B6-P1), the command prose (B6-P2) and the desktop app (B6-P3) agree:
+#   * SYNC_STAGES — the stage names, in the order `sync` runs them (and the keys its `--json` document uses).
+#   * apply_next_line(plan) — the ONE footer every verb that drafts a plan prints (`comment`, `plan`, `sync`); a
+#     plan-only clone prints none (the apply is not offered there), so no footer is ever printed without a hash.
+#   * SYNC_NODATA — the `sync --json` document when NOTHING could be read (golden:
+#     scripts/tests/golden/ado_sync_unavailable.json). Every stage says it is unavailable and every count is None:
+#     nothing was measured, so nothing reads 0 (house rule 2).
+
+SYNC_STAGES: Final = ("pull", "drift", "discussion", "plan")
+
+
+def apply_next_line(plan: str) -> str:
+    """The one golden footer under a plan a person may send (`comment`, `plan` and `sync` all print it): the line
+    below with the plan's 12-hex hash substituted for `{plan}`. Anything that is not exactly a 12-hex hash
+    (`boards_contract.HASH_RE`) raises ValueError: a footer never offers an apply it cannot name."""
+    if not isinstance(plan, str) or not bc.HASH_RE.fullmatch(plan):
+        raise ValueError(f"plan must be the plan's 12-hex hash, not {plan!r}")
+    return f"Next: `ado_sync.py apply --confirm {plan} --by <you>` sends it, as whoever az is signed in as"
+
+
+# The `sync --json` document when nothing could be read: no stage ran to a result, so `reason`, `as_of`, `scope`,
+# `counts`, `next`, `hook_line` and `drift_error` are None and `discussion` (which runs only on `--discussion`) is None.
+SYNC_NODATA: Final[dict] = {
+    "ok": True,
+    "unavailable": True,
+    "reason": None,
+    "verb": "sync",
+    "as_of": None,
+    "scope": None,
+    "pull": {"unavailable": True, "reason": None},
+    "drift": {"unavailable": True, "reason": None},
+    "discussion": None,
+    "plan": {"unavailable": True, "reason": None},
+    "counts": None,
+    "next": None,
+    "hook_line": None,
+    "drift_error": None,
+}

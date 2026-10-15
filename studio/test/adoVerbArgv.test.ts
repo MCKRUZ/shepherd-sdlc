@@ -45,6 +45,8 @@ describe('golden argv per verb', () => {
     [{ verb: 'show', ref: '#4521' }, ['show', '#4521', '--json']],
     [{ verb: 'comment', ref: 'sdlc:spec:0004', message: 'Ready for review' },
       ['comment', 'sdlc:spec:0004', '--message=Ready for review', '--json', '--by', ACTOR]],
+    [{ verb: 'plan', kind: 'spec', id: '0004' }, ['plan', '--kind', 'spec', '--id', '0004', '--json']],
+    [{ verb: 'plan', sprint: 'S07' }, ['plan', '--sprint', 'S07', '--json']],
   ]
 
   it.each(GOLDEN_ARGV)('%j', (req, expected) => {
@@ -54,7 +56,7 @@ describe('golden argv per verb', () => {
   it('covers every verb, in the order the table lists them', () => {
     const verbs = new Set(GOLDEN_ARGV.map(([req]) => req.verb))
     for (const v of ADO_VERBS) expect(verbs.has(v), v).toBe(true)
-    expect([...ADO_VERBS]).toEqual(['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment'])
+    expect([...ADO_VERBS]).toEqual(['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment', 'plan'])
     expect([...BY_VERBS]).toEqual(['apply', 'reconcile', 'link', 'comment'])
     expect(SCRIPT).toBe('ado_sync.py')
     expect(BY_FLAG).toBe('--by')
@@ -210,7 +212,7 @@ describe('reconcile takes an sdlc ref only — the CLI refuses #<id> there (B5-P
   })
 })
 
-describe("the table is the interface sheet's seven requests — no Fold after B4 widens it", () => {
+describe("the table is the interface sheet's eight requests — B6 widened it by one read verb, plan (K28)", () => {
   const KIT = resolve(PLUGIN, 'docs', 'proposals', 'ado-boards-mirror-build-kit.md')
 
   /** The `verb:` names of the pinned union, read from the build kit's §3 B4-P0 block as text. */
@@ -225,18 +227,39 @@ describe("the table is the interface sheet's seven requests — no Fold after B4
 
   it('ADO_VERBS and the capability map name exactly the verbs the sheet pins, in its order', () => {
     const pinned = sheetVerbs()
-    expect(pinned).toHaveLength(7)
+    expect(pinned).toHaveLength(8)
     expect([...ADO_VERBS]).toEqual(pinned)
     expect(Object.keys(ADO_VERB_CAPABILITY)).toEqual(pinned)
   })
 
-  it('a plan request is not in the table: refused before any spawn, like any verb the sheet does not list', () => {
-    for (const req of [{ verb: 'planSpec', spec: '0004' }, { verb: 'plan', kind: 'spec', id: '0004' }]) {
-      const verb = req.verb
-      expect(validateAdoVerbRequest(req as unknown as AdoVerbRequest)).toEqual([`'${verb}' is not a Boards verb Shepherd runs`])
-      expect(buildAdoVerbArgv(req as unknown as AdoVerbRequest, ACTOR)).toEqual({ ok: false, errors: [`'${verb}' is not a Boards verb Shepherd runs`] })
+  it('planSpec is still not in the table: refused before any spawn, like any verb the sheet does not list', () => {
+    const req = { verb: 'planSpec', spec: '0004' }
+    expect(validateAdoVerbRequest(req as unknown as AdoVerbRequest)).toEqual(["'planSpec' is not a Boards verb Shepherd runs"])
+    expect(buildAdoVerbArgv(req as unknown as AdoVerbRequest, ACTOR)).toEqual({ ok: false, errors: ["'planSpec' is not a Boards verb Shepherd runs"] })
+    expect(ADO_VERBS.filter((v) => /plan/i.test(v))).toEqual(['plan'])
+  })
+
+  it('plan without a whole scope is refused before any spawn: no scope, a sprint that is not SNN, a kind with no id', () => {
+    for (const bad of [
+      { verb: 'plan' }, { verb: 'plan', sprint: '7' }, { verb: 'plan', kind: 'spec' },
+      { verb: 'plan', id: '0004' }, { verb: 'plan', sprint: 'S07', kind: 'spec', id: '0004' },
+      { verb: 'plan', kind: 'spec', id: '--all' }, { verb: 'plan', kind: '--sprint', id: '0004' }, { verb: 'plan', kind: 'spec', id: '0004 --all' },
+    ]) {
+      const req = bad as unknown as AdoVerbRequest
+      expect(validateAdoVerbRequest(req).length, JSON.stringify(bad)).toBeGreaterThan(0)
+      const built = buildAdoVerbArgv(req, ACTOR)
+      expect(built.ok, JSON.stringify(bad)).toBe(false)
+      if (!built.ok) expect(built.errors).not.toContain("'plan' is not a Boards verb Shepherd runs")
     }
-    expect(ADO_VERBS.some((v) => /plan/i.test(v))).toBe(false)
+  })
+
+  it('plan with a kind and an id is accepted as a READ: no --by, whoever the actor is', () => {
+    const req: AdoVerbRequest = { verb: 'plan', kind: 'spec', id: '0004' }
+    expect(validateAdoVerbRequest(req)).toEqual([])
+    expect(buildAdoVerbArgv(req, ACTOR)).toEqual({ ok: true, argv: ['plan', '--kind', 'spec', '--id', '0004', '--json'] })
+    expect(buildAdoVerbArgv(req, '')).toEqual({ ok: true, argv: ['plan', '--kind', 'spec', '--id', '0004', '--json'] })
+    expect(argv(req)).not.toContain(BY_FLAG)
+    expect(BY_VERBS).not.toContain('plan')
   })
 })
 
@@ -244,7 +267,7 @@ describe('each verb names the capability that gates it', () => {
   it('maps to the plugin capability ids, the six Boards ones through CAPABILITIES', () => {
     expect(ADO_VERB_CAPABILITY).toEqual({
       apply: 'ado-apply', reconcile: 'ado-reconcile', link: 'ado-link', pull: 'ado-pull', pullDiscussion: 'ado-pull-discussion',
-      show: 'ado-show', comment: 'ado-comment',
+      show: 'ado-show', comment: 'ado-comment', plan: 'ado-plan',
     })
     expect(ADO_VERB_CAPABILITY.apply).toBe(reasons.CAPABILITIES.adoApply)
     expect(ADO_VERB_CAPABILITY.reconcile).toBe(reasons.CAPABILITIES.adoReconcile)

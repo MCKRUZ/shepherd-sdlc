@@ -6,7 +6,7 @@
 //
 // The rules the table holds (house rules 8 and 9):
 //   * `--by <actor>` is the LAST two elements of every write (`apply`, `reconcile`, `link`, `comment`) and absent
-//     from every read (`pull`, `pullDiscussion`, `show`); the value comes from main's actor, never the renderer.
+//     from every read (`pull`, `pullDiscussion`, `show`, `plan`); the value comes from main's actor, never the renderer.
 //   * Free text is ONE element in `--flag=<text>` form — `--message=`, `--reason=`, `--owner=` — so a text with a
 //     double quote, a newline, `$(`, non-ASCII or a leading `-` reaches argparse as one value and is never read
 //     as a flag. A comment's message is sent byte for byte (not trimmed: the preview shows the exact text).
@@ -16,17 +16,22 @@
 // Validation is shape only — ids, hashes, the four takes, a required field present — never a judgement; the
 // plugin stays the truth on everything else (AI `--by`, posture, identity, the stale hash, a non-A take).
 //
-// The union is the build kit's interface sheet (§3, the B4-P0 row): exactly these seven requests, and no Fold after
-// B4 widens it (test/adoVerbArgv.test.ts reads the sheet and holds `ADO_VERBS` to it). A verb the sheet does not
-// list — `plan` among them — is not something Shepherd runs: a screen shows the plugin line for it instead, as the
-// Today row's Propose spec does. B5-P4 only narrows `reconcile` to an sdlc ref (`SDLC_REF`): the CLI refuses a
-// `#<work item>` there, so the table does too, before a spawn.
+// The union is the build kit's interface sheet (§3, the B4-P0 row): exactly these eight requests
+// (test/adoVerbArgv.test.ts reads the sheet and holds `ADO_VERBS` to it). Fold B4 pinned seven; Fold B6 widened it by
+// exactly one READ verb, `plan` (build kit K28, owner decision 2026-10-15), so the spec card can draw up a plan and
+// hand it to the existing apply dialog — and no later Fold widens it without a kit amendment. `plan` carries no
+// `--by` (it sends nothing to the board; `apply` is still the one write that does) and its scope is either a sprint
+// (`--sprint SNN`) or one item (`--kind K --id ID`), never both and never neither: an unscoped plan of the whole
+// repository is not something a click asks for. A verb the sheet does not list is not something Shepherd runs: a
+// screen shows the plugin line for it instead, as the Today row's Propose spec does. B5-P4 only narrows `reconcile`
+// to an sdlc ref (`SDLC_REF`): the CLI refuses a `#<work item>` there, so the table does too, before a spawn.
 import { CAPABILITIES } from './reasons'
 
 export type AdoVerbRequest =
   | { verb: 'apply'; confirm: string } | { verb: 'reconcile'; ref: string; field: string; take: 'ado' | 'sdlc' | 'ack' | 'not-drift'; owner?: string; reason?: string }
   | { verb: 'link'; ref: string; workItem: string } | { verb: 'pull'; id?: string } | { verb: 'pullDiscussion'; id?: string }
   | { verb: 'show'; ref: string } | { verb: 'comment'; ref: string; message: string }
+  | { verb: 'plan'; kind?: string; id?: string; sprint?: string }
 
 export type AdoVerb = AdoVerbRequest['verb']
 export type AdoTake = Extract<AdoVerbRequest, { verb: 'reconcile' }>['take']
@@ -44,14 +49,20 @@ export const SDLC_REF = /^sdlc:[a-z]+:[A-Za-z0-9-]+$/
 export const FIELD = /^[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z0-9_]+)+$/
 /** `link --work-item`: `4521` or `#4521` — never `AB#4521`. */
 export const WORK_ITEM = /^#?[1-9]\d*$/
+/** `plan --sprint`: a sprint id (`sprint_model.SPRINT_ID_RE`), S07. */
+export const SPRINT = /^S\d{2,}$/
+/** `plan --kind`: a kind word, shape only — `ado_sync.py`'s argparse `choices` (the contract's KINDS) stays the truth. */
+export const KIND = /^[a-z]+$/
+/** `plan --id`: an item id (0004, FE-03), shape only; one that starts with `-` is refused too, so it is never a flag. */
+export const ITEM_ID = /^[A-Za-z0-9-]+$/
 
 /** The flag every write carries last; the value comes from main's actor, never from the renderer. */
 export const BY_FLAG = '--by'
 export const JSON_FLAG = '--json'
 
-/** Every verb the table knows, in its order. */
-export const ADO_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment']
-/** The writes: each carries `--by <actor>` last. The other three are reads and carry no `--by`. */
+/** Every verb the table knows, in its order (Fold B6 appended `plan` last). */
+export const ADO_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'pull', 'pullDiscussion', 'show', 'comment', 'plan']
+/** The writes: each carries `--by <actor>` last. The other four are reads and carry no `--by`. */
 export const BY_VERBS: readonly AdoVerb[] = ['apply', 'reconcile', 'link', 'comment']
 /** `reconcile --take` (the build kit's verb table; `ado_sync_model.RECONCILE_TAKES`, in its order). */
 export const TAKES: readonly AdoTake[] = ['ado', 'sdlc', 'ack', 'not-drift']
@@ -66,6 +77,7 @@ export const ADO_VERB_CAPABILITY: Readonly<Record<AdoVerbRequest['verb'], string
   pullDiscussion: CAPABILITIES.adoDiscussion,
   show: CAPABILITIES.adoShow,
   comment: CAPABILITIES.adoComment,
+  plan: 'ado-plan',
 }
 
 function isText(value: unknown): value is string {
@@ -127,6 +139,22 @@ export function validateAdoVerbRequest(req: AdoVerbRequest): string[] {
       ref(req.ref)
       required(req.message, 'message')
       break
+    case 'plan': {
+      // A sprint, or one item named by its kind AND id — never both, never neither. Shape only.
+      const item = req.kind !== undefined || req.id !== undefined
+      if (req.sprint !== undefined) {
+        if (!isText(req.sprint) || !SPRINT.test(req.sprint)) errors.push(`sprint '${String(req.sprint)}' is not a sprint id (S07)`)
+        if (item) errors.push('a plan names a sprint, or a kind and an id, never both')
+      } else if (!item) {
+        errors.push('a plan needs a kind and an id, or a sprint')
+      } else {
+        if (req.kind === undefined) errors.push('kind is required with an id')
+        else if (!isText(req.kind) || !KIND.test(req.kind)) errors.push(`kind '${String(req.kind)}' is not a kind (spec, feature, epic)`)
+        if (req.id === undefined) errors.push('id is required with a kind')
+        else if (!isText(req.id) || !ITEM_ID.test(req.id) || req.id.startsWith('-')) errors.push(`id '${String(req.id)}' is not an item id (0004, FE-03)`)
+      }
+      break
+    }
     default:
       errors.push(`'${String((req as { verb?: unknown }).verb)}' is not a Boards verb Shepherd runs`)
   }
@@ -160,6 +188,10 @@ export function buildAdoVerbArgv(req: AdoVerbRequest, actor: string): { ok: true
       break
     case 'show': argv.push('show', req.ref); break
     case 'comment': argv.push('comment', req.ref, `--message=${req.message}`); break
+    case 'plan':
+      if (req.sprint !== undefined) argv.push('plan', '--sprint', req.sprint)
+      else argv.push('plan', '--kind', req.kind!, '--id', req.id!)
+      break
   }
   argv.push(JSON_FLAG)
   if (writes) argv.push(BY_FLAG, actor.trim())
