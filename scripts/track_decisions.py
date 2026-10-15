@@ -473,10 +473,13 @@ def resolve_write_target(args) -> tuple[Path, Path]:
 def run_open_all_branches(args, log_path: Path, repo_root: Path, shown: str) -> None:
     """`open --all-branches`: the same verb, with an id that clears every local ref's decision log.
 
-    The scan is read-only and never fetches. A ref whose log has no usable table is named in
-    `unread` (and is not counted as checked); outside a git repository the verb proceeds on the
-    local log alone, and says so. The base text lines are the ones `run_verb` prints without the
-    flag; a test pins that the two cannot drift apart.
+    The scan is read-only and never fetches. A ref whose log has no usable table, or whose tree git
+    could not read, is named in `unread` (and is not counted as checked); outside a git repository
+    the verb proceeds on the local log alone, and says so. When nothing at all could be read (git
+    missing or refusing the directory, a partial clone on a git too old to read it safely) `unread`
+    holds one `(all refs)` entry and the text line says "could not read refs: <why>" — never a
+    "checked" count that nobody earned. The base text lines are the ones `run_verb` prints without
+    the flag; a test pins that the two cannot drift apart.
     """
     import branch_scan  # only this flag needs it, so every other importer of this module is unaffected
 
@@ -501,10 +504,7 @@ def run_open_all_branches(args, log_path: Path, repo_root: Path, shown: str) -> 
     result["unread"] = unread
     text = (f"Decision opened: {result['id']}  [{result['owner']}]\n"
             f"  Due {result['due']} ({CLOCK_BUSINESS_DAYS} business days after {result['opened']})")
-    if scan.is_git:
-        text += f"\n  Ids checked on {len(refs_scanned)} branch(es)"
-    else:
-        text += "\n  Ids checked on 0 branches (not a git repository)"
+    text += f"\n  Ids checked on {branch_scan.checked_summary(scan.is_git, refs_scanned, unread)}"
     if unread and not args.json:  # stdout keeps its one extra line; what was skipped goes to stderr
         print("Warning: could not use the decision log on " + ", ".join(
             f"{u['ref']} ({u['reason']})" for u in unread), file=sys.stderr)

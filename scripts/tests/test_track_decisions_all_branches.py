@@ -134,7 +134,7 @@ def test_remote_tracking_refs_are_read_too(repo):
     doc = open_json(repo, "--all-branches")
     assert doc["id"] == "DL-08"
     assert "refs/remotes/origin/sprint-9" in doc["refs_scanned"]
-    assert not any(r.endswith("/HEAD") for r in doc["refs_scanned"])
+    assert "refs/remotes/origin/HEAD" not in doc["refs_scanned"]   # a symbolic alias, not a branch
 
 
 def test_a_branch_without_a_log_is_scanned_and_is_not_a_problem(repo):

@@ -73,11 +73,14 @@ def test_is_git_repo_false_for_a_directory_that_does_not_exist(tmp_path):
     assert bs.is_git_repo(tmp_path / "nope") is False
 
 
-def test_is_git_repo_false_when_git_cannot_run(repo, monkeypatch):
+def test_is_git_repo_raises_rather_than_answering_false_when_git_cannot_run(repo, monkeypatch):
+    """"git is not installed" is not "this is not a repository": the first must be reported, not read
+    as a clean empty result (test_branch_scan_honesty.py pins what the callers then say)."""
     def boom(*a, **k):
         raise FileNotFoundError("git")
     monkeypatch.setattr(bs.subprocess, "run", boom)
-    assert bs.is_git_repo(repo) is False
+    with pytest.raises(bs.BranchScanError, match="could not run"):
+        bs.is_git_repo(repo)
 
 
 # --- list_refs ---
@@ -91,6 +94,8 @@ def test_list_refs_returns_sorted_local_and_remote_tracking_refs(two_branches):
 
 
 def test_list_refs_omits_the_remote_head_alias(two_branches):
+    """A symbolic ref is dropped because it IS an alias (its `%(symref)` is set), not because of its
+    name; a real branch that happens to end in `/HEAD` is kept (test_branch_scan_honesty.py)."""
     git(two_branches, "update-ref", "refs/remotes/origin/master", "refs/heads/master")
     git(two_branches, "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/master")
     # the alias really exists, so its absence below is the module's doing, not the fixture's
@@ -98,7 +103,8 @@ def test_list_refs_omits_the_remote_head_alias(two_branches):
     refs = bs.list_refs(two_branches)
     assert "refs/remotes/origin/HEAD" not in refs
     assert "refs/remotes/origin/master" in refs
-    assert not any(r.endswith("/HEAD") for r in refs)
+    assert refs == ["refs/heads/bare", "refs/heads/feature", "refs/heads/master",
+                    "refs/remotes/origin/master"]
 
 
 def test_list_refs_omits_tags(repo):

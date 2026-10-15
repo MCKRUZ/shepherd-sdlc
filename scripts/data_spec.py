@@ -309,7 +309,10 @@ def emit(args, doc: dict, text: str) -> None:
 
 def allocate_id(ws: Workspace, all_branches: bool):
     """(new id, scan or None). With --all-branches the id is the max over this checkout's specs/ AND
-    every local ref's specs/, plus one — so no branch the checkout can see already uses it."""
+    every local ref's specs/, plus one — so no branch the checkout can see already uses it. A ref
+    that could not be read is in the returned `unread`, never in `refs_scanned`, and when nothing
+    could be read at all `unread` holds one `(all refs)` entry: the id is then the local one, and
+    the caller says so."""
     local = new_spec.next_spec_id(ws.specs_dir)
     if not all_branches:
         return local, None
@@ -400,8 +403,7 @@ def cmd_new(args, ws: Workspace) -> None:
         is_git, refs_scanned, unread = scan
         doc["refs_scanned"] = refs_scanned
         doc["unread"] = unread
-        lines.append(f"  Ids checked on {len(refs_scanned)} branch(es)"
-                     + ("" if is_git else " (not a git repository)"))
+        lines.append(f"  Ids checked on {branch_scan.checked_summary(is_git, refs_scanned, unread)}")
         if unread and not args.json:
             print("Warning: could not read specs/ on " + ", ".join(
                 f"{u['ref']} ({u['reason']})" for u in unread), file=sys.stderr)
