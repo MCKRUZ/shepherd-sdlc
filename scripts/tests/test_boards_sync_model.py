@@ -9,6 +9,7 @@ agent. The module imports only the standard library and four plugin modules (AST
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import ast
 import hashlib
@@ -22,6 +23,11 @@ import ado_sync
 import ado_sync_model as sm
 import boards_contract as bc
 from tests import ado_boards_fixtures as abf
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 MODULE = Path(sm.__file__)
 PLUGIN_ROOT = MODULE.parent.parent

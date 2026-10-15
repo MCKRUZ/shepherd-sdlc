@@ -1,0 +1,2 @@
+# captured 2026-10-15 (org anonymised); stderr of the same `test /rev` PATCH sent twice through `az rest`
+ERROR: Precondition Failed({"$id":"1","innerException":null,"message":"VS403351: Test Operation for path /rev failed, value 2 was not equal to test value 1.","typeName":"Microsoft.VisualStudio.Services.WebApi.Patch.TestPatchOperationFailedException, Microsoft.VisualStudio.Services.WebApi","typeKey":"TestPatchOperationFailedException","errorCode":0,"eventId":3000})

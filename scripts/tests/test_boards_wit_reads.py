@@ -21,6 +21,7 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `az` swaps a `
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import FakeBoardsAz, identity_rest_argv, is_identity_rest_read, load_wit, route_key_boards, route_params
 
 import ast
@@ -35,6 +36,11 @@ import ado_transport
 import ado_wit
 import boards_contract
 from ado_map import AdoImportError
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 ORG = "https://dev.azure.com/contoso"  # what tests.ado_fixtures.ADO_REMOTE parses to
 PROJECT = "Claims"
@@ -233,9 +239,11 @@ def test_find_by_ref_looks_the_tag_up_through_a_wiql(az, tmp_path):
     (argv,) = az.calls
     assert route_key_boards(argv) == "boards query"
     wiql = argv[argv.index("--wiql") + 1]
+    # B0 (2026-10-15): the remote's project NAME as a literal; the `@project` macro made az print zero bytes
     assert wiql == ("SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],"
-                    "[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = @project AND "
+                    "[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND "
                     "[System.Tags] CONTAINS 'sdlc:spec:0004'")
+    assert "@project" not in wiql
     assert "--repository" not in argv and argv[argv.index("--detect") + 1] == "false"
 
 

@@ -10,15 +10,23 @@ else. It writes to the board AS the person whose `az` login is active, so every 
     first `--all` seed over `limits.first_seed` without a `--limit` in range (`first_seed`), and — read FIRST, before
     any other az call, whenever a comment row is to be sent — an executing identity that is not `--by`
     (`identity_mismatch`; `identity_unknown` for a service principal, an account off the roster, a `--by` that is not
-    a roster @handle, or a `connectionData` read that failed). A plan that does not hash to its own id was edited
-    after it was confirmed: that is a `ValueError`, as is a blank `--by` or one carrying an address.
+    a roster @handle, or a `connectionData` read that failed). A plan with an update (or a History-transport comment)
+    and no comment to post reads `connectionData` first too, but only to learn whether `az rest` can sign in: an
+    update is an `az rest` PATCH (`az devops invoke` cannot PATCH a work item; B0 write fixes, 2026-10-15) and needs
+    an Entra sign-in, so a failed read is `identity_unknown` (a personal access token alone), and a sign-in that is
+    not `--by` is not refused for it. A plan that does not hash to its own id was edited after it was confirmed: that
+    is a `ValueError`, as is a blank `--by` or one carrying an address.
   * Field ops, then comments. Creates run outcome -> domain -> requirement -> epic -> feature -> spec (parents before
     children whatever order the file lists them in) and the parent link rides in the child's own PATCH; a child whose
     parent was not created is reported (`deferred`, `parent_failed`), never created without it. An update is guarded by
     the revision the plan showed: a board that moved on, a repository that changed, or a PATCH the board rejects
     (`test /rev`) is a `conflict` row — skipped, ledgered, and the next op runs. `rule` and `not_found` continue
     (D16); `permission`, `throttled`, an unknown outcome and `DRIFT` stop the run (every later row is deferred
-    `stopped`). `--limit` and `limits.writes_per_run` count every write, comments included.
+    `stopped`). A `rule` row names the patch field it was about when the board's answer says (`field`, and `reason`
+    `unknown_identity` or `value_not_allowed`): an assignee the organisation does not know fails its own row only.
+    Every create sets the config's `area_path` (`System.AreaPath`, create-time only). `--limit` and
+    `limits.writes_per_run` count every write, comments included. A comment moves its item's `rev`, so an item this
+    run commented on is re-read before anything here PATCHes it again.
   * A comment POST whose outcome is unknown (a timeout, an unreadable answer) is never retried: the item's newest 20
     comments are re-listed and the one carrying the row's `text_sha`, by the same identity, within 10 minutes is
     ledgered `commented{recovered: true}`; no match stops the run.
@@ -109,6 +117,28 @@ DETAIL: Final[dict[str, str]] = {
     "drift": "DRIFT: the write landed but the ledger append failed, so the record and the board now disagree; the run "
              "stopped, plan again once the ledger is writable",
 }
+# A `rule` failure that `ado_wit_map.describe_write_error` could tie to a field of the patch says which one (a reference
+# name the patch carried, never the board's words). `{field}` is that name, or "a field" when none could be told.
+RULE_DETAIL: Final[dict[str | None, str]] = {
+    "unknown_identity": "the board does not know the identity given for {field} (the roster e-mail is not a user of "
+                        "this organisation); fix people[].email in .sdlc/team.yaml or leave the item unassigned, then "
+                        "plan again; the other rows went on",
+    "value_not_allowed": "the board's process does not allow the value given for {field}; fix the mapping in "
+                         ".sdlc/ado.yaml or the process, then plan again",
+    None: "the board's process refused the value of {field} or a transition; fix the field or the process, then plan "
+          "again",
+}
+
+
+def needs_rest_writes(rows: list[dict], cfg: dict) -> bool:
+    """True when sending these plan rows would PATCH a work item through `az rest` — an update row, or a drafted comment
+    under the History transport — which needs an Entra sign-in (a personal access token alone cannot mint the token;
+    B0 write fixes, 2026-10-15). Creates and comments-API posts go through `az devops invoke` and need none."""
+    block = cfg.get("comments") if isinstance(cfg, dict) and isinstance(cfg.get("comments"), dict) else {}
+    history = block.get("transport") == "history"
+    return any(isinstance(r, dict) and (r.get("action") == "update"
+                                        or (history and r.get("action") == "comment" and r.get("status") == "draft"))
+               for r in rows or [])
 
 
 # --- the plan, the ledger, the clock ------------------------------------------------------------------------------
@@ -390,6 +420,9 @@ class _Run:
         self.cap, self.cap_why = 0, "writes_per_run"
         self.created: dict[str, int] = {}   # ref -> the work item this run created
         self.revs: dict[int, int] = {}      # work item -> the revision this run knows it is at
+        # work items this run posted a comment on through the comments API: a comment bumps the item's `rev` and its
+        # answer does not say to what (B0, 2026-10-15: rev 2 -> 3), so a later PATCH here re-reads the rev first
+        self.rev_stale: set[int] = set()
         self.items: dict[int, dict] = {}
         self.projs: dict[str, dict] = {}
         self.remote_info = None
@@ -440,10 +473,16 @@ class _Run:
             out["work_item"] = row.get("work_item")
         return out
 
-    def fail(self, row: dict, action: str, cls: str, *, wid=None, reason: str | None = None) -> None:
-        out = {"ref": row.get("ref"), "action": action, "work_item": wid, "class": cls, "detail": DETAIL[cls]}
+    def fail(self, row: dict, action: str, cls: str, *, wid=None, reason: str | None = None,
+             field: str | None = None) -> None:
+        detail = DETAIL[cls]
+        if cls == "rule" and (reason or field):   # say which field, in fixed words (B0 write fixes, 2026-10-15)
+            detail = RULE_DETAIL.get(reason, RULE_DETAIL[None]).format(field=field or "a field")
+        out = {"ref": row.get("ref"), "action": action, "work_item": wid, "class": cls, "detail": detail}
         if reason:
             out["reason"] = reason
+        if field:
+            out["field"] = field
         self.failed.append(out)
 
     def defer(self, row: dict, action: str, why: str) -> None:
@@ -454,12 +493,13 @@ class _Run:
                     why=why, **extra)
         self.fail(row, action, "conflict", wid=wid, reason=why)
 
-    def write_failed(self, row: dict, action: str, wid, exc: AdoImportError) -> None:
+    def write_failed(self, row: dict, action: str, wid, exc: AdoImportError, patch: list[dict] | None = None) -> None:
         cls = getattr(exc, "error_class", None)
         cls = cls if cls in model.WRITE_ERROR_CLASSES else "unknown"
         if cls == "conflict":
             return self.conflict(row, action, wid, "write_conflict")
-        self.fail(row, action, cls, wid=wid)
+        said = wm.describe_write_error(str(exc), _field_refs(patch)) if cls == "rule" and patch else {}
+        self.fail(row, action, cls, wid=wid, reason=said.get("reason"), field=said.get("field"))
         if cls in model.STOP_CLASSES or cls in model.RECOVER_CLASSES:
             self.stopped = True
 
@@ -474,12 +514,19 @@ class _Run:
         return True
 
     # -- before the first write
-    def read_identity(self) -> str | None:
-        """Who `az` is signed in as, read before any other az call. The refusal reason, or None when it is `--by`."""
+    def read_identity(self, *, bind: bool = True) -> str | None:
+        """Who `az` is signed in as, read before any other az call. The refusal reason, or None when it is `--by`.
+
+        `bind=False` is the read a plan with updates (or History comments) but no comment to post makes: an update is
+        an `az rest` PATCH, which needs the same Entra token this `az rest` read needs, so a read that fails refuses the
+        plan as `identity_unknown` (under a personal access token alone nothing could be updated); a read that works is
+        not held to `--by` (an update writes no words in anybody's name), and changes nothing (B0 write fixes)."""
         try:
             me = model.executing_identity(ado_wit.connection_data(self.root), self.emails)
         except (AdoImportError, ValueError):
             return "identity_unknown"
+        if not bind:
+            return None
         try:
             cache.save_me(self.root, me["handle"], me["id"], self._stamp())
         except (OSError, ValueError):
@@ -574,14 +621,15 @@ class _Run:
         history = (f"{bc.HISTORY_TOKEN} · created · by {self.by} · executed as {self.executed_as} · "
                    f"plan {self.plan} · {row.get('source_path')}")
         try:
-            patch = wm.build_create_patch(proj, self.schema, self.hyperlink(row), history, parent_url)
+            patch = wm.build_create_patch(proj, self.schema, self.hyperlink(row), history, parent_url,
+                                          area_path=wm.configured_area(self.cfg))
         except ValueError:
             return self.conflict(row, "create", None, "unbuildable")
         self.writes += 1
         try:
             out = ado_wit.create(self.root, row["type"], patch)
         except AdoImportError as exc:
-            return self.write_failed(row, "create", None, exc)
+            return self.write_failed(row, "create", None, exc, patch)
         except ValueError:                       # refused before any call was made
             self.writes -= 1
             return self.conflict(row, "create", None, "unbuildable")
@@ -599,6 +647,8 @@ class _Run:
         ref, wid = row["ref"], row["work_item"]
         if self.done_under_this_plan(ref) or not self.gate(row, "update"):
             return
+        if wid in self.rev_stale and not self.reread_rev(wid):   # field ops run first, so only a defensive re-read
+            return self.conflict(row, "update", wid, "rev_unread")
         remote = self.items.get(wid)
         if remote is None:
             return self.fail(row, "update", "not_found", wid=wid, reason="gone")
@@ -621,7 +671,7 @@ class _Run:
         try:
             out = ado_wit.update(self.root, wid, patch)
         except AdoImportError as exc:
-            return self.write_failed(row, "update", wid, exc)
+            return self.write_failed(row, "update", wid, exc, patch)
         except ValueError:
             self.writes -= 1
             return self.conflict(row, "update", wid, "unbuildable")
@@ -633,6 +683,22 @@ class _Run:
             return self.fail(row, "update", "drift", wid=wid)
         self.links[ref] = self.ledger[-1]
         self.applied.append({"ref": ref, "action": "update", "work_item": wid, "rev_after": rev_after})
+
+    def reread_rev(self, wid: int) -> bool:
+        """Re-read the revision of an item this run commented on (a comment moves `rev`, and the comments API does not
+        answer the new one), so a PATCH after it tests the revision the board is really at. True when it was read."""
+        try:
+            rows, _missing = ado_wit.get_batch(self.root, [wid])
+        except AdoImportError:
+            return False
+        for raw in rows:
+            if isinstance(raw, dict) and raw.get("id") == wid and _is_count(raw.get("rev")):
+                self.revs[wid] = raw["rev"]
+                if wid in self.items:
+                    self.items[wid] = wm.remote_item(raw, self.emails)
+                self.rev_stale.discard(wid)
+                return True
+        return False
 
     def recover(self, row: dict, wid: int, sent_at: str) -> dict | None:
         """The comment an unknown-outcome POST already created, found by `text_sha` + author + window, else None."""
@@ -654,6 +720,9 @@ class _Run:
         self.writes += 1
         try:
             if self.transport == "history":
+                if wid in self.rev_stale and not self.reread_rev(wid):
+                    self.writes -= 1
+                    return self.conflict(row, "comment", wid, "rev_unread")
                 if wid not in self.revs:
                     self.writes -= 1
                     return self.fail(row, "comment", "not_found", wid=wid, reason="gone")
@@ -662,12 +731,15 @@ class _Run:
             else:
                 out = ado_wit.add_comment(self.root, wid, text, row["format"])
                 comment_id, version = out["comment_id"], out["version"]
+                self.rev_stale.add(wid)                      # a comment bumps the item's rev (B0, 2026-10-15)
         except AdoImportError as exc:
             if getattr(exc, "error_class", None) not in model.RECOVER_CLASSES or self.transport == "history":
                 return self.write_failed(row, "comment", wid, exc)
             found = self.recover(row, wid, sent_at)          # an unknown outcome: re-list, never post again
             if found is None:
+                self.rev_stale.add(wid)                      # it may have landed, and moved the rev with it
                 return self.write_failed(row, "comment", wid, exc)
+            self.rev_stale.add(wid)
             comment_id, version = found["comment_id"], found["version"]
         except ValueError:
             self.writes -= 1
@@ -718,6 +790,8 @@ def apply_plan(repo_root, plan: dict, *, by: str, cfg: dict, schema: dict, limit
               run.comment_refusal(rows, drafts) or _first_seed_refusal(plan, rows, run.ledger, cfg, limit))
     if reason is None and drafts:
         reason = run.read_identity()                       # az call 0, before any other read or write
+    elif reason is None and needs_rest_writes(rows, cfg):
+        reason = run.read_identity(bind=False)             # az call 0: can `az rest` (the update transport) sign in
     if reason is not None:
         return run.refuse(reason)
     run.prepare(field_rows, drafts)

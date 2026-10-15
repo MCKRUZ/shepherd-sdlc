@@ -283,3 +283,104 @@ def rest_get(repo_root, path: str, *, api_version: str = PREVIEW_API_VERSION, ti
         return json.loads(out)
     except json.JSONDecodeError as e:
         raise AdoImportError(f"`az rest --method get` of {path} returned unparseable JSON: {e}") from e
+
+
+# ---------------------------------------------------------------------------------------------------
+# B0 write fixes (2026-10-15, the first live `apply`): a work item UPDATE cannot go through `az devops invoke`.
+# `workItems` has two locations, `{project}/_apis/wit/workItems/${type}` and `…/workItems/{id}`; for a PATCH the
+# extension binds the first and dies inside itself (`ERROR: 'type'`, a KeyError; captured). `az rest --method patch`
+# of the `{id}` URL works, with the same Entra token as `rest_get`. `rest_patch` is the ONE `az rest` write this
+# module sends: a PATCH, of a path template in REST_WRITES only, filled from checked values, under the parsed
+# remote's organisation URL, at API_VERSION, the JSON Patch in a 0600 temp file passed as `--body @<file>` exactly
+# as `invoke_body` passes `--in-file` (and removed, and scrubbed from errors, the same way). Appended, as `rest_get`
+# was; everything above stays byte-for-byte as shipped.
+from urllib.parse import quote  # noqa: E402
+
+
+def az_json_read(args: list[str], cwd) -> tuple[object, bool]:
+    """`(parsed, printed_nothing)` of a read: `az_json`'s argv and parsing, plus whether stdout was empty. Empty
+    stdout is `([], True)`, never a JSON error — `az boards query` prints nothing when no work item matches, and it
+    printed nothing for the current-project macro too (B0, 2026-10-15), so a caller can say it read nothing."""
+    out = run_az([*args, "-o", "json"], cwd)
+    if not out.strip():
+        return [], True
+    try:
+        return json.loads(out), False
+    except json.JSONDecodeError as e:
+        raise AdoImportError(f"`az {' '.join(args)}` returned unparseable JSON: {e}") from e
+
+
+REST_WRITES =frozenset({"{project}/_apis/wit/workitems/{id}"})   # == the PATCH paths of boards_contract.REST_ROUTES
+REST_PATCH_MEDIA_TYPE = "application/json-patch+json"
+# A PATCH under a personal-access-token-only sign-in: az cannot mint the Entra token, so nothing was sent.
+REST_NO_TOKEN_WRITE = ("`az rest` could not mint an Entra token for Azure DevOps, so the update was not sent: a work "
+                       "item update goes through `az rest` (`az devops invoke` cannot PATCH a work item), which needs "
+                       "an Entra sign-in (`az login`); a personal access token alone cannot send it")
+_PLACEHOLDER_RE = re.compile(r"\{([a-z]+)\}")
+
+
+def _fill_rest_path(template: str, route: dict) -> str:
+    """`template` with every `{name}` filled from `route`: `project` percent-encoded whole (no `/` survives), `id` a
+    positive integer. A name the template has and `route` does not, or one `route` has and the template does not,
+    is an AdoImportError: a URL is never built from a guess."""
+    names = _PLACEHOLDER_RE.findall(template)
+    if set(names) != set(route):
+        raise AdoImportError(f"`az rest` path {template!r} takes {sorted(names)}, not {sorted(route)}")
+
+    def value(match) -> str:
+        name, raw = match.group(1), route[match.group(1)]
+        if name == "id":
+            if type(raw) is not int or raw < 1:
+                raise AdoImportError(f"`az rest` path {template!r}: id must be a positive integer, not {raw!r}")
+            return str(raw)
+        if not isinstance(raw, str) or not raw.strip() or any(ord(c) < 32 or ord(c) == 127 for c in raw):
+            raise AdoImportError(f"`az rest` path {template!r}: {name} must be a name, not {raw!r}")
+        return quote(raw, safe="")
+    return _PLACEHOLDER_RE.sub(value, template)
+
+
+def rest_write_argv(org_url: str, path: str, route: dict, body_path: str, api_version: str = API_VERSION) -> list[str]:
+    """The `az rest` argv for one allow-listed PATCH (`-o json` included; `run_az` adds `--only-show-errors`)."""
+    if path not in REST_WRITES:
+        raise AdoImportError(f"`az rest` writes only {sorted(REST_WRITES)}; {path!r} is not one of them")
+    version = check_api_version(api_version)
+    if version != API_VERSION:
+        raise AdoImportError(f"api-version {version!r} is not {API_VERSION}: an update is a released call")
+    return ["rest", "--method", "patch", "--resource", ADO_RESOURCE_ID, "--url",
+            f"{org_url.rstrip('/')}/{_fill_rest_path(path, route)}?api-version={version}",
+            "--headers", f"Content-Type={REST_PATCH_MEDIA_TYPE}", "--body", f"@{body_path}", "-o", "json"]
+
+
+def rest_patch(repo_root, path: str, route: dict, body: list, *, api_version: str = API_VERSION,
+               timeout: int = 60) -> dict | list:
+    """`az rest --method patch` of an allow-listed path template, `route` filling it, `body` (a JSON Patch list) sent
+    as `application/json-patch+json` from a private temp file, returning the parsed JSON with no shape check (the
+    caller `_require`s what it reads). Empty stdout is an AdoImportError ("empty response on write"): a write that
+    answered nothing is not known to have worked. One saying az holds no Entra token is `REST_NO_TOKEN_WRITE`. The
+    body file is 0600, removed on every path, and its path is scrubbed from any error. Raises only AdoImportError."""
+    if not isinstance(body, list):
+        raise AdoImportError("an `az rest` PATCH body is a JSON Patch: a list of operations")
+    try:
+        payload = json.dumps(body)   # ASCII-only, as `invoke_body`: az reads the file in the locale encoding
+    except (TypeError, ValueError) as e:
+        raise AdoImportError(f"the request body is not JSON-serialisable: {e}") from e
+    org_url = remote(repo_root).org_url
+    rest_write_argv(org_url, path, route, BODY_FILE_PLACEHOLDER, api_version)   # refused before any file exists
+    body_path = _write_body_file(payload)
+    try:
+        out = run_az(rest_write_argv(org_url, path, route, body_path, api_version), repo_root, timeout=timeout)
+    except AdoImportError as e:
+        text = _scrub_path(str(e), body_path)
+        if "materialized" not in text and _NO_TOKEN_RE.search(text):
+            raise AdoImportError(REST_NO_TOKEN_WRITE) from None
+        if text != str(e):
+            raise AdoImportError(text) from None
+        raise
+    finally:
+        _unlink_quietly(body_path)
+    if not out.strip():
+        raise AdoImportError("empty response on write")
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError as e:
+        raise AdoImportError(f"`az rest --method patch` of {path} returned unparseable JSON: {e}") from e

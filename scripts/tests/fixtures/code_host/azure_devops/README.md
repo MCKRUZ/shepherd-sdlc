@@ -74,5 +74,5 @@ A Boards (work item) capture names more than the organisation. For it, `redact.p
 `--project <name>` (→ `Claims`), `--team <name>` (→ `Claims Team`), `--rename <old>=<new>` (an area
 or iteration name, repeatable) and `--mask-free-text` (every `description`, `helpText` and `xmlForm`
 becomes `[redacted: free text]`); without them its output is unchanged. Comment and history text
-then goes through `redact_wit.py`. The first Boards capture and what it settled are in
-`wit/captured/CAPTURE-NOTES.md`.
+then goes through `redact_wit.py`. The Boards captures (2026-10-14: the process; 2026-10-15: the first
+live apply, its items, writes and comments) and what each settled are in `wit/captured/CAPTURE-NOTES.md`.

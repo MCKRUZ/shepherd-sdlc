@@ -15,8 +15,14 @@ The first capture (2026-10-14, `wit/captured/CAPTURE-NOTES.md` under the test fi
 discovery rows and the reporting feed, and corrected three: the per-type states live at
 `workItemTypeStates` (`--resource states` does not resolve), the per-type fields at `workItemTypesField`
 (`--resource fields` with a `type` silently answers the project-wide list), and `connectionData` is not
-an `az devops invoke` location at all — `REST_ROUTES` holds it, read with `az rest`. Every item, write
-and discussion row is still `verified: False`: the capture did not reach them.
+an `az devops invoke` location at all — `REST_ROUTES` holds it, read with `az rest`.
+
+The second capture (2026-10-15, the first live `apply`) reached the item rows: `workitem_create` binds
+`{project}/_apis/wit/workItems/${type}` (so the type goes bare), and `workitemsbatch`, `updates` and `comments` (POST
+and GET) answered in the forms below. `workitem_update` is verified as the location an update writes to, but NOT
+through `az devops invoke`: `workItems` has two locations (`…/workItems/${type}` and `…/workItems/{id}`), the
+extension binds the first for a PATCH and dies (`ERROR: 'type'`), so an update is `az rest --method patch` of
+`REST_ROUTES["workitem_update"]`. `comment_versions` and the `connection_data` invoke row stay unverified.
 
 `OWNERSHIP` says who is the source of truth for a work-item field once the item exists:
   * `S` — the repository (SDLC) owns it: the mirror writes it, and a board edit is drift.
@@ -73,6 +79,11 @@ PLUGIN_TAG_PREFIXES: Final = ("sdlc:", "sdlc-repo:", "risk:", "channel:", "type:
 # The kinds a config with no `kinds:` key mirrors: the starter's list (templates/ado/ado.yaml; a test keeps them equal).
 DEFAULT_KINDS: Final = ("outcome", "domain", "requirement", "epic", "feature", "spec", "spike", "sprint", "decision")
 
+# Where a page's continuation token rides, in the order it is read: the response body's own `continuationToken`, then
+# the `continuation_token` key the azure-devops extension adds to every `devops invoke` answer (from the response
+# header). The comments GET was captured answering only the second, as `null` on a last page (B0, 2026-10-15).
+PAGE_TOKEN_KEYS: Final = ("continuationToken", "continuation_token")
+
 WRITE_METHODS: Final = frozenset({"POST", "PATCH", "PUT", "DELETE"})
 READ_POSTS: Final = frozenset({("wit", "wiql"), ("wit", "workitemsbatch")})  # POSTs that only read
 
@@ -126,11 +137,15 @@ WIT_ROUTES: Final[dict[str, dict]] = {
     "relation_types": _route("wit", "workItemRelationTypes", ("project",), verified=_CAPTURED),
     # items
     "workitem_create": _route("wit", "workItems", ("project", "type"), "POST", verified=True),  # type=<Type>, bare: the template is `…/workItems/${type}` (B0 2026-10-14)
-    "workitem_update": _route("wit", "workItems", ("project", "id"), "PATCH"),
-    "workitemsbatch": _route("wit", "workitemsbatch", ("project",), "POST"),  # a read (READ_POSTS)
-    "updates": _route("wit", "updates", ("project", "id")),
-    # discussion
-    "comments": _route("wit", "comments", ("project", "workItemId"), api_version=_PREVIEW),
+    # {project}/_apis/wit/workItems/{id}: SENT AS `az rest` (REST_ROUTES["workitem_update"]), never `devops invoke`,
+    # which binds the `${type}` location for a PATCH and dies with `ERROR: 'type'` (B0 2026-10-15)
+    "workitem_update": _route("wit", "workItems", ("project", "id"), "PATCH", verified=True),
+    # a read (READ_POSTS); `errorPolicy: omit` answers a missing id as a `null` entry, counted in `count` (B0 2026-10-15)
+    "workitemsbatch": _route("wit", "workitemsbatch", ("project",), "POST", verified=True),
+    "updates": _route("wit", "updates", ("project", "id"), verified=True),
+    # discussion: POST (format=markdown) and GET (order=asc) both reached (B0 2026-10-15); the extension adds its own
+    # `continuation_token` key to the answer beside (or instead of) the body's `continuationToken`
+    "comments": _route("wit", "comments", ("project", "workItemId"), api_version=_PREVIEW, verified=True),
     "comment_versions": _route("wit", "commentsVersions", ("project", "workItemId", "commentId"), api_version=_PREVIEW),
     # identity: NOT an `az devops invoke` location (captured: area `core` "--resource and --api-version combination
     # is not correct", area `Location` "--area is not present in current organization"). The row stays, never
@@ -140,12 +155,18 @@ WIT_ROUTES: Final[dict[str, dict]] = {
     "workitemrevisions": _route("wit", "workItemRevisions", ("project",), verified=_CAPTURED),
 }
 
-# The reads `az devops invoke` cannot reach (B0 capture, 2026-10-14). Each is `az rest --method get --resource
-# ADO_RESOURCE_ID --url <organisation URL>/<path>?api-version=<api_version>`: az mints an Entra token for Azure
-# DevOps itself, so a sign-in that holds only a personal access token cannot make the call. `ado_transport` keeps
-# its own allow-list of these paths (a test pins the two equal) and sends nothing else through `az rest`.
+# The calls `az devops invoke` cannot make (B0 capture, 2026-10-14 and 2026-10-15). Each is `az rest --method <m>
+# --resource ADO_RESOURCE_ID --url <organisation URL>/<path>?api-version=<api_version>`: az mints an Entra token for
+# Azure DevOps itself, so a sign-in that holds only a personal access token cannot make the call. `ado_transport`
+# keeps its own allow-lists of these paths (`REST_READS` for the GET, `REST_WRITES` for the PATCH; a test pins both
+# to this table) and sends nothing else through `az rest`. A `{name}` in a path is filled by the transport from a
+# checked value (the project percent-encoded, the id a positive integer), never from free text.
 ADO_RESOURCE_ID: Final = "499b84ac-1321-427f-aa17-267ca6975798"  # Azure DevOps' fixed Entra resource id (vocabulary)
 REST_ROUTES: Final[dict[str, dict]] = {
     # `7.1` is refused: "The requested version \"7.1\" of the resource is under preview" (captured)
     "connection_data": {"path": "_apis/connectionData", "method": "GET", "api_version": _PREVIEW, "verified": True},
+    # an update: `--headers Content-Type=application/json-patch+json --body @<file>`. A stale `test /rev` answers
+    # `Precondition Failed … VS403351`, a value outside a picklist `Bad Request … RuleValidationErrors` (captured)
+    "workitem_update": {"path": "{project}/_apis/wit/workitems/{id}", "method": "PATCH", "api_version": _GA,
+                        "verified": True},
 }

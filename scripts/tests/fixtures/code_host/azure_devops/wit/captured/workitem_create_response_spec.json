@@ -1,0 +1,158 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "workItems",
+  "--route-parameters",
+  "project=Claims",
+  "type=Spec",
+  "--http-method",
+  "POST",
+  "--in-file",
+  "<request body file>",
+  "--media-type",
+  "application/json-patch+json",
+  "--api-version",
+  "7.1"
+ ],
+ "_body": [
+  {
+   "op": "add",
+   "path": "/fields/System.Title",
+   "value": "sdlc probe spec"
+  },
+  {
+   "op": "add",
+   "path": "/fields/System.AreaPath",
+   "value": "Claims\\Claims Team"
+  },
+  {
+   "op": "add",
+   "path": "/fields/System.IterationPath",
+   "value": "Claims\\Sprint 7"
+  },
+  {
+   "op": "add",
+   "path": "/fields/System.State",
+   "value": "New"
+  },
+  {
+   "op": "add",
+   "path": "/fields/Custom.RiskTier",
+   "value": "High"
+  },
+  {
+   "op": "add",
+   "path": "/fields/System.Tags",
+   "value": "sdlc-probe"
+  },
+  {
+   "op": "add",
+   "path": "/relations/-",
+   "value": {
+    "rel": "System.LinkTypes.Hierarchy-Reverse",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItems/1"
+   }
+  }
+ ],
+ "value": {
+  "_links": {
+   "fields": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields"
+   },
+   "html": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_workitems/edit/2"
+   },
+   "self": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2"
+   },
+   "workItemComments": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2/comments"
+   },
+   "workItemRevisions": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2/revisions"
+   },
+   "workItemType": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Spec"
+   },
+   "workItemUpdates": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2/updates"
+   }
+  },
+  "continuation_token": null,
+  "fields": {
+   "Custom.CheckingPlan": "Full",
+   "Custom.RiskTier": "High",
+   "Custom.TouchesGatedPath": false,
+   "Microsoft.VSTS.Common.StateChangeDate": "2026-10-15T13:01:29.79Z",
+   "System.AreaPath": "Claims\\Claims Team",
+   "System.BoardColumn": "New",
+   "System.BoardColumnDone": false,
+   "System.ChangedBy": {
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "descriptor": "aad.anonymised-1",
+    "displayName": "Participant 1",
+    "id": "00000000-0000-0000-0000-000000000002",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "uniqueName": "person1@example.com",
+    "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+   },
+   "System.ChangedDate": "2026-10-15T13:01:29.79Z",
+   "System.CommentCount": 0,
+   "System.CreatedBy": {
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "descriptor": "aad.anonymised-1",
+    "displayName": "Participant 1",
+    "id": "00000000-0000-0000-0000-000000000002",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "uniqueName": "person1@example.com",
+    "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+   },
+   "System.CreatedDate": "2026-10-15T13:01:29.79Z",
+   "System.IterationPath": "Claims\\Sprint 7",
+   "System.Parent": 1,
+   "System.Reason": "Moved to state New",
+   "System.State": "New",
+   "System.Tags": "sdlc-probe",
+   "System.TeamProject": "Claims",
+   "System.Title": "sdlc probe spec",
+   "System.WorkItemType": "Spec",
+   "WEF_00000000000000000000000000000001_Kanban.Column": "New",
+   "WEF_00000000000000000000000000000001_Kanban.Column.Done": false
+  },
+  "id": 2,
+  "multilineFieldsFormat": {},
+  "relations": [
+   {
+    "attributes": {
+     "isLocked": false,
+     "name": "Parent"
+    },
+    "rel": "System.LinkTypes.Hierarchy-Reverse",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1"
+   }
+  ],
+  "rev": 1,
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2"
+ }
+}

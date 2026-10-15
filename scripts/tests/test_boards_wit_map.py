@@ -12,6 +12,7 @@ No e-mail address is committed in this file (house rule 10): the few the cases n
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import ast
 import copy
@@ -30,6 +31,11 @@ from ado_map import AdoImportError
 from code_host_remote import RemoteInfo, parse_remote
 from tests.ado_boards_fixtures import load_wit, wit_path
 from tests.ado_fixtures import ADO_REMOTE
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 MODULE = Path(wm.__file__)
 ALLOWED_IMPORTS = {"re", "typing", "urllib", "ado_map", "ado_schema_map", "ado_sync_model", "boards_contract",
@@ -492,24 +498,53 @@ def test_create_patch_refuses_a_parent_url_that_is_not_a_work_item(parent):
 # --- WIQL ---------------------------------------------------------------------------------------------------
 
 def wiql_of(fixture: str) -> str:
-    command = json.loads(wit_path(fixture).read_text(encoding="utf-8"))["_command"]
+    # the hand-written stand-in's `_command` (B0 2026-10-15: `wiql_by_tag` is captured too, in another select list)
+    command = json.loads(wit_path(fixture, hand_written=True).read_text(encoding="utf-8"))["_command"]
     return command[command.index("--wiql") + 1]
 
 
 def test_wiql_ref_lookup_matches_the_fixture_query():
-    assert wm.wiql_ref_lookup("sdlc:spec:0004") == wiql_of("wiql_by_tag")
-    assert "[System.AssignedTo]" in wm.wiql_ref_lookup("sdlc:spec:0004")
+    assert wm.wiql_ref_lookup("sdlc:spec:0004", "Claims") == wiql_of("wiql_by_tag")
+    assert "[System.AssignedTo]" in wm.wiql_ref_lookup("sdlc:spec:0004", "Claims")
 
 
 def test_wiql_untagged_golden():
-    assert wm.wiql_untagged(["Claims\\SDLC"], [], "claims-api") == (
+    # B0 (2026-10-15): the project is named as a literal; `az boards query` answered the `@project` macro with zero bytes
+    assert wm.wiql_untagged(["Claims\\SDLC"], [], "claims-api", "Claims") == (
         "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] "
-        "FROM WorkItems WHERE [System.TeamProject] = @project AND ([System.AreaPath] UNDER 'Claims\\SDLC') "
+        "FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND ([System.AreaPath] UNDER 'Claims\\SDLC') "
+        "AND NOT [System.Tags] CONTAINS 'sdlc-repo:claims-api'")
+    assert wm.wiql_untagged(["Claims\\SDLC"], [], "claims-api") == (   # no project: `--project` alone scopes it
+        "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] "
+        "FROM WorkItems WHERE ([System.AreaPath] UNDER 'Claims\\SDLC') "
         "AND NOT [System.Tags] CONTAINS 'sdlc-repo:claims-api'")
 
 
+@pytest.mark.parametrize("build", [lambda p: wm.wiql_ref_lookup("sdlc:spec:0004", p),
+                                   lambda p: wm.wiql_untagged(["Claims\\SDLC"], ["Claims\\Sprint 7"], "claims-api", p)],
+                         ids=["ref_lookup", "untagged"])
+@pytest.mark.parametrize("project", ["Claims", "Claims Ops", "Expedição_2", None])
+def test_no_wiql_the_mirror_builds_uses_the_current_project_macro(build, project):
+    """B0 (2026-10-15): `[System.TeamProject] = @project` made `az boards query` print zero bytes (exit 0) where items
+    matched; the literal name, or no clause with `--project`, returned the rows."""
+    wiql = build(project)
+    assert "@project" not in wiql and "@" not in wiql
+    assert (f"[System.TeamProject] = '{project}'" in wiql) == (project is not None)
+
+
+@pytest.mark.parametrize("project", ["Claims' OR 1=1 --", "Claims]", "Claims\\x", "Claims\n", " Claims", "", "a;b",
+                                     "a\"b", 7])
+def test_a_project_name_outside_the_whitelist_is_never_put_in_a_query(project):
+    with pytest.raises(ValueError, match="project"):
+        wm.wiql_ref_lookup("sdlc:spec:0004", project)
+    with pytest.raises(ValueError, match="project"):
+        wm.wiql_untagged(["Claims\\SDLC"], [], "claims-api", project)
+    with pytest.raises(ValueError, match="project"):
+        wm.project_clause(project)
+
+
 def test_wiql_untagged_selects_assignee_and_matches_the_fixture_query():
-    both = wm.wiql_untagged(["Claims\\SDLC"], ["Claims\\Sprint 7"], "claims-api")
+    both = wm.wiql_untagged(["Claims\\SDLC"], ["Claims\\Sprint 7"], "claims-api", "Claims")
     assert both == wiql_of("wiql_untagged")
     assert "[System.AssignedTo]" in both
     assert wm.wiql_untagged([], ["Claims\\Sprint 7", "Claims\\Sprint 7"], "claims-api").count("UNDER") == 1  # de-duplicated

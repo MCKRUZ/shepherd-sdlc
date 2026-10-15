@@ -13,6 +13,9 @@ seam. Over ALL of them it asserts what must never be sent, then compares the rec
     at all, no `-preview.<digit>` (a revision crashes the az extension), only the two api-versions the seam allows;
   * every `devops invoke`, `boards` and `repos` argv carries `--detect false`, ends `-o json`, and never holds
     `--only-show-errors` (the seam adds that after the fake);
+  * `az rest` is the identity read and, since the B0 write fixes (2026-10-15), the update — `az rest --method patch`
+    of `<org>/<project>/_apis/wit/workitems/<id>?api-version=7.1`, the body from a file — and nothing else; no work item
+    is PATCHed through `devops invoke` (the extension binds `…/workItems/${type}` for a PATCH and dies);
   * no file under `specs/` changes.
 
 The plan hash is replaced by `<plan>` and the body file path by the seam's placeholder before comparing, so the golden
@@ -24,6 +27,7 @@ The checker's own detection is proven on bad argv below: a golden that cannot fa
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
 from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 from tests.ado_boards_fixtures import identity_rest_argv, is_identity_rest_read, route_key_boards
+from tests.ado_boards_fixtures import body_file
 from tests.test_boards_sync_apply import (SPEC4, _body, adhoc, apply, build_repo, clock, linked, load_cfg,  # noqa: F401
                                           make_board, plan_doc, seed, set_config, snapshot, with_rows)
 
@@ -76,15 +80,35 @@ def violations(argv: list[str], body=None) -> list[str]:
         detect = argv[argv.index("--detect") + 1] if "--detect" in argv else None
         if detect != "false":
             found.append("a missing --detect false")
-    if argv[:1] == ["rest"] and not is_identity_rest_read(argv):  # B0: `az rest` is the identity read and nothing else
-        found.append("an az rest other than the identity read")
+    if argv[:2] == ["devops", "invoke"] and method == "PATCH" and "workItems" in argv:
+        found.append("a work item PATCH through devops invoke (the extension binds `…/workItems/${type}` and dies)")
+    # B0: `az rest` is the identity read; B0 write fixes (2026-10-15): and the update, and nothing else
+    if argv[:1] == ["rest"] and not is_identity_rest_read(argv) and not is_update_rest_write(argv):
+        found.append("an az rest other than the identity read or the update")
     if "--only-show-errors" in argv or argv[-2:] != ["-o", "json"]:
         found.append("an argv the seam would not have built")
     return found
 
 
+UPDATE_ARGV = ["rest", "--method", "patch", "--resource", "499b84ac-1321-427f-aa17-267ca6975798", "--url",
+               f"{ORG}/Claims/_apis/wit/workitems/4521?api-version=7.1", "--headers",
+               "Content-Type=application/json-patch+json", "--body", "@/tmp/body.json", "-o", "json"]
+UPDATE_URL = re.compile(r"^" + re.escape(ORG) + r"/[^/?#]+/_apis/wit/workitems/[1-9][0-9]*\?api-version=7\.1$")
+
+
+def is_update_rest_write(argv: list[str]) -> bool:
+    """B0 write fixes: exactly the update's `az rest` shape — a PATCH, Azure DevOps' resource id, a work item URL under
+    ORG at the GA version, the JSON Patch media type, and the body from a file (`@<path>`)."""
+    return (len(argv) == 13 and argv[:5] == ["rest", "--method", "patch", "--resource", ado_transport.ADO_RESOURCE_ID]
+            and argv[5] == "--url" and bool(UPDATE_URL.fullmatch(argv[6]))
+            and argv[7:9] == ["--headers", "Content-Type=application/json-patch+json"]
+            and argv[9] == "--body" and argv[10].startswith("@") and len(argv[10]) > 1 and argv[11:] == ["-o", "json"])
+
+
 def normalised(argv: list[str], body, plans: list[str]) -> dict:
-    argv = [ado_transport.BODY_FILE_PLACEHOLDER if i and argv[i - 1] == "--in-file" else w for i, w in enumerate(argv)]
+    argv = [ado_transport.BODY_FILE_PLACEHOLDER if i and argv[i - 1] == "--in-file" else
+            f"@{ado_transport.BODY_FILE_PLACEHOLDER}" if i and argv[i - 1] == "--body" and argv[0] == "rest" else w
+            for i, w in enumerate(argv)]
     text = json.dumps({"argv": argv, "body": body}, ensure_ascii=False)
     for plan in plans:
         text = text.replace(plan, "<plan>")
@@ -102,7 +126,7 @@ def scenario(tmp_path, monkeypatch, capsys):
 
     def spy(args, cwd, timeout=60):
         if recording[0]:
-            calls.append({"argv": list(args), "body": _body(args) if "--in-file" in args else None})
+            calls.append({"argv": list(args), "body": _body(args) if body_file(args) else None})
         return board(args, cwd, timeout)
     monkeypatch.setattr(ado_transport, "run_az", spy)
     specs_before = {k: v for k, v in snapshot(root).items() if k.startswith("specs/")}
@@ -169,8 +193,12 @@ def test_every_recorded_argv_is_clean(scenario):
         assert violations(c["argv"], c["body"]) == [], c["argv"]
         if is_identity_rest_read(c["argv"], ORG):  # B0: the identity read is `az rest` of <ORG>/_apis/connectionData
             continue
+        if is_update_rest_write(c["argv"]):        # B0 write fixes: the update is `az rest` of <ORG>/<P>/…/workitems/<N>
+            continue
         assert c["argv"][c["argv"].index("--detect") + 1] == "false" and c["argv"][c["argv"].index("--org") + 1] == ORG
-    assert sum(1 for c in calls if c["argv"][:1] == ["rest"]) == 3   # the identity read, once per step with a comment
+    assert sum(1 for c in calls if is_identity_rest_read(c["argv"], ORG)) == 3   # once per step with a comment
+    assert sum(1 for c in calls if is_update_rest_write(c["argv"])) == 2         # the spec update, the History entry
+    assert sum(1 for c in calls if c["argv"][:1] == ["rest"]) == 5               # and no other `az rest`
 
 
 def test_no_file_under_specs_changes_after_the_scenario(scenario):
@@ -214,6 +242,16 @@ def test_no_file_under_specs_changes_after_the_scenario(scenario):
     ([w.replace("contoso", "elsewhere") for w in identity_rest_argv(ORG)], None, "az rest other than"),
     (["rest", "--method", "get", "--url", f"{ORG}/_apis/connectionData?api-version=7.1-preview", "-o", "json"], None,
      "az rest other than"),
+    # B0 write fixes (2026-10-15): a work item PATCH is the `az rest` update and nothing else — never `devops invoke`
+    (["devops", "invoke", "--area", "wit", "--resource", "workItems", "--route-parameters", "project=Claims", "id=7",
+      "--http-method", "PATCH", "--api-version", "7.1", "--detect", "false", "-o", "json"], None, "devops invoke"),
+    ([w.replace("patch", "delete") if i == 2 else w for i, w in enumerate(UPDATE_ARGV)], None, "az rest other than"),
+    ([w.replace(ORG, "https://dev.azure.com/elsewhere") for w in UPDATE_ARGV], None, "az rest other than"),
+    ([w.replace("/workitems/4521", "/comments/4521") for w in UPDATE_ARGV], None, "az rest other than"),
+    ([w.replace("api-version=7.1", "api-version=7.1-preview") for w in UPDATE_ARGV], None, "az rest other than"),
+    ([w.replace("json-patch+json", "json") for w in UPDATE_ARGV], None, "az rest other than"),
+    ([w.lstrip("@") if w.startswith("@") else w for w in UPDATE_ARGV], None, "az rest other than"),
+    ([*UPDATE_ARGV[:-2], "--skip-authorization-header", "-o", "json"], None, "az rest other than"),
 ])
 def test_the_checker_fires_on_each_forbidden_shape(argv, body, expect):
     found = violations(argv, body)
@@ -229,3 +267,6 @@ def test_the_checker_accepts_the_argv_the_seam_builds():
     assert violations(["repos", "pr", "work-item", "add", "--id", "12", "--work-items", "4521", "--detect", "false",
                        "--org", ORG, "-o", "json"]) == []
     assert violations(identity_rest_argv(ORG)) == []   # B0: the identity read, `az rest` of <ORG>/_apis/connectionData
+    assert violations(UPDATE_ARGV, [{"op": "test", "path": "/rev", "value": 7}]) == []   # B0 write fixes: the update
+    assert UPDATE_ARGV == ado_transport.rest_write_argv(ORG, "{project}/_apis/wit/workitems/{id}",
+                                                        {"project": "Claims", "id": 4521}, "/tmp/body.json")

@@ -13,6 +13,7 @@ and a forged `plan <hash>` line. What these tests pin is the discipline, not the
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import ast
 import copy
@@ -26,6 +27,11 @@ import ado_discussion_map as dm
 from ado_map import AdoImportError
 from boards_contract import EMAIL_RE, GUID_RE, HASH_RE
 from tests.ado_boards_fixtures import load_wit
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 MODULE = Path(dm.__file__)
 ROSTER = {"person2@example.com": "@person-two", "person3@example.com": "@person-three"}  # person1 is unmapped
@@ -168,11 +174,24 @@ def test_map_comment_reads_a_numeric_string_id_and_refuses_a_non_number():
             dm.map_comment({**raw_comment(0), "id": bad}, ROSTER)
 
 
-@pytest.mark.parametrize("key", ["version", "isDeleted", "text"])
+@pytest.mark.parametrize("key", ["version", "text"])
 def test_map_comment_raises_on_a_missing_needed_key(key):
     raw = {k: v for k, v in raw_comment(0).items() if k != key}
     with pytest.raises(AdoImportError, match=rf"unexpected az shape: missing comment\.{key}"):
         dm.map_comment(raw, ROSTER)
+
+
+def test_a_comment_with_no_is_deleted_key_is_a_live_comment():
+    """B0 (2026-10-15): the board leaves the false `isDeleted` out — the captured live comment (GET with
+    `includeDeleted=true`) carried no such key — so an absent key reads as not deleted, and the text is still needed.
+    (The hand-written fixtures assumed the key was always there; requiring it made every real comment unreadable.)"""
+    raw = {k: v for k, v in raw_comment(0).items() if k != "isDeleted"}
+    c = dm.map_comment(raw, ROSTER)
+    assert c["deleted"] is False and c["text"]
+    with pytest.raises(AdoImportError, match=r"missing comment\.text"):
+        dm.map_comment({k: v for k, v in raw.items() if k != "text"}, ROSTER)
+    with pytest.raises(AdoImportError, match="isDeleted is not a boolean"):
+        dm.map_comment({**raw, "isDeleted": "false"}, ROSTER)
 
 
 def test_map_comment_raises_on_something_that_is_not_a_comment():

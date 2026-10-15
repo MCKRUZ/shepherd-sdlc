@@ -1,0 +1,2 @@
+# captured 2026-10-15 (org anonymised); stderr of `devops invoke` with the api-version `7.1-preview` pinned to revision 4 (the extension's own failure, before any request)
+ERROR: could not convert string to float: '7.1.4'

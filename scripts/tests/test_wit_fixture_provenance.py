@@ -62,7 +62,12 @@ B5_NAMES = frozenset({"workitemrevisions"})
 # capture landed (`captured/`): the B1 discovery reads it replaced, the per-type reads it added, and the identity read.
 B0_ONLY_NAMES = frozenset(WIT_CAPTURED_ONLY)
 B0_REFERENCE_NAMES = frozenset(WIT_CAPTURED_REFERENCE)
-B0_CAPTURED = (B1_NAMES - {"account_show"}) | B0_ONLY_NAMES | B0_REFERENCE_NAMES
+# B0 write fixes (2026-10-15): the second capture, the first live apply and its probes — the item, write and comment
+# answers (each shadowing a hand-written twin) and two reference documents (a repository-tag query, a Spec create)
+B0_ITEM_NAMES = frozenset({"wiql_by_tag", "workitem_show_relations", "workitems_batch", "updates",
+                           "workitem_create_response", "workitem_update_response", "comment_add_response", "comments"})
+B0_SECOND = B0_ITEM_NAMES | {"wiql_repo_tag", "workitem_create_response_spec"}
+B0_CAPTURED = (B1_NAMES - {"account_show"}) | B0_ONLY_NAMES | B0_REFERENCE_NAMES | B0_ITEM_NAMES
 
 
 def test_the_thirty_one_hand_written_fixtures_exist():
@@ -75,23 +80,49 @@ def test_the_thirty_one_hand_written_fixtures_exist():
 
 
 def test_the_b0_capture_landed_exactly_these_files():
-    assert {p.stem for p in CAPTURED_FILES} == B0_CAPTURED and len(CAPTURED_FILES) == 23
+    assert {p.stem for p in CAPTURED_FILES} == B0_CAPTURED and len(CAPTURED_FILES) == 23 + len(B0_SECOND) == 33
+    assert B0_SECOND - B0_ITEM_NAMES <= B0_REFERENCE_NAMES
     assert not B0_REFERENCE_NAMES & set(WIT_FIXTURE_NAMES)  # loaded by name, never a router's default answer
     assert {n for n in WIT_FIXTURE_NAMES if wit_source_of(n) == "captured"} == B0_CAPTURED - B0_REFERENCE_NAMES
-    assert all(CAPTURED_RE.match(_doc(p)["_provenance"]) and "2026-10-14" in _doc(p)["_provenance"]
-               for p in CAPTURED_FILES)
+    dates = {p.stem: _doc(p)["_provenance"] for p in CAPTURED_FILES}
+    assert all(CAPTURED_RE.match(prov) for prov in dates.values())
+    assert {n for n, prov in dates.items() if "2026-10-15" in prov} == B0_SECOND
+    assert all("2026-10-14" in prov for n, prov in dates.items() if n not in B0_SECOND)
+
+
+ORG = "https://dev.azure.com/contoso"
+UPDATE_URL = re.compile(re.escape(ORG) + r"/Claims/_apis/wit/workitems/\d+\?api-version=7\.1")
 
 
 @pytest.mark.parametrize("path", CAPTURED_FILES, ids=_ids)
 def test_a_captured_command_is_the_call_the_capture_ran(path):
-    """Every captured `devops invoke` ran with `--detect false` and the GA api-version against the anonymised
-    organisation, the project as a route parameter; the identity read is the one `az rest` (B0)."""
+    """Every captured `devops invoke` ran with `--detect false` against the anonymised organisation, the project as a
+    route parameter, at the GA api-version — or `7.1-preview` for the comments resource, which has no released
+    version; the identity read is the one `az rest` GET (B0). The second capture (2026-10-15) adds the native verbs
+    (`boards query` with `--project`, `boards work-item show`) and the update, the one `az rest` PATCH."""
     command = _doc(path)["_command"]
     if command[1:3] == ["devops", "invoke"]:
-        assert command[command.index("--org") + 1] == "https://dev.azure.com/contoso", path.name
+        assert command[command.index("--org") + 1] == ORG, path.name
         assert command[command.index("--detect") + 1] == "false" and "--project" not in command, path.name
         if "--api-version" in command:  # the locations listing alone names no location, so no version either
-            assert command[command.index("--api-version") + 1] == ado_transport.API_VERSION, path.name
+            version = command[command.index("--api-version") + 1]
+            preview = command[command.index("--resource") + 1] == "comments"
+            assert version == (ado_transport.PREVIEW_API_VERSION if preview else ado_transport.API_VERSION), path.name
+    elif command[1:3] == ["boards", "query"]:
+        assert path.stem in B0_SECOND
+        assert command[command.index("--org") + 1] == ORG and command[command.index("--detect") + 1] == "false"
+        assert command[command.index("--project") + 1] == "Claims"
+        wiql = command[command.index("--wiql") + 1]
+        assert "@project" not in wiql and "[System.TeamProject] = 'Claims'" in wiql   # the macro answered zero bytes
+    elif command[1:4] == ["boards", "work-item", "show"]:
+        assert path.stem == "workitem_show_relations" and command[command.index("--expand") + 1] == "relations"
+        assert command[command.index("--org") + 1] == ORG and command[command.index("--detect") + 1] == "false"
+    elif command[1:4] == ["rest", "--method", "patch"]:
+        assert path.stem == "workitem_update_response"
+        assert command[command.index("--resource") + 1] == ADO_RESOURCE_ID
+        assert UPDATE_URL.fullmatch(command[command.index("--url") + 1])
+        assert command[command.index("--headers") + 1] == "Content-Type=application/json-patch+json"
+        assert "--detect" not in command and "--org" not in command
     else:
         assert path.stem == "connection_data" and command == ["az", *identity_rest_argv()], path.name
 
@@ -174,13 +205,18 @@ def test_the_four_hand_written_error_texts_exist():
 
 
 def test_the_four_captured_error_texts_are_the_refusals_the_capture_met():
-    """B0: none of them supersedes a hand-written write error (the capture sent no write); each says when it was
-    captured on its first line, and two say the raw stderr file was overwritten and where the text came from."""
-    from tests.ado_boards_fixtures import WIT_CAPTURED_ERROR_NAMES
-    assert sorted(p.stem for p in CAPTURED_ERRORS) == sorted(WIT_CAPTURED_ERROR_NAMES)
+    """B0 (2026-10-14): none of the first four supersedes a hand-written write error (that capture sent no write); each
+    says when it was captured on its first line, and two say the raw stderr file was overwritten and where the text came
+    from. B0 write fixes (2026-10-15): the first live apply and its probes add six, two of which (`stale_rev`,
+    `rule_violation`) now supersede their hand-written twins."""
+    from tests.ado_boards_fixtures import WIT_CAPTURED_ERROR_NAMES, WIT_CAPTURED_WRITE_ERROR_NAMES
+    assert sorted(p.stem for p in CAPTURED_ERRORS) == sorted({*WIT_CAPTURED_ERROR_NAMES, *WIT_CAPTURED_WRITE_ERROR_NAMES})
     assert not set(WIT_CAPTURED_ERROR_NAMES) & set(WIT_ERROR_NAMES)
+    assert set(WIT_CAPTURED_WRITE_ERROR_NAMES) & set(WIT_ERROR_NAMES) == {"stale_rev", "rule_violation"}
     firsts = {p.stem: p.read_text(encoding="utf-8").splitlines()[0] for p in CAPTURED_ERRORS}
-    assert all(CAPTURED_LINE_RE.match(line) and "2026-10-14" in line for line in firsts.values())
+    assert all(CAPTURED_LINE_RE.match(line) for line in firsts.values())
+    assert {n for n, line in firsts.items() if "2026-10-14" in line} == set(WIT_CAPTURED_ERROR_NAMES)
+    assert {n for n, line in firsts.items() if "2026-10-15" in line} == set(WIT_CAPTURED_WRITE_ERROR_NAMES)
     assert {n for n, line in firsts.items() if "overwritten" in line} == {"states_wrong_resource", "connection_data_core"}
 
 

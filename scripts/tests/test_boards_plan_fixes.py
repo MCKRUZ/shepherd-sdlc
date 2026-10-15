@@ -23,6 +23,7 @@ documents. Names and teams are fictional.
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
 from tests.ado_boards_fixtures import FakeBoardsAz, route_key_boards, route_params
+from tests.ado_boards_fixtures import body_file
 
 import copy
 import itertools
@@ -486,14 +487,15 @@ def test_apply_sends_the_ride_tags_the_priority_and_the_constant_the_plan_showed
     sent, ids = [], itertools.count(5001)
 
     def on_create(args):
-        sent.append((route_params(args)["type"], json.loads(read(Path(args[args.index("--in-file") + 1])))))
+        sent.append((route_params(args)["type"], json.loads(read(Path(body_file(args))))))
         return {"id": next(ids), "rev": 1}
     board.answers.update({"POST wit/workItems": on_create, "boards query": []})
     monkeypatch.setattr(ado_transport, "run_az", board)
     cfg = yaml.safe_load((repo / bc.CONFIG_FILE).read_text(encoding="utf-8"))
     result = apply_mod.apply_plan(repo, doc, by="@dev-one", cfg=cfg, schema=saved_schema(repo), limit=None, today=NOW)
     assert result["exit"] == 0 and not result["failed"], result     # no `source_changed`: apply projects the same rows
-    assert [t for t, _ in sent] == ["$Epic", "$Epic", "$Epic", "$Feature"]
+    # bare type names: the extension's template is `…/workItems/${type}` (B0 2026-10-14: `$Epic` reached it as `$$Epic`)
+    assert [t for t, _ in sent] == ["Epic", "Epic", "Epic", "Feature"]
     first = {op["path"]: op["value"] for op in sent[0][1] if op["path"].startswith("/fields/")}
     assert set(first["/fields/System.Tags"].split("; ")) >= {"domain:order-intake", "fr:001", "fr:002",
                                                             "outcome:1-turnaround-time", "sdlc:epic:001"}

@@ -27,12 +27,16 @@ What it does, and the rules it keeps:
   * `merge_tags` / `merge_description` — the two shared fields are read, merged and replaced, never overwritten:
     only the plugin-prefixed tags and only the text between the `<!-- sdlc:begin -->` / `<!-- sdlc:end -->` markers
     are the repository's; every other tag and every byte outside the markers is a person's and survives.
-  * `build_create_patch` — the patch a create would send: the projection's fields, the merged tags, the History line,
-    a hyperlink back to the source file and (when known) the parent link. No `test` op: there is no revision yet.
-  * `wiql_ref_lookup` / `wiql_untagged` — the two WIQL queries the mirror runs. Every value that reaches the query
-    text is whitelisted first and a quote is doubled, so a path or a ref can never end the string it sits in.
+  * `build_create_patch` — the patch a create would send: the projection's fields, the configured `area_path`
+    (`with_create_fields`; create-time only), the merged tags, the History line, a hyperlink back to the source file
+    and (when known) the parent link. No `test` op: there is no revision yet.
+  * `wiql_ref_lookup` / `wiql_untagged` / `project_clause` — the WIQL the mirror runs, scoped by the project's NAME
+    as a literal (never the current-project macro, which `az boards query` answered with zero bytes). Every value
+    that reaches the query text is whitelisted first and a quote is doubled, so a path, a ref or a project name can
+    never end the string it sits in.
   * `classify_write_error` — a failed write sorted into a CLOSED enum (`ERROR_CLASSES`); anything not recognised is
-    `unknown`, never guessed.
+    `unknown`, never guessed. `describe_write_error` says, for a `rule`, which patch field it named and why
+    (`RULE_REASONS`), never with the board's own words.
   * `file_hyperlink` / `work_item_url` — the two URLs a work item and its parent are linked by.
 
 Effort fields (`Microsoft.VSTS.Scheduling.*`, and the backlog's own effort field) and the read-only fields
@@ -291,14 +295,42 @@ def _parent(url) -> str | None:
     return url
 
 
+AREA_PATH = "System.AreaPath"
+
+
+def configured_area(cfg) -> str | None:
+    """The `.sdlc/ado.yaml` `area_path` a create sets, trimmed, or None when none is configured (absent or blank)."""
+    area = cfg.get("area_path") if isinstance(cfg, dict) else None
+    return area.strip() if isinstance(area, str) and area.strip() else None
+
+
+def with_create_fields(projection: dict, area_path: str | None) -> dict:
+    """`projection` with the fields a create also sets that no source supplies: `System.AreaPath` from the config's
+    `area_path` (`.sdlc/ado.yaml`, "create-time only"), unless the projection already names an area. A copy when
+    anything is added, else `projection` itself; the projection's own hash is not this copy's (the area is the
+    config's, and an update never sends it: `System.AreaPath` is `C` in `OWNERSHIP`, the board's once created, so a
+    board-side move is the board's call, never drift). Without it the first live apply (B0, 2026-10-15) put every
+    created item at the project root, outside the team's board. Raises `ValueError` for an area that is not one line
+    of text."""
+    if area_path is None:
+        return projection
+    if not isinstance(area_path, str) or not area_path.strip() or area_path != area_path.strip() or _control(area_path):
+        raise ValueError(f"area_path {area_path!r} is not an area path (one line of text, no surrounding spaces)")
+    fields = projection.get("fields") or {}
+    if AREA_PATH in fields:
+        return projection
+    return {**projection, "fields": {**fields, AREA_PATH: area_path}}
+
+
 def build_create_patch(projection: dict, schema: dict, hyperlink: str, history_line: str,
-                       parent_url: str | None) -> list[dict]:
+                       parent_url: str | None, *, area_path: str | None = None) -> list[dict]:
     """The JSON patch a create sends: an `add` per projection field (what `ado_sync_model.diff` calls a push to an
-    item that does not exist yet), the plugin tags only, the description inside the markers, then the History line,
-    the source `hyperlink` and the parent link when `parent_url` is known. `schema` names the effort fields to
-    refuse; whether a field exists on the type is `plan --validate`'s question, not this one. Raises `ValueError`
-    for an effort or read-only field, a projection with no title, or a line, link or URL that is not what its
-    name says."""
+    item that does not exist yet), `System.AreaPath` when `area_path` is configured (`with_create_fields`), the
+    plugin tags only, the description inside the markers, then the History line, the source `hyperlink` and the
+    parent link when `parent_url` is known. `schema` names the effort fields to refuse; whether a field exists on the
+    type is `plan --validate`'s question, not this one. Raises `ValueError` for an effort or read-only field, a
+    projection with no title, or a line, link, URL or area that is not what its name says."""
+    projection = with_create_fields(projection, area_path)
     fields = projection.get("fields") or {}
     _check_fields(fields, refused_fields(schema))
     title = fields.get(_TITLE)
@@ -331,8 +363,14 @@ def build_create_patch(projection: dict, schema: dict, hyperlink: str, history_l
 
 # --- WIQL ---------------------------------------------------------------------------------------------------
 
+# No `[System.TeamProject] = @project`: `az boards query` with that macro printed zero bytes (exit 0) on a board where
+# items matched (B0, 2026-10-15); the literal project name returned the rows. So the project is named as a literal
+# (`project_clause`), and `az boards query --project` scopes the call as before.
 _WIQL_SELECT = ("SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],"
-                "[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = @project")
+                "[System.AssignedTo] FROM WorkItems")
+# A project name: letters and digits of any script, space and the punctuation Azure DevOps allows in one, but no
+# quote, bracket, backslash or control character (the doubling in `_literal` stays the second lock).
+_PROJECT_OK = re.compile(r"[\w .()&!~^%@-]+")
 
 
 def _literal(value, pattern: re.Pattern, what: str) -> str:
@@ -344,18 +382,31 @@ def _literal(value, pattern: re.Pattern, what: str) -> str:
     return value.replace("'", "''")
 
 
-def wiql_ref_lookup(ref: str) -> str:
-    """The query that finds the work items tagged with one `sdlc:<kind>:<id>` ref."""
+def project_clause(project: str | None) -> str | None:
+    """`[System.TeamProject] = '<project>'` for the remote's project NAME (whitelisted, quotes doubled), or None when
+    no project is given (the query is then scoped by `az boards query --project` alone). Never the WIQL macro."""
+    if project is None:
+        return None
+    return f"[System.TeamProject] = '{_literal(project, _PROJECT_OK, 'project')}'"
+
+
+def _where(*conditions: str | None) -> str:
+    present = [c for c in conditions if c]
+    return f" WHERE {' AND '.join(present)}" if present else ""
+
+
+def wiql_ref_lookup(ref: str, project: str | None = None) -> str:
+    """The query that finds the work items tagged with one `sdlc:<kind>:<id>` ref, in `project` when given."""
     if not isinstance(ref, str) or not REF_RE.fullmatch(ref):
         raise ValueError(f"{ref!r} is not an sdlc:<kind>:<id> ref; it is never put in a query")
-    return f"{_WIQL_SELECT} AND [System.Tags] CONTAINS '{_literal(ref, _REF_OK, 'ref')}'"
+    return _WIQL_SELECT + _where(project_clause(project), f"[System.Tags] CONTAINS '{_literal(ref, _REF_OK, 'ref')}'")
 
 
-def wiql_untagged(area_paths: list[str], iteration_paths: list[str], repo_slug: str) -> str:
+def wiql_untagged(area_paths: list[str], iteration_paths: list[str], repo_slug: str, project: str | None = None) -> str:
     """The query that finds the items under the mirror's area or iteration paths that this repository has not
-    tagged (`sdlc-repo:<slug>`): the candidates for `link` and `adopt`. It selects `[System.AssignedTo]` so an
-    unmapped item shows who holds it. Paths and the slug are whitelisted (a quote or a `]` is refused); with no path
-    at all it raises, since an unscoped query would read the whole project."""
+    tagged (`sdlc-repo:<slug>`): the candidates for `link` and `adopt`, in `project` when given. It selects
+    `[System.AssignedTo]` so an unmapped item shows who holds it. Paths, the slug and the project are whitelisted (a
+    quote or a `]` is refused); with no path at all it raises, since an unscoped query would read the whole project."""
     for paths in (area_paths, iteration_paths):
         if isinstance(paths, (str, bytes)) or not isinstance(paths, (list, tuple)):
             raise ValueError("area and iteration paths are lists of paths, not a single string")
@@ -366,7 +417,8 @@ def wiql_untagged(area_paths: list[str], iteration_paths: list[str], repo_slug: 
     if not clauses:
         raise ValueError("no area or iteration path to search under; an unscoped query would read the whole project")
     slug = _literal(repo_slug, _SLUG_OK, "repository slug")
-    return f"{_WIQL_SELECT} AND ({' OR '.join(clauses)}) AND NOT [System.Tags] CONTAINS '{REPO_TAG_PREFIX}{slug}'"
+    return _WIQL_SELECT + _where(project_clause(project), f"({' OR '.join(clauses)})",
+                                 f"NOT [System.Tags] CONTAINS '{REPO_TAG_PREFIX}{slug}'")
 
 
 # --- write errors -------------------------------------------------------------------------------------------
@@ -383,18 +435,31 @@ def _any(*patterns: str) -> re.Pattern:
 
 # Checked in this order: a stale revision and a throttle are named by their own words, "does not exist, or you do
 # not have permissions to read it" is a missing item (not a refused write), and a rule error is the last specific
-# reading before `unknown`. The wording is from the REST reference and the known TF/VS codes, not from a capture.
+# reading before `unknown`. The wording was first taken from the REST reference and the known TF/VS codes; the B0
+# capture of 2026-10-15 added what a real board answers (`captured/errors/` under the test fixtures):
+#   * a stale `test /rev` through `az rest`: `Precondition Failed(… VS403351: Test Operation for path /rev failed …
+#     "typeKey":"TestPatchOperationFailedException" …)` -> conflict;
+#   * a value outside a picklist: `Bad Request(… "RuleValidationErrors":[…] … is not in the list of supported values
+#     … "typeKey":"RuleValidationException" …)` -> rule;
+#   * a create carrying `System.AssignedTo` for an address the organisation does not know: `The identity value '…' for
+#     field 'Assigned To' is an unknown identity.` -> rule, so that row fails and the run goes on (it was `unknown`,
+#     a stop class, and the five rows after it were deferred as stopped);
+#   * an update `az rest` could not mint an Entra token for (a personal access token alone; the transport's
+#     `REST_NO_TOKEN_WRITE`) -> permission: nothing was sent, and no later update could be. `apply` refuses such a
+#     plan before anything is sent (`identity_unknown`); this row is the second lock.
 _ERROR_ROWS = (
     ("throttled", _any(r"too many requests", r"exceeding usage", r"\bthrottl", r"TF400733", r"rate limit",
                        _status(429))),
     ("conflict", _any(r"TF26071", r"changed by someone else", r"\bconflict\b", r"test operation failed",
-                      _status(409))),
+                      r"VS403351", r"precondition failed", r"TestPatchOperationFailedException",
+                      r"test operation for path /rev failed", _status(412))),
     ("not_found", _any(r"TF401232", r"does not exist", r"\bnot found\b", r"cannot be found", _status(404))),
     ("permission", _any(r"TF50309", r"TF401027", r"not authorized", r"\bunauthorized\b", r"\bforbidden\b",
                         r"access denied", r"do not have (?:sufficient )?permissions? to", _status(401),
-                        _status(403))),
+                        _status(403), r"could not mint an Entra token for Azure DevOps, so the update was not sent")),
     ("rule", _any(r"rule error", r"TF401320", r"TF51535", r"TF401347", r"TF26194",
-                  r"is not in the list of supported values", r"invalid(?:list)?value")),
+                  r"is not in the list of supported values", r"invalid(?:list)?value", r"RuleValidationErrors",
+                  r"RuleValidationException", r"is an unknown identity")),
 )
 
 
@@ -405,6 +470,43 @@ def classify_write_error(stderr: str) -> str:
     if not isinstance(stderr, str) or not stderr.strip():
         return "unknown"
     return next((name for name, pattern in _ERROR_ROWS if pattern.search(stderr)), "unknown")
+
+
+# What a `rule` refusal was about (B0, 2026-10-15): a closed word and the field the patch carried that it names, so a
+# failed row can say which field to fix without carrying the board's own text (which can name people).
+RULE_REASONS = ("unknown_identity", "value_not_allowed")
+_RULE_REASON_ROWS = (
+    ("unknown_identity", _any(r"is an unknown identity")),
+    ("value_not_allowed", _any(r"is not in the list of supported values", r"invalid(?:list)?value")),
+)
+_FIELD_REF_IN_ERROR = re.compile(r'"fieldReferenceName"\s*:\s*"([A-Za-z][A-Za-z0-9_.]*)"', re.IGNORECASE)
+_FIELD_NAME_IN_ERROR = re.compile(r"\b(?:for field|the field) '([^'\n]{1,128})'", re.IGNORECASE)
+
+
+def describe_write_error(stderr, patch_fields) -> dict:
+    """`{"reason", "field"}` of a failed write that `classify_write_error` reads as `rule`, else both None.
+
+    `reason` is a `RULE_REASONS` member or None. `field` is one of `patch_fields` (the reference names the patch
+    carried) and nothing else: a `fieldReferenceName` the board's answer names, else the display name it quotes (`for
+    field 'Assigned To'`, `The field 'State'`) matched, spaces dropped and case folded, to the last segment of exactly
+    one patch field, else — for an unknown identity — the patch's one identity field. A name that matches no field,
+    or several, is None: the field is never guessed, and no text of the answer is returned."""
+    out = {"reason": None, "field": None}
+    if classify_write_error(stderr) != "rule":
+        return out
+    fields = [f for f in dict.fromkeys(patch_fields or []) if isinstance(f, str)]
+    out["reason"] = next((name for name, pattern in _RULE_REASON_ROWS if pattern.search(stderr)), None)
+    named = [m.group(1) for m in _FIELD_REF_IN_ERROR.finditer(stderr) if m.group(1) in fields]
+    if not named:
+        shown = {re.sub(r"\s+", "", m.group(1)).casefold() for m in _FIELD_NAME_IN_ERROR.finditer(stderr)}
+        named = [f for f in fields if f.rsplit(".", 1)[-1].casefold() in shown]
+        if len(named) > 1:
+            named = []
+    if not named and out["reason"] == "unknown_identity":
+        identities = [f for f in fields if f in IDENTITY_FIELDS]
+        named = identities if len(identities) == 1 else []
+    out["field"] = named[0] if named else None
+    return out
 
 
 # --- URLs ---------------------------------------------------------------------------------------------------

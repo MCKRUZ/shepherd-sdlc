@@ -7,6 +7,7 @@ and with `writes=False` a write is one too — while the two read-only POSTs sti
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import json
 import re
@@ -20,6 +21,11 @@ import boards_contract as bc
 import code_host
 from tests import ado_boards_fixtures as abf
 from tests.ado_fixtures import ADO_REMOTE
+
+# B0 (2026-10-15): the second capture shadowed the item, write and comment fixtures (`WIT_CAPTURED_ITEMS`); this module's
+# scenarios pin the hand-written ones' ids and texts, so it reads those (`BOARDS_ITEMS`, tests/ado_boards_fixtures.py).
+# The captured answers are exercised in test_boards_captured_items.py.
+BOARDS_ITEMS = HAND_WRITTEN_PROCESS
 
 ORG = "https://dev.azure.com/contoso"
 SCOPE = ["--detect", "false", "--org", ORG]
@@ -152,24 +158,30 @@ def test_default_answers_cover_every_hand_written_fixture_and_only_those():
         assert abf.wit_path(name).is_file(), name
 
 
+def _path(name: str) -> Path:
+    """The file `load_wit(name)` reads in this module: the hand-written one for an item the capture shadowed."""
+    return abf.wit_path(name, hand_written=name in abf.WIT_CAPTURED_ITEMS)
+
+
 @pytest.mark.parametrize("name", abf.WIT_FIXTURE_NAMES)
 def test_each_fixture_command_routes_to_its_own_default_answer(name, tmp_path):
-    """A fixture's `_command` is the call it answers; the router must send that call back to it."""
-    command = json.loads(abf.wit_path(name).read_text(encoding="utf-8"))["_command"]
+    """A fixture's `_command` is the call it answers; the router must send that call back to it. (The captured item
+    commands are routed to their captured answers in test_boards_captured_items.py.)"""
+    command = json.loads(_path(name).read_text(encoding="utf-8"))["_command"]
     assert command[0] == "az"
     out = abf.FakeBoardsAz(writes=abf.is_write_key(abf.route_key_boards(command[1:])))([*command[1:], "-o", "json"], tmp_path)
     assert json.loads(out) == abf.load_wit(name)
 
 
 def _command_of(name: str) -> list:
-    return json.loads(abf.wit_path(name).read_text(encoding="utf-8"))["_command"]
+    return json.loads(_path(name).read_text(encoding="utf-8"))["_command"]
 
 
 # Only `devops invoke` fixtures have a WIT_ROUTES row; native verbs (`account show`, `boards query`,
 # `boards work-item show`) have none by design.
 @pytest.mark.parametrize("name", [n for n in abf.WIT_FIXTURE_NAMES if _command_of(n)[1:3] == ["devops", "invoke"]])
 def test_each_invoke_fixture_command_agrees_with_wit_routes(name):
-    command = json.loads(abf.wit_path(name).read_text(encoding="utf-8"))["_command"]
+    command = _command_of(name)
     route_name = abf.route_name_of(name)
     row = bc.WIT_ROUTES[route_name]
     assert command[command.index("--area") + 1] == row["area"]
@@ -194,18 +206,25 @@ def test_load_wit_unwraps_value_and_reads_null_as_empty(tmp_path, monkeypatch):
 
 B0_CAPTURED = {"projects", "type_categories", "types", "fields", "backlog_config", "classification_nodes",
                "team_iterations", "relation_types", "connection_data", "type_states_user_story", "type_states_bug",
-               "type_states_issue", "type_fields_user_story", "type_fields_issue", *abf.WIT_CAPTURED_ONLY}
+               "type_states_issue", "type_fields_user_story", "type_fields_issue", *abf.WIT_CAPTURED_ONLY,
+               *abf.WIT_CAPTURED_ITEMS}   # the second capture (2026-10-15): the item, write and comment answers
+B0_ITEMS = {"comment_add_response", "comments", "updates", "wiql_by_tag", "workitem_create_response",
+            "workitem_show_relations", "workitem_update_response", "workitems_batch"}
 
 
 def test_every_name_resolves_to_the_capture_where_there_is_one_and_to_the_hand_written_file_otherwise():
-    """B0 (2026-10-14): the discovery reads and the identity read resolve to the capture; the item, history,
-    discussion and write fixtures to the hand-written files (nothing captured them yet)."""
+    """B0 (2026-10-14): the discovery reads and the identity read resolve to the capture; B0 (2026-10-15): so do the
+    item, write and comment answers the second capture reached. The rest of the item, history, discussion and write
+    fixtures resolve to the hand-written files (nothing captured them yet)."""
+    assert set(abf.WIT_CAPTURED_ITEMS) == B0_ITEMS
     sources = {n: abf.wit_source_of(n) for n in abf.WIT_FIXTURE_NAMES}
     assert {n for n, s in sources.items() if s == "captured"} == B0_CAPTURED
     assert {n for n, s in sources.items() if s != "captured"} == set(abf.WIT_FIXTURE_NAMES) - B0_CAPTURED
     assert set(sources.values()) == {"captured", "hand-written"}
     for name in abf.WIT_CAPTURED_REFERENCE:  # loaded by name, but no route answers with it
         assert abf.wit_source_of(name) == "captured" and name not in abf.DEFAULT_WIT_ANSWERS.values()
+    for name in B0_ITEMS:   # each still has its hand-written twin, which the scenario modules read
+        assert abf.wit_path(name, hand_written=True).parent == abf.WIT
 
 
 def test_a_hand_written_fake_answers_from_the_hand_written_file_where_a_capture_exists(tmp_path):
@@ -213,14 +232,29 @@ def test_a_hand_written_fake_answers_from_the_hand_written_file_where_a_capture_
     call = invoke("wit", "workItemTypes", "project=Claims")
     assert json.loads(captured(call, tmp_path)) == abf.load_wit("types") != abf.load_wit("types", hand_written=True)
     assert json.loads(hand(call, tmp_path)) == abf.load_wit("types", hand_written=True)
-    batch = invoke("wit", "workitemsbatch", "project=Claims", method="POST")   # no capture: the same file either way
-    assert json.loads(hand(batch, tmp_path)) == json.loads(captured(batch, tmp_path)) == abf.load_wit("workitems_batch")
+    # this module reads the hand-written items (`BOARDS_ITEMS`): either fake answers the batch from that file
+    batch = invoke("wit", "workitemsbatch", "project=Claims", method="POST")
+    hand_batch = abf.load_wit("workitems_batch", hand_written=True)
+    assert json.loads(hand(batch, tmp_path)) == json.loads(captured(batch, tmp_path)) == hand_batch
+    assert abf.load_wit("workitems_batch") == hand_batch != abf.load_captured("workitems_batch")
 
 
 def test_a_module_opts_into_the_hand_written_process_by_name():
     class Module:
         BOARDS_PROCESS = abf.HAND_WRITTEN_PROCESS
+
+    class Items:
+        BOARDS_ITEMS = abf.HAND_WRITTEN_PROCESS
     assert abf.uses_hand_written_process(Module) and not abf.uses_hand_written_process(object())
+    # B0 (2026-10-15): the whole process implies the items; the items alone do not imply the process
+    assert abf.uses_hand_written_items(Module) and abf.uses_hand_written_items(Items)
+    assert not abf.uses_hand_written_process(Items) and not abf.uses_hand_written_items(object())
+
+
+def test_the_items_switch_is_on_only_while_a_test_of_an_opted_in_module_runs():
+    assert abf._HAND_WRITTEN_ITEMS == [True]      # this module sets BOARDS_ITEMS
+    assert abf.load_wit("comments") == abf.load_wit("comments", hand_written=True)
+    assert abf.load_wit("types") == abf.load_captured("types")   # a process name is not an item: still the capture
 
 
 def test_the_identity_read_is_routed_by_its_rest_url(tmp_path):
@@ -660,12 +694,18 @@ def test_b3_identities_are_anonymised(name):
 # --- Fold B3 stderr texts ------------------------------------------------------------------------------------
 
 def test_the_error_loader_drops_the_provenance_line_only():
+    # B0 (2026-10-15): `stale_rev` and `rule_violation` now resolve to their captures; the hand-written texts are read
+    # by asking for them (the captured ones are pinned in test_boards_captured_items.py)
     for name in abf.WIT_ERROR_NAMES:
-        raw = abf.wit_error_path(name).read_text(encoding="utf-8")
+        raw = abf.wit_error_path(name, hand_written=True).read_text(encoding="utf-8")
         assert raw.splitlines()[0] == "# " + abf.HAND_WRITTEN
-        text = abf.load_wit_error(name)
+        text = abf.load_wit_error(name, hand_written=True)
         assert text == "\n".join(raw.splitlines()[1:]).strip() and text.startswith("ERROR: ")
         assert not text.startswith("#")
+    for name in abf.WIT_CAPTURED_WRITE_ERROR_NAMES:
+        raw = abf.wit_error_path(name).read_text(encoding="utf-8")
+        assert raw.splitlines()[0].startswith("# captured 2026-10-15 ")
+        assert abf.load_wit_error(name) == "\n".join(raw.splitlines()[1:]).strip()
 
 
 @pytest.mark.parametrize("name, needles", [
@@ -675,7 +715,7 @@ def test_the_error_loader_drops_the_provenance_line_only():
     ("throttled", ("TF400733", "Retry-After")),
 ])
 def test_each_error_text_says_what_its_card_row_says(name, needles):
-    text = abf.load_wit_error(name)
+    text = abf.load_wit_error(name, hand_written=True)   # the hand-written card rows (B0 2026-10-15 captured two)
     assert all(n in text for n in needles), (name, needles)
 
 

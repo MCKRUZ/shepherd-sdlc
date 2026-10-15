@@ -1,0 +1,208 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "workitemsbatch",
+  "--route-parameters",
+  "project=Claims",
+  "--http-method",
+  "POST",
+  "--in-file",
+  "<request body file>",
+  "--media-type",
+  "application/json",
+  "--api-version",
+  "7.1"
+ ],
+ "_body": {
+  "ids": [
+   1,
+   2,
+   999999999
+  ],
+  "$expand": "relations",
+  "errorPolicy": "omit"
+ },
+ "value": {
+  "continuation_token": null,
+  "count": 3,
+  "value": [
+   {
+    "commentVersionRef": {
+     "commentId": 1,
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1/comments/1/versions/1",
+     "version": 1
+    },
+    "fields": {
+     "Microsoft.VSTS.Common.AcceptanceCriteria": "Given a duplicate order, when it is submitted, then it is refused",
+     "Microsoft.VSTS.Common.Priority": 1,
+     "Microsoft.VSTS.Common.StateChangeDate": "2026-10-15T12:59:21.213Z",
+     "Microsoft.VSTS.Common.ValueArea": "Business",
+     "System.AreaPath": "Claims",
+     "System.ChangedBy": {
+      "_links": {
+       "avatar": {
+        "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+       }
+      },
+      "descriptor": "aad.anonymised-1",
+      "displayName": "Participant 1",
+      "id": "00000000-0000-0000-0000-000000000002",
+      "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+      "uniqueName": "person1@example.com",
+      "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+     },
+     "System.ChangedDate": "2026-10-15T12:59:21.213Z",
+     "System.CommentCount": 1,
+     "System.CreatedBy": {
+      "_links": {
+       "avatar": {
+        "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+       }
+      },
+      "descriptor": "aad.anonymised-1",
+      "displayName": "Participant 1",
+      "id": "00000000-0000-0000-0000-000000000002",
+      "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+      "uniqueName": "person1@example.com",
+      "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+     },
+     "System.CreatedDate": "2026-10-15T12:59:21.213Z",
+     "System.History": "[redacted: free text]",
+     "System.IterationPath": "Claims",
+     "System.Reason": "New",
+     "System.State": "New",
+     "System.Tags": "domain:order-intake; fr:001; fr:002; sdlc:epic:001; sdlc-repo:test-repo",
+     "System.TeamProject": "Claims",
+     "System.Title": "EP-001 · Orders are accepted once",
+     "System.WorkItemType": "Epic"
+    },
+    "id": 1,
+    "multilineFieldsFormat": {
+     "Microsoft.VSTS.Common.AcceptanceCriteria": "html",
+     "System.History": "[redacted: free text]"
+    },
+    "relations": [
+     {
+      "attributes": {
+       "isLocked": false,
+       "name": "Child"
+      },
+      "rel": "System.LinkTypes.Hierarchy-Forward",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2"
+     },
+     {
+      "attributes": {
+       "authorizedDate": "2026-10-15T12:59:21.213Z",
+       "comment": "source file",
+       "id": 1,
+       "resourceCreatedDate": "2026-10-15T12:59:21.213Z",
+       "resourceModifiedDate": "2026-10-15T12:59:21.213Z",
+       "revisedDate": "9999-01-01T00:00:00Z"
+      },
+      "rel": "Hyperlink",
+      "url": "https://dev.azure.com/contoso/Claims/_git/test-repo"
+     }
+    ],
+    "rev": 1,
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1"
+   },
+   {
+    "commentVersionRef": {
+     "commentId": 2,
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2/comments/2/versions/1",
+     "version": 1
+    },
+    "fields": {
+     "Microsoft.VSTS.Common.Priority": 2,
+     "Microsoft.VSTS.Common.StateChangeDate": "2026-10-15T12:59:24.84Z",
+     "Microsoft.VSTS.Common.ValueArea": "Business",
+     "System.AreaPath": "Claims",
+     "System.BoardColumn": "New",
+     "System.BoardColumnDone": false,
+     "System.ChangedBy": {
+      "_links": {
+       "avatar": {
+        "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+       }
+      },
+      "descriptor": "aad.anonymised-1",
+      "displayName": "Participant 1",
+      "id": "00000000-0000-0000-0000-000000000002",
+      "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+      "uniqueName": "person1@example.com",
+      "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+     },
+     "System.ChangedDate": "2026-10-15T12:59:24.84Z",
+     "System.CommentCount": 1,
+     "System.CreatedBy": {
+      "_links": {
+       "avatar": {
+        "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+       }
+      },
+      "descriptor": "aad.anonymised-1",
+      "displayName": "Participant 1",
+      "id": "00000000-0000-0000-0000-000000000002",
+      "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+      "uniqueName": "person1@example.com",
+      "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+     },
+     "System.CreatedDate": "2026-10-15T12:59:24.84Z",
+     "System.History": "[redacted: free text]",
+     "System.IterationPath": "Claims",
+     "System.Parent": 1,
+     "System.Reason": "New",
+     "System.State": "New",
+     "System.Tags": "sdlc:feature:03; sdlc-repo:test-repo",
+     "System.TeamProject": "Claims",
+     "System.Title": "FE-03 · Claims intake",
+     "System.WorkItemType": "Feature",
+     "WEF_00000000000000000000000000000001_Kanban.Column": "New",
+     "WEF_00000000000000000000000000000001_Kanban.Column.Done": false
+    },
+    "id": 2,
+    "multilineFieldsFormat": {
+     "System.History": "[redacted: free text]"
+    },
+    "relations": [
+     {
+      "attributes": {
+       "isLocked": false,
+       "name": "Parent"
+      },
+      "rel": "System.LinkTypes.Hierarchy-Reverse",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1"
+     },
+     {
+      "attributes": {
+       "authorizedDate": "2026-10-15T12:59:24.84Z",
+       "comment": "source file",
+       "id": 2,
+       "resourceCreatedDate": "2026-10-15T12:59:24.84Z",
+       "resourceModifiedDate": "2026-10-15T12:59:24.84Z",
+       "revisedDate": "9999-01-01T00:00:00Z"
+      },
+      "rel": "Hyperlink",
+      "url": "https://dev.azure.com/contoso/Claims/_git/test-repo"
+     }
+    ],
+    "rev": 1,
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/2"
+   },
+   null
+  ]
+ }
+}

@@ -1,0 +1,2 @@
+# captured 2026-10-15 (org anonymised); stderr of a create carrying System.AssignedTo for an address the organisation does not know; az printed the address masked (the first and last character of each part kept, the rest as asterisks); it was a fixture's example.com address and is written here as the stand-in person1@example.com
+ERROR: The identity value 'person1@example.com' for field 'Assigned To' is an unknown identity.
