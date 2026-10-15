@@ -124,7 +124,11 @@ properties:
   fields:
     type: object
     additionalProperties: false
-    description: "Optional extra field writes per kind: a field reference name, or {field, values}."
+    description: >-
+      Optional extra field writes per kind: a field reference name, {field, values}, or a constant
+      {field, value} — a value no artifact carries (a required ValueArea, say), written verbatim at
+      create and on update only while the board's field is empty; a board-side change to it is the
+      board's, never drift. A constant is checked against the field's allowed values when discovered.
     properties:
       outcome: &field_rules
         type: object
@@ -135,6 +139,7 @@ properties:
             values:
               type: object
               additionalProperties: {type: string}
+            value: {type: [string, integer, number, boolean]}
           required: [field]
           additionalProperties: false
       domain: *field_rules

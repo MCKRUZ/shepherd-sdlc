@@ -199,10 +199,11 @@ def test_discover_reads_the_captured_process_with_one_per_type_call_and_no_state
     assert code == 0 and out["ok"] and out["team"] == "Claims Team"
     keys = [route_key_boards(c) for c in az.calls]
     assert keys[:len(DISCOVERY)] == DISCOVERY
-    assert keys[len(DISCOVERY):] == ["GET wit/workItemTypesField"] * 2            # the spec's type, and the decision pin
-    assert [route_params(c)["type"] for c in az.calls[len(DISCOVERY):]] == ["Spec", "Issue"]
+    # one per landed type: the spec's type, Epic and Feature (their categories), and the decision pin
+    assert keys[len(DISCOVERY):] == ["GET wit/workItemTypesField"] * 4
+    assert [route_params(c)["type"] for c in az.calls[len(DISCOVERY):]] == ["Spec", "Epic", "Feature", "Issue"]
     assert not any(k in keys for k in ("GET wit/workItemTypeStates", "GET wit/states"))
-    assert out["per_type_reads"] == ["Spec", "Issue"]
+    assert out["per_type_reads"] == ["Spec", "Epic", "Feature", "Issue"]
     assert out["counts"] == {**out["counts"], "types": 17, "fields": 106, "areas": 5, "iterations": 12,
                              "team_iterations": 11, "levels": 4}
     saved = json.loads((repo / bc.SCHEMA_FILE).read_text(encoding="utf-8"))

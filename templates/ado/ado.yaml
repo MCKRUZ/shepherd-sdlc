@@ -23,6 +23,14 @@ fields:                          # optional extra field writes; refused_fields -
   spec:
     risk: { field: Custom.RiskTier, values: { HIGH: "High", MEDIUM: "Medium", LOW: "Low" } }
     channel: Custom.Channel      # string form: value passed verbatim
+  # A constant {field, value}: a value no artifact carries, for a field the process always requires with no
+  # default. Written verbatim at create, and on update only while the board's field is empty; a board-side
+  # change to it is the board's, never drift. `config check` refuses a value outside the field's discovered
+  # allowed values (exit 2), an identity field, and the effort/estimate family. For example:
+  # epic:
+  #   value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
+  # feature:
+  #   value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
 identity_field: null             # e.g. Custom.SdlcId — written only if discovered; never created
 iterations:                      # SNN -> team iteration path, written by `iteration bind`
   S07: 'Claims\Sprint 7'

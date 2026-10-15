@@ -391,6 +391,8 @@ def _only_when_carried(fields: dict, schema: dict, type_name, ref: str, value) -
 
 def _unapplied(kind: str, cfg: dict, notes: list) -> None:
     configured = (cfg.get("fields") or {}).get(kind) if isinstance(cfg.get("fields"), dict) else None
+    if isinstance(configured, dict):  # a constant `{field, value}` is applied by `ado_sync_sources.projections`
+        configured = {k: r for k, r in configured.items() if not (isinstance(r, dict) and "value" in r)}
     if configured:
         notes.append(f"fields.{kind} is not applied: a {kind}'s fields are its title, the ones the type carries and "
                      "its tags")

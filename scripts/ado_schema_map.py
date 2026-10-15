@@ -36,7 +36,7 @@ their categories; only the requirements tree (outcome, domain, requirement) is f
 import re
 
 from ado_map import AdoImportError, _require
-from boards_contract import CONFIG_FILE, KINDS, TREE_ORDER
+from boards_contract import CONFIG_FILE, DEFAULT_KINDS, KINDS, TREE_ORDER
 
 SCHEMA_VERSION = 1
 KNOWN_STATE_CATEGORIES = ("Proposed", "InProgress", "Resolved", "Completed", "Removed")
@@ -392,6 +392,42 @@ def resolve_type(schema: dict, kind: str, cfg: dict) -> tuple[str | None, str]:
     if present:
         return None, f"types.{kind} not set; candidates present in process: {', '.join(present)}"
     return None, f"types.{kind} not set; no candidate types present in process"
+
+
+def configured_kinds(cfg: dict) -> tuple[str, ...]:
+    """The kinds a config mirrors: its `kinds:` list (the known kinds, in its order), else `DEFAULT_KINDS` (the
+    starter's list) when the key is absent. A `kinds:` that is not a list mirrors nothing."""
+    if not isinstance(cfg, dict) or "kinds" not in cfg:
+        return DEFAULT_KINDS
+    raw = cfg["kinds"]
+    return tuple(k for k in raw if isinstance(k, str) and k in KINDS) if isinstance(raw, (list, tuple)) else ()
+
+
+def landed_types(schema: dict, cfg: dict) -> list[str]:
+    """Every work item type a kind of this config lands on, each once, in the order `discover` reads them: the
+    spec's type first (every plan needs it), then in `KINDS` order the type of each configured kind, of each
+    `types.<kind>` pin and of each `fields.<kind>` block (`resolve_type`, so a tree kind fitted as an item counts
+    and one that rides as a tag or an area does not), and the `BugCategory` default type when findings are mirrored
+    (the finding source lands CRITICAL and HIGH there). A kind that resolves to no type lands nowhere and adds
+    nothing, so the list is never longer than the kinds there are plus one: one per-type read each."""
+    cfg = cfg if isinstance(cfg, dict) else {}
+    wanted = {"spec", *configured_kinds(cfg)}
+    for section in ("types", "fields"):
+        block = cfg.get(section)
+        if isinstance(block, dict):
+            wanted.update(k for k in block if isinstance(k, str) and k in KINDS)
+    names: list[str] = []
+    for kind in ("spec", *(k for k in KINDS if k != "spec")):
+        if kind in wanted:
+            name, _ = resolve_type(schema, kind, cfg)
+            if name is not None and name not in names:
+                names.append(name)
+    if "finding" in wanted:
+        entry = (schema.get("categories") or {}).get("BugCategory")
+        name, info = _type_info(schema, entry.get("default_type")) if isinstance(entry, dict) else (None, None)
+        if name is not None and not info.get("disabled") and name not in names:
+            names.append(name)
+    return names
 
 
 def _states_of(schema: dict, type_name: str) -> tuple[str | None, list[dict] | None, bool]:

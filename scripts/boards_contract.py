@@ -63,8 +63,15 @@ OWNERSHIP: Final[dict[str, str]] = {
     "Microsoft.VSTS.Common.StackRank": "A",
     "System.AreaPath": "C",
 }
+# A requirements-tree kind the process cannot hold as a work item rides on the items that point at it, as a tag of its
+# own family (`ado_schema_map.TAG_FORM`): an epic under the `order-intake` domain carries `domain:order-intake`, one
+# that fulfils FR-001 carries `fr:001`, and the outcomes that domain maps to ride as `outcome:<id>`. They are the
+# repository's tags like every `sdlc:` one, so they close PLUGIN_TAG_PREFIXES: a board-side removal is drift.
+RIDE_TAG_PREFIXES: Final[dict[str, str]] = {"outcome": "outcome:", "domain": "domain:", "requirement": "fr:"}
 PLUGIN_TAG_PREFIXES: Final = ("sdlc:", "sdlc-repo:", "risk:", "channel:", "type:", "severity:", "eng-review:",
-                              "data-review:", "carried-from:")
+                              "data-review:", "carried-from:", *RIDE_TAG_PREFIXES.values())
+# The kinds a config with no `kinds:` key mirrors: the starter's list (templates/ado/ado.yaml; a test keeps them equal).
+DEFAULT_KINDS: Final = ("outcome", "domain", "requirement", "epic", "feature", "spec", "spike", "sprint", "decision")
 
 WRITE_METHODS: Final = frozenset({"POST", "PATCH", "PUT", "DELETE"})
 READ_POSTS: Final = frozenset({("wit", "wiql"), ("wit", "workitemsbatch")})  # POSTs that only read

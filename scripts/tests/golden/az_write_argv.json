@@ -32,6 +32,11 @@
     "body": [
      {
       "op": "add",
+      "path": "/fields/Microsoft.VSTS.Common.Priority",
+      "value": 1
+     },
+     {
+      "op": "add",
       "path": "/fields/System.Tags",
       "value": "sdlc-repo:claims-api; sdlc:epic:001"
      },
