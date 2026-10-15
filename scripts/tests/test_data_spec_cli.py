@@ -247,6 +247,25 @@ class TestNew:
         assert "- DL-07 — not found in this repository" in context
         assert "- DOC-002 — not found in this repository" in context
 
+    def test_a_doc_resolves_to_its_summary_not_to_the_registry_row(self, repo):
+        parent = build_spec(repo)
+        write(parent, dm.replace_section_body(read(parent), "Why", "The vendor feed in DOC-004 is the source."))
+        registry = repo / ".sdlc" / "artifacts" / "00-discovery" / "document-registry.md"
+        registry.parent.mkdir(parents=True)
+        registry.write_text("# Document Registry\n\n| ID | File | Priority |\n|----|------|----------|\n"
+                            "| DOC-004 | vendor-feed.pdf | 1 |\n", encoding="utf-8")
+        summary = repo / ".sdlc" / "context" / "intake" / "DOC-004-vendor-feed.md"
+        summary.parent.mkdir(parents=True)
+        summary.write_text("# DOC-004: vendor-feed.pdf\n\n## Document Overview\nThe feed.\n", encoding="utf-8")
+        (summary.parent / "index.md").write_text("# Document Index\n\n- DOC-004 · vendor-feed.pdf · pdf — The feed.\n",
+                                                 encoding="utf-8")
+
+        doc = json.loads(data(repo, "new", "--serves", "0001", "--name", "claims profile", "--json").stdout)
+        assert doc["unresolved_refs"] == []
+        context = cs.extract_section(cs.parse_frontmatter(read(repo / doc["path"]))[1], "Context")
+        assert "- DOC-004 — `.sdlc/context/intake/DOC-004-vendor-feed.md`" in context
+        assert "document-registry.md" not in context
+
     def test_an_unrelated_existing_cycle_does_not_block_a_new_link(self, repo):
         build_spec(repo, "parent")
         b = build_spec(repo, "b")
@@ -333,6 +352,61 @@ class TestRefusals:
         assert proc.stdout == "" and "cycle" in proc.stderr.lower()
         assert snapshot(repo) == before
         assert "0003" not in fm_of(parent).get("depends_on", "")
+
+    def test_a_cycle_is_still_found_when_an_unrelated_cycle_sits_in_specs(self, repo):
+        # 0001 <-> 0002 is nobody's doing here, but it is what a back-edge DFS reports; the link
+        # 0005 -> 0006 would close 0005 -> 0006 -> 0003 -> 0002 -> 0001 -> 0005
+        specs = {n: build_spec(repo, f"s{n}") for n in range(1, 7)}
+        set_key(specs[1], "depends_on", "0002,0005")
+        set_key(specs[2], "depends_on", "0001")
+        set_key(specs[3], "depends_on", "0002")
+        set_key(specs[6], "depends_on", "0003")
+        before = snapshot(repo)
+        proc = data(repo, "target", "--spec", "0006", "--serves", "0005", "--json")
+        assert proc.returncode == 2
+        assert proc.stdout == "" and "dependency cycle" in proc.stderr
+        assert "0005 -> 0006 -> 0003 -> 0002 -> 0001 -> 0005" in proc.stderr
+        assert snapshot(repo) == before
+        assert snapshot(repo / "specs") == {k.removeprefix("specs/"): v for k, v in before.items()
+                                            if k.startswith("specs/")}
+        assert "0006" not in fm_of(specs[5]).get("depends_on", "")
+
+    def test_an_unrelated_cycle_alone_does_not_stop_target_from_linking(self, repo):
+        specs = {n: build_spec(repo, f"s{n}") for n in range(1, 5)}
+        set_key(specs[1], "depends_on", "0002")
+        set_key(specs[2], "depends_on", "0001")
+        proc = data(repo, "target", "--spec", "0004", "--serves", "0003", "--json")
+        assert proc.returncode == 0, proc.stderr
+        assert fm_of(specs[3])["depends_on"] == "0004"
+        assert fm_of(specs[4])["type"] == "data" and fm_of(specs[4])["serves"] == "0003"
+        assert fm_of(specs[1])["depends_on"] == "0002" and fm_of(specs[2])["depends_on"] == "0001"
+
+    def test_the_plain_cycle_is_still_refused_and_names_the_loop(self, repo):
+        build_spec(repo, "parent")
+        build_spec(repo, "middle")
+        target = build_spec(repo, "target")
+        set_key(target, "depends_on", "0001")
+        before = snapshot(repo)
+        proc = data(repo, "target", "--spec", "0003", "--serves", "0001")
+        assert proc.returncode == 2
+        assert "0001 -> 0003 -> 0001" in proc.stderr
+        assert snapshot(repo) == before
+
+    @pytest.mark.parametrize("verb", ["new", "target"])
+    @pytest.mark.parametrize("block", ['depends_on:\n  - "0003"', 'depends_on:   # was a list\n  - "0003"\n  - 0004'])
+    def test_a_block_list_depends_on_is_refused_and_nothing_is_written(self, repo, verb, block):
+        parent = build_spec(repo, "parent")
+        build_spec(repo, "target")
+        text = read(parent)
+        line = next(ln for ln in text.splitlines() if ln.startswith("depends_on:"))
+        write(parent, text.replace(line, block, 1))
+        before = snapshot(repo)
+        argv = (["new", "--serves", "0001", "--name", "claims profile"] if verb == "new"
+                else ["target", "--spec", "0002", "--serves", "0001"])
+        proc = data(repo, *argv, "--json")
+        assert proc.returncode == 1
+        assert proc.stdout == "" and "YAML list" in proc.stderr and "comma-separated" in proc.stderr
+        assert snapshot(repo) == before
 
     def test_a_conflicting_existing_serves_is_refused(self, repo):
         build_spec(repo, "one")
@@ -617,7 +691,52 @@ class TestCheck:
         (docs / "data-readiness.md").write_text(readiness(["[DL-NN]"]), encoding="utf-8")
         result = finding(json.loads(data(repo, "check", "--spec", "0002", "--json").stdout),
                          "readiness-gaps-owned")
-        assert result["passed"] is False and result["detail"] == "0 gaps reference a DL-NN"
+        assert result["passed"] is False and result["detail"] == "1 gap(s), 0 reference a DL-NN"
+
+    def readiness_result(self, repo, text):
+        self.make_data_spec(repo)
+        docs = repo / DATA_DIR
+        docs.mkdir(parents=True)
+        (docs / "data-readiness.md").write_text(text, encoding="utf-8")
+        return finding(json.loads(data(repo, "check", "--spec", "0002", "--json").stdout), "readiness-gaps-owned")
+
+    def test_a_gaps_table_with_only_its_header_records_no_gap_and_passes(self, repo):
+        result = self.readiness_result(repo, readiness([]))
+        assert result["passed"] is True and result["detail"] == "no gaps recorded"
+
+    def test_a_gaps_table_with_only_template_stand_ins_records_no_gap_and_passes(self, repo):
+        stand_ins = ("| [e.g. field missing for X% of records] | [what breaks] | [low / med / high] | [DL-NN] |\n"
+                     "| [...] | [...] | [...] | [...] |")
+        text = readiness([]).replace("|-----|--------|----------|------------------|\n",
+                                     "|-----|--------|----------|------------------|\n" + stand_ins + "\n")
+        assert stand_ins in text
+        result = self.readiness_result(repo, text)
+        assert result["passed"] is True and result["detail"] == "no gaps recorded"
+
+    def test_the_unfilled_data_readiness_template_records_no_gap(self, repo):
+        template = Path(__file__).resolve().parents[2] / "templates" / "phases" / "02-design" / "data" / "data-readiness.md"
+        result = self.readiness_result(repo, template.read_text(encoding="utf-8"))
+        assert result["passed"] is True and result["detail"] == "no gaps recorded"
+
+    def test_real_gaps_that_cite_no_decision_fail_with_their_count(self, repo):
+        result = self.readiness_result(repo, readiness(["", "n/a"]))
+        assert result["passed"] is False and result["detail"] == "2 gap(s), 0 reference a DL-NN"
+
+    def test_a_real_gap_among_stand_ins_is_still_a_gap(self, repo):
+        text = readiness([]).replace("|-----|--------|----------|------------------|\n",
+                                     "|-----|--------|----------|------------------|\n"
+                                     "| [...] | [...] | [...] | [...] |\n| phone is missing | cannot dedupe | low | |\n")
+        result = self.readiness_result(repo, text)
+        assert result["passed"] is False and result["detail"] == "1 gap(s), 0 reference a DL-NN"
+
+    def test_a_missing_gaps_section_still_fails(self, repo):
+        result = self.readiness_result(repo, "# Data Readiness\n\n## Availability & quality\n\nfine\n")
+        assert result["passed"] is False and result["detail"] == "no ## Gaps section — 0 gaps reference a DL-NN"
+
+    def test_a_decision_cited_in_prose_under_gaps_is_still_checked_against_the_log(self, repo):
+        text = "# Data Readiness\n\n## Gaps\n\nOne gap, tracked as DL-07.\n\n## PII & risk-tier impact\n\nnone\n"
+        result = self.readiness_result(repo, text)
+        assert result["passed"] is False and "DL-07" in result["detail"]
 
     def test_standalone_repo_reads_the_documents_beside_the_repo_root(self, repo):
         self.make_data_spec(repo)
@@ -646,6 +765,10 @@ class TestCheck:
         ("[The command that runs the smoke tests, and a link to the output]", False),
         ("Run <command>, output at https://ci.example/run/42", False),
         ("", False),
+        ("- [x] smoke passed — [run 42](https://ci.example/run/42)", True),
+        ("- [X] smoke passed\n- [ ] rerun after the backfill: [run 43](https://ci.example/run/43)", True),
+        ("- [x] [the command that ran, and the output link]", False),
+        ("- [ ] [fill in]", False),
     ])
     def test_handoff_present_reads_the_smoke_tests_section(self, repo, smoke, expected):
         self.make_data_spec(repo)

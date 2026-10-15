@@ -55,8 +55,10 @@ REF_LABELS = {
     "DOC": "Intake documents",
 }
 # The CLI (another package) searches these, in this order, *.md only, to resolve a cited id to a
-# file. The model only declares them: it reads no file.
-RESOLVE_ROOTS = (".sdlc/artifacts", ".sdlc", "docs", "specs")
+# file. The model only declares them: it reads no file. `.sdlc/context` comes first so a DOC-NNN
+# resolves to its summary (`.sdlc/context/intake/DOC-NNN-<slug>.md`), not to the registry row that
+# `/sprd-intake --registry` writes under `.sdlc/artifacts` (which would otherwise win as the first match).
+RESOLVE_ROOTS = (".sdlc/context", ".sdlc/artifacts", ".sdlc", "docs", "specs")
 
 # D4: the only `data_review` values this layer moves to `pending`. `accepted` is a person's verdict.
 REVIEW_TO_PENDING = ("", "n-a", "returned")
@@ -74,6 +76,19 @@ ACCEPTED_NOTE = (
 _ID_RE = re.compile(r"^\d{4,}$")
 _KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_BLOCK_ITEM_RE = re.compile(r"^[ \t]*-(?:[ \t]|\r?$)")
+_BLANK_OR_COMMENT_RE = re.compile(r"^[ \t]*(?:#.*)?\r?$")
+
+# A `[bracketed]` or `<angle>` placeholder span — but not a markdown link, `[text](url)`, nor a real HTML
+# tag such as `<br>`, both of which are content. The SAME pattern as document_shape_cli._PLACEHOLDER_SPAN_RE
+# (kept as a copy because this module imports nothing outside its allow-list); a test pins the two to agree.
+_PLACEHOLDER_SPAN_RE = re.compile(
+    r"\[[^\]]+\](?!\()"
+    r"|<(?!/?(?:br|b|i|u|p|em|strong|code|span|sub|sup|hr|a|img|div)\b)[^<>\n]+>",
+    re.IGNORECASE,
+)
+_SEPARATOR_CELL_RE = re.compile(r"^:?-+:?$")
+_UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
 
 
 class DataSpecError(Exception):
@@ -330,6 +345,24 @@ def context_coverage(data_text: str, parent_text: str) -> list[str]:
 
 # --- The link ----------------------------------------------------------------------------------
 
+def _depends_on_is_block_list(text: str) -> bool:
+    """True when `depends_on:` has no value on its own line and the next line that is neither blank nor
+    comment-only, inside the frontmatter block, is a block-list item (`  - "0003"`). The reader sees that
+    key as "" — so a write would rewrite the key line and orphan the item (invalid YAML, a lost dependency)."""
+    end = text.find("\n---", 3)
+    lines = (text[:end] if end != -1 else text).split("\n")
+    for i, line in enumerate(lines[1:], start=1):
+        if re.match(r"^depends_on\s*:", line):
+            if _value_of(line) != "":
+                return False
+            for follow in lines[i + 1:]:
+                if _BLANK_OR_COMMENT_RE.match(follow):
+                    continue
+                return _BLOCK_ITEM_RE.match(follow) is not None
+            return False
+    return False
+
+
 def link_parent(parent_text: str, data_id: str, parent_id: str) -> tuple[str, dict]:
     """Write the parent's half of the link (D3/D4): `depends_on` gains `data_id`, `data_review`
     moves to `pending` only from ""/"n-a"/"returned" (an `accepted` verdict is kept, with a note).
@@ -350,7 +383,7 @@ def link_parent(parent_text: str, data_id: str, parent_id: str) -> tuple[str, di
         raise DataSpecError("parent_is_data", f"spec {parent_id} is itself a data spec; a data spec serves a build spec")
 
     deps_before = str(fm.get("depends_on") or "").strip()
-    if "[" in deps_before or "]" in deps_before:
+    if "[" in deps_before or "]" in deps_before or _depends_on_is_block_list(parent_text):
         raise DataSpecError("malformed", f"spec {parent_id}'s depends_on is a YAML list; it must be a comma-separated string")
     deps = sm.parse_depends_on(deps_before)
     needs_dep = data_id not in deps
@@ -401,6 +434,82 @@ def cycle_after_link(graph: dict[str, list[str]], parent_id: str, data_id: str) 
     if data_id not in g[parent_id]:
         g[parent_id].append(data_id)
     return detect_cycles(g)
+
+
+def link_closes_cycle(graph: dict[str, list[str]], parent_id: str, data_id: str) -> list[str]:
+    """The path that makes the link `parent -> data` close a dependency cycle, or `[]` when it closes none.
+
+    The new edge is "parent depends on data", so it closes a cycle exactly when `parent_id` is already
+    reachable from `data_id` along `depends_on` edges. Returns the shortest such path
+    `[data_id, ..., parent_id]` (read it as the chain the data spec already depends on, ending at the
+    parent), found by a breadth-first walk. Unlike cycle_after_link this never depends on what a
+    back-edge DFS happens to report, so a cycle that was already in the graph elsewhere cannot hide the
+    one this link closes, and one that does not touch the link cannot block it. `graph` is only read."""
+    prev: dict[str, str | None] = {data_id: None}
+    queue = [data_id]
+    for node in queue:                      # the list grows as the walk discovers nodes
+        if node == parent_id:
+            path = []
+            walk: str | None = node
+            while walk is not None:
+                path.append(walk)
+                walk = prev[walk]
+            return path[::-1]
+        for dep in graph.get(node, []):
+            if dep not in prev:
+                prev[dep] = node
+                queue.append(dep)
+    return []
+
+
+# --- Tables in a document's section ------------------------------------------------------------
+
+def _split_cells(line: str) -> list[str]:
+    """A table line's cells, honouring `\\|` as a literal pipe inside a cell."""
+    body = line.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|") and not body.endswith("\\|"):
+        body = body[:-1]
+    return [c.strip() for c in _UNESCAPED_PIPE_RE.split(body)]
+
+
+def _is_separator_line(line: str) -> bool:
+    cells = _split_cells(line)
+    return bool(cells) and all(_SEPARATOR_CELL_RE.match(c) for c in cells)
+
+
+def is_placeholder_row(line: str) -> bool:
+    """A template's stand-in row: MORE THAN HALF its non-empty cells hold a `[bracketed]` or `<angle>`
+    span (exactly half is a real row that mentions a bracket). The heuristic
+    `document_shape_cli.py add-row --replace-placeholders` uses."""
+    cells = [c for c in _split_cells(line) if c]
+    marked = sum(1 for c in cells if _PLACEHOLDER_SPAN_RE.search(c))
+    return marked > 0 and marked * 2 > len(cells)
+
+
+def real_table_rows(section: str) -> list[str]:
+    """The REAL data rows of every markdown table in `section`: neither the header, the separator, an
+    empty row nor a template placeholder row (see is_placeholder_row). HTML comments are ignored.
+
+    A block of `|` lines with no separator is not a header-and-rows table; its rows are all counted
+    (so unparsed table-ish content is never reported as "no rows"). Order is document order."""
+    blocks: list[list[str]] = [[]]
+    for line in _HTML_COMMENT_RE.sub("", section or "").splitlines():
+        if line.strip().startswith("|"):
+            blocks[-1].append(line)
+        elif blocks[-1]:
+            blocks.append([])
+    rows: list[str] = []
+    for block in blocks:
+        sep = next((i for i, ln in enumerate(block) if _is_separator_line(ln)), None)
+        data_lines = block[sep + 1:] if sep is not None else block
+        for line in data_lines:
+            if _is_separator_line(line) or not any(_split_cells(line)):
+                continue
+            if not is_placeholder_row(line):
+                rows.append(line.strip())
+    return rows
 
 
 def ledger_event(data_id: str, parent_id: str, ts: str) -> dict:

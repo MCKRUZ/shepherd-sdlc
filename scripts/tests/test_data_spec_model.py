@@ -22,6 +22,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import check_spec as cs  # noqa: E402
 import data_spec_model as dm  # noqa: E402
+import document_shape_cli as dsc  # noqa: E402
 import new_spec  # noqa: E402
 import sprint_model as sm  # noqa: E402
 
@@ -71,6 +72,16 @@ def lines_that_differ(before: str, after: str) -> list[str]:
     """The lines of `before` that are not in `after` (order-insensitive); both sides split on \\n."""
     a, b = before.split("\n"), after.split("\n")
     return [ln for ln in a if ln not in b]
+
+
+DEPENDS_LINE = 'depends_on: ""           # optional — comma-separated spec ids, e.g. "0007,0009"'
+
+
+def parent_with_depends(replacement: str) -> str:
+    """parent_spec() with its `depends_on` line (the last frontmatter line) replaced by `replacement`."""
+    text = parent_spec()
+    assert DEPENDS_LINE in text
+    return text.replace(DEPENDS_LINE, replacement)
 
 
 # --- purity ------------------------------------------------------------------------------------
@@ -803,6 +814,46 @@ class TestLinkParentRefusals:
             dm.link_parent(text, "0009", "0007")
         assert exc.value.kind == "malformed"
 
+    @pytest.mark.parametrize("block", [
+        'depends_on:\n  - "0003"',
+        "depends_on:\n  - 0003\n  - 0004",
+        'depends_on:\n- "0003"',                                   # a block item need not be indented
+        'depends_on:   # the dependencies\n\n  # one for now\n  - "0003"',   # blank and comment-only lines in between
+    ])
+    def test_a_depends_on_written_as_a_yaml_block_list_is_malformed_not_orphaned(self, block):
+        with pytest.raises(dm.DataSpecError) as exc:
+            dm.link_parent(parent_with_depends(block), "0009", "0007")
+        assert exc.value.kind == "malformed"
+        assert "YAML list" in exc.value.message and "comma-separated" in exc.value.message
+
+    def test_the_block_list_refusal_uses_the_flow_list_wording(self):
+        messages = []
+        for replacement in ("depends_on: [0003]", 'depends_on:\n  - "0003"'):
+            with pytest.raises(dm.DataSpecError) as exc:
+                dm.link_parent(parent_with_depends(replacement), "0009", "0007")
+            messages.append(exc.value.message)
+        assert messages[0] == messages[1]
+
+    def test_a_crlf_block_list_is_refused_too(self):
+        with pytest.raises(dm.DataSpecError) as exc:
+            dm.link_parent(crlf(parent_with_depends('depends_on:\n  - "0003"')), "0009", "0007")
+        assert exc.value.kind == "malformed"
+
+    def test_an_empty_depends_on_followed_by_another_key_is_still_a_plain_empty_value(self):
+        text = parent_with_depends('depends_on:\nowner2: "@sam-k"')
+        out, info = dm.link_parent(text, "0009", "0007")
+        assert info["depends_on_before"] == "" and info["depends_on_after"] == "0009"
+        assert 'owner2: "@sam-k"' in out
+
+    def test_a_bullet_in_the_body_right_after_the_frontmatter_is_not_a_dependency_list(self):
+        text = parent_with_depends("depends_on:").replace("---\n\n# Spec 0007", "---\n- a body bullet\n\n# Spec 0007")
+        out, info = dm.link_parent(text, "0009", "0007")
+        assert info["depends_on_after"] == "0009" and "- a body bullet" in out
+
+    def test_a_quoted_empty_value_with_no_list_still_links(self):
+        out, info = dm.link_parent(parent_spec(), "0009", "0007")
+        assert info["depends_on_after"] == "0009" and out != parent_spec()
+
     def test_a_placeholder_already_in_depends_on_is_a_bad_value_not_a_crash(self):
         text = parent_spec(depends_on="TBD")
         with pytest.raises(dm.DataSpecError) as exc:
@@ -853,6 +904,153 @@ class TestCycleAfterLink:
 
     def test_a_self_link_is_a_cycle(self):
         assert dm.cycle_after_link({"0007": []}, "0007", "0007")
+
+
+# --- link_closes_cycle -------------------------------------------------------------------------
+
+class TestLinkClosesCycle:
+    """The new edge is parent -> data (the parent depends on the data spec), so it closes a cycle exactly
+    when the parent is already reachable from the data spec."""
+
+    # The review finding: an unrelated 0001 <-> 0002 loop makes detect_cycles report THAT loop and
+    # nothing else, so the loop 0005 -> 0006 -> 0003 -> 0002 -> 0001 -> 0005 went unseen.
+    HIDDEN = {"0001": ["0002", "0005"], "0002": ["0001"], "0003": ["0002"], "0005": [], "0006": ["0003"]}
+
+    def test_the_cycle_an_unrelated_cycle_used_to_hide_is_found(self):
+        assert dm.link_closes_cycle(self.HIDDEN, "0005", "0006") == ["0006", "0003", "0002", "0001", "0005"]
+
+    def test_cycle_after_link_alone_does_miss_it_which_is_why_the_cli_no_longer_filters_it(self):
+        # pins the premise: filtering detect_cycles' answer to "cycles through both ids" yields nothing here
+        through_both = [c for c in dm.cycle_after_link(self.HIDDEN, "0005", "0006") if "0005" in c and "0006" in c]
+        assert through_both == []
+
+    def test_a_direct_dependency_of_the_data_spec_on_the_parent(self):
+        assert dm.link_closes_cycle({"0003": ["0001"], "0001": []}, "0001", "0003") == ["0003", "0001"]
+
+    def test_a_longer_chain_returns_the_whole_path_in_order(self):
+        graph = {"0003": ["0002"], "0002": ["0001"], "0001": []}
+        assert dm.link_closes_cycle(graph, "0001", "0003") == ["0003", "0002", "0001"]
+
+    def test_the_shortest_path_is_returned_when_there_are_two(self):
+        graph = {"0009": ["0004", "0001"], "0004": ["0002"], "0002": ["0001"], "0001": []}
+        assert dm.link_closes_cycle(graph, "0001", "0009") == ["0009", "0001"]
+
+    def test_a_clean_link_closes_nothing(self):
+        assert dm.link_closes_cycle({"0007": [], "0009": []}, "0007", "0009") == []
+
+    def test_an_unrelated_cycle_alone_closes_nothing(self):
+        graph = {"0001": ["0002"], "0002": ["0001"], "0003": [], "0004": []}
+        assert dm.link_closes_cycle(graph, "0003", "0004") == []
+
+    def test_a_walk_through_an_unrelated_cycle_terminates_without_the_parent(self):
+        graph = {"0004": ["0001"], "0001": ["0002"], "0002": ["0001"], "0003": []}
+        assert dm.link_closes_cycle(graph, "0003", "0004") == []
+
+    def test_a_parent_that_already_depends_on_the_data_spec_closes_nothing(self):
+        # the link is already written; relinking adds no edge and no cycle
+        assert dm.link_closes_cycle({"0007": ["0009"], "0009": []}, "0007", "0009") == []
+
+    def test_ids_the_graph_does_not_hold_are_nodes_with_no_dependencies(self):
+        assert dm.link_closes_cycle({}, "0007", "0009") == []
+        assert dm.link_closes_cycle({"0009": ["0007"]}, "0007", "0009") == ["0009", "0007"]
+
+    def test_a_self_link_is_a_one_node_path(self):
+        assert dm.link_closes_cycle({"0007": []}, "0007", "0007") == ["0007"]
+
+    def test_the_graph_is_not_mutated(self):
+        graph = {"0007": ["0003"], "0003": ["0001"], "0001": []}
+        before = {k: list(v) for k, v in graph.items()}
+        dm.link_closes_cycle(graph, "0001", "0007")
+        assert graph == before
+
+    def test_agrees_with_cycle_after_link_whenever_the_graph_had_no_other_cycle(self):
+        for graph, parent, data in [
+            ({"0007": ["0009"], "0009": []}, "0009", "0007"),
+            ({"0001": ["0002"], "0002": ["0003"], "0003": []}, "0003", "0001"),
+            ({"0007": []}, "0007", "0009"),
+            ({"0007": ["0003"], "0003": []}, "0003", "0009"),
+        ]:
+            assert bool(dm.link_closes_cycle(graph, parent, data)) == bool(dm.cycle_after_link(graph, parent, data))
+
+
+# --- real_table_rows ---------------------------------------------------------------------------
+
+GAPS_HEADER = "| Gap | Impact | Severity | Decision-log ref |\n|-----|--------|----------|------------------|\n"
+
+
+class TestRealTableRows:
+    def test_a_header_only_table_has_no_real_rows(self):
+        assert dm.real_table_rows("\n" + GAPS_HEADER) == []
+
+    def test_template_stand_in_rows_are_not_real(self):
+        section = ("\nEach gap is advisory.\n\n" + GAPS_HEADER
+                   + "| [e.g. field missing for X% of records] | [what breaks] | [low / med / high] | [DL-NN] |\n"
+                   + "| [...] | [...] | [...] | [...] |\n\n---\n")
+        assert dm.real_table_rows(section) == []
+
+    def test_the_real_data_readiness_template_has_none(self):
+        template = (REPO_ROOT / "templates" / "phases" / "02-design" / "data" / "data-readiness.md").read_text(encoding="utf-8")
+        section = cs.extract_section(cs.parse_frontmatter(template)[1], "Gaps")
+        assert section is not None and "| Gap |" in section
+        assert dm.real_table_rows(section) == []
+
+    def test_real_rows_are_returned_in_document_order_stripped(self):
+        section = (GAPS_HEADER + "| no phone for 4% | cannot dedupe | low | DL-04 |\n"
+                   "| [...] | [...] | [...] | [...] |\n"
+                   "  | stale feed | wrong totals | high | DL-05 |  \n")
+        assert dm.real_table_rows(section) == ["| no phone for 4% | cannot dedupe | low | DL-04 |",
+                                               "| stale feed | wrong totals | high | DL-05 |"]
+
+    def test_an_empty_row_is_not_a_gap(self):
+        assert dm.real_table_rows(GAPS_HEADER + "|  |  |  |  |\n|||\n") == []
+
+    def test_a_row_with_exactly_half_its_cells_bracketed_is_real(self):
+        # the heuristic document_shape_cli add-row uses: MORE than half, never exactly half
+        assert dm.real_table_rows(GAPS_HEADER + "| BR-01 | [to confirm] | low | DL-02 |\n") == [
+            "| BR-01 | [to confirm] | low | DL-02 |"]
+
+    def test_a_markdown_link_or_an_html_tag_is_content_not_a_placeholder(self):
+        row = "| see [the dump](https://x.example/d) | breaks<br>joins | high | DL-02 |"
+        assert dm.real_table_rows(GAPS_HEADER + row + "\n") == [row]
+
+    def test_alignment_colons_in_the_separator_are_still_a_separator(self):
+        section = "| Gap | Impact |\n|:----|-------:|\n| a real gap | breaks |\n"
+        assert dm.real_table_rows(section) == ["| a real gap | breaks |"]
+
+    def test_every_table_in_the_section_counts_and_prose_between_them_does_not(self):
+        section = ("| A | B |\n|---|---|\n| one | 1 |\n\nA sentence with a | pipe in it.\n\n"
+                   "| C | D |\n|---|---|\n| [x] | [y] |\n| two | 2 |\n")
+        assert dm.real_table_rows(section) == ["| one | 1 |", "| two | 2 |"]
+
+    def test_a_row_inside_an_html_comment_is_ignored(self):
+        section = GAPS_HEADER + "<!-- | commented out | gap | low | DL-09 | -->\n"
+        assert dm.real_table_rows(section) == []
+
+    def test_a_block_with_no_separator_is_not_hidden_it_is_counted(self):
+        # not a header-and-rows table, but never reported as "no rows" either
+        assert dm.real_table_rows("| a gap | breaks | DL-04 |\n") == ["| a gap | breaks | DL-04 |"]
+
+    def test_crlf_text_reads_the_same(self):
+        section = GAPS_HEADER + "| a real gap | breaks | low | DL-04 |\n"
+        assert dm.real_table_rows(crlf(section)) == dm.real_table_rows(section)
+
+    def test_nothing_and_no_table_are_no_rows(self):
+        assert dm.real_table_rows("") == [] and dm.real_table_rows("Just prose, no table.\n") == []
+
+    @pytest.mark.parametrize("row", [
+        "| [e.g. field missing] | [what breaks] | [low / med / high] | [DL-NN] |",
+        "| [...] | [...] | [...] | [...] |",
+        "| DL-01 | [the open question] | [owner] | open |",
+        "| BR-01 | [to confirm] |",
+        "| BR-01 | [to confirm] | low | DL-02 |",
+        "| a gap | <what breaks> | <severity> | DL-02 |",
+        "| see [the dump](https://x.example/d) | breaks<br>joins | high | DL-02 |",
+        "| a real gap | breaks | low | DL-04 |",
+        "|  |  |",
+        "| only | [one] |",
+    ])
+    def test_the_placeholder_heuristic_is_the_one_add_row_uses(self, row):
+        assert dm.is_placeholder_row(row) == dsc._is_placeholder_row(row)
 
 
 # --- ledger_event ------------------------------------------------------------------------------
@@ -997,7 +1195,12 @@ class TestDeclaredConstants:
                                  "ADR": "Decision records", "DOC": "Intake documents"}
 
     def test_the_resolve_roots_are_searched_in_this_order(self):
-        assert dm.RESOLVE_ROOTS == (".sdlc/artifacts", ".sdlc", "docs", "specs")
+        assert dm.RESOLVE_ROOTS == (".sdlc/context", ".sdlc/artifacts", ".sdlc", "docs", "specs")
+
+    def test_context_is_searched_before_artifacts_so_a_doc_resolves_to_its_summary(self):
+        # /sprd-intake --registry writes a `| DOC-NNN |` row under .sdlc/artifacts; the summary file
+        # (.sdlc/context/intake/DOC-NNN-<slug>.md) must be found first
+        assert dm.RESOLVE_ROOTS.index(".sdlc/context") < dm.RESOLVE_ROOTS.index(".sdlc/artifacts")
 
     def test_only_these_review_values_move_to_pending(self):
         assert dm.REVIEW_TO_PENDING == ("", "n-a", "returned")
