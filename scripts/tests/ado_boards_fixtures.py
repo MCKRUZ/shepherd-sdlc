@@ -37,17 +37,29 @@ Fold B5 (B5-P0) adds one page of the reporting revisions feed (`GET wit/workItem
 only `continuationToken`, gets that page unless a test answers `GET wit/workItemRevisions
 continuationToken=*` itself (the existing any-value refinement), so a paging test builds its own
 next page.
+
+The B0 capture (2026-10-14) lands under `captured/` (see its CAPTURE-NOTES.md) and, through `load_wit()`,
+becomes the default answer for every name it holds — with no change to this loader. It corrected three
+locations, and the router follows: the per-type states are `GET wit/workItemTypeStates type=<T>` and the
+per-type fields `GET wit/workItemTypesField type=<T>` (the old `wit/states` / `wit/fields type=` keys are gone,
+so a regression to them is an "unexpected az call", as the real az refuses them), and the identity read is
+`az rest` of `<org>/_apis/connectionData`, which `route_key_boards` names by the `boards_contract.REST_ROUTES` row it
+reads: still `GET core/connectionData`, so every test that answers or counts that read keeps its key. The
+capture also brought names no hand-written file stood in for — the Epic, Feature, `Spec` and `RAID` per-type
+reads (this process has custom `Spec` and `RAID` types) — and two documents no read answers with
+(`WIT_CAPTURED_REFERENCE`): the locations list and the team's field values, kept for the record.
 """
 
 import json
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 
 import pytest
 
 import ado_transport
 import code_host
 from ado_map import AdoImportError
-from boards_contract import READ_POSTS, WRITE_METHODS
+from boards_contract import READ_POSTS, REST_ROUTES, WIT_ROUTES, WRITE_METHODS
 from tests.ado_fixtures import ADO_REMOTE, FIXTURES
 
 WIT = FIXTURES / "wit"
@@ -107,7 +119,10 @@ def route_params(args: list[str]) -> dict[str, str]:
 
 
 def query_params(args: list[str]) -> dict[str, str]:
-    """`k=v` words after `--query-parameters`, up to the next flag (B2-P0)."""
+    """`k=v` words after `--query-parameters`, up to the next flag (B2-P0); for `az rest`, the query string of its
+    `--url` (B0)."""
+    if args[:1] == ["rest"]:
+        return dict(parse_qsl(urlsplit(_arg_after(args, "--url") or "").query, keep_blank_values=True))
     if "--query-parameters" not in args:
         return {}
     out = {}
@@ -153,7 +168,36 @@ def route_key_boards(args: list[str]) -> str:
     if words[:2] == ["devops", "invoke"]:
         method = (_arg_after(args, "--http-method") or "GET").upper()
         return f"{method} {_arg_after(args, '--area')}/{_arg_after(args, '--resource')}"
+    if words == ["rest"]:
+        return rest_route_key(args)
     return " ".join(words)
+
+
+def rest_route_key(args: list[str]) -> str:
+    """B0: an `az rest` call is named by the `boards_contract.REST_ROUTES` row whose path its `--url` ends with, as
+    that row's `WIT_ROUTES` namesake (`GET core/connectionData`); any other URL is `<METHOD> rest <path>`, which no
+    default answers."""
+    method = (_arg_after(args, "--method") or "GET").upper()
+    path = urlsplit(_arg_after(args, "--url") or "").path
+    for name, row in REST_ROUTES.items():
+        if path.endswith("/" + row["path"]):
+            return f"{method} {WIT_ROUTES[name]['area']}/{WIT_ROUTES[name]['resource']}"
+    return f"{method} rest {path}"
+
+
+FIXTURE_ORG_URL = "https://dev.azure.com/contoso"  # what tests.ado_fixtures.ADO_REMOTE parses to
+
+
+def identity_rest_argv(org_url: str = FIXTURE_ORG_URL) -> list[str]:
+    """B0: the one `az rest` argv the plugin sends (the identity read), as the seam hands it to `run_az`."""
+    row = REST_ROUTES["connection_data"]
+    return ado_transport.rest_argv(org_url, row["path"], row["api_version"])
+
+
+def is_identity_rest_read(args: list[str], org_url: str = FIXTURE_ORG_URL) -> bool:
+    """True for exactly `identity_rest_argv()` and nothing else. A seam check lets that one argv through without
+    `--detect false` (`az rest` has no such flag); any other `az rest` still fails the check it would have failed."""
+    return list(args) == identity_rest_argv(org_url)
 
 
 def is_write_key(key: str) -> bool:
@@ -165,16 +209,24 @@ def is_write_key(key: str) -> bool:
 
 
 # route key -> fixture name. A per-type route is refined by its `type=` route parameter
-# (`GET wit/states type=Bug`); the fake tries the refined key first, then the bare one.
+# (`GET wit/workItemTypeStates type=Bug`); the fake tries the refined key first, then the bare one.
 DEFAULT_WIT_ANSWERS: dict[str, str] = {
     "GET core/projects": "projects",
     "GET wit/workItemTypeCategories": "type_categories",
     "GET wit/workItemTypes": "types",
-    "GET wit/states type=User Story": "type_states_user_story",
-    "GET wit/states type=Bug": "type_states_bug",
-    "GET wit/states type=Issue": "type_states_issue",
-    "GET wit/fields type=User Story": "type_fields_user_story",
-    "GET wit/fields type=Issue": "type_fields_issue",
+    # B0 (2026-10-14): the corrected per-type locations (`wit/states` and `wit/fields type=` do not exist)
+    "GET wit/workItemTypeStates type=User Story": "type_states_user_story",
+    "GET wit/workItemTypeStates type=Bug": "type_states_bug",
+    "GET wit/workItemTypeStates type=Issue": "type_states_issue",
+    "GET wit/workItemTypeStates type=Epic": "type_states_epic",
+    "GET wit/workItemTypeStates type=Feature": "type_states_feature",
+    "GET wit/workItemTypeStates type=Spec": "type_states_spec",
+    "GET wit/workItemTypeStates type=RAID": "type_states_raid",
+    "GET wit/workItemTypesField type=User Story": "type_fields_user_story",
+    "GET wit/workItemTypesField type=Issue": "type_fields_issue",
+    "GET wit/workItemTypesField type=Epic": "type_fields_epic",
+    "GET wit/workItemTypesField type=Feature": "type_fields_feature",
+    "GET wit/workItemTypesField type=Spec": "type_fields_spec",
     "GET wit/fields": "fields",
     "GET work/backlogconfiguration": "backlog_config",
     "GET wit/classificationNodes": "classification_nodes",
@@ -203,6 +255,12 @@ DEFAULT_WIT_ANSWERS: dict[str, str] = {
     "GET wit/workItemRevisions": "workitemrevisions",
 }
 WIT_FIXTURE_NAMES: tuple[str, ...] = tuple(sorted(set(DEFAULT_WIT_ANSWERS.values())))
+# B0: the names only the capture holds (no hand-written stand-in was ever written for them)
+WIT_CAPTURED_ONLY: tuple[str, ...] = ("type_fields_epic", "type_fields_feature", "type_fields_spec", "type_states_epic",
+                                      "type_states_feature", "type_states_raid", "type_states_spec")
+# B0: captured documents no read answers with — the `devops invoke` locations list (its wit/work/core subset) and
+# the team's area settings (`work/teamfieldvalues`, which the plugin does not read). Loaded by name, never routed.
+WIT_CAPTURED_REFERENCE: tuple[str, ...] = ("invoke_locations", "team_field_values")
 
 
 def route_name_of(fixture: str) -> str:
@@ -229,13 +287,18 @@ class FakeBoardsAz:
     needle in the joined argv to an `AdoImportError` message. Anything not answered is
     `AssertionError("unexpected az call: <key>")`; with `writes=False` a write — a WRITE_METHODS
     invoke outside READ_POSTS, or a native write verb — is `AssertionError("unexpected az write: <key>")`
-    even when answered. Every call is recorded first, refused or not."""
+    even when answered. Every call is recorded first, refused or not.
 
-    def __init__(self, answers: dict | None = None, fail: dict | None = None, *, writes: bool = False):
+    `hand_written=True` (B0) answers a fixture name from the hand-written file even where a capture exists
+    (`load_wit(name, hand_written=True)`): the process the item fixtures were written for (see `BOARDS_PROCESS`)."""
+
+    def __init__(self, answers: dict | None = None, fail: dict | None = None, *, writes: bool = False,
+                 hand_written: bool = False):
         self.answers = dict(DEFAULT_WIT_ANSWERS)
         self.answers.update(answers or {})
         self.fail = dict(fail or {})
         self.writes = writes
+        self.hand_written = hand_written
         self.calls: list[list[str]] = []
 
     def __call__(self, args: list[str], cwd, timeout: int = 60) -> str:
@@ -260,7 +323,7 @@ class FakeBoardsAz:
         if answer is None:
             return ""
         if isinstance(answer, str):
-            answer = load_wit(answer)
+            answer = load_wit(answer, self.hand_written)
         return json.dumps(answer)
 
     def _refinements(self, key: str, args: list[str]) -> list[str]:
@@ -294,9 +357,20 @@ def boards_env(monkeypatch):
     ado_transport.clear_caches()
 
 
+# B0: a test module that sets `BOARDS_PROCESS = HAND_WRITTEN_PROCESS` gets an `az` that reads the hand-written process
+# even where a capture exists. The item, history, discussion and write fixtures are hand-written for that process (a
+# User Story spec type, areas under `Claims\SDLC`, a picklist spelled HIGH/MEDIUM/LOW) and nothing captured them yet,
+# so a scenario that combines items with a process keeps them consistent until a capture brings both from one board.
+HAND_WRITTEN_PROCESS = "hand-written"
+
+
+def uses_hand_written_process(module) -> bool:
+    return getattr(module, "BOARDS_PROCESS", None) == HAND_WRITTEN_PROCESS
+
+
 @pytest.fixture
-def az(monkeypatch) -> FakeBoardsAz:
-    fake = FakeBoardsAz()
+def az(monkeypatch, request) -> FakeBoardsAz:
+    fake = FakeBoardsAz(hand_written=uses_hand_written_process(request.module))
     monkeypatch.setattr(ado_transport, "run_az", fake)
     return fake
 
@@ -309,6 +383,10 @@ WIT_CAPTURED_ERRORS = WIT_CAPTURED / "errors"
 WIT_ERROR_CLASSES: dict[str, str] = {"stale_rev": "conflict", "rule_violation": "rule", "permission": "permission",
                                      "throttled": "throttled"}
 WIT_ERROR_NAMES: tuple[str, ...] = tuple(sorted(WIT_ERROR_CLASSES))
+# B0: the refusals the capture met, under `captured/errors/` only (no hand-written twin): the old states location,
+# `connectionData` through `devops invoke` (area core, area Location), and through `az rest` at `7.1`
+WIT_CAPTURED_ERROR_NAMES: tuple[str, ...] = ("connection_data_core", "connection_data_location",
+                                             "connection_data_rest_7.1", "states_wrong_resource")
 
 
 def wit_error_path(name: str, hand_written: bool = False) -> Path:

@@ -23,7 +23,16 @@ import ado_schema_map as asm
 from ado_sync_config import validate_config
 from boards_contract import GUID_RE, KINDS, TREE_ORDER
 from ado_map import AdoImportError
-from tests.ado_boards_fixtures import load_wit
+from tests.ado_boards_fixtures import load_wit as _load_wit
+
+
+def load_wit(name: str):
+    """B0 (2026-10-14): the rules here are pinned on the hand-written Agile process they were written against (its User
+    Story has two Proposed states, its areas sit under an `SDLC` node, its `Resolved` state is in the Resolved
+    category), so it is read even where a capture now exists. The captured process — a custom `Spec` requirement type,
+    `Resolved` in the InProgress category, a hidden User Story — is mapped in test_boards_captured_process.py."""
+    return _load_wit(name, hand_written=True)
+
 
 MODULE = Path(asm.__file__)
 STARTER = Path(__file__).resolve().parents[2] / "templates" / "ado" / "ado.yaml"  # the config every project starts from

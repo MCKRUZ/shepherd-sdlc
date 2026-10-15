@@ -1,0 +1,2 @@
+# captured 2026-10-14 (org anonymised)
+ERROR: --area is not present in current organization

@@ -4,6 +4,11 @@
 packages import. These pins keep it importable from anywhere (only `re` / `typing`), keep its
 `DISCIPLINE_AGENTS` literal equal to the one `audit_artifacts.py` enforces, and keep every
 `devops invoke` location unverified until the B0 capture corrects it by hand.
+
+The first capture (2026-10-14) verified the discovery rows and the reporting feed, corrected the per-type
+states and fields locations, and moved the identity read to `REST_ROUTES` (`az rest`). The section at the end
+checks every row against the capture's own locations list, so a row a later capture has not reached is still
+held to what Azure DevOps says exists.
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
@@ -54,11 +59,17 @@ def test_wit_routes_keys_are_the_discovery_and_item_routes():
     assert set(bc.WIT_ROUTES) == DISCOVERY_ROUTES | ITEM_ROUTES | FEED_ROUTES
 
 
+# B0 (2026-10-14): the rows the capture read (or, for the reporting feed, found released in its locations list).
+# Exactly these are verified; every item, write, discussion and identity row is still not — the capture did not reach
+# them, and the identity read is no `devops invoke` location at all (REST_ROUTES).
+VERIFIED_BY_B0 = DISCOVERY_ROUTES | FEED_ROUTES
+
+
 @pytest.mark.parametrize("name", sorted(DISCOVERY_ROUTES | ITEM_ROUTES))
-def test_every_wit_route_row_is_complete_and_unverified(name):
+def test_every_wit_route_row_is_complete_and_verified_only_where_the_capture_reached(name):
     row = bc.WIT_ROUTES[name]
     assert set(row) == ROW_KEYS, f"{name}: {sorted(row)}"
-    assert row["verified"] is False, f"{name}: only the B0 capture flips verified"
+    assert row["verified"] is (name in VERIFIED_BY_B0), f"{name}: only the B0 capture flips verified"
     assert row["area"] in {"core", "wit", "work"}
     assert isinstance(row["resource"], str) and row["resource"]
     assert isinstance(row["route"], tuple) and all(isinstance(p, str) and p for p in row["route"])
@@ -170,11 +181,11 @@ def test_paths_are_repo_relative_under_dot_sdlc():
 
 # --- Fold B5 (B5-P0): the reporting revisions feed and the `nfr` kind ---------------------------------------------
 
-def test_the_feed_route_row_is_complete_and_unverified():
+def test_the_feed_route_row_is_complete_and_verified_by_the_capture():
     row = bc.WIT_ROUTES["workitemrevisions"]
     assert set(row) == ROW_KEYS
     assert row == {"area": "wit", "resource": "workItemRevisions", "route": ("project",), "method": "GET",
-                   "api_version": ado_transport.API_VERSION, "verified": False}
+                   "api_version": ado_transport.API_VERSION, "verified": True}   # B0: released 7.1 in the locations
     assert row["method"] not in bc.WRITE_METHODS and (row["area"], row["resource"]) not in bc.READ_POSTS
     assert not re.search(r"-preview", row["api_version"]), "the reporting revisions feed has a GA version"
 
@@ -189,3 +200,71 @@ def test_nfr_is_the_last_kind_and_never_a_parent():
     assert bc.KINDS[:-1] == ("outcome", "domain", "epic", "feature", "spec", "spike", "sprint", "decision", "finding",
                              "lifecycle", "requirement", "rule", "question", "measurement")
     assert "nfr" not in bc.TREE_ORDER
+
+
+# --- B0 (2026-10-14): the capture's corrections, and every row checked against its locations list ------------------
+
+from tests.ado_boards_fixtures import load_wit, wit_source_of  # noqa: E402
+
+LOCATIONS = load_wit("invoke_locations")  # the wit/work/core subset of `az devops invoke`'s own locations list
+ORG_LEVEL = {"relation_types"}  # `_apis/wit/workItemRelationTypes`: the `project` it is sent is not part of the route
+
+
+def _locations(area: str, resource: str) -> list[dict]:
+    return [loc for loc in LOCATIONS if loc["area"] == area and loc["resourceName"].lower() == resource.lower()]
+
+
+def _version(text) -> float:
+    return float(str(text).removesuffix("-preview"))
+
+
+def test_the_locations_list_is_the_capture():
+    assert wit_source_of("invoke_locations") == "captured"
+    assert {loc["area"] for loc in LOCATIONS} == {"wit", "work", "core"} and len(LOCATIONS) == 106
+
+
+def test_the_three_corrected_rows_name_the_locations_the_capture_found():
+    assert (bc.WIT_ROUTES["type_states"]["resource"], bc.WIT_ROUTES["type_fields"]["resource"]) == (
+        "workItemTypeStates", "workItemTypesField")
+    (states,) = _locations("wit", "workItemTypeStates")
+    assert states["routeTemplate"] == "{project}/_apis/{area}/workitemtypes/{type}/states"
+    (fields,) = _locations("wit", "workItemTypesField")
+    assert fields["routeTemplate"] == "{project}/_apis/{area}/workitemtypes/{type}/fields/{field}"
+    assert _locations("wit", "states") == []                       # what the hand-written row named does not exist
+    assert all("{type}" not in loc["routeTemplate"] for loc in _locations("wit", "fields"))  # `fields` has no type
+    assert _locations("core", "connectionData") == []              # nor is the identity read a core location
+    assert bc.WIT_ROUTES["connection_data"]["verified"] is False
+
+
+@pytest.mark.parametrize("name", sorted(set(bc.WIT_ROUTES) - {"connection_data"}))
+def test_every_invoke_row_has_a_location_its_version_and_route_fit(name):
+    """GA rows are released at 7.1, preview rows are not released at all (`0.0`) yet serve 7.1, and every route
+    parameter a row sends is one its location's template names — verified rows and the not-yet-captured ones alike."""
+    row = bc.WIT_ROUTES[name]
+    fitting = [loc for loc in _locations(row["area"], row["resource"])
+               if _version(loc["minVersion"]) <= _version(row["api_version"]) <= _version(loc["maxVersion"])]
+    assert fitting, f"{name}: no {row['area']}/{row['resource']} location serves {row['api_version']}"
+    released = {loc["releasedVersion"] for loc in fitting}
+    if row["api_version"] == ado_transport.PREVIEW_API_VERSION:
+        assert released == {"0.0"}, f"{name}: a preview row whose location has a released version {released}"
+    else:
+        assert ado_transport.API_VERSION in released, f"{name}: a GA row whose location is released at {released}"
+    sent = set(row["route"]) - ({"project"} if name in ORG_LEVEL else set())
+    assert any(all(re.search(r"\{[*$]?" + re.escape(p) + r"\}", loc["routeTemplate"]) for p in sent)
+               for loc in fitting), f"{name}: {sorted(sent)} not all in {[loc['routeTemplate'] for loc in fitting]}"
+
+
+def test_the_org_level_row_really_has_no_project_in_its_template():
+    (loc,) = _locations("wit", "workItemRelationTypes")
+    assert "{project}" not in loc["routeTemplate"] and loc["routeTemplate"].startswith("_apis/")
+
+
+def test_rest_routes_are_the_identity_read_only_and_agree_with_the_transport():
+    assert set(bc.REST_ROUTES) == {"connection_data"} and set(bc.REST_ROUTES) <= set(bc.WIT_ROUTES)
+    row = bc.REST_ROUTES["connection_data"]
+    assert row == {"path": "_apis/connectionData", "method": "GET", "api_version": ado_transport.PREVIEW_API_VERSION,
+                   "verified": True}
+    assert {r["path"] for r in bc.REST_ROUTES.values()} == ado_transport.REST_READS
+    assert {r["method"] for r in bc.REST_ROUTES.values()} == {"GET"}
+    assert bc.ADO_RESOURCE_ID == ado_transport.ADO_RESOURCE_ID == "499b84ac-1321-427f-aa17-267ca6975798"
+    assert not re.search(r"-preview\.\d", row["api_version"])

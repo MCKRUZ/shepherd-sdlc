@@ -22,7 +22,8 @@ The checker's own detection is proven on bad argv below: a golden that cannot fa
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import route_key_boards
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
+from tests.ado_boards_fixtures import identity_rest_argv, is_identity_rest_read, route_key_boards
 from tests.test_boards_sync_apply import (SPEC4, _body, adhoc, apply, build_repo, clock, linked, load_cfg,  # noqa: F401
                                           make_board, plan_doc, seed, set_config, snapshot, with_rows)
 
@@ -36,6 +37,11 @@ import pytest
 import ado_transport
 import ado_wit
 import ado_sync_comments as comments
+
+# B0 (2026-10-14): these scenarios combine the item, history and write fixtures — hand-written for the hand-written
+# Agile process, and not captured yet — with a process, so they read that same process even where a capture exists
+# (tests/ado_boards_fixtures.py, `BOARDS_PROCESS`). The captured process is exercised in test_boards_captured_process.py.
+BOARDS_PROCESS = HAND_WRITTEN_PROCESS
 
 GOLDEN = Path(__file__).resolve().parent / "golden" / "az_write_argv.json"
 REGEN = "GOLDEN_REGEN=1 uv run --project scripts pytest scripts/tests/test_boards_write_argv_golden.py -q"
@@ -70,6 +76,8 @@ def violations(argv: list[str], body=None) -> list[str]:
         detect = argv[argv.index("--detect") + 1] if "--detect" in argv else None
         if detect != "false":
             found.append("a missing --detect false")
+    if argv[:1] == ["rest"] and not is_identity_rest_read(argv):  # B0: `az rest` is the identity read and nothing else
+        found.append("an az rest other than the identity read")
     if "--only-show-errors" in argv or argv[-2:] != ["-o", "json"]:
         found.append("an argv the seam would not have built")
     return found
@@ -159,7 +167,10 @@ def test_every_recorded_argv_is_clean(scenario):
     _steps, calls, _root, _ = scenario
     for c in calls:
         assert violations(c["argv"], c["body"]) == [], c["argv"]
+        if is_identity_rest_read(c["argv"], ORG):  # B0: the identity read is `az rest` of <ORG>/_apis/connectionData
+            continue
         assert c["argv"][c["argv"].index("--detect") + 1] == "false" and c["argv"][c["argv"].index("--org") + 1] == ORG
+    assert sum(1 for c in calls if c["argv"][:1] == ["rest"]) == 3   # the identity read, once per step with a comment
 
 
 def test_no_file_under_specs_changes_after_the_scenario(scenario):
@@ -196,6 +207,13 @@ def test_no_file_under_specs_changes_after_the_scenario(scenario):
     (["repos", "pr", "work-item", "add", "--id", "1", "-o", "json"], None, "--detect false"),
     (["boards", "query", "--detect", "false", "-o", "json", "--only-show-errors"], None, "seam"),
     (["boards", "query", "--detect", "false"], None, "seam"),
+    # B0: `az rest` is permitted for the identity read only — any other method, URL, version or resource fires
+    ([*identity_rest_argv(ORG)[:2], "post", *identity_rest_argv(ORG)[3:]], None, "az rest other than"),
+    ([w.replace("_apis/connectionData", "_apis/projects") for w in identity_rest_argv(ORG)], None, "az rest other than"),
+    ([w.replace("7.1-preview", "7.1") for w in identity_rest_argv(ORG)], None, "az rest other than"),
+    ([w.replace("contoso", "elsewhere") for w in identity_rest_argv(ORG)], None, "az rest other than"),
+    (["rest", "--method", "get", "--url", f"{ORG}/_apis/connectionData?api-version=7.1-preview", "-o", "json"], None,
+     "az rest other than"),
 ])
 def test_the_checker_fires_on_each_forbidden_shape(argv, body, expect):
     found = violations(argv, body)
@@ -210,3 +228,4 @@ def test_the_checker_accepts_the_argv_the_seam_builds():
     assert violations(clean, {"text": "a fact"}) == []
     assert violations(["repos", "pr", "work-item", "add", "--id", "12", "--work-items", "4521", "--detect", "false",
                        "--org", ORG, "-o", "json"]) == []
+    assert violations(identity_rest_argv(ORG)) == []   # B0: the identity read, `az rest` of <ORG>/_apis/connectionData

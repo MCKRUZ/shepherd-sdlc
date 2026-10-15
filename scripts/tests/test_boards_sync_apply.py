@@ -28,7 +28,8 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `board` stands
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import FakeBoardsAz, load_wit, load_wit_error, route_key_boards, route_params
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
+from tests.ado_boards_fixtures import FakeBoardsAz, is_identity_rest_read, load_wit, load_wit_error, route_key_boards, route_params
 
 import ast
 import builtins
@@ -52,6 +53,11 @@ import ado_sync_model as model
 import ado_transport
 import boards_contract as bc
 from ado_map import AdoImportError
+
+# B0 (2026-10-14): these scenarios combine the item, history and write fixtures — hand-written for the hand-written
+# Agile process, and not captured yet — with a process, so they read that same process even where a capture exists
+# (tests/ado_boards_fixtures.py, `BOARDS_PROCESS`). The captured process is exercised in test_boards_captured_process.py.
+BOARDS_PROCESS = HAND_WRITTEN_PROCESS
 
 ROOT = Path(__file__).resolve().parents[2]
 MINI = Path(__file__).resolve().parent / "fixtures" / "boards_repo"
@@ -101,7 +107,7 @@ def tagged_none(args):
 def make_board(monkeypatch) -> FakeBoardsAz:
     """A fake that answers writes. `sent` records (route key, argv, request body) of every write that reached it, in
     order; creates answer ids 5001, 5002, ...; an update answers the item's id and the tested revision plus one."""
-    fake = FakeBoardsAz(writes=True)
+    fake = FakeBoardsAz(writes=True, hand_written=BOARDS_PROCESS == HAND_WRITTEN_PROCESS)
     fake.sent = []
     fake.ids = itertools.count(5001)
 
@@ -658,6 +664,18 @@ def test_an_identity_that_is_not_by_refuses_the_whole_plan_after_exactly_one_cal
     assert [e["reason"] for e in events_of(repo, "refused")][-1] == reason
 
 
+def test_a_pat_only_sign_in_cannot_say_who_is_signed_in_so_the_whole_plan_is_identity_unknown(repo, board, two_updates):
+    """B0: the identity read is `az rest`, which needs an Entra token; with a personal access token alone it fails (az's
+    words here are hand-written: the capture signed in with Entra). The plan is refused as `identity_unknown` after
+    that one call — no field op sent, no identity remembered, and nobody's name stood in for the unknown one."""
+    board.fail["_apis/connectionData"] = "ERROR: Please run 'az login' to setup account."
+    res = apply(repo, with_rows(two_updates, [*two_updates["rows"], adhoc(repo)]))
+    assert (res["exit"], res["refused_reason"], res["applied"], res["failed"]) == (2, "identity_unknown", [], [])
+    assert len(board.calls) == 1 and is_identity_rest_read(board.calls[0]) and written(board) == []
+    assert cache.load_me(repo) is None
+    assert [e["reason"] for e in events_of(repo, "refused")][-1] == "identity_unknown"
+
+
 def test_an_account_that_is_not_on_the_roster_is_identity_unknown(repo, board, two_updates):
     (repo / ".sdlc" / "team.yaml").write_text(ROSTER.replace("person1@example.com", "someone.else@example.com"),
                                               encoding="utf-8")
@@ -726,7 +744,8 @@ def test_a_comment_post_with_an_unknown_outcome_is_recovered_never_posted_twice(
     assert res["exit"] == 0 and res["failed"] == []
     (applied,) = res["applied"]
     assert (applied["comment_id"], applied["recovered"]) == (504, True)
-    assert board.count("devops", "invoke") == 3 and len([c for c in board.calls if "POST" in c]) == 1   # call 0, the POST, the re-list
+    assert board.count("devops", "invoke") == 2 and len([c for c in board.calls if "POST" in c]) == 1   # the POST, the re-list
+    assert board.count("rest") == 1 and is_identity_rest_read(board.calls[0])                         # call 0 (B0: az rest)
     assert [route_key_boards(c) for c in board.calls] == ["GET core/connectionData", "POST wit/comments", "GET wit/comments"]
     relist = board.calls[-1]
     assert "order=desc" in relist and "$top=20" in relist
@@ -835,8 +854,12 @@ def test_every_recorded_argv_carries_detect_false_and_the_seam_adds_the_rest(rep
     res = apply(repo, with_rows(two_updates, [adhoc(repo), *two_updates["rows"]]))
     assert res["exit"] == 0 and board.calls
     for argv in board.calls:
-        assert argv[argv.index("--detect") + 1] == "false" and "--only-show-errors" not in argv and argv[-2:] == ["-o", "json"]
+        assert "--only-show-errors" not in argv and argv[-2:] == ["-o", "json"]
         assert not any(re.search(r"-preview\.\d", word) for word in argv)
+        if is_identity_rest_read(argv):  # B0: the one `az rest` (the identity read) has no --detect flag
+            continue
+        assert argv[argv.index("--detect") + 1] == "false"
+    assert [is_identity_rest_read(argv) for argv in board.calls].count(True) == 1   # the comment row's identity read
     assert_clean_record(repo, res)
 
 

@@ -11,7 +11,7 @@ the write Fold fills their bodies — and it writes nothing to the repository: n
   updates_since(repo, wid, rev)        the revisions newer than `rev`, oldest first
   comments(repo, wid)                  the discussion, oldest first, paged on the response body's token
   comment_versions(repo, wid, cid)     the edit history of one comment
-  connection_data(repo)                who the signed-in identity is (`authenticatedUser`)
+  connection_data(repo)                who the signed-in identity is (`authenticatedUser`), through `az rest`
   BOARDS_AZ_CONTRACT                   every argv prefix the reads issue, for `test_boards_az_contract.py`
 
 How it asks. A `devops invoke` read goes through `ado_transport.invoke_body`, and its location (area,
@@ -22,6 +22,13 @@ verb and use `ado_transport.az_json` with the scope `ado_transport.scope(with_re
 takes the organisation only). Every argv therefore carries `--detect false` and ends `-o json`; the seam
 adds `--only-show-errors`; the only preview api-version is `PREVIEW_API_VERSION`, which the discussion
 and identity routes use. The module imports no subprocess: `az` is spawned only inside the transport seam.
+
+The one exception is the identity read. The B0 capture (2026-10-14) found that `connectionData` is not an
+`az devops invoke` location at all, so it is `ado_transport.rest_get` of `boards_contract.REST_ROUTES` —
+`az rest --method get --resource <Azure DevOps' resource id> --url <org>/_apis/connectionData?api-version=
+7.1-preview -o json`, the only `az rest` the plugin sends (no `--detect`: `az rest` has no such flag). It needs
+an Entra sign-in: with a personal access token alone the read fails, the failure says the identity is
+UNKNOWN (never "signed out", never a guess), and every write that needs it refuses as `identity_unknown`.
 
 What it returns. Rows as Azure DevOps sent them: a revision's `revisedBy`, a comment's `createdBy` and an
 item's `AssignedTo` name people, and comment text is whatever its author typed. Nothing here redacts,
@@ -45,7 +52,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ado_transport  # noqa: E402
 from ado_map import AdoImportError, _require  # noqa: E402
-from boards_contract import REF_RE, WIT_ROUTES  # noqa: E402
+from boards_contract import REF_RE, REST_ROUTES, WIT_ROUTES  # noqa: E402
 
 BATCH_SIZE = 200          # ids per `workitemsbatch` POST: the REST limit
 PAGE_SIZE = 200           # `$top` for the updates and comments reads
@@ -59,7 +66,8 @@ _QUERY_COLUMNS = ("[System.Id],[System.WorkItemType],[System.Title],[System.Stat
 # Every argv prefix the reads issue, in the order of the list above (placeholders: P project, U organisation URL,
 # Q a WIQL text, N a work item id, C a comment id, F the request body file, T a continuation token). Checked
 # against `az ... --help` by test_boards_az_contract.py and against the argv the reads really emit by
-# test_boards_wit_reads.py. Read-only, `--detect false`, no `--repository`, no preview revision.
+# test_boards_wit_reads.py. Read-only, `--detect false`, no `--repository`, no preview revision — except the last,
+# the identity read: `az rest` of the one allow-listed URL (U/_apis/connectionData), which has no `--detect` flag.
 BOARDS_AZ_CONTRACT: tuple[list[str], ...] = (
     ["boards", "query", "--detect", "false", "--org", "U", "--project", "P", "--wiql", "Q", "-o", "json"],
     ["boards", "work-item", "show", "--id", "N", "--expand", "relations", "--detect", "false", "--org", "U",
@@ -79,8 +87,8 @@ BOARDS_AZ_CONTRACT: tuple[list[str], ...] = (
     ["devops", "invoke", "--area", "wit", "--resource", "commentsVersions", "--route-parameters", "project=P",
      "workItemId=N", "commentId=C", "--http-method", "GET", "--api-version", "7.1-preview", "--detect", "false",
      "--org", "U", "-o", "json"],
-    ["devops", "invoke", "--area", "core", "--resource", "connectionData", "--route-parameters",
-     "--http-method", "GET", "--api-version", "7.1-preview", "--detect", "false", "--org", "U", "-o", "json"],
+    ["rest", "--method", "get", "--resource", "499b84ac-1321-427f-aa17-267ca6975798", "--url",
+     "U/_apis/connectionData?api-version=7.1-preview", "-o", "json"],
 )
 
 
@@ -280,9 +288,17 @@ def comment_versions(repo_root, wid: int, comment_id: int) -> list[dict]:
 # --- identity ----------------------------------------------------------------------------------------------
 
 def connection_data(repo_root) -> dict:
-    """The organisation's `connectionData`: `authenticatedUser` is the identity the token belongs to. The route has
-    no parameters; whether az wants an empty `--route-parameters` word for it is a B0 capture question."""
-    doc = _call(repo_root, "connection_data")
+    """The organisation's `connectionData`: `authenticatedUser` is the identity the token belongs to.
+
+    Not a `devops invoke` read (B0 capture, 2026-10-14: no area resolves it): `ado_transport.rest_get` of
+    `REST_ROUTES["connection_data"]`, an `az rest` GET at `7.1-preview` (`7.1` is refused as "under preview"). An
+    error is worded `core/connectionData (az rest): <why>`; under a personal access token alone `<why>` is
+    `ado_transport.REST_NO_TOKEN` — the identity is unknown, and nothing here guesses one."""
+    row = REST_ROUTES["connection_data"]
+    try:
+        doc = ado_transport.rest_get(repo_root, row["path"], api_version=row["api_version"])
+    except AdoImportError as exc:
+        raise AdoImportError(f"core/connectionData (az rest): {exc}") from exc
     _require(doc, "authenticatedUser", "connectionData")
     return doc
 

@@ -1,0 +1,232 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "classificationNodes",
+  "--route-parameters",
+  "project=Claims",
+  "--query-parameters",
+  "$depth=3",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 2,
+  "value": [
+   {
+    "children": [
+     {
+      "hasChildren": false,
+      "id": 2134,
+      "identifier": "00000000-0000-0000-0000-000000000001",
+      "name": "Intake",
+      "path": "\\Claims\\Area\\Intake",
+      "structureType": "area",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Areas/Intake"
+     },
+     {
+      "hasChildren": false,
+      "id": 2136,
+      "identifier": "00000000-0000-0000-0000-000000000003",
+      "name": "Payments",
+      "path": "\\Claims\\Area\\Payments",
+      "structureType": "area",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Areas/Payments"
+     },
+     {
+      "hasChildren": false,
+      "id": 2137,
+      "identifier": "00000000-0000-0000-0000-000000000004",
+      "name": "Fraud",
+      "path": "\\Claims\\Area\\Fraud",
+      "structureType": "area",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Areas/Fraud"
+     },
+     {
+      "hasChildren": false,
+      "id": 2138,
+      "identifier": "00000000-0000-0000-0000-000000000005",
+      "name": "Claims Team",
+      "path": "\\Claims\\Area\\Claims Team",
+      "structureType": "area",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Areas/Claims%20Team"
+     }
+    ],
+    "hasChildren": true,
+    "id": 2108,
+    "identifier": "00000000-0000-0000-0000-000000000006",
+    "name": "Claims",
+    "path": "\\Claims\\Area",
+    "structureType": "area",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Areas"
+   },
+   {
+    "children": [
+     {
+      "attributes": {
+       "finishDate": "2026-07-28T00:00:00Z",
+       "startDate": "2026-07-15T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2105,
+      "identifier": "00000000-0000-0000-0000-000000000007",
+      "name": "Sprint 1",
+      "path": "\\Claims\\Iteration\\Sprint 1",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%201"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-08-11T00:00:00Z",
+       "startDate": "2026-07-29T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2106,
+      "identifier": "00000000-0000-0000-0000-000000000008",
+      "name": "Sprint 2",
+      "path": "\\Claims\\Iteration\\Sprint 2",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%202"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-08-25T00:00:00Z",
+       "startDate": "2026-08-12T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2107,
+      "identifier": "00000000-0000-0000-0000-000000000009",
+      "name": "Sprint 3",
+      "path": "\\Claims\\Iteration\\Sprint 3",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%203"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-09-08T00:00:00Z",
+       "startDate": "2026-08-26T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2124,
+      "identifier": "00000000-0000-0000-0000-000000000010",
+      "name": "Sprint 4",
+      "path": "\\Claims\\Iteration\\Sprint 4",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%204"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-09-22T00:00:00Z",
+       "startDate": "2026-09-09T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2125,
+      "identifier": "00000000-0000-0000-0000-000000000011",
+      "name": "Sprint 5",
+      "path": "\\Claims\\Iteration\\Sprint 5",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%205"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-10-06T00:00:00Z",
+       "startDate": "2026-09-23T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2126,
+      "identifier": "00000000-0000-0000-0000-000000000012",
+      "name": "Sprint 6",
+      "path": "\\Claims\\Iteration\\Sprint 6",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%206"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-10-20T00:00:00Z",
+       "startDate": "2026-10-07T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2127,
+      "identifier": "00000000-0000-0000-0000-000000000013",
+      "name": "Sprint 7",
+      "path": "\\Claims\\Iteration\\Sprint 7",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%207"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-11-03T00:00:00Z",
+       "startDate": "2026-10-21T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2128,
+      "identifier": "00000000-0000-0000-0000-000000000014",
+      "name": "Sprint 8",
+      "path": "\\Claims\\Iteration\\Sprint 8",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%208"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-11-17T00:00:00Z",
+       "startDate": "2026-11-04T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2129,
+      "identifier": "00000000-0000-0000-0000-000000000015",
+      "name": "Sprint 9",
+      "path": "\\Claims\\Iteration\\Sprint 9",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%209"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-12-01T00:00:00Z",
+       "startDate": "2026-11-18T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2130,
+      "identifier": "00000000-0000-0000-0000-000000000016",
+      "name": "Sprint 10",
+      "path": "\\Claims\\Iteration\\Sprint 10",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%2010"
+     },
+     {
+      "attributes": {
+       "finishDate": "2026-12-15T00:00:00Z",
+       "startDate": "2026-12-02T00:00:00Z"
+      },
+      "hasChildren": false,
+      "id": 2131,
+      "identifier": "00000000-0000-0000-0000-000000000017",
+      "name": "Sprint 11",
+      "path": "\\Claims\\Iteration\\Sprint 11",
+      "structureType": "iteration",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations/Sprint%2011"
+     }
+    ],
+    "hasChildren": true,
+    "id": 2103,
+    "identifier": "00000000-0000-0000-0000-000000000018",
+    "name": "Claims",
+    "path": "\\Claims\\Iteration",
+    "structureType": "iteration",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/classificationNodes/Iterations"
+   }
+  ]
+ }
+}

@@ -419,8 +419,16 @@ def _clean(value) -> str | None:
 
 
 def _per_type_reads(schema: dict) -> list[str]:
-    prefix = "wit/states type="
-    return [c[len(prefix):] for c in schema.get("commands") or [] if isinstance(c, str) and c.startswith(prefix)]
+    """The types read one by one, in the order read: each per-type fields read (`wit/workItemTypesField type=<name>`
+    since the B0 capture; a schema saved before it names `wit/states type=<name>`), each type once."""
+    row = bc.WIT_ROUTES["type_fields"]
+    prefixes = (f"{row['area']}/{row['resource']} type=", "wit/states type=")
+    out: list[str] = []
+    for c in schema.get("commands") or []:
+        for prefix in prefixes:
+            if isinstance(c, str) and c.startswith(prefix) and c[len(prefix):] not in out:
+                out.append(c[len(prefix):])
+    return out
 
 
 def _discover_payload(schema: dict, *, reused: bool, host: dict | None, notes: list[str]) -> dict:

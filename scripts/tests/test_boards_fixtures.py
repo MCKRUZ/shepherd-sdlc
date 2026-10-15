@@ -128,14 +128,22 @@ def test_answer_forms(tmp_path):
 
 
 def test_per_type_routes_resolve_by_the_type_route_parameter(tmp_path):
+    """B0: at the corrected locations, `workItemTypeStates` and `workItemTypesField`. The hand-written ones
+    (`states`, `fields` with a `type`) are answered by nothing — the real az refuses or ignores them."""
     fake = abf.FakeBoardsAz()
-    for wit_type, name in (("User Story", "type_states_user_story"), ("Bug", "type_states_bug"), ("Issue", "type_states_issue")):
-        got = fake(invoke("wit", "states", "project=Claims", f"type={wit_type}"), tmp_path)
+    for wit_type, name in (("User Story", "type_states_user_story"), ("Bug", "type_states_bug"), ("Issue", "type_states_issue"),
+                           ("Spec", "type_states_spec"), ("RAID", "type_states_raid")):
+        got = fake(invoke("wit", "workItemTypeStates", "project=Claims", f"type={wit_type}"), tmp_path)
         assert json.loads(got) == abf.load_wit(name)
-    assert json.loads(fake(invoke("wit", "fields", "project=Claims", "type=Issue"), tmp_path)) == abf.load_wit("type_fields_issue")
+    got = fake(invoke("wit", "workItemTypesField", "project=Claims", "type=Issue"), tmp_path)
+    assert json.loads(got) == abf.load_wit("type_fields_issue")
     assert json.loads(fake(invoke("wit", "fields", "project=Claims"), tmp_path)) == abf.load_wit("fields")
+    with pytest.raises(AssertionError, match="unexpected az call: GET wit/workItemTypeStates"):
+        fake(invoke("wit", "workItemTypeStates", "project=Claims", "type=Task"), tmp_path)
     with pytest.raises(AssertionError, match="unexpected az call: GET wit/states"):
-        fake(invoke("wit", "states", "project=Claims", "type=Epic"), tmp_path)
+        fake(invoke("wit", "states", "project=Claims", "type=User Story"), tmp_path)
+    # `fields` with a `type` is the project-wide list (the capture's own finding), never a type's fields
+    assert json.loads(fake(invoke("wit", "fields", "project=Claims", "type=Issue"), tmp_path)) == abf.load_wit("fields")
 
 
 def test_default_answers_cover_every_hand_written_fixture_and_only_those():
@@ -184,8 +192,55 @@ def test_load_wit_unwraps_value_and_reads_null_as_empty(tmp_path, monkeypatch):
     assert abf.load_wit("empty") == []
 
 
-def test_every_name_resolves_to_the_hand_written_file_today():
-    assert {abf.wit_source_of(n) for n in abf.WIT_FIXTURE_NAMES} == {"hand-written"}
+B0_CAPTURED = {"projects", "type_categories", "types", "fields", "backlog_config", "classification_nodes",
+               "team_iterations", "relation_types", "connection_data", "type_states_user_story", "type_states_bug",
+               "type_states_issue", "type_fields_user_story", "type_fields_issue", *abf.WIT_CAPTURED_ONLY}
+
+
+def test_every_name_resolves_to_the_capture_where_there_is_one_and_to_the_hand_written_file_otherwise():
+    """B0 (2026-10-14): the discovery reads and the identity read resolve to the capture; the item, history,
+    discussion and write fixtures to the hand-written files (nothing captured them yet)."""
+    sources = {n: abf.wit_source_of(n) for n in abf.WIT_FIXTURE_NAMES}
+    assert {n for n, s in sources.items() if s == "captured"} == B0_CAPTURED
+    assert {n for n, s in sources.items() if s != "captured"} == set(abf.WIT_FIXTURE_NAMES) - B0_CAPTURED
+    assert set(sources.values()) == {"captured", "hand-written"}
+    for name in abf.WIT_CAPTURED_REFERENCE:  # loaded by name, but no route answers with it
+        assert abf.wit_source_of(name) == "captured" and name not in abf.DEFAULT_WIT_ANSWERS.values()
+
+
+def test_a_hand_written_fake_answers_from_the_hand_written_file_where_a_capture_exists(tmp_path):
+    captured, hand = abf.FakeBoardsAz(), abf.FakeBoardsAz(hand_written=True)
+    call = invoke("wit", "workItemTypes", "project=Claims")
+    assert json.loads(captured(call, tmp_path)) == abf.load_wit("types") != abf.load_wit("types", hand_written=True)
+    assert json.loads(hand(call, tmp_path)) == abf.load_wit("types", hand_written=True)
+    batch = invoke("wit", "workitemsbatch", "project=Claims", method="POST")   # no capture: the same file either way
+    assert json.loads(hand(batch, tmp_path)) == json.loads(captured(batch, tmp_path)) == abf.load_wit("workitems_batch")
+
+
+def test_a_module_opts_into_the_hand_written_process_by_name():
+    class Module:
+        BOARDS_PROCESS = abf.HAND_WRITTEN_PROCESS
+    assert abf.uses_hand_written_process(Module) and not abf.uses_hand_written_process(object())
+
+
+def test_the_identity_read_is_routed_by_its_rest_url(tmp_path):
+    """B0: `az rest` of <org>/_apis/connectionData keeps the route key every test answers it by."""
+    rest = abf.identity_rest_argv()
+    assert rest == ["rest", "--method", "get", "--resource", "499b84ac-1321-427f-aa17-267ca6975798", "--url",
+                    f"{ORG}/_apis/connectionData?api-version=7.1-preview", "-o", "json"]
+    assert abf.route_key_boards(rest) == "GET core/connectionData" and not abf.is_write_key("GET core/connectionData")
+    assert json.loads(abf.FakeBoardsAz()(rest, tmp_path)) == abf.load_wit("connection_data")
+    sp = [*rest[:-3], rest[-3] + "&connectOptions=0", *rest[-2:]]   # a refinement rides the URL's query string
+    assert abf.query_params(sp) == {"api-version": "7.1-preview", "connectOptions": "0"}
+    assert json.loads(abf.FakeBoardsAz()(sp, tmp_path)) == abf.load_wit("connection_data_sp")
+    other = [w.replace("_apis/connectionData", "_apis/projects") for w in rest]
+    assert abf.route_key_boards(other) == "GET rest /contoso/_apis/projects"
+    with pytest.raises(AssertionError, match="unexpected az call: GET rest /contoso/_apis/projects"):
+        abf.FakeBoardsAz()(other, tmp_path)
+    post = [*rest[:2], "post", *rest[3:]]
+    with pytest.raises(AssertionError, match="unexpected az write: POST core/connectionData"):
+        abf.FakeBoardsAz()(post, tmp_path)
+    assert abf.is_identity_rest_read(rest) and not abf.is_identity_rest_read(other) and not abf.is_identity_rest_read(post)
 
 
 def test_a_capture_supersedes_the_hand_written_file_with_no_code_change(tmp_path, monkeypatch):
@@ -205,7 +260,8 @@ def test_synthetic_processes_resolve_from_their_folder(tmp_path, monkeypatch):
                                                           "value": {"count": 0, "value": []}}))
     assert abf.wit_source_of("scrum_types") == "synthetic"
     assert abf.load_wit("scrum_types") == {"count": 0, "value": []}
-    assert abf.wit_source_of("types") == "hand-written"
+    assert abf.wit_source_of("types") == "captured"            # B0: a name that is not synthetic keeps its own file
+    assert abf.wit_source_of("account_show") == "hand-written"
 
 
 # --- Fold B2 (B2-P0): the item, drift and discussion reads --------------------------------------
@@ -219,7 +275,9 @@ GUID_ANON = re.compile(r"^00000000-0000-0000-0000-\d{12}$")
 
 def test_the_invoke_route_filter_keeps_every_invoke_fixture_and_drops_only_native_verbs():
     invoke_names = {n for n in abf.WIT_FIXTURE_NAMES if _command_of(n)[1:3] == ["devops", "invoke"]}
-    assert set(abf.WIT_FIXTURE_NAMES) - invoke_names == {"account_show", *B2_NATIVE}
+    # B0: the captured identity read is `az rest`, not a `devops invoke` (its hand-written stand-in still is)
+    assert set(abf.WIT_FIXTURE_NAMES) - invoke_names == {"account_show", "connection_data", *B2_NATIVE}
+    assert _command_of("connection_data")[:2] == ["az", "rest"]
     assert B2_INVOKE <= invoke_names
 
 

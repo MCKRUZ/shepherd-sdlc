@@ -12,7 +12,10 @@ What `discover` reads, in order (each a `devops invoke` GET; the project is a ro
 `--project`; every route comes from `boards_contract.WIT_ROUTES`, the one place a capture corrects):
   projects, workItemTypeCategories, workItemTypes, fields (project-wide), the team's backlog
   configuration, classificationNodes (areas and iterations, depth 3), the team's iterations,
-  workItemRelationTypes — then, for each type the config writes to, that type's states and fields.
+  workItemRelationTypes — then, for each type the config writes to, that type's fields with their allowed
+  values (`workItemTypesField`, `$expand=allowedValues`). The type's states are taken from the
+  workItemTypes answer, which carries every type's `states` exactly as `workItemTypeStates` answers them
+  (B0 capture, 2026-10-14: equal for all seven types read), so they cost no call of their own.
 
 Three rules decide the parts that are not fixed:
   * The team is `--team`, else `team:` in `.sdlc/ado.yaml`, else the project's default team (the one
@@ -73,10 +76,8 @@ DISCOVER_AZ_CONTRACT: tuple[list[str], ...] = (
      "--http-method", "GET", "--api-version", "7.1", "--detect", "false", "--org", "U", "-o", "json"],
     ["devops", "invoke", "--area", "wit", "--resource", "workItemRelationTypes", "--route-parameters", "project=P",
      "--http-method", "GET", "--api-version", "7.1", "--detect", "false", "--org", "U", "-o", "json"],
-    ["devops", "invoke", "--area", "wit", "--resource", "states", "--route-parameters", "project=P", "type=TY",
-     "--http-method", "GET", "--api-version", "7.1", "--detect", "false", "--org", "U", "-o", "json"],
-    ["devops", "invoke", "--area", "wit", "--resource", "fields", "--route-parameters", "project=P", "type=TY",
-     "--http-method", "GET", "--query-parameters", "$expand=allowedValues", "--api-version", "7.1",
+    ["devops", "invoke", "--area", "wit", "--resource", "workItemTypesField", "--route-parameters", "project=P",
+     "type=TY", "--http-method", "GET", "--query-parameters", "$expand=allowedValues", "--api-version", "7.1",
      "--detect", "false", "--org", "U", "-o", "json"],
 )
 
@@ -269,6 +270,22 @@ def _pick_team(team: str | None, cfg: dict, project, notes: list[str]) -> str | 
 
 # --- discovery -------------------------------------------------------------------------------------------------------------
 
+def _type_states(types_doc, type_name: str) -> list[dict]:
+    """`ado_schema_map.map_type_states` of the `states` the workItemTypes answer carries for `type_name` — the list
+    `workItemTypeStates` would answer (equal in the B0 capture), read with no call of its own. A shape it does not
+    know is an `AdoImportError` worded `wit/workItemTypes type=<name>: <why>`, as a failed per-type read would be."""
+    row = WIT_ROUTES["types"]
+    label = f"{row['area']}/{row['resource']} type={type_name}"
+    try:
+        entry = next((t for t in sm._items(types_doc, "WorkItemType")
+                      if isinstance(t, dict) and t.get("name") == type_name), None)
+        if entry is None:
+            raise AdoImportError(f"unexpected az shape: no WorkItemType named {type_name!r}")
+        return sm.map_type_states(type_name, {"value": entry.get("states")})
+    except AdoImportError as exc:
+        raise AdoImportError(f"{label}: {exc}") from exc
+
+
 def discover(repo_root, team: str | None = None, *, notes: list[str] | None = None, cfg: dict | None = None) -> dict:
     """Read the process and return the schema (`ado_schema_map.build_schema`'s document; saving is `save_schema`).
 
@@ -299,7 +316,7 @@ def discover(repo_root, team: str | None = None, *, notes: list[str] | None = No
     project_doc = read("projects", projectId=project)
     team_name = _pick_team(team, cfg, project_doc, notes)
     categories = read("type_categories", sm.map_categories, project=project)
-    types = read("types", sm.map_types, project=project)
+    types_doc, types = read("types", lambda doc: (doc, sm.map_types(doc)), project=project)
     fields = read("fields", sm.map_fields, project=project)
     backlog = read("backlog_config", sm.map_backlog_config, project=project, team=team_name) if team_name else None
     nodes = read("classification_nodes", sm.map_nodes, query={"$depth": "3"}, project=project)
@@ -317,8 +334,7 @@ def discover(repo_root, team: str | None = None, *, notes: list[str] | None = No
     states_by_type: dict = {}
     fields_by_type: dict = {}
     for name in types_to_read(assemble({}, {}), cfg):
-        states_by_type[name] = read("type_states", lambda doc, n=name: sm.map_type_states(n, doc),
-                                    project=project, type=name)
+        states_by_type[name] = _type_states(types_doc, name)
         fields_by_type[name] = read("type_fields", lambda doc, n=name: sm.map_type_fields(n, doc),
                                     query={"$expand": "allowedValues"}, project=project, type=name)
     schema = assemble(states_by_type, fields_by_type)
