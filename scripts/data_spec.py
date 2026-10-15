@@ -66,8 +66,9 @@ _PARENT_KEYS = ("depends_on_before", "depends_on_after", "data_review_before", "
 _REFUSED_KINDS = {"parent_is_data", "self_reference", "cycle", "conflicting_serves", "bad_value", "not_data"}
 
 # `check`: what counts as a placeholder inside a Smoke tests section. A markdown link `[t](u)` is content
-# (the hand-off is supposed to link its test output); so are HTML tags, comments and autolinks.
-_BRACKET_PLACEHOLDER_RE = re.compile(r"\[[^\]]*\](?!\()")
+# (the hand-off is supposed to link its test output); so are HTML tags, comments and autolinks, and a
+# task-list marker (`[ ]`, `[x]`, `[X]`) — a ticked smoke test is the hand-off doing its job.
+_BRACKET_PLACEHOLDER_RE = re.compile(r"\[(?![ xX]\])[^\]]*\](?!\()")
 _ANGLE_PLACEHOLDER_RE = re.compile(
     r"<(?![/!]|https?://|(?:br|a|code|pre|details|summary|p|b|i|em|strong|ul|ol|li|img|span|div|table|tr|td|th)\b)"
     r"[^\s<>][^<>\n]*>", re.IGNORECASE)
@@ -222,9 +223,18 @@ def build_graph(index: dict[str, list[Path]]) -> dict[str, list[str]]:
 
 
 def link_cycles(graph: dict[str, list[str]], parent_id: str, data_id: str) -> list[list[str]]:
-    """The cycles the link itself closes. A cycle already elsewhere in the graph is not this link's
-    doing and does not block it, so only cycles passing through both specs count."""
-    return [c for c in dm.cycle_after_link(graph, parent_id, data_id) if parent_id in c and data_id in c]
+    """The cycle the link itself closes, as a one-element list (`[]` when it closes none): the path
+    `[data_id, ..., parent_id]` of dependencies the data spec already has, which the new edge parent ->
+    data turns into a loop. A cycle already elsewhere in the graph neither blocks the link nor hides the
+    one it closes (data_spec_model.link_closes_cycle walks from the data spec, not from a DFS back-edge)."""
+    path = dm.link_closes_cycle(graph, parent_id, data_id)
+    return [path] if path else []
+
+
+def cycle_message(spec_id: str, parent_id: str, cycle: list[str]) -> str:
+    """The refusal's words: the loop written as a chain of `depends_on`, closed on the parent."""
+    return (f"linking spec {spec_id} under spec {parent_id} would create a dependency cycle: "
+            + " -> ".join([parent_id, *cycle]))
 
 
 # --- Resolving a cited id to the file that defines it ------------------------------------------
@@ -362,8 +372,7 @@ def cmd_new(args, ws: Workspace) -> None:
 
     cycles = link_cycles(build_graph(index), parent_id, new_id)
     if cycles:
-        raise CliError(2, f"linking spec {new_id} under spec {parent_id} would create a dependency cycle: "
-                          + " -> ".join(cycles[0]))
+        raise CliError(2, cycle_message(new_id, parent_id, cycles[0]))
 
     # Every refusal is behind us: only now does anything reach the disk.
     ws.specs_dir.mkdir(parents=True, exist_ok=True)
@@ -440,8 +449,7 @@ def cmd_target(args, ws: Workspace) -> None:
 
     cycles = link_cycles(build_graph(index), parent_id, spec_id)
     if cycles:
-        raise CliError(2, f"linking spec {spec_id} under spec {parent_id} would create a dependency cycle: "
-                          + " -> ".join(cycles[0]))
+        raise CliError(2, cycle_message(spec_id, parent_id, cycles[0]))
 
     changed = {
         "type": str(fm_before.get("type") or "").strip() != dm.DATA_TYPE,
@@ -586,12 +594,16 @@ def check_readiness_gaps_owned(ws: Workspace) -> dict:
     if text is None:
         return _finding(name, None, f"not measured — {problem or 'data-readiness.md not present'}")
     section = cs.extract_section(_HTML_COMMENT_RE.sub("", text), "Gaps")
+    if section is None:
+        return _finding(name, False, "no ## Gaps section — 0 gaps reference a DL-NN")
+    gap_rows = dm.real_table_rows(section)
     shown: dict[int, str] = {}
-    for match in _DL_RE.finditer(section or ""):
+    for match in _DL_RE.finditer(section):
         shown.setdefault(int(match.group(1)), f"DL-{match.group(1)}")
     if not shown:
-        return _finding(name, False, "0 gaps reference a DL-NN"
-                        if section is not None else "no ## Gaps section — 0 gaps reference a DL-NN")
+        if not gap_rows:   # a Gaps table with only its header or template stand-ins records no gap: nothing to own
+            return _finding(name, True, "no gaps recorded")
+        return _finding(name, False, f"{len(gap_rows)} gap(s), 0 reference a DL-NN")
 
     log_path = next((p for p in (ws.sdlc_dir / "decision-log.md", ws.repo_root / "decision-log.md")
                      if p.exists()), None)
