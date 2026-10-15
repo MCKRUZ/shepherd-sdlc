@@ -366,3 +366,72 @@ def test_the_redactor_has_no_subprocess_no_shell_and_no_preview_revision():
     assert not re.search(r"^\s*(import|from)\s+subprocess\b", source, re.M)
     assert not re.search(r"shell=True|shlex\.join|os\.system", source)
     assert not re.search(r"-preview\.\d", source)
+
+
+# --- B0 (2026-10-14): redact.py's Boards options, the first stage of the work-item pipeline --------------------------
+
+def _load_redact():
+    spec = importlib.util.spec_from_file_location("redact", FIXTURES / "redact.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+rd = _load_redact()
+BOARD_DOC = {
+    "name": "RealProj", "process": "Agile_RealProj", "team": {"name": "Squad"},
+    "url": "https://dev.azure.com/RealOrg/RealProj/Squad/_apis/work/teamsettings",
+    "nodes": [{"name": "Squad", "path": "\\RealProj\\Area\\Squad"},
+              {"name": "Iteration 1", "path": "\\RealProj\\Iteration\\Iteration 1",
+               "url": "https://dev.azure.com/RealOrg/x/_apis/wit/classificationNodes/Iterations/Iteration%201"},
+              {"name": "Squadron", "path": "RealProj\\Squadron"}],
+    "fields": [{"referenceName": "Custom.Squad", "description": "What the client typed", "helpText": "",
+                "xmlForm": "<Form/>", "defaultValue": "Squad"}, {"description": None}],
+}
+
+
+def _boards(doc=BOARD_DOC, **extra):
+    return rd.redact(doc, "RealOrg", project="RealProj", team="Squad", renames={"Iteration 1": "Sprint 1"}, **extra)
+
+
+def test_without_the_boards_options_redact_is_what_it_was():
+    plain = rd.redact(BOARD_DOC, "RealOrg")
+    assert plain == rd.redact(BOARD_DOC, "RealOrg", project=None, team=None, renames=None, mask_free_text=False)
+    assert plain["name"] == "RealProj" and plain["url"].startswith("https://dev.azure.com/contoso/RealProj/")
+
+
+def test_the_project_is_replaced_wherever_it_appears_as_the_organisation_is():
+    out = _boards()
+    assert (out["name"], out["process"]) == ("Claims", "Agile_Claims")
+    assert out["nodes"][0]["path"] == "\\Claims\\Area\\Claims Team"
+    assert "RealProj" not in json.dumps(out) and "RealOrg" not in json.dumps(out)
+
+
+def test_a_team_or_a_renamed_node_is_replaced_whole_never_inside_other_text():
+    out = _boards()
+    assert out["team"] == {"name": "Claims Team"} and out["nodes"][0]["name"] == "Claims Team"
+    assert out["url"] == "https://dev.azure.com/contoso/Claims/Claims%20Team/_apis/work/teamsettings"  # a URL stays one
+    assert out["nodes"][1]["name"] == "Sprint 1" and out["nodes"][1]["path"] == "\\Claims\\Iteration\\Sprint 1"
+    assert out["nodes"][1]["url"].endswith("/Iterations/Sprint%201")                  # percent-encoded in, and out
+    assert out["nodes"][2] == {"name": "Squadron", "path": "Claims\\Squadron"}          # not a whole segment
+    assert out["fields"][0]["referenceName"] == "Custom.Squad" and out["fields"][0]["defaultValue"] == "Claims Team"
+
+
+def test_mask_free_text_blanks_descriptions_help_and_forms_only():
+    out = _boards(mask_free_text=True)
+    first = out["fields"][0]
+    assert first["description"] == first["xmlForm"] == rd.REDACTED_TEXT
+    assert first["helpText"] == "" and out["fields"][1]["description"] is None        # nothing to hide is left as is
+    assert _boards()["fields"][0]["description"] == "What the client typed"            # off unless asked
+
+
+def test_the_redact_cli_takes_the_options_and_refuses_a_rename_without_an_equals(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(BOARD_DOC)))
+    assert rd.main(["--org", "RealOrg", "--project", "RealProj", "--team", "Squad", "--rename", "Iteration 1=Sprint 1",
+                    "--mask-free-text", "--indent", "1"]) == 0
+    out = capsys.readouterr().out
+    assert json.loads(out) == _boards(mask_free_text=True) and out.startswith('{\n "name"')
+    monkeypatch.setattr(sys, "stdin", io.StringIO("{}"))
+    with pytest.raises(SystemExit) as stop:
+        rd.main(["--org", "RealOrg", "--rename", "no-equals-sign"])
+    assert stop.value.code == 2

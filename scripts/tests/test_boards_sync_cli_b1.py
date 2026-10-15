@@ -51,6 +51,9 @@ NOW = datetime(2026, 10, 13, 9, 30, tzinfo=timezone.utc)
 STAMP = "2026-10-13T09:30:00Z"
 
 TEAM = load_wit("projects")["defaultTeam"]["name"]  # the team `discover` falls back to
+# B0: the spec's type is the default type of the captured process's requirement category (a custom `Spec` type there)
+SPEC_TYPE = next(c["defaultWorkItemType"]["name"] for c in load_wit("type_categories")["value"]
+                 if c["referenceName"] == "Microsoft.RequirementCategory")
 DEFAULT_CALLS = [
     ("GET core/projects", {"projectId": "Claims"}),
     ("GET wit/workItemTypeCategories", {"project": "Claims"}),
@@ -60,8 +63,8 @@ DEFAULT_CALLS = [
     ("GET wit/classificationNodes", {"project": "Claims"}),
     ("GET work/iterations", {"project": "Claims", "team": TEAM}),
     ("GET wit/workItemRelationTypes", {"project": "Claims"}),
-    ("GET wit/states", {"project": "Claims", "type": "User Story"}),
-    ("GET wit/fields", {"project": "Claims", "type": "User Story"}),
+    # B0: the spec type's fields at the corrected location; its states come from the workItemTypes answer
+    ("GET wit/workItemTypesField", {"project": "Claims", "type": SPEC_TYPE}),
 ]
 
 
@@ -145,9 +148,8 @@ def test_discover_reads_the_process_serially_and_nothing_else(az, tmp_path, caps
     schema = read_schema(tmp_path)
     assert schema["commands"] == ["core/projects", "wit/workItemTypeCategories", "wit/workItemTypes", "wit/fields",
                                   "work/backlogconfiguration", "wit/classificationNodes", "work/iterations",
-                                  "wit/workItemRelationTypes", "wit/states type=User Story",
-                                  "wit/fields type=User Story"]
-    story, epic = schema["types"]["User Story"], schema["types"]["Epic"]
+                                  "wit/workItemRelationTypes", f"wit/workItemTypesField type={SPEC_TYPE}"]
+    story, epic = schema["types"][SPEC_TYPE], schema["types"]["Epic"]
     assert story["states"] and story["fields"]                       # read for the spec's type
     assert epic["states"] is None and epic["fields"] is None          # never read is unknown, not empty
 
@@ -166,7 +168,8 @@ def test_every_recorded_argv_has_the_seam_shape(az, tmp_path, capsys):
         assert not any(re.search(r"-preview\.\d", word) for word in argv)
     nodes = next(c for c in az.calls if route_key_boards(c) == "GET wit/classificationNodes")
     assert nodes[nodes.index("--query-parameters") + 1] == "$depth=3"
-    typed = next(c for c in az.calls if route_key_boards(c) == "GET wit/fields" and "type" in route_params(c))
+    typed = next(c for c in az.calls if route_key_boards(c) == "GET wit/workItemTypesField")
+    assert route_params(typed) == {"project": "Claims", "type": SPEC_TYPE}
     assert typed[typed.index("--query-parameters") + 1] == "$expand=allowedValues"
 
 
@@ -238,9 +241,8 @@ def test_discover_reads_the_types_the_config_writes_to_and_skips_pins_the_proces
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0, out
     typed = [(k, p["type"]) for k, p in seen(az) if "type" in p]
-    assert typed == [("GET wit/states", "User Story"), ("GET wit/fields", "User Story"),
-                     ("GET wit/states", "Issue"), ("GET wit/fields", "Issue")]
-    assert out["per_type_reads"] == ["User Story", "Issue"]
+    assert typed == [("GET wit/workItemTypesField", SPEC_TYPE), ("GET wit/workItemTypesField", "Issue")]
+    assert out["per_type_reads"] == [SPEC_TYPE, "Issue"]
     schema = read_schema(tmp_path)
     assert schema["types"]["Issue"]["states"] and "Objective" not in schema["types"]
 
@@ -249,20 +251,20 @@ def test_discover_ignores_an_unusable_config_and_says_so(az, tmp_path, capsys):
     write_cfg(tmp_path, "version: [unclosed\n")
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0 and any("ado.yaml" in note for note in out["notes"])
-    assert [k for k, p in seen(az) if "type" in p] == ["GET wit/states", "GET wit/fields"]  # only the spec's type
+    assert [k for k, p in seen(az) if "type" in p] == ["GET wit/workItemTypesField"]  # only the spec's type
 
 
 def test_discover_withholds_a_person_from_a_picklist_and_a_default(az, tmp_path, capsys):
-    doc = copy.deepcopy(load_wit("type_fields_user_story"))
+    doc = copy.deepcopy(load_wit(f"type_fields_{SPEC_TYPE.lower().replace(' ', '_')}"))
     first, second = doc["value"][1], doc["value"][2]
     first["allowedValues"] = ["person1@example.com", "fine"]
     second["defaultValue"] = "00000000-0000-0000-0000-00000000beef"
-    az.answers["GET wit/fields type=User Story"] = doc
+    az.answers[f"GET wit/workItemTypesField type={SPEC_TYPE}"] = doc
     code, out = run_json(capsys, "discover", "--repo", tmp_path)
     assert code == 0 and any("withheld" in note for note in out["notes"])
     raw = (tmp_path / bc.SCHEMA_FILE).read_text(encoding="utf-8")
     assert "@" not in raw and "beef" not in raw
-    fields = json.loads(raw)["types"]["User Story"]["fields"]
+    fields = json.loads(raw)["types"][SPEC_TYPE]["fields"]
     assert fields[first["referenceName"]]["allowed_values"] is None
     assert fields[second["referenceName"]]["default"] is None
     assert fields[first["referenceName"]]["_notes"]
@@ -610,8 +612,7 @@ def use_scrum(az) -> None:
     az.answers.update({
         "GET wit/workItemTypeCategories": "scrum_categories", "GET wit/workItemTypes": "scrum_types",
         "GET work/backlogconfiguration": backlog,
-        "GET wit/states type=Product Backlog Item": "type_states_user_story",
-        "GET wit/fields type=Product Backlog Item": "type_fields_user_story"})
+        "GET wit/workItemTypesField type=Product Backlog Item": "type_fields_user_story"})
 
 
 def discover_scrum(az, root, capsys, cfg: str = KINDS_CFG) -> dict:
@@ -720,7 +721,7 @@ def test_validate_on_a_process_with_two_portfolio_levels_fits_every_kind_as_an_i
     az.answers.update({
         "GET wit/workItemTypeCategories": "two_level_categories", "GET wit/workItemTypes": "two_level_types",
         "GET work/backlogconfiguration": "two_level_backlog_config",
-        "GET wit/states type=Objective": "type_states_issue", "GET wit/fields type=Objective": "type_fields_issue"})
+        "GET wit/workItemTypesField type=Objective": "type_fields_issue"})
     write_cfg(tmp_path, KINDS_CFG + "types:\n  outcome: Objective\n")
     discovered(tmp_path, capsys)
     code, out = run_json(capsys, "validate", "--repo", tmp_path)

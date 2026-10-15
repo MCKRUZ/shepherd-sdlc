@@ -84,3 +84,19 @@ def test_every_flag_in_the_contract_appears_in_local_help(argv):
     flags = [a for a in argv if a.startswith("-") and a not in GLOBAL_FLAGS]
     missing = [f for f in flags if f not in text]
     assert not missing, f"az {' '.join(words)}: flags not in --help: {missing}"
+
+
+# B0 (2026-10-14): the identity read is `az rest` (core az, no extension), the one argv of `ado_wit.BOARDS_AZ_CONTRACT`
+# outside `devops invoke` and `boards`; its flags are checked the same way.
+import ado_wit  # noqa: E402
+
+REST_ARGV = [argv for argv in ado_wit.BOARDS_AZ_CONTRACT if argv[:1] == ["rest"]]
+
+
+@pytest.mark.parametrize("argv", REST_ARGV, ids=lambda argv: "rest:connectionData")
+def test_the_identity_read_s_az_rest_flags_appear_in_local_help(argv):
+    text = _help(["rest"])
+    assert "rest" in text, "`az rest --help` did not describe the command"
+    flags = [a for a in argv if a.startswith("-") and a not in GLOBAL_FLAGS]
+    assert flags == ["--method", "--resource", "--url"]
+    assert not [f for f in flags if f not in text], text[:400]

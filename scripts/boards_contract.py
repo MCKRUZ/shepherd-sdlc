@@ -11,6 +11,13 @@ resource, route-parameter names, method, api-version) was written from the REST 
 `api_version` is the transport's `API_VERSION` ("7.1") or `PREVIEW_API_VERSION` ("7.1-preview")
 and nothing else — a preview pinned to a revision number is refused at the seam.
 
+The first capture (2026-10-14, `wit/captured/CAPTURE-NOTES.md` under the test fixtures) verified the
+discovery rows and the reporting feed, and corrected three: the per-type states live at
+`workItemTypeStates` (`--resource states` does not resolve), the per-type fields at `workItemTypesField`
+(`--resource fields` with a `type` silently answers the project-wide list), and `connectionData` is not
+an `az devops invoke` location at all — `REST_ROUTES` holds it, read with `az rest`. Every item, write
+and discussion row is still `verified: False`: the capture did not reach them.
+
 `OWNERSHIP` says who is the source of truth for a work-item field once the item exists:
   * `S` — the repository (SDLC) owns it: the mirror writes it, and a board edit is drift.
   * `A` — Azure DevOps owns it: the mirror never overwrites it, a change is observed.
@@ -84,24 +91,32 @@ _GA = "7.1"            # == ado_transport.API_VERSION (pinned by test)
 _PREVIEW = "7.1-preview"  # == ado_transport.PREVIEW_API_VERSION (pinned by test)
 
 
-def _route(area: str, resource: str, route: tuple[str, ...], method: str = "GET", api_version: str = _GA) -> dict:
+def _route(area: str, resource: str, route: tuple[str, ...], method: str = "GET", api_version: str = _GA, *,
+           verified: bool = False) -> dict:
     return {"area": area, "resource": resource, "route": route, "method": method, "api_version": api_version,
-            "verified": False}
+            "verified": verified}
 
+
+_CAPTURED = True  # read in the B0 capture of 2026-10-14 (or listed, released, in its `invoke_locations.json`)
 
 # name -> {"area", "resource", "route": tuple[str, ...], "method", "api_version", "verified": bool}
 WIT_ROUTES: Final[dict[str, dict]] = {
     # discovery (serial GETs; the project is a route parameter, never --project)
-    "projects": _route("core", "projects", ("projectId",)),
-    "type_categories": _route("wit", "workItemTypeCategories", ("project",)),
-    "types": _route("wit", "workItemTypes", ("project",)),
-    "type_states": _route("wit", "states", ("project", "type")),
-    "type_fields": _route("wit", "fields", ("project", "type")),  # with --query-parameters $expand=allowedValues
-    "fields": _route("wit", "fields", ("project",)),
-    "backlog_config": _route("work", "backlogconfiguration", ("project", "team")),
-    "classification_nodes": _route("wit", "classificationNodes", ("project",)),  # with $depth=3
-    "team_iterations": _route("work", "iterations", ("project", "team")),
-    "relation_types": _route("wit", "workItemRelationTypes", ("project",)),
+    "projects": _route("core", "projects", ("projectId",), verified=_CAPTURED),  # _apis/projects/{projectId}
+    "type_categories": _route("wit", "workItemTypeCategories", ("project",), verified=_CAPTURED),
+    # each type also carries its `states`, `fields`, `fieldInstances` and `transitions` (captured)
+    "types": _route("wit", "workItemTypes", ("project",), verified=_CAPTURED),
+    # {project}/_apis/wit/workitemtypes/{type}/states; `--resource states` does not resolve (captured)
+    "type_states": _route("wit", "workItemTypeStates", ("project", "type"), verified=_CAPTURED),
+    # {project}/_apis/wit/workitemtypes/{type}/fields/{field}, with --query-parameters $expand=allowedValues;
+    # `--resource fields` ignores a `type` and answers the project-wide list (captured)
+    "type_fields": _route("wit", "workItemTypesField", ("project", "type"), verified=_CAPTURED),
+    "fields": _route("wit", "fields", ("project",), verified=_CAPTURED),
+    "backlog_config": _route("work", "backlogconfiguration", ("project", "team"), verified=_CAPTURED),
+    "classification_nodes": _route("wit", "classificationNodes", ("project",), verified=_CAPTURED),  # with $depth=3
+    "team_iterations": _route("work", "iterations", ("project", "team"), verified=_CAPTURED),  # work/teamsettings/
+    # an organisation-level location (_apis/wit/workItemRelationTypes): the `project` it is sent is not used
+    "relation_types": _route("wit", "workItemRelationTypes", ("project",), verified=_CAPTURED),
     # items
     "workitem_create": _route("wit", "workItems", ("project", "type"), "POST"),  # type=$<Type>
     "workitem_update": _route("wit", "workItems", ("project", "id"), "PATCH"),
@@ -110,8 +125,20 @@ WIT_ROUTES: Final[dict[str, dict]] = {
     # discussion
     "comments": _route("wit", "comments", ("project", "workItemId"), api_version=_PREVIEW),
     "comment_versions": _route("wit", "commentsVersions", ("project", "workItemId", "commentId"), api_version=_PREVIEW),
-    # identity
+    # identity: NOT an `az devops invoke` location (captured: area `core` "--resource and --api-version combination
+    # is not correct", area `Location` "--area is not present in current organization"). The row stays, never
+    # verified, as the name the identity read is known by; `ado_wit.connection_data` reads REST_ROUTES below.
     "connection_data": _route("core", "connectionData", (), api_version=_PREVIEW),
     # reporting (B5-P0): {project}/_apis/wit/reporting/workItemRevisions, the watermark feed B5-P2 pages through
-    "workitemrevisions": _route("wit", "workItemRevisions", ("project",)),
+    "workitemrevisions": _route("wit", "workItemRevisions", ("project",), verified=_CAPTURED),
+}
+
+# The reads `az devops invoke` cannot reach (B0 capture, 2026-10-14). Each is `az rest --method get --resource
+# ADO_RESOURCE_ID --url <organisation URL>/<path>?api-version=<api_version>`: az mints an Entra token for Azure
+# DevOps itself, so a sign-in that holds only a personal access token cannot make the call. `ado_transport` keeps
+# its own allow-list of these paths (a test pins the two equal) and sends nothing else through `az rest`.
+ADO_RESOURCE_ID: Final = "499b84ac-1321-427f-aa17-267ca6975798"  # Azure DevOps' fixed Entra resource id (vocabulary)
+REST_ROUTES: Final[dict[str, dict]] = {
+    # `7.1` is refused: "The requested version \"7.1\" of the resource is under preview" (captured)
+    "connection_data": {"path": "_apis/connectionData", "method": "GET", "api_version": _PREVIEW, "verified": True},
 }

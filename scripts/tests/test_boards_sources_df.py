@@ -18,6 +18,7 @@ real table.
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
 
 import ast
 import hashlib
@@ -36,6 +37,11 @@ import ado_sync_sources as src
 import ado_wit_map as wm
 import boards_contract as bc
 import record_findings as rf
+
+# B0 (2026-10-14): these scenarios combine the item, history and write fixtures — hand-written for the hand-written
+# Agile process, and not captured yet — with a process, so they read that same process even where a capture exists
+# (tests/ado_boards_fixtures.py, `BOARDS_PROCESS`). The captured process is exercised in test_boards_captured_process.py.
+BOARDS_PROCESS = HAND_WRITTEN_PROCESS
 
 SCRIPTS = Path(src.__file__).resolve().parent
 MODULE = SCRIPTS / "ado_sync_sources_df.py"

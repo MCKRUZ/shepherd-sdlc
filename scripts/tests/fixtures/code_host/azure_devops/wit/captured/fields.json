@@ -1,0 +1,7449 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "fields",
+  "--route-parameters",
+  "project=Claims",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 106,
+  "value": [
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Acceptance Checks",
+    "readOnly": false,
+    "referenceName": "Custom.AcceptanceChecks",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.AcceptanceChecks",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Acceptance Criteria",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.AcceptanceCriteria",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.AcceptanceCriteria",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Accepted By",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.AcceptedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.AcceptedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Accepted Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.AcceptedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.AcceptedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Activated By",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ActivatedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ActivatedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Activated Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ActivatedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ActivatedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Activity",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Activity",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Activity",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Application Launch Instructions",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Feedback.ApplicationLaunchInstructions",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Feedback.ApplicationLaunchInstructions",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Application Start Information",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Feedback.ApplicationStartInformation",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "plainText",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Feedback.ApplicationStartInformation",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Application Type",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Feedback.ApplicationType",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Feedback.ApplicationType",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Area ID",
+    "readOnly": false,
+    "referenceName": "System.AreaId",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AreaId",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Area Path",
+    "readOnly": false,
+    "referenceName": "System.AreaPath",
+    "supportedOperations": [
+     {
+      "name": "Under",
+      "referenceName": "SupportedOperations.Under"
+     },
+     {
+      "name": "Not Under",
+      "referenceName": "SupportedOperations.NotUnder"
+     },
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     }
+    ],
+    "type": "treePath",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AreaPath",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Assigned To",
+    "readOnly": false,
+    "referenceName": "System.AssignedTo",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AssignedTo",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Associated Context",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.Context",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.Context",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Associated Context Code",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ContextCode",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ContextCode",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Associated Context Owner",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ContextOwner",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ContextOwner",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Associated Context Type",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ContextType",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ContextType",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Attached File Count",
+    "readOnly": true,
+    "referenceName": "System.AttachedFileCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AttachedFileCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Authorized As",
+    "readOnly": true,
+    "referenceName": "System.AuthorizedAs",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AuthorizedAs",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Authorized Date",
+    "readOnly": true,
+    "referenceName": "System.AuthorizedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.AuthorizedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Automated Test Id",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.AutomatedTestId",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.AutomatedTestId",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Automated Test Name",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.AutomatedTestName",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.AutomatedTestName",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Automated Test Storage",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.AutomatedTestStorage",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.AutomatedTestStorage",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Automated Test Type",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.AutomatedTestType",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.AutomatedTestType",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Automation status",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.AutomationStatus",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.AutomationStatus",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Board Column",
+    "readOnly": true,
+    "referenceName": "System.BoardColumn",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.BoardColumn",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Board Column Done",
+    "readOnly": true,
+    "referenceName": "System.BoardColumnDone",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     }
+    ],
+    "type": "boolean",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.BoardColumnDone",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Board Lane",
+    "readOnly": true,
+    "referenceName": "System.BoardLane",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.BoardLane",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Business Value",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.BusinessValue",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.BusinessValue",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Changed By",
+    "readOnly": false,
+    "referenceName": "System.ChangedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.ChangedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Changed Date",
+    "readOnly": true,
+    "referenceName": "System.ChangedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.ChangedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": true,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Checking Plan",
+    "picklistId": "00000000-0000-0000-0000-000000000002",
+    "readOnly": false,
+    "referenceName": "Custom.CheckingPlan",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.CheckingPlan",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Closed By",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ClosedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ClosedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Closed Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ClosedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ClosedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Closed Status",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ClosedStatus",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ClosedStatus",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Closed Status Code",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ClosedStatusCode",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ClosedStatusCode",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Closing Comment",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.CodeReview.ClosingComment",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.CodeReview.ClosingComment",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Comment Count",
+    "readOnly": true,
+    "referenceName": "System.CommentCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.CommentCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Completed Work",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.CompletedWork",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.CompletedWork",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Created By",
+    "readOnly": true,
+    "referenceName": "System.CreatedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.CreatedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Created Date",
+    "readOnly": true,
+    "referenceName": "System.CreatedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.CreatedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Delegation Plan",
+    "readOnly": false,
+    "referenceName": "Custom.DelegationPlan",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.DelegationPlan",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Description",
+    "readOnly": false,
+    "referenceName": "System.Description",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Description",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Due Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.DueDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.DueDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Effort",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.Effort",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.Effort",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Evaluations",
+    "readOnly": false,
+    "referenceName": "Custom.Evaluations",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Evaluations",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "External Link Count",
+    "readOnly": true,
+    "referenceName": "System.ExternalLinkCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.ExternalLinkCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Finish Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.FinishDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.FinishDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Found In",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Build.FoundIn",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Build.FoundIn",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Goal",
+    "readOnly": false,
+    "referenceName": "Custom.Goal",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Goal",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "History",
+    "readOnly": false,
+    "referenceName": "System.History",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "history",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.History",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Hyperlink Count",
+    "readOnly": true,
+    "referenceName": "System.HyperLinkCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.HyperLinkCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "ID",
+    "readOnly": true,
+    "referenceName": "System.Id",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Id",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Integration Build",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Build.IntegrationBuild",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Build.IntegrationBuild",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Issue",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Issue",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Issue",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Iteration ID",
+    "readOnly": false,
+    "referenceName": "System.IterationId",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.IterationId",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Iteration Path",
+    "readOnly": false,
+    "referenceName": "System.IterationPath",
+    "supportedOperations": [
+     {
+      "name": "Under",
+      "referenceName": "SupportedOperations.Under"
+     },
+     {
+      "name": "Not Under",
+      "referenceName": "SupportedOperations.NotUnder"
+     },
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     }
+    ],
+    "type": "treePath",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.IterationPath",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Local Data Source",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.LocalDataSource",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.LocalDataSource",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Node Name",
+    "readOnly": true,
+    "referenceName": "System.NodeName",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.NodeName",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Notes and open questions",
+    "readOnly": false,
+    "referenceName": "Custom.Notesandopenquestions",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Notesandopenquestions",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Original Estimate",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.OriginalEstimate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.OriginalEstimate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Owner",
+    "readOnly": false,
+    "referenceName": "Custom.Owner",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Owner",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Parameters",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.Parameters",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.Parameters",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Parent",
+    "readOnly": true,
+    "referenceName": "System.Parent",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Parent",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Priority",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Priority",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Priority",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Query Text",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.QueryText",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "plainText",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.QueryText",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": true,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "RAID",
+    "picklistId": "00000000-0000-0000-0000-000000000003",
+    "readOnly": false,
+    "referenceName": "Custom.RAID",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.RAID",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Rating",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Rating",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Rating",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Reason",
+    "readOnly": false,
+    "referenceName": "System.Reason",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Reason",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Related Link Count",
+    "readOnly": true,
+    "referenceName": "System.RelatedLinkCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.RelatedLinkCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Remaining Work",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.RemainingWork",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.RemainingWork",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Remote Link Count",
+    "readOnly": true,
+    "referenceName": "System.RemoteLinkCount",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.RemoteLinkCount",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Repro Steps",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.ReproSteps",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.ReproSteps",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Resolved By",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ResolvedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ResolvedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Resolved Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ResolvedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ResolvedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Resolved Reason",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ResolvedReason",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ResolvedReason",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Rev",
+    "readOnly": true,
+    "referenceName": "System.Rev",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Rev",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": true,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Reviewed By",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ReviewedBy",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ReviewedBy",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Revised Date",
+    "readOnly": true,
+    "referenceName": "System.RevisedDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.RevisedDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Risk",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Risk",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Risk",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": true,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Risk Tier",
+    "picklistId": "00000000-0000-0000-0000-000000000004",
+    "readOnly": false,
+    "referenceName": "Custom.RiskTier",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.RiskTier",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Scope",
+    "readOnly": false,
+    "referenceName": "Custom.Scope",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Scope",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Severity",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.Severity",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.Severity",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Stack Rank",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.StackRank",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.StackRank",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Start Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.StartDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.StartDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "State",
+    "readOnly": false,
+    "referenceName": "System.State",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.State",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "State Change Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.StateChangeDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.StateChangeDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "State Code",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.StateCode",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.StateCode",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": true,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Status",
+    "picklistId": "00000000-0000-0000-0000-000000000005",
+    "readOnly": false,
+    "referenceName": "Custom.Status",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Status",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Steps",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.Steps",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.Steps",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Story Points",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.StoryPoints",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.StoryPoints",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "System Info",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.SystemInfo",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.SystemInfo",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Tags",
+    "readOnly": false,
+    "referenceName": "System.Tags",
+    "supportedOperations": [
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     }
+    ],
+    "type": "plainText",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Tags",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Target Date",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Scheduling.TargetDate",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "dateTime",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Scheduling.TargetDate",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Team Project",
+    "readOnly": false,
+    "referenceName": "System.TeamProject",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.TeamProject",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Test Suite Audit",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.TestSuiteAudit",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "plainText",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.TestSuiteAudit",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Test Suite Type",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.TestSuiteType",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.TestSuiteType",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Test Suite Type Id",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.TCM.TestSuiteTypeId",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.TCM.TestSuiteTypeId",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Time Criticality",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.TimeCriticality",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "double",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.TimeCriticality",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Title",
+    "readOnly": false,
+    "referenceName": "System.Title",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Title",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Touches Gated Path",
+    "readOnly": false,
+    "referenceName": "Custom.TouchesGatedPath",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     }
+    ],
+    "type": "boolean",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.TouchesGatedPath",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": "[redacted: free text]",
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Value Area",
+    "readOnly": false,
+    "referenceName": "Microsoft.VSTS.Common.ValueArea",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Microsoft.VSTS.Common.ValueArea",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Watermark",
+    "readOnly": true,
+    "referenceName": "System.Watermark",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "integer",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.Watermark",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": true,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Which Check Should Have Caught This",
+    "picklistId": "00000000-0000-0000-0000-000000000006",
+    "readOnly": false,
+    "referenceName": "Custom.WhichCheckShouldHaveCaughtThis",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.WhichCheckShouldHaveCaughtThis",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": false,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Why",
+    "readOnly": false,
+    "referenceName": "Custom.Why",
+    "supportedOperations": [
+     {
+      "name": "Contains Words",
+      "referenceName": "SupportedOperations.ContainsWords"
+     },
+     {
+      "name": "Does Not Contain Words",
+      "referenceName": "SupportedOperations.NotContainsWords"
+     }
+    ],
+    "type": "html",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/Custom.Why",
+    "usage": "workItem"
+   },
+   {
+    "canSortBy": true,
+    "description": null,
+    "isIdentity": false,
+    "isLocked": false,
+    "isPicklist": false,
+    "isPicklistSuggested": false,
+    "isQueryable": true,
+    "name": "Work Item Type",
+    "readOnly": false,
+    "referenceName": "System.WorkItemType",
+    "supportedOperations": [
+     {
+      "name": "=",
+      "referenceName": "SupportedOperations.Equals"
+     },
+     {
+      "name": "<>",
+      "referenceName": "SupportedOperations.NotEquals"
+     },
+     {
+      "name": ">",
+      "referenceName": "SupportedOperations.GreaterThan"
+     },
+     {
+      "name": "<",
+      "referenceName": "SupportedOperations.LessThan"
+     },
+     {
+      "name": ">=",
+      "referenceName": "SupportedOperations.GreaterThanEquals"
+     },
+     {
+      "name": "<=",
+      "referenceName": "SupportedOperations.LessThanEquals"
+     },
+     {
+      "name": "Contains",
+      "referenceName": "SupportedOperations.Contains"
+     },
+     {
+      "name": "Does Not Contain",
+      "referenceName": "SupportedOperations.NotContains"
+     },
+     {
+      "name": "In",
+      "referenceName": "SupportedOperations.In"
+     },
+     {
+      "name": "Not In"
+     },
+     {
+      "name": "In Group",
+      "referenceName": "SupportedOperations.InGroup"
+     },
+     {
+      "name": "Not In Group",
+      "referenceName": "SupportedOperations.NotInGroup"
+     },
+     {
+      "name": "Was Ever",
+      "referenceName": "SupportedOperations.Ever"
+     },
+     {
+      "name": "= [Field]",
+      "referenceName": "SupportedOperations.EqualsField"
+     },
+     {
+      "name": "<> [Field]",
+      "referenceName": "SupportedOperations.NotEqualsField"
+     },
+     {
+      "name": "> [Field]",
+      "referenceName": "SupportedOperations.GreaterThanField"
+     },
+     {
+      "name": "< [Field]",
+      "referenceName": "SupportedOperations.LessThanField"
+     },
+     {
+      "name": ">= [Field]",
+      "referenceName": "SupportedOperations.GreaterThanEqualsField"
+     },
+     {
+      "name": "<= [Field]",
+      "referenceName": "SupportedOperations.LessThanEqualsField"
+     }
+    ],
+    "type": "string",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields/System.WorkItemType",
+    "usage": "workItem"
+   }
+  ]
+ }
+}

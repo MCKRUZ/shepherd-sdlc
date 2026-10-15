@@ -27,7 +27,8 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `board` stands
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import FakeBoardsAz, load_wit, load_wit_error, route_key_boards, route_params
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
+from tests.ado_boards_fixtures import FakeBoardsAz, is_identity_rest_read, load_wit, load_wit_error, route_key_boards, route_params
 
 import copy
 import itertools
@@ -50,6 +51,11 @@ import ado_sync_model as model
 import ado_transport
 import boards_contract as bc
 from ado_map import AdoImportError
+
+# B0 (2026-10-14): these scenarios combine the item, history and write fixtures — hand-written for the hand-written
+# Agile process, and not captured yet — with a process, so they read that same process even where a capture exists
+# (tests/ado_boards_fixtures.py, `BOARDS_PROCESS`). The captured process is exercised in test_boards_captured_process.py.
+BOARDS_PROCESS = HAND_WRITTEN_PROCESS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "ado_sync.py"
@@ -150,7 +156,7 @@ def board(monkeypatch) -> FakeBoardsAz:
     """A fake that answers writes and records `(route key, argv, request body)` of each in `sent`; creates answer ids
     5001, 5002, ...; an update of #4521 answers the tested revision plus one and moves the board to the synced row (so a
     re-plan sees what an apply wrote); a PR link answers an empty list."""
-    fake = FakeBoardsAz(writes=True)
+    fake = FakeBoardsAz(writes=True, hand_written=BOARDS_PROCESS == HAND_WRITTEN_PROCESS)
     fake.sent = []
     fake.ids = itertools.count(5001)
 
@@ -274,6 +280,8 @@ def assert_clean_record(root: Path, *extra: str) -> None:
 
 def assert_detect_false(board) -> None:
     for call in board.calls:
+        if is_identity_rest_read(call):  # B0: the one `az rest` (the identity read) has no --detect flag
+            continue
         assert "--detect" in call and call[call.index("--detect") + 1] == "false", call
 
 
@@ -1093,6 +1101,21 @@ def test_apply_a_comment_plan_by_someone_az_is_not_signed_in_as_is_refused_whole
     board.answers["GET core/connectionData"] = "connection_data_sp"
     code, doc = run_json(capsys, *apply_args(out["plan"]), "--repo", repo)
     assert code == 2 and doc["refused_reason"] == "identity_unknown" and len(board.calls) == 1 and board.sent == []
+
+
+def test_apply_under_a_pat_only_sign_in_is_identity_unknown_exit_2_and_never_a_crash(repo, board, capsys):
+    """B0: the identity read is `az rest`, which a personal access token alone cannot answer (az's words below are
+    hand-written; the capture signed in with Entra). The plan is refused whole after that one call, the reason is
+    `identity_unknown` — not a crash, not "signed out", not a guessed person — and nothing is cached as `me`."""
+    out = carried_repo(repo, board, capsys)
+    board.calls.clear()
+    board.fail["_apis/connectionData"] = "ERROR: Please run 'az login' to setup account."
+    code, doc = run_json(capsys, *apply_args(out["plan"]), "--repo", repo)
+    assert code == 2 and doc["refused_reason"] == "identity_unknown" and doc["applied"] == [] and board.sent == []
+    assert len(board.calls) == 1 and is_identity_rest_read(board.calls[0])
+    assert not (repo / bc.ME_FILE).exists()                       # nobody was remembered as `me`
+    code, text = run(capsys, *apply_args(out["plan"]), "--repo", repo)
+    assert code == 2 and "identity_unknown" in text and "az login" not in text and "Traceback" not in text
 
 
 # --- comment -----------------------------------------------------------------------------------------------

@@ -8,6 +8,10 @@ one honest thing a test can do is keep that visible: fail on a fixture with no p
 loose wrapper, and print — every run — the names that still resolve to a hand-written file, so the
 day a capture lands is the day the list shrinks. The existing `test_fixture_provenance.py` is
 non-recursive, so it never sees these.
+
+The first capture landed on 2026-10-14 (B0, `wit/captured/CAPTURE-NOTES.md`): the discovery reads, the
+per-type reads at their corrected locations, the identity read through `az rest`, and four refusals under
+`captured/errors/`. The item, history, discussion and write fixtures are still hand-written.
 """
 
 import json
@@ -16,8 +20,9 @@ import re
 import pytest
 
 import ado_transport
-from tests.ado_boards_fixtures import (HAND_WRITTEN, WIT, WIT_CAPTURED, WIT_FIXTURE_NAMES, WIT_SYNTHETIC,
-                                       wit_source_of)
+from boards_contract import ADO_RESOURCE_ID
+from tests.ado_boards_fixtures import (HAND_WRITTEN, WIT, WIT_CAPTURED, WIT_CAPTURED_ONLY, WIT_CAPTURED_REFERENCE,
+                                       WIT_FIXTURE_NAMES, WIT_SYNTHETIC, identity_rest_argv, wit_source_of)
 
 CAPTURED_RE = re.compile(r"^captured \d{4}-\d{2}-\d{2} .+")
 ANON_GUID_RE = re.compile(r"^00000000-0000-0000-0000-\d{12}$")
@@ -53,12 +58,42 @@ B3_NAMES = frozenset({"workitem_create_response", "workitem_update_response", "c
 B5_NAMES = frozenset({"workitemrevisions"})
 
 
+# B0 (2026-10-14): the names only the capture holds, the captured documents no read answers with, and every file the
+# capture landed (`captured/`): the B1 discovery reads it replaced, the per-type reads it added, and the identity read.
+B0_ONLY_NAMES = frozenset(WIT_CAPTURED_ONLY)
+B0_REFERENCE_NAMES = frozenset(WIT_CAPTURED_REFERENCE)
+B0_CAPTURED = (B1_NAMES - {"account_show"}) | B0_ONLY_NAMES | B0_REFERENCE_NAMES
+
+
 def test_the_thirty_one_hand_written_fixtures_exist():
-    assert sorted(p.stem for p in HAND_WRITTEN_FILES) == sorted(WIT_FIXTURE_NAMES)
-    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES | B3_NAMES | B5_NAMES
+    assert sorted(p.stem for p in HAND_WRITTEN_FILES) == sorted(set(WIT_FIXTURE_NAMES) - B0_ONLY_NAMES)
+    assert set(WIT_FIXTURE_NAMES) == B1_NAMES | B2_NAMES | B3_NAMES | B5_NAMES | B0_ONLY_NAMES
     assert not (B1_NAMES & B2_NAMES or B1_NAMES & B3_NAMES or B2_NAMES & B3_NAMES)
     assert not B5_NAMES & (B1_NAMES | B2_NAMES | B3_NAMES)
-    assert len(WIT_FIXTURE_NAMES) == 31
+    assert not B0_ONLY_NAMES & (B1_NAMES | B2_NAMES | B3_NAMES | B5_NAMES)
+    assert len(HAND_WRITTEN_FILES) == 31 and len(WIT_FIXTURE_NAMES) == 38
+
+
+def test_the_b0_capture_landed_exactly_these_files():
+    assert {p.stem for p in CAPTURED_FILES} == B0_CAPTURED and len(CAPTURED_FILES) == 23
+    assert not B0_REFERENCE_NAMES & set(WIT_FIXTURE_NAMES)  # loaded by name, never a router's default answer
+    assert {n for n in WIT_FIXTURE_NAMES if wit_source_of(n) == "captured"} == B0_CAPTURED - B0_REFERENCE_NAMES
+    assert all(CAPTURED_RE.match(_doc(p)["_provenance"]) and "2026-10-14" in _doc(p)["_provenance"]
+               for p in CAPTURED_FILES)
+
+
+@pytest.mark.parametrize("path", CAPTURED_FILES, ids=_ids)
+def test_a_captured_command_is_the_call_the_capture_ran(path):
+    """Every captured `devops invoke` ran with `--detect false` and the GA api-version against the anonymised
+    organisation, the project as a route parameter; the identity read is the one `az rest` (B0)."""
+    command = _doc(path)["_command"]
+    if command[1:3] == ["devops", "invoke"]:
+        assert command[command.index("--org") + 1] == "https://dev.azure.com/contoso", path.name
+        assert command[command.index("--detect") + 1] == "false" and "--project" not in command, path.name
+        if "--api-version" in command:  # the locations listing alone names no location, so no version either
+            assert command[command.index("--api-version") + 1] == ado_transport.API_VERSION, path.name
+    else:
+        assert path.stem == "connection_data" and command == ["az", *identity_rest_argv()], path.name
 
 
 @pytest.mark.parametrize("path", ALL_FILES, ids=_ids)
@@ -101,8 +136,12 @@ def test_no_fixture_carries_an_obvious_real_identity(path):
     text = path.read_text(encoding="utf-8")
     emails = set(EMAIL_RE.findall(text))
     assert all(e.endswith("@example.com") for e in emails), f"{path.name}: {emails}"
-    guids = set(GUID_RE.findall(text))
+    # B0: the one GUID that is not anonymised is Azure DevOps' own resource id, and only in the `az rest` command
+    command_guids = set(GUID_RE.findall(json.dumps(_doc(path).get("_command"))))
+    assert command_guids <= {ADO_RESOURCE_ID}, f"{path.name}: {sorted(command_guids)}"
+    guids = set(GUID_RE.findall(json.dumps(_doc(path)["value"])))
     assert all(ANON_GUID_RE.match(g) for g in guids), f"{path.name}: not anonymised: {sorted(guids)}"
+    assert set(GUID_RE.findall(text)) - {ADO_RESOURCE_ID} <= guids, f"{path.name}: a GUID outside value and _command"
     assert not re.search(r"-preview\.\d", text), f"{path.name}: a revisioned preview api-version"
 
 
@@ -132,6 +171,17 @@ CAPTURED_LINE_RE = re.compile(r"^# captured \d{4}-\d{2}-\d{2} .+")
 def test_the_four_hand_written_error_texts_exist():
     assert sorted(p.stem for p in HAND_WRITTEN_ERRORS) == sorted(WIT_ERROR_NAMES)
     assert set(WIT_ERROR_NAMES) == {"stale_rev", "rule_violation", "permission", "throttled"}
+
+
+def test_the_four_captured_error_texts_are_the_refusals_the_capture_met():
+    """B0: none of them supersedes a hand-written write error (the capture sent no write); each says when it was
+    captured on its first line, and two say the raw stderr file was overwritten and where the text came from."""
+    from tests.ado_boards_fixtures import WIT_CAPTURED_ERROR_NAMES
+    assert sorted(p.stem for p in CAPTURED_ERRORS) == sorted(WIT_CAPTURED_ERROR_NAMES)
+    assert not set(WIT_CAPTURED_ERROR_NAMES) & set(WIT_ERROR_NAMES)
+    firsts = {p.stem: p.read_text(encoding="utf-8").splitlines()[0] for p in CAPTURED_ERRORS}
+    assert all(CAPTURED_LINE_RE.match(line) and "2026-10-14" in line for line in firsts.values())
+    assert {n for n, line in firsts.items() if "overwritten" in line} == {"states_wrong_resource", "connection_data_core"}
 
 
 @pytest.mark.parametrize("path", HAND_WRITTEN_ERRORS, ids=_ids)

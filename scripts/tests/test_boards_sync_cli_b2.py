@@ -20,7 +20,8 @@ fixtures. The people in the fixtures are fictional and no test writes a real one
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import load_wit, route_key_boards
+from tests.ado_boards_fixtures import HAND_WRITTEN_PROCESS
+from tests.ado_boards_fixtures import is_identity_rest_read, load_wit, route_key_boards
 
 import copy
 import json
@@ -42,6 +43,11 @@ import ado_sync
 import ado_sync_model as model
 import boards_contract as bc
 import code_host
+
+# B0 (2026-10-14): these scenarios combine the item, history and write fixtures — hand-written for the hand-written
+# Agile process, and not captured yet — with a process, so they read that same process even where a capture exists
+# (tests/ado_boards_fixtures.py, `BOARDS_PROCESS`). The captured process is exercised in test_boards_captured_process.py.
+BOARDS_PROCESS = HAND_WRITTEN_PROCESS
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "ado_sync.py"
@@ -1196,6 +1202,8 @@ def test_every_verb_runs_against_a_read_only_fake_and_never_writes_to_the_board(
         code, _ = run(capsys, *argv, "--repo", repo)
         assert code in (0, 1), argv
         for call in az.calls:
+            if is_identity_rest_read(call):  # B0: the one `az rest` (the identity read) has no --detect flag
+                continue
             assert "--detect" in call and call[call.index("--detect") + 1] == "false", (argv, call)
             assert "--repository" not in call, (argv, call)
     assert az.written() == []

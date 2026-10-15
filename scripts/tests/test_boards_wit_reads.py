@@ -21,7 +21,7 @@ Nothing here spawns `az`: `boards_env` forbids it at the seam and `az` swaps a `
 """
 
 from tests.ado_boards_fixtures import boards_env, az  # noqa: F401
-from tests.ado_boards_fixtures import FakeBoardsAz, load_wit, route_key_boards, route_params
+from tests.ado_boards_fixtures import FakeBoardsAz, identity_rest_argv, is_identity_rest_read, load_wit, route_key_boards, route_params
 
 import ast
 import inspect
@@ -451,14 +451,70 @@ def test_comment_versions_refuse_a_bad_id(az, tmp_path, wid, cid):
 
 # --- connection_data -------------------------------------------------------------------------------------
 
-def test_connection_data_is_the_core_read_on_the_preview_version(az, tmp_path):
+def test_connection_data_is_the_one_az_rest_read_on_the_preview_version(az, tmp_path):
+    """B0 (2026-10-14): `connectionData` is no `devops invoke` location (area core: "--resource and --api-version
+    combination is not correct"; area Location: "--area is not present in current organization"). It is `az rest` with
+    Azure DevOps' resource id, at `7.1-preview` (`7.1` is refused as "under preview")."""
     doc = ado_wit.connection_data(tmp_path)
-    assert doc["authenticatedUser"]["id"]
+    assert doc == load_wit("connection_data") and doc["authenticatedUser"]["id"]
     (argv,) = az.calls
-    assert argv[:argv.index("--route-parameters")] == ["devops", "invoke", "--area", "core", "--resource",
-                                                       "connectionData"]
-    assert argv[argv.index("--http-method"):] == ["--http-method", "GET", "--api-version", PREVIEW, "--detect", "false",
-                                                  "--org", ORG, "-o", "json"]
+    assert argv == ["rest", "--method", "get", "--resource", "499b84ac-1321-427f-aa17-267ca6975798", "--url",
+                    f"{ORG}/_apis/connectionData?api-version={PREVIEW}", "-o", "json"]
+    assert argv == identity_rest_argv(ORG) and "--only-show-errors" not in argv   # the seam appends it
+    assert route_key_boards(argv) == "GET core/connectionData" and az.written() == []
+
+
+def test_the_captured_identity_read_names_its_own_az_rest_call():
+    from tests.ado_boards_fixtures import wit_path, wit_source_of
+    assert wit_source_of("connection_data") == "captured"
+    command = json.loads(wit_path("connection_data").read_text(encoding="utf-8"))["_command"]
+    assert command == ["az", *identity_rest_argv(ORG)]
+    assert "continuation_token" not in load_wit("connection_data")   # `az rest` adds none; `devops invoke` would
+
+
+@pytest.mark.parametrize("stderr", ["ERROR: Please run 'az login' to setup account.",
+                                    "ERROR: Please run `az login` to setup account."])
+def test_connection_data_under_a_pat_only_sign_in_is_unknown_never_signed_out_and_never_guessed(az, tmp_path, stderr):
+    """`az rest` needs an Entra token; with a personal access token alone it cannot mint one (az's words are
+    hand-written here: the capture signed in with Entra). The read fails, says the identity is unknown — so the host
+    block reads `unknown`, not `signed_out` — and nothing stands in for the person."""
+    import host_report
+    az.fail["_apis/connectionData"] = stderr
+    with pytest.raises(AdoImportError) as err:
+        ado_wit.connection_data(tmp_path)
+    text = str(err.value)
+    assert text.startswith("core/connectionData (az rest): ") and ado_transport.REST_NO_TOKEN in text
+    assert "az login" not in text and "@" not in text
+    assert host_report.cli_state_from_error("az", text)[0] == "unknown"
+    assert [route_key_boards(c) for c in az.calls] == ["GET core/connectionData"]   # asked once, never retried
+
+
+def test_a_not_materialized_identity_keeps_its_own_words_and_hint(az, tmp_path):
+    az.fail["_apis/connectionData"] = f"ERROR: Identity has not been materialized\n{ado_transport.MATERIALIZED_HINT}"
+    with pytest.raises(AdoImportError, match="materialized") as err:
+        ado_wit.connection_data(tmp_path)
+    assert ado_transport.REST_NO_TOKEN not in str(err.value)
+
+
+def test_az_rest_reads_only_the_allow_listed_path_at_an_allowed_version(az, tmp_path):
+    for path in ("_apis/projects", "_apis/connectionData/../projects", "https://elsewhere/_apis/connectionData"):
+        with pytest.raises(AdoImportError, match="reads only"):
+            ado_transport.rest_get(tmp_path, path)
+    for version in ("7.1-preview.1", "5.0"):
+        with pytest.raises(AdoImportError):
+            ado_transport.rest_get(tmp_path, "_apis/connectionData", api_version=version)
+    assert az.calls == []                                    # refused before az was asked
+    assert ado_transport.REST_READS == frozenset({"_apis/connectionData"})
+    assert ado_transport.rest_argv("https://dev.azure.com/contoso/", "_apis/connectionData") == identity_rest_argv(ORG)
+    assert "--method" in identity_rest_argv() and identity_rest_argv()[identity_rest_argv().index("--method") + 1] == "get"
+
+
+def test_the_captured_refusals_are_what_the_rest_read_and_its_version_avoid():
+    from tests.ado_boards_fixtures import load_wit_error
+    assert load_wit_error("connection_data_core") == "ERROR: --resource and --api-version combination is not correct"
+    assert load_wit_error("connection_data_location") == "ERROR: --area is not present in current organization"
+    assert "-preview flag must be supplied" in load_wit_error("connection_data_rest_7.1")
+    assert boards_contract.REST_ROUTES["connection_data"]["api_version"] == PREVIEW != ado_transport.API_VERSION
 
 
 @pytest.mark.parametrize("reply", [[], {"authorizedUser": {}}, 3], ids=["list", "no-authenticated-user", "number"])
@@ -482,10 +538,13 @@ def test_every_read_passes_a_read_only_fake(az, tmp_path):
 def test_every_recorded_argv_has_the_seam_shape(az, tmp_path):
     run_every_read(tmp_path)
     assert len(az.calls) >= 8
+    assert [is_identity_rest_read(argv) for argv in az.calls].count(True) == 1   # B0: the identity read, once
     for argv in az.calls:
+        assert argv[-2:] == ["-o", "json"] and "--only-show-errors" not in argv
+        if is_identity_rest_read(argv):  # B0: the one `az rest` has no --detect or --org (its URL names the org)
+            continue
         assert argv[argv.index("--detect") + 1] == "false", argv
         assert argv[argv.index("--org") + 1] == ORG
-        assert argv[-2:] == ["-o", "json"] and "--only-show-errors" not in argv
         assert "--repository" not in argv  # a work item is not in a repository
         assert not any(re.search(r"-preview\.\d", word) for word in argv)
         if argv[:2] == ["devops", "invoke"]:
@@ -554,6 +613,8 @@ def shape(argv):
     for flag, placeholder in (("--org", "U"), ("--project", "P"), ("--wiql", "Q"), ("--id", "N"), ("--in-file", "F")):
         if flag in out:
             out[out.index(flag) + 1] = placeholder
+    if out[:1] == ["rest"]:  # B0: the identity read's organisation rides inside its --url
+        out[out.index("--url") + 1] = out[out.index("--url") + 1].replace(ORG, "U", 1)
     return tuple(out)
 
 
@@ -569,6 +630,9 @@ def test_the_az_contract_is_read_only_and_never_pins_a_preview_revision():
     assert isinstance(ado_wit.BOARDS_AZ_CONTRACT, tuple) and ado_wit.BOARDS_AZ_CONTRACT
     for argv in ado_wit.BOARDS_AZ_CONTRACT:
         assert isinstance(argv, list) and all(isinstance(w, str) for w in argv)
+        if argv[:1] == ["rest"]:  # B0: the one `az rest`, the identity read (it has no --detect flag)
+            assert argv == identity_rest_argv("U") and argv is ado_wit.BOARDS_AZ_CONTRACT[-1], argv
+            continue
         assert argv[argv.index("--detect") + 1] == "false", argv
         assert argv[-2:] == ["-o", "json"] and "--only-show-errors" not in argv
         assert "--repository" not in argv

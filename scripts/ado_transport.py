@@ -233,3 +233,53 @@ def invoke_body(repo_root, area: str, resource: str, route: dict, *, method: str
     except json.JSONDecodeError as e:
         raise AdoImportError(f"`az devops invoke --area {area} --resource {resource}` returned "
                              f"unparseable JSON: {e}") from e
+
+
+# ---------------------------------------------------------------------------------------------------
+# B0 capture (2026-10-14): who the token belongs to (`connectionData`) is not an `az devops invoke`
+# location — area `core` answers "--resource and --api-version combination is not correct", area
+# `Location` "--area is not present in current organization". `az rest` reaches it, with an Entra token
+# az mints for Azure DevOps' own resource id. `rest_get` is the ONE `az rest` this module sends: a GET, of
+# a path in REST_READS only, under the parsed remote's organisation URL, at PREVIEW_API_VERSION (`7.1` is
+# refused: "the requested version 7.1 of the resource is under preview"). Appended, as `invoke_body` was;
+# everything above stays byte-for-byte as shipped.
+ADO_RESOURCE_ID = "499b84ac-1321-427f-aa17-267ca6975798"  # == boards_contract.ADO_RESOURCE_ID (pinned by test)
+REST_READS = frozenset({"_apis/connectionData"})          # == the paths of boards_contract.REST_ROUTES (pinned)
+# What `az rest` says when it holds no Entra sign-in to mint the token from (a personal access token alone is
+# such a sign-in): "Please run 'az login' to setup account." Re-worded so the identity reads as UNKNOWN — the
+# CLI may well be signed in to Azure DevOps with that PAT, so `host_report.cli_state_from_error` must not read
+# this as signed out. A "not materialized" refusal keeps its own words and hint (see `run_az`).
+_NO_TOKEN_RE = re.compile(r"az login|setup account", re.IGNORECASE)
+REST_NO_TOKEN = ("`az rest` could not mint an Entra token for Azure DevOps, so who is signed in could not be read "
+                 "(connectionData); a personal access token alone cannot answer this read, and the identity is "
+                 "unknown, not someone else's")
+
+
+def rest_argv(org_url: str, path: str, api_version: str = PREVIEW_API_VERSION) -> list[str]:
+    """The `az rest` argv for one allow-listed GET (`-o json` included; `run_az` adds `--only-show-errors`)."""
+    if path not in REST_READS:
+        raise AdoImportError(f"`az rest` reads only {sorted(REST_READS)}; {path!r} is not one of them")
+    version = check_api_version(api_version)
+    if version not in (API_VERSION, PREVIEW_API_VERSION):
+        raise AdoImportError(f"api-version {version!r} is neither {API_VERSION} nor {PREVIEW_API_VERSION}")
+    return ["rest", "--method", "get", "--resource", ADO_RESOURCE_ID, "--url",
+            f"{org_url.rstrip('/')}/{path}?api-version={version}", "-o", "json"]
+
+
+def rest_get(repo_root, path: str, *, api_version: str = PREVIEW_API_VERSION, timeout: int = 60) -> dict | list:
+    """`az rest --method get` of an allow-listed organisation-level path, returning the parsed JSON with no shape
+    check (the caller `_require`s what it reads). Empty stdout is `[]`, as for every read. A failure is an
+    AdoImportError; one saying az holds no Entra token is `REST_NO_TOKEN`, never az's own "run az login"."""
+    argv = rest_argv(remote(repo_root).org_url, path, api_version)
+    try:
+        out = run_az(argv, repo_root, timeout=timeout)
+    except AdoImportError as e:
+        if "materialized" not in str(e) and _NO_TOKEN_RE.search(str(e)):
+            raise AdoImportError(REST_NO_TOKEN) from None
+        raise
+    if not out.strip():
+        return []
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError as e:
+        raise AdoImportError(f"`az rest --method get` of {path} returned unparseable JSON: {e}") from e

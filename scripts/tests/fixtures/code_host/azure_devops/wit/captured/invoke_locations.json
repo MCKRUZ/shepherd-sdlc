@@ -1,0 +1,1078 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false"
+ ],
+ "_filter": "the locations whose area is wit, work or core (106 of the 1005 the listing returned, 97 areas)",
+ "value": [
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000001",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "categorizedTeams",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/projects/{projectId}/{resource}/"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000002",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "projects",
+   "resourceVersion": 4,
+   "routeTemplate": "_apis/{resource}/{*projectId}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000003",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "members",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/projects/{projectId}/teams/{teamId}/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000004",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "projectCollections",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{resource}/{collectionId}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000005",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "projectHistory",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000006",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "projectsproperties",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000007",
+   "maxVersion": 7.2,
+   "minVersion": 4.1,
+   "releasedVersion": "0.0",
+   "resourceName": "teams",
+   "resourceVersion": 3,
+   "routeTemplate": "_apis/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000008",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "processes",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/process/{resource}/{*processId}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000009",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "proxies",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000010",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "connectedServices",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/projects/{projectId}/{resource}/{name}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000011",
+   "maxVersion": 7.2,
+   "minVersion": 3.2,
+   "releasedVersion": "0.0",
+   "resourceName": "properties",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/projects/{projectId}/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000012",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "teams",
+   "resourceVersion": 3,
+   "routeTemplate": "_apis/projects/{projectId}/{resource}/{*teamId}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000013",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "avatar",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/projects/{projectId}/{resource}"
+  },
+  {
+   "area": "core",
+   "id": "00000000-0000-0000-0000-000000000014",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "identityMru",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}/{mruName}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000015",
+   "maxVersion": 7.2,
+   "minVersion": 5.0,
+   "releasedVersion": "7.1",
+   "resourceName": "queriesBatch",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000016",
+   "maxVersion": 7.2,
+   "minVersion": 5.2,
+   "releasedVersion": "7.1",
+   "resourceName": "projectProcessMigration",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000017",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "queries",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{*query}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000018",
+   "maxVersion": 7.2,
+   "minVersion": 4.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTransitions",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000019",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "templates",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{templateId}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000020",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "githubConnections",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/githubconnections/{connectionId}/repos"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000021",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "attachmentsBundle",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/workItems/{workItemId}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000022",
+   "maxVersion": 7.2,
+   "minVersion": 5.2,
+   "releasedVersion": "7.1",
+   "resourceName": "tags",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{tagIdOrName}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000023",
+   "maxVersion": 5.0,
+   "minVersion": 3.0,
+   "releasedVersion": "0.0",
+   "resourceName": "comments",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/workItems/{id}/comments/{revision}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000024",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "fields",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{fieldNameOrRefName}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000025",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "classificationNodes",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{structureGroup}/{*path}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000026",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "wiql",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000027",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "wiql",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000028",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "updates",
+   "resourceVersion": 4,
+   "routeTemplate": "{project}/_apis/{area}/workItems/{id}/updates/{updateNumber}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000029",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "githubConnections",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/githubconnections"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000030",
+   "maxVersion": 7.2,
+   "minVersion": 3.2,
+   "releasedVersion": "7.1",
+   "resourceName": "artifactUriQuery",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000031",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "accountMyWorkRecentActivity",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/work/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000032",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTypeTemplate",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{type}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000033",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItems",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/${type}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000034",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "queries",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000035",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "workitemStateColor",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/work/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000036",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "attachments",
+   "resourceVersion": 4,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000037",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "accountMyWork",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/work/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000038",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "batch",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{area}/${resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000039",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "workitemTypeColor",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/work/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000040",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemFieldAllowedValues",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000041",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemRevisions",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/reporting/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000042",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "classificationNodes",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000043",
+   "maxVersion": 7.2,
+   "minVersion": 5.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemsBatch",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000044",
+   "maxVersion": 3.0,
+   "minVersion": 1.0,
+   "releasedVersion": "3.0",
+   "resourceName": "history",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{area}/workItems/{id}/history/{revisionNumber}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000045",
+   "maxVersion": 7.2,
+   "minVersion": 3.2,
+   "releasedVersion": "7.1",
+   "resourceName": "artifactLinkTypes",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000046",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "commentsReactions",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/wit/workItems/{workItemId}/comments/{commentId}/reactions/{reactionType}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000047",
+   "maxVersion": 7.2,
+   "minVersion": 7.0,
+   "releasedVersion": "7.1",
+   "resourceName": "tempQueries",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000048",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "templates",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000049",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "accountRecentMentions",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/work/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000050",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItems",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000051",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "githubConnections",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/githubconnections/{connectionId}/credential"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000052",
+   "maxVersion": 7.2,
+   "minVersion": 2.1,
+   "releasedVersion": "7.1",
+   "resourceName": "recyclebin",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000053",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemLinks",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/reporting/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000054",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "comments",
+   "resourceVersion": 4,
+   "routeTemplate": "{project}/_apis/wit/workItems/{workItemId}/comments/{commentId}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000055",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "revisions",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/workItems/{id}/revisions/{revisionNumber}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000056",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTypes",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{type}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000057",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTypeStates",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/workitemtypes/{type}/states"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000058",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemRevisionsDiscussions",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/reporting/workItemRevisions/discussions"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000059",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "sendMail",
+   "resourceVersion": 5,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000060",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "githubConnections",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/githubconnections/{connectionId}/reposBatch"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000061",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "commentReactionsEngagedUsers",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/wit/workItems/{workItemId}/comments/{commentId}/reactions/{reactionType}/users"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000062",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTypesField",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/_apis/{area}/workitemtypes/{type}/fields/{field}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000063",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "0.0",
+   "resourceName": "commentsVersions",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/wit/workItems/{workItemId}/comments/{commentId}/versions/{version}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000064",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemIcons",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}/{icon}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000065",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemRelationTypes",
+   "resourceVersion": 2,
+   "routeTemplate": "_apis/{area}/{resource}/{relation}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000066",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "0.0",
+   "resourceName": "workItemTypeColorAndIcon",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000067",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemsDelete",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000068",
+   "maxVersion": 7.2,
+   "minVersion": 1.0,
+   "releasedVersion": "7.1",
+   "resourceName": "workItemTypeCategories",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{category}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000069",
+   "maxVersion": 7.2,
+   "minVersion": 5.0,
+   "releasedVersion": "0.0",
+   "resourceName": "remoteLinking",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}"
+  },
+  {
+   "area": "wit",
+   "id": "00000000-0000-0000-0000-000000000070",
+   "maxVersion": 7.1,
+   "minVersion": 7.1,
+   "releasedVersion": "0.0",
+   "resourceName": "batch",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/${resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000071",
+   "maxVersion": 7.2,
+   "minVersion": 4.1,
+   "releasedVersion": "7.1",
+   "resourceName": "backlogs",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000072",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "teamsettings",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000073",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "plans",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000074",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "cardsettings",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/taskboard/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000075",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "chartimages",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/iterations/{resource}/{name}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000076",
+   "maxVersion": 7.2,
+   "minVersion": 5.0,
+   "releasedVersion": "0.0",
+   "resourceName": "events",
+   "resourceVersion": 1,
+   "routeTemplate": "_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000077",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "processconfiguration",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000078",
+   "maxVersion": 7.2,
+   "minVersion": 5.2,
+   "releasedVersion": "7.1",
+   "resourceName": "taskboardWorkItems",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{iterationId}/{workItemId}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000079",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "boardcolumns",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000080",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "deliverytimeline",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/plans/{id}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000081",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workitemsorder",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000082",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "cardsettings",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000083",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "teamfieldvalues",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/teamsettings/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000084",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "backlogconfiguration",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000085",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workitemsorder",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/iterations/{iterationId}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000086",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "cardrulesettings",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/taskboard/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000087",
+   "maxVersion": 7.2,
+   "minVersion": 5.0,
+   "releasedVersion": "0.0",
+   "resourceName": "predefinedQueries",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000088",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "boardparents",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000089",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "iterations",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/teamsettings/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000090",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "chartimages",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/iterations/{iterationId}/{resource}/{name}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000091",
+   "maxVersion": 7.2,
+   "minVersion": 4.1,
+   "releasedVersion": "7.1",
+   "resourceName": "backlogs",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{backlogId}/workItems"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000092",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "teamdaysoff",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/teamsettings/iterations/{iterationId}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000093",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "rows",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000094",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "columns",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000095",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "boardbadge",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000096",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "boards",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}/{id}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000097",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "cardrulesettings",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000098",
+   "maxVersion": 7.2,
+   "minVersion": 3.0,
+   "releasedVersion": "7.1",
+   "resourceName": "boardusersettings",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000099",
+   "maxVersion": 7.2,
+   "minVersion": 4.1,
+   "releasedVersion": "7.1",
+   "resourceName": "workitems",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/teamsettings/iterations/{iterationId}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000100",
+   "maxVersion": 7.2,
+   "minVersion": 6.1,
+   "releasedVersion": "7.1",
+   "resourceName": "iterationcapacities",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/iterations/{iterationId}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000101",
+   "maxVersion": 7.2,
+   "minVersion": 5.1,
+   "releasedVersion": "7.1",
+   "resourceName": "chartimages",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}/{name}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000102",
+   "maxVersion": 7.2,
+   "minVersion": 7.1,
+   "releasedVersion": "7.1",
+   "resourceName": "automationrules",
+   "resourceVersion": 2,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000103",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "charts",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/boards/{board}/{resource}/{name}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000104",
+   "maxVersion": 7.2,
+   "minVersion": 5.2,
+   "releasedVersion": "7.1",
+   "resourceName": "taskboardColumns",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/{team}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000105",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "boardrows",
+   "resourceVersion": 1,
+   "routeTemplate": "{project}/_apis/{area}/{resource}"
+  },
+  {
+   "area": "work",
+   "id": "00000000-0000-0000-0000-000000000106",
+   "maxVersion": 7.2,
+   "minVersion": 2.0,
+   "releasedVersion": "7.1",
+   "resourceName": "capacities",
+   "resourceVersion": 3,
+   "routeTemplate": "{project}/{team}/_apis/{area}/teamsettings/iterations/{iterationId}/{resource}/{teamMemberId}"
+  }
+ ]
+}
