@@ -42,8 +42,12 @@ owns it, `/sprd-data` works it, and it is done only when the data really flows. 
 - **Branch-safe ids.** `track_decisions.py open --all-branches` and `data_spec.py new
   --all-branches` take the highest `DL-NN` or spec id on every local ref plus one, so two branches
   can no longer both name a decision `DL-07`. They read local refs only and never fetch; the help
-  says "run `git fetch` first", and a ref that could not be read is named in `unread`, never
-  counted. Without the flag, `open`'s output is byte-identical.
+  says "run `git fetch` first". `refs_scanned` holds only refs actually read: a ref whose tree
+  cannot be read (a treeless partial clone) goes to `unread`, a git that cannot answer (not
+  installed, `safe.directory`, timeout) reads `could not read refs: …` with one `(all refs)`
+  entry rather than "not a git repository", only symbolic refs are skipped (a branch named
+  `rel/HEAD` is read), and a partial clone on git older than 2.46 is refused rather than risk a
+  lazy fetch. Without the flag, `open`'s output is byte-identical.
 - **`/sprd-data` drives a data spec; the agent keeps its tools.** The command loads `## Context`
   first, authors six artifacts instead of three, opens routed gaps with `--all-branches`, and
   offers to scaffold a data spec for a build spec that has none; `phases/activities.yaml` declares

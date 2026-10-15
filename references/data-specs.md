@@ -110,9 +110,15 @@ and cites the check-3 profile query today; a cell nobody measured reads `not mea
 
 `track_decisions.py open --all-branches` and `data_spec.py new --all-branches` read the decision log (or
 `specs/`) on every **local** ref (`refs/heads`, `refs/remotes`) via `git show` / `git ls-tree` and take the
-highest id plus one. They **never fetch**: run `git fetch` first or an unfetched branch is invisible. An
-unreadable ref is named in `unread`, never dropped; outside a git repository the call proceeds locally
-with `refs_scanned: []`. Without the flag, output is byte-identical to before.
+highest id plus one. They **never fetch**: run `git fetch` first or an unfetched branch is invisible. `refs_scanned` lists
+only refs that were actually read; a ref whose tree cannot be read (a treeless partial clone, an
+unfetched object) is named in `unread` and never counted. Only a symbolic ref (`refs/remotes/origin/HEAD`)
+is skipped — a branch named `rel/HEAD` is read. Outside a git repository the call proceeds locally with
+`refs_scanned: []` and the line `Ids checked on 0 branches (not a git repository)`; when git itself could
+not answer (not installed, `safe.directory` refusal, timeout) the line reads `could not read refs: <reason>`
+and `unread` carries one `(all refs)` entry — never a clean-looking empty result. A partial clone on a git
+older than 2.46 (which lacks `GIT_NO_LAZY_FETCH`) is refused the same way rather than risk a lazy fetch.
+Without the flag, output is byte-identical to before.
 
 ## 7. Not built
 
