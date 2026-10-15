@@ -119,6 +119,9 @@
       - .sdlc/artifacts/02-design/data/data-contract.md
       - .sdlc/artifacts/02-design/data/data-readiness.md
       - .sdlc/artifacts/02-design/data/lineage-audit.md
+      - .sdlc/artifacts/02-design/data/data-dictionary.md
+      - .sdlc/artifacts/02-design/data/decision-memo.md
+      - .sdlc/artifacts/02-design/data/data-handoff.md
     done_when:
       exists_all:
         - .sdlc/artifacts/02-design/data/data-contract.md
@@ -208,6 +211,11 @@
   - id: sprint
     label: "Plan, ready and close the sprint"
     command: sprd-sprint
+    kind: run
+
+  - id: data-spec
+    label: "Link a data spec to the build spec it serves"
+    command: sprd-data
     kind: run
 
   - id: refine
