@@ -10,6 +10,9 @@
 // Shepherd's own digit-free sentence for the first, the plugin's reason beneath it — and the host is told nothing was
 // pulled. An item the plugin could not read or cache is listed by ref with its own reason, never dropped.
 //
+// `labels` renames a button for a host that puts the same two reads under its own words (the Today column's `Catch up`
+// is the fields pull under another name); a kind it does not name keeps its default, and nothing else about the button
+// changes — not the request, not the capability, not the `data-write`.
 // Steering mode (`steering`) draws nothing: a committee screen does not ask the board for anything.
 import { useState } from 'react'
 import type { AdoVerbResult } from '../../../shared/types'
@@ -105,6 +108,8 @@ export interface PullNowProps {
   itemRef?: string
   /** Which buttons: both (the default), the fields one, or the discussion one. */
   scope?: PullScope
+  /** A button's words when the host has its own for it; a kind left out keeps `Pull now` / `Pull discussion`. */
+  labels?: Partial<Record<PullKind, string>>
   /** Steering mode is read-only: nothing is drawn. */
   steering?: boolean
   /** Called after a pull that READ the board (exit 0, not unavailable, not switched off), with the plugin's answer. */
@@ -112,7 +117,7 @@ export interface PullNowProps {
   className?: string
 }
 
-export function PullNow({ projectPath, capabilities, itemRef, scope = 'both', steering = false, onPulled, className }: PullNowProps) {
+export function PullNow({ projectPath, capabilities, itemRef, scope = 'both', labels, steering = false, onPulled, className }: PullNowProps) {
   const [busy, setBusy] = useState<PullKind | null>(null)
   const [said, setSaid] = useState<Partial<Record<PullKind, PullSaid>>>({})
 
@@ -154,7 +159,7 @@ export function PullNow({ projectPath, capabilities, itemRef, scope = 'both', st
           return (
             <Button key={kind} size="sm" variant="secondary" data-write="" data-pull={kind} loading={busy === kind} loadingLabel="Pulling…"
               disabled={Boolean(reason)} disabledReason={reason ?? undefined} onClick={() => { void run(kind) }}>
-              {LABEL[kind]}
+              {labels?.[kind] ?? LABEL[kind]}
             </Button>
           )
         })}
