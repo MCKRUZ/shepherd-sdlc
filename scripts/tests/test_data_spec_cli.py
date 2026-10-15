@@ -942,3 +942,80 @@ class TestSurface:
 
     def test_module_never_fetches(self):
         assert '"fetch"' not in SCRIPT_PATH.read_text(encoding="utf-8")
+
+
+# --- review round 2: every gap row cites its own decision; definitions outrank summaries; every edge counts
+
+class TestReviewRoundTwo:
+    def make_data_spec(self, repo) -> None:
+        build_spec(repo)
+        assert data(repo, "new", "--serves", "0001", "--name", "claims profile").returncode == 0
+
+    def test_a_mixed_gaps_table_fails_on_the_row_that_cites_no_decision(self, repo):
+        self.make_data_spec(repo)
+        docs = repo / DATA_DIR
+        docs.mkdir(parents=True)
+        (docs / "data-readiness.md").write_text(
+            "# Data Readiness\n\n## Gaps\n\n| Gap | Impact | Severity | Decision-log ref |\n"
+            "|-----|--------|----------|------------------|\n"
+            "| claim_amount missing for 12% of records | totals are wrong | high | DL-01 |\n"
+            "| payer_id has no source yet | cannot join to payer | high | |\n", encoding="utf-8")
+        (repo / ".sdlc").mkdir(exist_ok=True)
+        (repo / ".sdlc" / "decision-log.md").write_text(decision_log([
+            ["DL-01", "Where does claim_amount come from?", "@priya-n", "2026-10-01", "2026-10-03", "open"],
+        ]), encoding="utf-8")
+        result = finding(json.loads(data(repo, "check", "--spec", "0002", "--json").stdout), "readiness-gaps-owned")
+        assert result["passed"] is False
+        assert result["detail"] == "1 of 2 gap(s) reference no DL-NN: payer_id has no source yet"
+
+    def test_every_row_citing_an_owned_decision_still_passes(self, repo):
+        self.make_data_spec(repo)
+        docs = repo / DATA_DIR
+        docs.mkdir(parents=True)
+        (docs / "data-readiness.md").write_text(readiness(["DL-01", "DL-01"]), encoding="utf-8")
+        (repo / ".sdlc").mkdir(exist_ok=True)
+        (repo / ".sdlc" / "decision-log.md").write_text(decision_log([
+            ["DL-01", "q", "@priya-n", "2026-10-01", "2026-10-03", "open"],
+        ]), encoding="utf-8")
+        result = finding(json.loads(data(repo, "check", "--spec", "0002", "--json").stdout), "readiness-gaps-owned")
+        assert result["passed"] is True
+
+    def test_a_frozen_layer_summary_row_never_outranks_the_defining_artifact(self, repo):
+        layers = repo / ".sdlc" / "context" / "layers"
+        layers.mkdir(parents=True)
+        (layers / "phase1-requirements.md").write_text("| BR-03 | duplicates return 409 |\n# ADR-012: summary\n",
+                                                        encoding="utf-8")
+        art = repo / ".sdlc" / "artifacts" / "01-requirements"
+        art.mkdir(parents=True)
+        (art / "business-rules.md").write_text("| BR-03 | duplicates return 409 | RFP §4 | @priya-n |\n",
+                                                encoding="utf-8")
+        adr = repo / ".sdlc" / "artifacts" / "02-design" / "adr"
+        adr.mkdir(parents=True)
+        (adr / "ADR-012-idempotency-keys.md").write_text("# ADR-012: idempotency keys\n", encoding="utf-8")
+        assert data_spec.resolve_ref(repo, "BR-03") == ".sdlc/artifacts/01-requirements/business-rules.md"
+        assert data_spec.resolve_ref(repo, "ADR-012") == ".sdlc/artifacts/02-design/adr/ADR-012-idempotency-keys.md"
+
+    def test_a_doc_id_resolves_to_its_intake_summary_not_the_registry_row(self, repo):
+        intake = repo / ".sdlc" / "context" / "intake"
+        intake.mkdir(parents=True)
+        (intake / "DOC-004-vendor-api.md").write_text("# DOC-004: vendor-api.pdf\n", encoding="utf-8")
+        reg = repo / ".sdlc" / "artifacts" / "00-discovery"
+        reg.mkdir(parents=True)
+        (reg / "document-registry.md").write_text("| DOC-004 | vendor-api.pdf | 12 pages |\n", encoding="utf-8")
+        assert data_spec.resolve_ref(repo, "DOC-004") == ".sdlc/context/intake/DOC-004-vendor-api.md"
+
+    @pytest.mark.parametrize("form", ["flow", "block"])
+    def test_a_hand_written_list_depends_on_on_another_spec_still_counts_as_an_edge(self, repo, form):
+        parent = build_spec(repo, name="five")                    # 0001
+        other = build_spec(repo, name="seven")                    # 0002, will depend on 0001 in list form
+        text = read(other)
+        if form == "flow":
+            text = text.replace('depends_on: ""', 'depends_on: ["0001"]', 1)
+        else:
+            text = text.replace('depends_on: ""', 'depends_on:\n  - "0001"', 1)
+        write(other, text)
+        before = snapshot(repo / "specs")
+        proc = data(repo, "target", "--spec", "0002", "--serves", "0001", "--json")
+        assert proc.returncode == 2, proc.stderr
+        assert "cycle" in proc.stderr
+        assert snapshot(repo / "specs") == before

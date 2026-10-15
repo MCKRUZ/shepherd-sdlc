@@ -1195,12 +1195,14 @@ class TestDeclaredConstants:
                                  "ADR": "Decision records", "DOC": "Intake documents"}
 
     def test_the_resolve_roots_are_searched_in_this_order(self):
-        assert dm.RESOLVE_ROOTS == (".sdlc/context", ".sdlc/artifacts", ".sdlc", "docs", "specs")
+        assert dm.RESOLVE_ROOTS == (".sdlc/artifacts", ".sdlc", "docs", "specs")
+        assert dm.roots_for("DOC-004") == (".sdlc/context/intake", ".sdlc/artifacts", ".sdlc", "docs", "specs")
+        assert dm.roots_for("BR-03") == dm.RESOLVE_ROOTS and dm.roots_for("ADR-012") == dm.RESOLVE_ROOTS
 
     def test_context_is_searched_before_artifacts_so_a_doc_resolves_to_its_summary(self):
         # /sprd-intake --registry writes a `| DOC-NNN |` row under .sdlc/artifacts; the summary file
         # (.sdlc/context/intake/DOC-NNN-<slug>.md) must be found first
-        assert dm.RESOLVE_ROOTS.index(".sdlc/context") < dm.RESOLVE_ROOTS.index(".sdlc/artifacts")
+        assert dm.roots_for("DOC-004").index(".sdlc/context/intake") < dm.roots_for("DOC-004").index(".sdlc/artifacts")
 
     def test_only_these_review_values_move_to_pending(self):
         assert dm.REVIEW_TO_PENDING == ("", "n-a", "returned")

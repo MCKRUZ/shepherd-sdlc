@@ -3,14 +3,14 @@
 These are the four ways the first version of the scan reported a clean result it had not earned, each
 found by running it rather than reading it, each pinned here against a real repository where one can
 be built and by a recorded, scripted `git` where it cannot (a `safe.directory` refusal needs a second
-user; a git older than 2.46 is not on this machine):
+user; a git older than 2.45 is not on this machine):
 
   1. a ref whose TREE cannot be read (a `--filter=tree:0` clone's other branches) was counted as
      "scanned, no such file", because git prints the same words for that and for an absent path
   2. `is_git_repo` answered False for every failure, so git missing or refusing the directory printed
      "(not a git repository)" with nothing in `unread`
   3. a real branch named `rel/HEAD` was dropped by a `/HEAD` suffix test, in neither list
-  4. a partial clone read by a git older than 2.46 would fetch the missing object from the network
+  4. a partial clone read by a git older than 2.45 would fetch the missing object from the network
 
 Every test that runs the module in-process records the git commands it issued (`GitSpy`), so "it
 never fetches" is checked on every one of those paths, not just the happy one.
@@ -308,14 +308,15 @@ def test_the_success_path_costs_no_extra_git_call(repo, spy):
 
 def test_an_absent_path_is_proven_with_one_cat_file_and_one_ls_tree_for_its_directory(repo, spy):
     spy.start()
-    assert bs.read_at(repo, "refs/heads/master", "nothing-here.md") is None       # at the root
-    assert spy.commands() == ["show", "cat-file"]
+    assert bs.read_at(repo, "refs/heads/master", "nothing-here.md") is None       # at the project top
+    assert spy.commands() == ["show", "cat-file", "ls-tree"]   # `ls-tree ./`: the project may be a sub-directory
+    assert spy.calls[-1][-1] == "./"
     spy.calls.clear()
     assert bs.read_at(repo, "refs/heads/master", ".sdlc/never-existed.md") is None   # in a directory
     assert spy.commands() == ["show", "cat-file", "ls-tree"]
     spy.calls.clear()
     assert bs.list_dir_at(repo, "refs/heads/master", "no-such-dir") is None
-    assert spy.commands() == ["ls-tree", "cat-file"]
+    assert spy.commands() == ["ls-tree", "cat-file", "ls-tree"]   # the directory proof runs here too
 
 
 # ===================================================================================================
@@ -604,7 +605,7 @@ def test_a_partial_clone_on_git_2_43_is_not_read_at_all(repo, spy):
     assert scan.refs_scanned == [] and scan.texts == {}
     assert [u["ref"] for u in scan.unread] == ["(all refs)"]
     reason = scan.unread[0]["reason"]
-    assert "2.46" in reason and "2.43" in reason and "nothing was fetched" in reason
+    assert "2.45" in reason and "2.43" in reason and "nothing was fetched" in reason
     assert not NOTHING_READ & set(spy.commands()), spy.commands()
 
 
@@ -614,12 +615,12 @@ def test_scan_dir_on_a_partial_clone_with_old_git_reads_nothing_either(repo, spy
     spy.start()
     is_git, refs, names, unread = bs.scan_dir(repo, "specs")
     assert (is_git, refs, names) == (True, [], {})
-    assert [u["ref"] for u in unread] == ["(all refs)"] and "2.46" in unread[0]["reason"]
+    assert [u["ref"] for u in unread] == ["(all refs)"] and "2.45" in unread[0]["reason"]
     assert not NOTHING_READ & set(spy.commands()), spy.commands()
 
 
-@pytest.mark.parametrize("version", ["2.46.0", "2.46.0.windows.1", "2.54.0 (Apple Git-157)", "3.0.1"])
-def test_the_same_partial_clone_on_git_2_46_or_newer_is_read(repo, spy, version):
+@pytest.mark.parametrize("version", ["2.45.0", "2.46.0.windows.1", "2.54.0 (Apple Git-157)", "3.0.1"])
+def test_the_same_partial_clone_on_git_2_45_or_newer_is_read(repo, spy, version):
     mark_partial(repo)
     spy.version = version
     spy.start()
@@ -629,13 +630,13 @@ def test_the_same_partial_clone_on_git_2_46_or_newer_is_read(repo, spy, version)
     assert scan.texts["refs/heads/feature"] == log_text(1, 2, 3, 7)
 
 
-@pytest.mark.parametrize("version", ["2.45.9", "2.9.5", "1.8.3"])
+@pytest.mark.parametrize("version", ["2.44.9", "2.9.5", "1.8.3"])
 def test_older_gits_are_refused_by_number_not_by_text(repo, spy, version):
     mark_partial(repo)
     spy.version = version
     spy.start()
     scan = bs.scan_file(repo, LOG)
-    assert scan.refs_scanned == [] and "2.46" in scan.unread[0]["reason"]
+    assert scan.refs_scanned == [] and "2.45" in scan.unread[0]["reason"]
 
 
 def test_the_partial_clone_extension_alone_counts_as_a_partial_clone(repo, spy):
@@ -643,7 +644,7 @@ def test_the_partial_clone_extension_alone_counts_as_a_partial_clone(repo, spy):
     spy.version = "2.43.0"
     spy.start()
     scan = bs.scan_file(repo, LOG)
-    assert scan.refs_scanned == [] and "2.46" in scan.unread[0]["reason"]
+    assert scan.refs_scanned == [] and "2.45" in scan.unread[0]["reason"]
     assert not NOTHING_READ & set(spy.commands())
 
 
@@ -734,3 +735,41 @@ def test_the_module_source_still_has_no_fetch_command_or_shell():
     source = Path(bs.__file__).read_text(encoding="utf-8")
     assert source.count('"fetch"') == 0
     assert "shell=True" not in source
+
+
+# ===================================================================================================
+# 5. a project in a SUB-DIRECTORY of a larger repository, on a tree:1 clone (review round 2)
+# ===================================================================================================
+
+@modern_git
+def test_a_sub_project_root_level_log_on_a_tree_1_clone_is_unread_not_absent(tmp_path):
+    """The project lives at proj/ inside a larger repo and keeps its log at proj/decision-log.md (the
+    resolve_write_target fallback). A `--filter=tree:1` clone has the git-root tree but not proj/'s,
+    so git says the log 'exists on disk, but not in' the other branch — proving only the root tree
+    would still call it absent and count the branch. The project directory itself is proven too."""
+    src = tmp_path / "mono"
+    src.mkdir()
+    git(src, "init", "-q", "-b", "master")
+    git(src, "config", "uploadpack.allowfilter", "true")
+    commit(src, {"README.md": "top\n", "proj/decision-log.md": log_text(1, 2)}, "master")
+    git(src, "checkout", "-q", "-b", "other")
+    commit(src, {"proj/decision-log.md": log_text(1, 2, 5)}, "other")
+    git(src, "checkout", "-q", "master")
+    dst = tmp_path / "clone-tree-1"
+    proc = REAL_RUN(["git", "clone", "-q", "--filter=tree:1", "--no-local", src.as_uri(), str(dst)],
+                    capture_output=True, text=True)
+    if proc.returncode != 0:
+        pytest.skip(f"cannot make a --filter=tree:1 clone here: {proc.stderr.strip()}")
+    probe = REAL_RUN(["git", "ls-tree", "--name-only", "refs/remotes/origin/other", "proj/"], cwd=dst,
+                     capture_output=True, text=True, env={**os.environ, "GIT_NO_LAZY_FETCH": "1"})
+    if probe.returncode == 0:
+        pytest.skip("--filter=tree:1 did not leave proj/'s tree unreadable on this git")
+    scan = bs.scan_file(dst / "proj", "decision-log.md")
+    assert "refs/remotes/origin/other" in [u["ref"] for u in scan.unread]
+    assert "refs/remotes/origin/other" not in scan.refs_scanned
+    assert "refs/heads/master" in scan.refs_scanned
+    # and the CLI does not reissue DL-05 as if that branch had been read
+    proc = run_td(open_args("--all-branches", "--json"), dst / "proj")
+    doc = json.loads(proc.stdout)
+    assert "refs/remotes/origin/other" in [u["ref"] for u in doc["unread"]]
+    assert doc["refs_scanned"] == [r for r in doc["refs_scanned"] if r != "refs/remotes/origin/other"]

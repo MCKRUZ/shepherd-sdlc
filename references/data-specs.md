@@ -117,7 +117,7 @@ is skipped — a branch named `rel/HEAD` is read. Outside a git repository the c
 `refs_scanned: []` and the line `Ids checked on 0 branches (not a git repository)`; when git itself could
 not answer (not installed, `safe.directory` refusal, timeout) the line reads `could not read refs: <reason>`
 and `unread` carries one `(all refs)` entry — never a clean-looking empty result. A partial clone on a git
-older than 2.46 (which lacks `GIT_NO_LAZY_FETCH`) is refused the same way rather than risk a lazy fetch.
+older than 2.45 (the first release with `GIT_NO_LAZY_FETCH`) is refused the same way rather than risk a lazy fetch.
 Without the flag, output is byte-identical to before.
 
 ## 7. Not built

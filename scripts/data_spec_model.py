@@ -58,7 +58,61 @@ REF_LABELS = {
 # file. The model only declares them: it reads no file. `.sdlc/context` comes first so a DOC-NNN
 # resolves to its summary (`.sdlc/context/intake/DOC-NNN-<slug>.md`), not to the registry row that
 # `/sprd-intake --registry` writes under `.sdlc/artifacts` (which would otherwise win as the first match).
-RESOLVE_ROOTS = (".sdlc/context", ".sdlc/artifacts", ".sdlc", "docs", "specs")
+RESOLVE_ROOTS = (".sdlc/artifacts", ".sdlc", "docs", "specs")
+# A DOC-NNN is defined by its intake summary (`.sdlc/context/intake/DOC-NNN-<slug>.md`), which the
+# document registry under .sdlc/artifacts only LISTS as a table row — so that kind looks there first.
+# Every other kind keeps the artifacts-first order: a frozen layer under .sdlc/context/layers/ may
+# summarise a BR or ADR in a table row, and a summary is not the definition.
+RESOLVE_ROOTS_BY_KIND = {"DOC": (".sdlc/context/intake",) + RESOLVE_ROOTS}
+
+
+def ref_kind(ref: str) -> str | None:
+    """'BR-03' -> 'BR'; None when `ref` is not a <KIND>-<digits> id."""
+    m = re.match(r"^([A-Z]+)-\d+$", ref or "")
+    return m.group(1) if m else None
+
+
+def roots_for(ref: str) -> tuple[str, ...]:
+    """The search roots, in order, for resolving `ref` to the file that defines it."""
+    return RESOLVE_ROOTS_BY_KIND.get(ref_kind(ref) or "", RESOLVE_ROOTS)
+
+
+_BLOCK_ITEM_VALUE_RE = re.compile(r"^\s+-\s*(.*)$")   # a YAML block-list item and its value: indented `- value`
+
+
+def depends_on_ids_lenient(text: str) -> list[str]:
+    """Every spec id a spec's `depends_on` names, whatever YAML form it was written in — the
+    comma-separated string the template asks for, a flow list `["0005"]`, or a block list of
+    `  - "0005"` items. For READING a dependency graph only: the plugin's own writer refuses the
+    list forms, but a cycle check that could not see an edge somebody hand-wrote would say a link is
+    safe when it is not. Returns [] when there is no frontmatter or no depends_on."""
+    if not text.startswith("---"):
+        return []
+    end = text.find("\n---", 3)
+    if end == -1:
+        return []
+    lines = text[3:end].splitlines()
+    ids: list[str] = []
+    for i, line in enumerate(lines):
+        if not re.match(r"^depends_on\s*:", line):
+            continue
+        value = line.partition(":")[2]
+        value = value.split(" #", 1)[0] if " #" in value else value
+        ids.extend(re.findall(r"\b\d{4,}\b", value))
+        if not value.strip():
+            for nxt in lines[i + 1:]:
+                if not nxt.strip() or nxt.lstrip().startswith("#"):
+                    continue
+                m = _BLOCK_ITEM_VALUE_RE.match(nxt)
+                if not m:
+                    break
+                ids.extend(re.findall(r"\b\d{4,}\b", m.group(1) or ""))
+        break
+    out: list[str] = []
+    for sid in ids:
+        if sid not in out:
+            out.append(sid)
+    return out
 
 # D4: the only `data_review` values this layer moves to `pending`. `accepted` is a person's verdict.
 REVIEW_TO_PENDING = ("", "n-a", "returned")

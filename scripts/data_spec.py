@@ -214,8 +214,9 @@ def build_graph(index: dict[str, list[Path]]) -> dict[str, list[str]]:
             text = read_lenient(path)
             if text is None:
                 continue
-            fm, _ = cs.parse_frontmatter(text)
-            for dep in sm.parse_depends_on(fm.get("depends_on")):
+            # Every YAML form is read here, not just the comma-separated string the writer accepts: an
+            # edge somebody hand-wrote as a list must still count when asking whether a link closes a cycle.
+            for dep in dm.depends_on_ids_lenient(text):
                 if dep not in deps:
                     deps.append(dep)
         graph[spec_id] = deps
@@ -240,20 +241,21 @@ def cycle_message(spec_id: str, parent_id: str, cycle: list[str]) -> str:
 # --- Resolving a cited id to the file that defines it ------------------------------------------
 
 class RefResolver:
-    """Finds, for a BR / DL / ADR / DOC id, the first markdown file under RESOLVE_ROOTS (in that order,
-    paths sorted) holding a line that DEFINES it. Each file is read at most once per resolver."""
+    """Finds, for a BR / DL / ADR / DOC id, the first markdown file under the roots `data_spec_model.roots_for`
+    names for that kind (in that order, paths sorted) holding a line that DEFINES it. Each file is read at
+    most once per resolver."""
 
     def __init__(self, repo_root: Path, skip: Path | None = None):
         self.repo_root = repo_root
         self.skip = skip.resolve() if skip is not None else None
-        self._paths: list[Path] | None = None
+        self._paths: dict[tuple[str, ...], list[Path]] = {}
         self._lines: dict[Path, list[str]] = {}
 
-    def _candidates(self) -> list[Path]:
-        if self._paths is None:
+    def _candidates(self, roots: tuple[str, ...]) -> list[Path]:
+        if roots not in self._paths:
             seen: set[Path] = set()
             paths: list[Path] = []
-            for root in dm.RESOLVE_ROOTS:
+            for root in roots:
                 base = self.repo_root / root
                 if not base.is_dir():
                     continue
@@ -264,8 +266,8 @@ class RefResolver:
                     if self.skip is not None and path.resolve() == self.skip:
                         continue
                     paths.append(path)
-            self._paths = paths
-        return self._paths
+            self._paths[roots] = paths
+        return self._paths[roots]
 
     def _read_lines(self, path: Path) -> list[str]:
         if path not in self._lines:
@@ -274,7 +276,7 @@ class RefResolver:
         return self._lines[path]
 
     def resolve(self, ref: str) -> str | None:
-        for path in self._candidates():
+        for path in self._candidates(dm.roots_for(ref)):
             if any(dm.is_definition_line(line, ref) for line in self._read_lines(path)):
                 return path.relative_to(self.repo_root).as_posix()
         return None
@@ -590,6 +592,13 @@ def check_context_coverage(index, spec_text: str) -> dict:
     return _finding(name, True, f"Context mentions all {cited} id(s) the parent (spec {serves}) cites")
 
 
+def _first_cell(row: str) -> str:
+    """The first non-empty cell of a table row, trimmed to 60 characters — how a gap is named in a finding."""
+    cells = [c.strip() for c in row.strip().strip("|").split("|")]
+    text = next((c for c in cells if c), row.strip())
+    return text if len(text) <= 60 else text[:57] + "..."
+
+
 def check_readiness_gaps_owned(ws: Workspace) -> dict:
     name = "readiness-gaps-owned"
     text, problem = _read_doc(data_docs_dir(ws) / "data-readiness.md")
@@ -602,10 +611,16 @@ def check_readiness_gaps_owned(ws: Workspace) -> dict:
     shown: dict[int, str] = {}
     for match in _DL_RE.finditer(section):
         shown.setdefault(int(match.group(1)), f"DL-{match.group(1)}")
-    if not shown:
-        if not gap_rows:   # a Gaps table with only its header or template stand-ins records no gap: nothing to own
-            return _finding(name, True, "no gaps recorded")
+    if not shown and not gap_rows:   # only the header or template stand-ins: no gap recorded, nothing to own
+        return _finding(name, True, "no gaps recorded")
+    # Every REAL row is a gap and must cite its own DL-NN — a table where one row cites a decision does
+    # not vouch for the row beside it that cites none.
+    uncited = [row for row in gap_rows if not _DL_RE.search(row)]
+    if uncited and not shown:
         return _finding(name, False, f"{len(gap_rows)} gap(s), 0 reference a DL-NN")
+    if uncited:
+        return _finding(name, False, f"{len(uncited)} of {len(gap_rows)} gap(s) reference no DL-NN: "
+                        + "; ".join(_first_cell(row) for row in uncited))
 
     log_path = next((p for p in (ws.sdlc_dir / "decision-log.md", ws.repo_root / "decision-log.md")
                      if p.exists()), None)

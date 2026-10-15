@@ -51,7 +51,9 @@ owns it, `/sprd-data` works it, and it is done only when the data really flows. 
 - **`/sprd-data` drives a data spec; the agent keeps its tools.** The command loads `## Context`
   first, authors six artifacts instead of three, opens routed gaps with `--all-branches`, and
   offers to scaffold a data spec for a build spec that has none; `phases/activities.yaml` declares
-  the three new paths and a `data-spec` activity in the build stage. The `data-analyst` agent keeps
+  a `data-spec` activity in the build stage (the Phase 2 `data` activity keeps creating its original
+  three documents — the new three are a data spec's deliverables, not a one-click create for every
+  project). The `data-analyst` agent keeps
   `Read, Write, Edit, Grep, Glob`: no shell, no platform queries. `--live` (read-only platform
   queries) and platform packs are a written design in `docs/proposals/data-specs.md` §Deferred, not
   built; until they are, a number with no cited query reads `not measured`.

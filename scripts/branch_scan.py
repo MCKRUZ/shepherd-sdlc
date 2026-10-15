@@ -24,7 +24,7 @@ Honesty rules, in the spirit of the rest of the scripts:
   - "This ref has no such path" is believed only once the ref's own tree has been proven readable. Git
     prints the same words for an absent path and for a tree it could not load (a `--filter=tree:0`
     clone's other branches), so on its own that message would count an unlooked-at branch as checked.
-  - A partial clone read by a git too old to honour GIT_NO_LAZY_FETCH (before 2.46) would fetch the
+  - A partial clone read by a git too old to honour GIT_NO_LAZY_FETCH (before 2.45) would fetch the
     missing object from the network on a plain `git show`. Nothing is read in that case.
   - Paths are forward-slash and relative to the directory given (not to the git root), so a project
     that lives in a subdirectory of a larger repository is read at the right place.
@@ -52,7 +52,7 @@ ALL_REFS = "(all refs)"
 
 # GIT_NO_LAZY_FETCH is honoured from this git version on; older git lazily fetches a partial clone's
 # missing objects over the network no matter what the environment says.
-MIN_NO_LAZY_FETCH_VERSION = (2, 46)
+MIN_NO_LAZY_FETCH_VERSION = (2, 45)
 
 
 class BranchScanError(Exception):
@@ -80,7 +80,7 @@ def _run_git(args: list[str], cwd) -> tuple[str, str]:
     # LC_ALL/LANGUAGE pin git's messages to English so the absent-path check below matches.
     # GIT_NO_LAZY_FETCH stops a partial clone from fetching a missing blob from its remote just
     # because a read asked for it: the object is then reported unreadable, which is the honest answer.
-    # (git before 2.46 ignores it; `_partial_clone_blocker` keeps this module off those.)
+    # (git before 2.45 ignores it; `_partial_clone_blocker` keeps this module off those.)
     env = {**os.environ, "LC_ALL": "C", "LANGUAGE": "C", "GIT_NO_LAZY_FETCH": "1"}
     try:
         result = subprocess.run(["git", *args], cwd=cwd, capture_output=True, timeout=GIT_TIMEOUT_SECONDS,
@@ -123,7 +123,7 @@ def parse_git_version(text: str) -> tuple[int, int] | None:
 
     "git version 2.43.0", "git version 2.46.0.windows.1" and "git version 2.54.0 (Apple Git-157)" all
     read; only the first two numeric components matter. Compared as integers, never as text ("2.9" is
-    older than "2.46").
+    older than "2.45").
     """
     match = re.search(r"(\d+)\.(\d+)", text or "")
     return (int(match.group(1)), int(match.group(2))) if match else None
@@ -159,7 +159,7 @@ def _is_partial_clone(repo_root: Path) -> bool:
 def _partial_clone_blocker(repo_root: Path) -> str | None:
     """Why nothing may be read from this repository, or None when reading is safe.
 
-    A partial clone fetches a missing object from its remote when a read asks for one. Git 2.46 and
+    A partial clone fetches a missing object from its remote when a read asks for one. Git 2.45 and
     later can be told not to (GIT_NO_LAZY_FETCH, set by `_run_git`); earlier versions cannot, so a
     partial clone on one of those is not read at all. Probed once per scan, and the version is only
     asked about when the repository is a partial clone.
@@ -215,15 +215,15 @@ def _prove_tree_readable(repo_root: Path, ref: str, parent_dir: str = "") -> Non
     Git's "no such path" message is also what it prints when it could not load a tree on the way
     (a `--filter=tree:0` clone's other branches have no root tree; `--filter=tree:1` leaves the root
     and drops the directories under it). So a path is only called absent once the trees leading to it
-    are proven readable: `cat-file -e` for the root, and for a path in a directory an `ls-tree` of
-    that directory, which fails when any tree on the way is missing and prints nothing when the
-    directory is simply not there. Only reached on the path-absent branch; a successful read costs
-    no extra call.
+    are proven readable: `cat-file -e` for the root, then an `ls-tree` of the path's own directory —
+    `./` when the path sits at the project's top, since the project may itself live in a subdirectory
+    of the git repository (`--filter=tree:1` keeps the root tree and drops exactly those) — which
+    fails when any tree on the way is missing and prints nothing when the directory is simply not
+    there. Only reached on the path-absent branch; a successful read costs no extra call.
     """
     try:
         _run_git(["cat-file", "-e", f"{ref}^{{tree}}"], repo_root)
-        if parent_dir:
-            _run_git(["ls-tree", "--name-only", ref, f"{parent_dir}/"], repo_root)
+        _run_git(["ls-tree", "--name-only", ref, f"{parent_dir}/" if parent_dir else "./"], repo_root)
     except BranchScanError as e:
         detail = e.stderr.strip() or str(e)
         raise BranchScanError(f"ref {ref}: its tree could not be read ({detail})", stderr=e.stderr,
