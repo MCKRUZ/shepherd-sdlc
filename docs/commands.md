@@ -903,7 +903,7 @@ One line each; see `commands/<name>.md` for the complete instructions.
 | `/sprd-feature` | Decompose an epic into channel-aware features and specs |
 | `/sprd-channel` | Bind a spec to its channel and inject the acceptance dimensions |
 | `/sprd-experience` | Author the channel-shaped experience for a surface |
-| `/sprd-data` | Author the data contract, readiness, and lineage for a feature |
+| `/sprd-data` | Author the data documents for a feature, or drive a data spec (type: data, serves: <parent>) to its deliverables |
 | `/sprd-rules` | Author business rules and golden scenarios |
 | `/sprd-evals` | Author the versioned golden set for an LLM-powered spec |
 | `/sprd-revise` | Change one specific artifact (id or section) — discipline agent proposes, human decides; records the why to the change-ledger + a linked `DL-NN`, re-gates, shows downstream staleness to disposition |
