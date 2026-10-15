@@ -307,6 +307,21 @@ def test_plan_text_is_byte_equal_to_the_golden(repo, capsys):
     assert_no_identity(out)
 
 
+def test_a_crlf_checkout_plans_the_golden_text_and_hash(repo, capsys):
+    """Git for Windows checks a client's clone out CRLF by default: the plan a person reads, and the hash they echo to
+    `apply --confirm`, are the commit's, not the line endings'. (The Windows leg printed `plan 0c81e0348031` for the
+    golden's `plan 1d0617c03373`: `source_sha` was hashed over the CRLF bytes.)"""
+    for src in MINI.rglob("*"):
+        path = repo / src.relative_to(MINI)
+        if src.is_file() and path.is_file():                 # the copy as the fixture left it (the roster included)
+            path.write_bytes(path.read_bytes().replace(b"\r\n", b"\n").replace(b"\n", b"\r\n"))
+    assert b"\r\n" in (repo / "specs" / "0004-duplicate-claim-409.md").read_bytes()
+    seed(repo, linked(SPEC4, 4521))
+    code, out = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
+    assert code == 0
+    assert out == GOLDEN_PLAN.read_text(encoding="utf-8")
+
+
 def test_plan_reads_the_board_in_batches_with_the_seam_shape_and_never_writes(repo, az, capsys):
     seed(repo, linked(SPEC4, 4521))
     plan_json(capsys, repo)

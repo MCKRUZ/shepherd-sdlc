@@ -372,6 +372,47 @@ def test_the_body_path_is_scrubbed_from_a_message_that_carries_it(monkeypatch, t
     assert ado_transport.BODY_FILE_PLACEHOLDER in str(err.value) and "timed out after 60s" in str(err.value)
 
 
+@pytest.fixture
+def windows_body_dir(tmp_path, monkeypatch) -> Path:
+    """A temp dir spelled the way the Windows runner's is -- backslashes and a non-ASCII user name -- so a message
+    that quotes the body path quotes it differently from the path as given. On Windows the backslashes are the
+    separators; elsewhere they are characters of one directory name, which POSIX allows."""
+    parts = ("Users", "rünner", "AppData", "Local", "Temp")
+    d = tmp_path.joinpath(*parts) if os.name == "nt" else tmp_path / "\\".join(("C:", *parts))
+    d.mkdir(parents=True)
+    assert "\\" in str(d)
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(d))
+    return d
+
+
+@pytest.mark.parametrize("words", [
+    pytest.param(lambda argv, path: f"`az {argv}` timed out after 60s.", id="argv-list-repr"),
+    pytest.param(lambda argv, path: f"could not read {path}", id="as-given"),
+    pytest.param(lambda argv, path: f"could not read {path.replace(chr(92), '/')}", id="as-posix"),
+    pytest.param(lambda argv, path: f"bad request: {json.dumps({'file': path})}", id="json"),
+])
+def test_a_windows_body_path_is_scrubbed_in_every_spelling(monkeypatch, tmp_path, windows_body_dir, words):
+    """The Windows leg: `run_az`'s argv list in a message spells `C:\\Users\\...` with every backslash doubled, so
+    the path as given was not in it and nothing was scrubbed. Asserted on the directory's own words, not a pattern."""
+    seen = {}
+
+    def boom(args):
+        seen["path"] = in_file_of(args)
+        raise AdoImportError(words(args, seen["path"]))
+
+    install(monkeypatch, boom)
+    with pytest.raises(AdoImportError) as err:
+        ado_transport.invoke_body(tmp_path, "wit", "workItems", {"project": "Claims", "id": 1},
+                                  method="PATCH", body=PATCH_BODY)
+    message = str(err.value)
+    assert Path(seen["path"]).parent == windows_body_dir
+    assert "rünner" not in message and "r\\u00fcnner" not in message and "AppData" not in message
+    assert Path(seen["path"]).name not in message
+    assert ado_transport.BODY_FILE_PLACEHOLDER in message
+    assert err.value.__cause__ is None and err.value.__suppress_context__
+    assert list(windows_body_dir.iterdir()) == []
+
+
 @pytest.mark.parametrize("body", [[], {}], ids=["empty-list", "empty-dict"])
 def test_an_empty_body_is_still_a_body(writer, tmp_path, body_dir, body):
     seen = SeenBody({"id": 1})

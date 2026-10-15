@@ -162,14 +162,21 @@ def test_two_dimensions_with_one_number_are_refused(tmp_path):
         tree.load_outcomes(root)
 
 
-def test_crlf_files_read_the_same_but_hash_as_stored(tmp_path):
+def test_crlf_files_read_the_same_and_hash_the_same(tmp_path):
+    """A CRLF checkout of the commit (Git for Windows' autocrlf default) is the same source: the same rows, the same
+    fields and the same `source_sha`, or a ledger written on a Mac reads "the repo moved" on Windows. A lone CR is a
+    real byte and still moves it."""
     root = _repo(tmp_path)
     lf = (FIXTURE / SUCCESS).read_bytes().decode("utf-8")
+    assert "\r" not in lf, "the fixture must check out LF (.gitattributes `eol=lf`), or this compares CRLF with itself"
     _put(root, SUCCESS, lf.replace("\n", "\r\n"))
     rows = tree.load_outcomes(root)
     assert [r["id"] for r in rows] == [r["id"] for r in tree.load_outcomes(FIXTURE)]
     assert rows[0]["fields"] == tree.load_outcomes(FIXTURE)[0]["fields"]
-    assert rows[0]["source_sha"] == hashlib.sha256(lf.replace("\n", "\r\n").encode()).hexdigest()
+    assert rows[0]["source_sha"] == tree.load_outcomes(FIXTURE)[0]["source_sha"]
+    assert rows[0]["source_sha"] == hashlib.sha256(lf.encode()).hexdigest()
+    _put(root, SUCCESS, lf.replace("\n", "\r", 1))
+    assert tree.load_outcomes(root)[0]["source_sha"] != rows[0]["source_sha"]
 
 
 # --- requirements -------------------------------------------------------------------------------------------

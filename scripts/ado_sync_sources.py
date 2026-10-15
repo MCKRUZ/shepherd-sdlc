@@ -40,7 +40,8 @@ A projection is the dict the interface sheet pins, plus `notes`:
     `source_path`, `source_sha`  the repo-relative file and the first 12 hex of the sha256 of the item's own
                  source text: the whole file for a spec, brief, sprint or spike; an epic's heading block and
                  summary row; a decision's table row. An edit to one epic or decision moves no other
-                 (`ado_sync_model.projection_hash` hashes this field with the rest of the projection).
+                 (`ado_sync_model.projection_hash` hashes this field with the rest of the projection), and a
+                 CRLF checkout of the same commit moves none (CRLF is read as LF before hashing).
     `notes`      sentences about what was left out and why (no assignee email, no state the process can
                  express, a title cut). Never an address, a name or free text from the source.
 
@@ -178,7 +179,11 @@ def _rel(root: Path, path: Path) -> str:
 
 
 def _fingerprint(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()[:12]
+    """The first 12 hex of the sha256 of `data` with CRLF read as LF. Git for Windows checks a commit out CRLF by
+    default (autocrlf), so hashing the bytes as they lie would give the same commit two fingerprints -- a ledger written
+    on one machine would then read "the repo moved" on another. Only the line ending is unified; a BOM or a lone CR is
+    a real byte and still moves it."""
+    return hashlib.sha256(data.replace(b"\r\n", b"\n")).hexdigest()[:12]
 
 
 def _read(root: Path, path: Path) -> tuple[str, str]:

@@ -32,8 +32,8 @@ reference name like every projection, plus what the repository says under neutra
 `fr_ids`, `priority`, `domain`) because which work item field those land on depends on the discovered process,
 which a source never sees. A neutral key is never a field op: `ado_sync_model.diff` (and so both patch builders)
 pushes reference names only. `notes` says what was left out (a cut title). `source_sha` is the SHA-256 of the
-file as stored. A ref is `sdlc:outcome:<n>-<slug>`, `sdlc:domain:<slug>` or `sdlc:fr:<digits>`, and the row's
-tag is the ref itself.
+file as stored, CRLF read as LF. A ref is `sdlc:outcome:<n>-<slug>`, `sdlc:domain:<slug>` or `sdlc:fr:<digits>`, and
+the row's tag is the ref itself.
 
 A kind whose artifact does not exist yields no rows (the kinds are default-on only when their artifact is
 there). An artifact that contradicts itself raises `ValueError` naming the offence — a domain heading with
@@ -87,7 +87,9 @@ _NONE_WORDS = frozenset({"", "-", "–", "—", "n/a", "na", "none", "tbd"})
 # --- reading ----------------------------------------------------------------------------------------------
 
 def _read(repo_root, rel: str) -> tuple[str, str] | None:
-    """(text with LF newlines, sha256 of the stored bytes), or None when the file is not there."""
+    """(text with LF newlines, sha256 of the stored bytes with CRLF read as LF), or None when the file is not there.
+    A CRLF checkout of a commit (Git for Windows' autocrlf default) hashes as the LF one does, so a ledger written on
+    one machine does not read as "the repo moved" on another; a BOM or a lone CR is a real byte and still moves it."""
     path = Path(repo_root) / rel
     if not path.is_file():
         return None
@@ -96,7 +98,7 @@ def _read(repo_root, rel: str) -> tuple[str, str] | None:
         text = raw.decode("utf-8-sig")
     except UnicodeDecodeError:
         raise ValueError(f"{rel} is not UTF-8 text") from None
-    return text.replace("\r\n", "\n"), hashlib.sha256(raw).hexdigest()
+    return text.replace("\r\n", "\n"), hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
 
 
 @functools.cache

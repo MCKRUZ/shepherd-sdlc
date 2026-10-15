@@ -153,6 +153,21 @@ def _unlink_quietly(path: str) -> None:
         pass
 
 
+def _path_spellings(path: str) -> list[str]:
+    """Every way an error message may spell `path`, longest first: as given; with forward slashes
+    (a Windows path's `as_posix()`); and escaped as `repr()` and JSON quote it, which is how it
+    reads when a whole argv list is put in a message. On Windows that doubles every backslash of
+    `C:\\Users\\...`, so the path as given is not a substring of the message at all."""
+    spellings = {path, path.replace("\\", "/"), repr(path)[1:-1], json.dumps(path)[1:-1]}
+    return sorted((s for s in spellings if s), key=len, reverse=True)
+
+
+def _scrub_path(text: str, path: str) -> str:
+    for spelling in _path_spellings(path):
+        text = text.replace(spelling, BODY_FILE_PLACEHOLDER)
+    return text
+
+
 def _write_body_file(payload: str) -> str:
     """The request body in a private temp file; returns its path, which is never printed. A file
     that was created is removed again if preparing it fails, and no OSError text (it names the path) escapes."""
@@ -180,7 +195,8 @@ def invoke_body(repo_root, area: str, resource: str, route: dict, *, method: str
     read and an AdoImportError for a write (a write that answered nothing is not known to have worked).
     `--detect false` is always emitted and the project is a route parameter, never `--project`.
     The body goes through a 0600 temp file that is removed on every path, and its path is scrubbed
-    from any error `run_az` words from its own argv. Raises only AdoImportError."""
+    from any error `run_az` words from its own argv, in each spelling `_path_spellings` lists (a
+    Windows path printed inside an argv list's repr has every backslash doubled). Raises only AdoImportError."""
     method = method.upper()
     version = check_api_version(api_version)  # before any file exists
     org_url = remote(repo_root).org_url
@@ -202,8 +218,8 @@ def invoke_body(repo_root, area: str, resource: str, route: dict, *, method: str
                 "--api-version", version, "--detect", "false", "--org", org_url, "-o", "json"]
         out = run_az(argv, repo_root, timeout=timeout)
     except AdoImportError as e:
-        if body_path is not None and body_path in str(e):
-            raise AdoImportError(str(e).replace(body_path, BODY_FILE_PLACEHOLDER)) from None
+        if body_path is not None and _scrub_path(str(e), body_path) != str(e):
+            raise AdoImportError(_scrub_path(str(e), body_path)) from None
         raise
     finally:
         if body_path is not None:
