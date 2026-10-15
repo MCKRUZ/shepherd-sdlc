@@ -2,7 +2,8 @@
 
 Azure DevOps Boards is a board the team already uses; this mirror projects the repository's specs, epics and
 features onto it and reads board changes back. Fold B1 shipped the verbs that never touch a work item; Fold B2
-adds the READ verbs; Fold B3 adds the WRITE verbs; Fold B4 adds `reconcile`. The one place the mirror writes to the
+adds the READ verbs; Fold B3 adds the WRITE verbs; Fold B4 adds `reconcile`; Fold B6 adds `sync`, the catch-up that
+runs the reads in one pass and sends nothing. The one place the mirror writes to the
 board is `apply` (through `ado_sync_apply`, as the person whose `az` login is active) and `link-pr`; `iteration bind`,
 `posture` and `comment` write only files in this repository; `reconcile` records a disposition and, for `--take ado`,
 starts the verb that owns the field (through `ado_sync_reconcile`). A write verb needs a named human as `--by`, and
@@ -27,6 +28,11 @@ starts the verb that owns the field (through `ado_sync_reconcile`). A write verb
                           proposals (argument lists, nothing run) for the board items nobody has mapped
   drift [--id ID] [--kind K]
                           the same classification as `pull`, printed, and the board items nobody has linked
+  sync [--kind K] [--id ID] [--sprint SNN] [--all] [--discussion] [--no-comments]
+                          the catch-up in one read, four stages in order: `pull` (the fields), `drift` classified from
+                          that pull's own rows (the board is not asked again; one query for the items nobody has
+                          tagged), the discussion pull ONLY on `--discussion` (there is no `--full`), then `plan`;
+                          ends with the same `Next:` line `plan` and `comment` print where an apply is offered
   link <ref> --work-item N --by H | adopt --all --by H
                           map a repository item to a work item that exists (the ledger's `linked`)
   show <ref|#id> [--fetch] [--versions] [--expand reactions] [--for-agent]
@@ -58,6 +64,8 @@ What it reads
 What it writes
   - `config init`: `.sdlc/ado.yaml` and `.sdlc/ado/local/.gitignore`; `discover`: `.sdlc/ado/schema.json`
   - `plan`: `.sdlc/ado/local/plans/<hash>.json`, ledger `planned`, `.sdlc/ado/local/hook-status.txt`
+  - `sync`: what `pull` and `plan` write, once each (the hook line is written twice, the plan stage's is line 1;
+    with `--discussion`, the discussion cache too) -- and nothing the board holds
   - `pull`: ledger `observed` and `drift_seen`, the hook line; `pull --discussion` and `show --fetch`: the local
     discussion cache (`.sdlc/ado/local/discussion/<id>.json`, `me.json`) and ledger `discussion_pulled`,
     `comment_seen`, `directive_seen` -- counts, ids and hashes only, never a comment's text, a name or an address
@@ -97,6 +105,9 @@ Exit codes (the kit's verb table)
                 that is not ledgered and no `#id`, a target that is neither, a `--sprint` that is not a sprint
                 id, `--fetch`/`--versions` on a remote that is not Azure DevOps); an unknown `--kind` is
                 argparse's own usage error (2), the choices being `boards_contract.KINDS`
+  sync          0 always -- a stage that cannot read is that stage's `unavailable` (the next still runs) and every stage
+                `unavailable` still exits 0 | 1 `DRIFT` in the pull (or discussion) stage, recorded as `drift_error`
+                with the later stages run; a `--sprint` that is not a sprint id is a usage error (1)
   pull          0 | 1 `DRIFT` (the ledger append failed) -- and nothing else: an unreadable ledger is `unavailable`
                 (exit 0), and `--full` without `--discussion` implies it; a board item the search cannot read is a
                 note, not a failure. 1 also for `--propose-specs` together with `--discussion` (a usage error)
@@ -153,6 +164,7 @@ Standalone or Workflow (CLAUDE.md design rule):
 """
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -226,12 +238,18 @@ class LedgerUnreadable(Illegal):
 
 
 # The verbs that only read the board (`pull` also records what it read): house rule 4, they exit 0 on every path
-# that is not a usage error; `pull` alone may exit 1, and only for `DRIFT`.
-READ_VERBS = ("plan", "status", "pull", "drift", "show")
+# that is not a usage error; `pull` and `sync` (which runs it as its first stage) may exit 1, and only for `DRIFT`.
+READ_VERBS = ("plan", "status", "pull", "drift", "show", "sync")
 # What each read verb's `--json` carries when it is `unavailable`, beside `unavailable` and `reason`.
 UNAVAILABLE_EXTRA: dict[str, dict] = {"plan": {"plan": None, "rows": [], "counts": None},
                                       "pull": {"items": [], "counts": None, "proposals": []},
-                                      "drift": {"items": [], "counts": None}, "show": {}, "status": {}}
+                                      "drift": {"items": [], "counts": None}, "show": {}, "status": {},
+                                      "sync": {"pull": None, "drift": None, "discussion": None, "plan": None,
+                                               "counts": None, "next": None}}
+# The read verbs whose `--json` says `"unavailable": true` when `main` answers for an escape from the verb (`sync`,
+# which is shaped like `ado_sync_model.SYNC_NODATA`); the older ones keep the sentence in `unavailable`, which is
+# what the desktop's DiscussionBlock reads from `show`.
+BOOL_UNAVAILABLE_VERBS = ("sync",)
 
 
 # --- people, paths, the host -----------------------------------------------------------------------------------
@@ -852,14 +870,28 @@ def _tag_map(items: dict[int, dict], refs: list[str]) -> dict[str, list[int]]:
     return found
 
 
-def _unavailable(args, repo_root: Path, verb: str, reason: str, *, host_error: str | None = None, **extra) -> int:
-    """A read that could not be made: exit 0, no rows, the reason in words (and the host block when `az` was the
+class _Outcome(NamedTuple):
+    """What a read verb has to say, built and not yet printed: its `--json` document and its text. `sync` runs the
+    read verbs' own code as its stages, so each says its answer as data and the caller decides how to print it."""
+    doc: dict
+    text: str
+
+
+def _unavailable_outcome(repo_root: Path, verb: str, reason: str, *, host_error: str | None = None,
+                         **extra) -> _Outcome:
+    """A read that could not be made, as data: no rows, the reason in words (and the host block when `az` was the
     reason, read from the error it raised, never probed)."""
     host = host_block_for(repo_root, host_error) if host_error is not None else None
     lines = [f"Azure Boards mirror: {verb} - unavailable", f"  {reason}"]
     if host is not None:
         lines.append(_host_line(host))
-    _emit(args, {"ok": True, "unavailable": True, "reason": reason, "host": host, **extra}, "\n".join(lines))
+    return _Outcome({"ok": True, "unavailable": True, "reason": reason, "host": host, **extra}, "\n".join(lines))
+
+
+def _unavailable(args, repo_root: Path, verb: str, reason: str, *, host_error: str | None = None, **extra) -> int:
+    """A read that could not be made: exit 0, no rows, the reason in words (and the host block when `az` was the
+    reason, read from the error it raised, never probed)."""
+    _emit(args, *_unavailable_outcome(repo_root, verb, reason, host_error=host_error, **extra))
     return 0
 
 
@@ -1288,10 +1320,29 @@ def _open_conflicts(ledger: list[dict]) -> dict[str, list[dict]]:
     return out
 
 
+def _apply_offer(posture: str, counts: dict, comments: dict, plan: str) -> tuple[bool, str | None]:
+    """`(apply_offered, next)`: an apply is offered where the posture is `assisted`, and the one footer
+    (`ado_sync_model.apply_next_line`) is named only when the plan holds something to send: a create, an update or a
+    drafted comment. A plan-only clone is offered nothing and prints no footer; a plan with nothing to send names none."""
+    offered = posture == "assisted"
+    pending = counts["create"] + counts["update"] + (comments.get("draft") or 0)
+    return offered, (model.apply_next_line(plan) if offered and pending > 0 else None)
+
+
 def cmd_plan(args, repo_root: Path) -> int:
+    doc, text, code = _plan_outcome(args, repo_root)
+    if doc.get("next"):  # the footer is the LAST line, under a DRIFT line when there is one; an unavailable plan has none
+        text = f"{text}\n{doc['next']}"
+    _emit(args, doc, text)
+    return code
+
+
+def _plan_outcome(args, repo_root: Path) -> tuple[dict, str, int]:
+    """`(document, text, exit)` of `plan`, built and not printed (`sync` runs it as its last stage). The text is
+    empty under `--json`, where it is never read; it carries no footer: `cmd_plan` adds the one `next` names."""
     need = _load(repo_root)
     if isinstance(need, str):
-        return _unavailable(args, repo_root, "plan", need, plan=None, rows=[], counts=None)
+        return (*_unavailable_outcome(repo_root, "plan", need, plan=None, rows=[], counts=None), 0)
     cfg, schema = need
     kinds, skipped = _scope_kinds(cfg, args.kind)
     sprint = _sprint_arg(args.sprint)
@@ -1307,10 +1358,11 @@ def cmd_plan(args, repo_root: Path) -> int:
         projs = _projections(repo_root, cfg, schema, [k for k in kinds if k not in rides])
         web_url = ado_transport.remote(repo_root).web_url
     except AdoImportError as exc:
-        return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
+        return (*_unavailable_outcome(repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[],
+                                      counts=None), 0)
     except ValueError as exc:
-        return _unavailable(args, repo_root, "plan", f"the repository's sources do not agree: {_tidy(exc)}", plan=None,
-                            rows=[], counts=None)
+        return (*_unavailable_outcome(repo_root, "plan", f"the repository's sources do not agree: {_tidy(exc)}",
+                                      plan=None, rows=[], counts=None), 0)
     selected, unmatched = _select(repo_root, projs, ids, sprint)
     ledger = read_ledger(repo_root)
     links = linked_items(ledger)
@@ -1322,7 +1374,8 @@ def cmd_plan(args, repo_root: Path) -> int:
     try:  # one by-tag query for every ref the ledger does not know, then one batch read of everything it names
         items, missing = _read_items(repo_root, ledgered_ids + _query_tagged(repo_root, unledgered), emails)
     except AdoImportError as exc:
-        return _unavailable(args, repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[], counts=None)
+        return (*_unavailable_outcome(repo_root, "plan", _tidy(exc), host_error=str(exc), plan=None, rows=[],
+                                      counts=None), 0)
     board = _Board(links, _tag_map(items, unledgered), items, set(missing) & set(ledgered_ids), emails, web_url,
                    wm.configured_area(cfg))
     pairs = [(p, _plan_row(p, *_row_type(p, schema, cfg, typed), schema, refusals[0] if refusals else None, board))
@@ -1389,6 +1442,7 @@ def cmd_plan(args, repo_root: Path) -> int:
                 "skipped": len(comment_skipped) if planned_comments else None,
                 "refused": sum(1 for r in comment_rows if r["status"] == "refused") if planned_comments else None,
                 "unavailable": comment_why}
+    offered, next_line = _apply_offer(posture, counts, comments, plan)
     out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
            "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
            "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
@@ -1396,14 +1450,12 @@ def cmd_plan(args, repo_root: Path) -> int:
            + ([comment_why] if comment_why else []) + ([hook_note] if hook_note else []),
            "validated": bool(args.validate), "comments": comments,
            "comments_skipped": [{k: r[k] for k in ("ref", "event", "reason", "detail")} for r in comment_skipped],
-           "hook_line": hook, "drift": drift}
+           "hook_line": hook, "drift": drift, "apply_offered": offered, "next": next_line}
     if args.json:
-        print(json.dumps(out, indent=2))
-    else:
-        lines = _fit_table(fit, resolved) if fit or resolved else []
-        text = _plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n")
-        print(text if drift is None else f"{text}\n{drift}")  # `DRIFT: ...` leads its line, as in sprint.py
-    return 0
+        return out, "", 0
+    lines = _fit_table(fit, resolved) if fit or resolved else []
+    text = _plan_text({**out, "executed_as_word": word}, in_sync, lines).rstrip("\n")
+    return out, (text if drift is None else f"{text}\n{drift}"), 0  # `DRIFT: ...` leads its line, as in sprint.py
 
 
 # --- status ----------------------------------------------------------------------------------------------------------
@@ -1505,11 +1557,11 @@ def _observe(repo_root: Path, links: dict, refs: list[str], projs: dict, emails:
     return results
 
 
-def _drift_context(args, repo_root: Path, verb: str):
-    """`(cfg, schema, projections by ref, links, emails, ledger)` or the exit code of an `unavailable` answer."""
+def _drift_context(repo_root: Path, verb: str):
+    """`(cfg, schema, projections by ref, links, emails, ledger)` or the `_Outcome` of an `unavailable` answer."""
     need = _load(repo_root)
     if isinstance(need, str):
-        return _unavailable(args, repo_root, verb, need, items=[], counts=None)
+        return _unavailable_outcome(repo_root, verb, need, items=[], counts=None)
     cfg, schema = need
     ledger = read_ledger(repo_root)
     links = linked_items(ledger)
@@ -1517,10 +1569,10 @@ def _drift_context(args, repo_root: Path, verb: str):
     try:
         projs = {p["ref"]: p for p in _projections(repo_root, cfg, schema, kinds)}
     except AdoImportError as exc:
-        return _unavailable(args, repo_root, verb, _tidy(exc), host_error=str(exc), items=[], counts=None)
+        return _unavailable_outcome(repo_root, verb, _tidy(exc), host_error=str(exc), items=[], counts=None)
     except ValueError as exc:
-        return _unavailable(args, repo_root, verb, f"the repository's sources do not agree: {_tidy(exc)}",
-                            items=[], counts=None)
+        return _unavailable_outcome(repo_root, verb, f"the repository's sources do not agree: {_tidy(exc)}",
+                                    items=[], counts=None)
     return cfg, schema, projs, links, _emails(repo_root), ledger
 
 
@@ -1568,9 +1620,10 @@ def _drift_lines(results: list[dict], projs: dict) -> list[str]:
 
 
 def cmd_drift(args, repo_root: Path) -> int:
-    ctx = _drift_context(args, repo_root, "drift")
-    if isinstance(ctx, int):
-        return ctx
+    ctx = _drift_context(repo_root, "drift")
+    if isinstance(ctx, _Outcome):
+        _emit(args, *ctx)
+        return 0
     cfg, _schema, projs, links, emails, _ledger = ctx
     refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], args.kind)
     try:
@@ -1681,16 +1734,24 @@ def cmd_pull(args, repo_root: Path) -> int:
                     "read its comments: run them one after the other")
     if args.discussion or args.full:  # `--full` forgets the comment watermark, the only one there is: it implies it
         return _pull_discussion(args, repo_root)
-    ctx = _drift_context(args, repo_root, "pull")
-    if isinstance(ctx, int):
+    _emit(args, *_pull_fields(args, repo_root))
+    return 0
+
+
+def _pull_fields(args, repo_root: Path) -> _Outcome:
+    """The fields pull as data (`sync` runs it as its first stage): the ledgered items read back, classified and
+    recorded. `--kind` narrows it when the caller has one (`sync`; `pull` itself has none). A `LedgerDrift` from the
+    append propagates: nothing was recorded, and nothing here has been printed."""
+    ctx = _drift_context(repo_root, "pull")
+    if isinstance(ctx, _Outcome):
         return ctx
     cfg, schema, projs, links, emails, ledger = ctx
-    refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], None)
+    refs, unmatched = _select_links(links, projs, [t.strip() for t in args.id or []], getattr(args, "kind", None))
     remotes: dict[int, dict] = {}
     try:
         results = _observe(repo_root, links, refs, projs, emails, remotes)
     except AdoImportError as exc:
-        return _unavailable(args, repo_root, "pull", _tidy(exc), host_error=str(exc), items=[], counts=None)
+        return _unavailable_outcome(repo_root, "pull", _tidy(exc), host_error=str(exc), items=[], counts=None)
     now = _now()
     ts = _stamp(now)
     events, seen = _drift_events(ts, results, ledger)
@@ -1714,8 +1775,157 @@ def cmd_pull(args, repo_root: Path) -> int:
     if args.propose_specs:
         out["propose_specs"] = _propose_specs(repo_root, cfg, emails, now)
         lines.append(_propose_specs_line(out["propose_specs"]))
-    _emit(args, out, "\n".join(lines))
-    return 0
+    return _Outcome(out, "\n".join(lines))
+
+
+# --- sync: the catch-up ---------------------------------------------------------------------------------------------
+#
+# One read verb that runs the reads a person otherwise runs one by one, in `ado_sync_model.SYNC_STAGES` order:
+#   pull        the fields pull (`_pull_fields`), honouring --id and --kind
+#   drift       the classification the pull just made (its own rows, never a second read of the board) and the one
+#               untagged query `drift` asks for the board items nobody linked
+#   discussion  the comments pull (`_discussion_outcome`), ONLY on `--discussion`; `sync` has no `--full`
+#   plan        the dry run (`_plan_outcome`), honouring --kind, --id, --sprint, --all and --no-comments
+# Each stage is the verb's own code over a copy of the arguments (`_stage_args`). A stage that cannot read says so as
+# its own `{"unavailable": true, "reason": ...}` and the next stage still runs; the document is `SYNC_NODATA` with the
+# reasons filled only when the pull AND the plan could not read. A ledger `DRIFT` in the pull (or the discussion) stage
+# is recorded as `drift_error`, the later stages still run, and the exit is 1: the one exit `sync` has besides 0.
+
+SYNC_HEADER = "Azure Boards mirror: sync  (as of {as_of}; reads the board, sends nothing)"
+SYNC_SECTIONS = {"pull": "== pull ==", "drift": "== drift ==  (from the pull's rows; one untagged query)",
+                 "discussion": "== discussion ==", "plan": "== plan =="}
+VERB_HEADER = "Azure Boards mirror: "  # the line a read verb's own text opens with; `sync` prints one header of its own
+NOT_RECORDED = "its ledger lines were not written: the ledger append failed (the DRIFT sentence says why)"
+
+
+class _Stage(NamedTuple):
+    """One stage's answer: its document and text, and the `DRIFT` sentence when its ledger append failed."""
+    doc: dict
+    text: str
+    drift: str | None = None
+
+
+def _stage_args(args, **over) -> argparse.Namespace:
+    """A copy of `args` with `over` set: a stage is the read verb's own code over the arguments that verb would have
+    been given, so a flag `sync` does not have (`--full`, `--validate`, `--propose-specs`) is pinned off here."""
+    return argparse.Namespace(**{**vars(args), **over})
+
+
+def _down(reason: str, host: dict | None = None, drift: str | None = None) -> _Stage:
+    """A stage that could not read. Its document is the one `SYNC_NODATA` holds (`unavailable` and `reason`); the
+    host block, when `az` was the reason, rides in the text only."""
+    lines = [f"unavailable: {reason}"]
+    if host:
+        lines.append(_host_line(host))
+    return _Stage({"unavailable": True, "reason": reason}, "\n".join(lines), drift)
+
+
+def _stage(run: Callable[..., tuple], args, repo_root: Path, *, headed: bool) -> _Stage:
+    """Run one stage. A usage error is the person's to fix and propagates; a ledger `DRIFT`, a missing precondition or
+    a board that cannot be read is that stage's `unavailable`, so the next stage still runs. `headed` drops the verb's
+    own header line (`sync` prints its own); the plan's first line is its identity and stays."""
+    try:
+        doc, text = run(args, repo_root)[:2]
+    except Usage:
+        raise
+    except LedgerDrift as exc:
+        return _down(NOT_RECORDED, drift=str(exc))
+    except (Illegal, cfgmod.ConfigError) as exc:
+        return _down(_tidy(exc, 400))
+    except AdoImportError as exc:
+        return _down(_tidy(exc), host_block_for(repo_root, str(exc)))
+    if doc.get("unavailable"):
+        return _down(str(doc.get("reason")), doc.get("host"))
+    if headed and text.startswith(VERB_HEADER) and "\n" in text:
+        text = text.split("\n", 1)[1]
+    return _Stage(doc, text)
+
+
+def _drift_stage(repo_root: Path, pull: _Stage) -> _Stage:
+    """The drift read from the pull's own rows: its class counts are the pull's, so the board is not asked again. The
+    one new question is `_unmapped`, the single untagged query (the board items nobody linked); it is not asked when
+    the pull read nothing."""
+    if pull.doc.get("unavailable"):
+        return _down(pull.doc["reason"])
+    need = _load(repo_root)    # local files only: the pull just read them
+    unmapped, why = _unmapped(repo_root, need[0] if not isinstance(need, str) else {})
+    notes = [why] if why else []
+    counts = pull.doc["counts"]
+    lines = ["classes: " + (", ".join(f"{k} {v}" for k, v in counts.items()) if counts else "none read")]
+    if unmapped:
+        lines.append("untagged on the board: " + ", ".join(f"#{i}" for i in unmapped)
+                     + "  (`link <ref> --work-item N --by <you>` maps one; `show #N` reads it)")
+    elif unmapped is not None:
+        lines.append("untagged on the board: none found under the mirror's paths")
+    lines += [f"note: {n}" for n in notes]
+    return _Stage({"ok": True, "unavailable": False, "reason": None, "counts": counts, "unmapped": unmapped,
+                   "notes": notes}, "\n".join(lines))
+
+
+def _sync_counts(repo_root: Path, plan: dict) -> dict | None:
+    """What the catch-up leaves to do: the plan's creates, updates and drafted comments, and how many items are
+    drifted by the ledger's own count (the number the hook line prints). None for what was never measured: the whole
+    block when the plan could not be drawn up, a comment count when comments were not planned, the drift count when
+    nothing was ever pulled."""
+    if plan.get("unavailable"):
+        return None
+    try:
+        drifted = _summary(read_ledger(repo_root))["counts"]["drifted"]
+    except LedgerUnreadable:
+        drifted = None
+    return {"create": plan["counts"]["create"], "update": plan["counts"]["update"],
+            "comments": plan["comments"]["draft"], "drifted": drifted}
+
+
+def _sync_document(repo_root: Path, scope: dict, pull: _Stage, drift: _Stage, discussion: _Stage | None,
+                   plan: _Stage, drift_error: str | None) -> dict:
+    """The `--json` document, keys in `SYNC_NODATA`'s order. When the pull AND the plan could not read it IS
+    `SYNC_NODATA`, with the stages' reasons filled (and the discussion stage's document when `--discussion` asked)."""
+    if pull.doc.get("unavailable") and plan.doc.get("unavailable"):
+        doc = copy.deepcopy(model.SYNC_NODATA)
+        doc["reason"] = pull.doc["reason"]
+        for name, stage in (("pull", pull), ("drift", drift), ("plan", plan)):
+            doc[name]["reason"] = stage.doc["reason"]
+        doc["discussion"] = discussion.doc if discussion else None
+        doc["drift_error"] = drift_error
+        return doc
+    return {"ok": True, "unavailable": False, "reason": None, "verb": "sync", "as_of": pull.doc.get("as_of"),
+            "scope": scope, "pull": pull.doc, "drift": drift.doc, "discussion": discussion.doc if discussion else None,
+            "plan": plan.doc, "counts": _sync_counts(repo_root, plan.doc), "next": plan.doc.get("next"),
+            "hook_line": plan.doc.get("hook_line") or pull.doc.get("hook_line"), "drift_error": drift_error}
+
+
+def _sync_text(doc: dict, stages: dict[str, _Stage | None], drift_error: str | None) -> str:
+    """The header, one section per stage that ran, the hook line, the footer and (last) the `DRIFT` sentence."""
+    lines = [SYNC_HEADER.format(as_of=_n(doc["as_of"]))]
+    for name in model.SYNC_STAGES:
+        stage = stages.get(name)
+        if stage is not None:
+            lines += [SYNC_SECTIONS[name], *([stage.text] if stage.text else [])]
+    lines.append(f"hook line: {doc['hook_line'] if doc['hook_line'] is not None else 'not written'}")
+    if doc["next"]:
+        lines.append(doc["next"])
+    if drift_error:
+        lines.append(drift_error)  # `DRIFT: ...` leads its line and ends the text, as in `pull`
+    return "\n".join(lines)
+
+
+def cmd_sync(args, repo_root: Path) -> int:
+    kinds, ids = list(args.kind or []), [t.strip() for t in args.id or [] if t.strip()]
+    sprint = _sprint_arg(args.sprint)   # a sprint that is not a sprint id is a usage error, before anything is read
+    scope = {"kinds": kinds, "ids": ids, "sprint": sprint, "all": bool(args.all or not (kinds or ids or sprint)),
+             "discussion": bool(args.discussion)}
+    pull = _stage(_pull_fields, _stage_args(args, propose_specs=False, discussion=False, full=False), repo_root,
+                  headed=True)
+    drift = _drift_stage(repo_root, pull)
+    discussion = _stage(_discussion_outcome, _stage_args(args, propose_specs=False, full=False), repo_root,
+                        headed=True) if args.discussion else None
+    plan = _stage(_plan_outcome, _stage_args(args, validate=False), repo_root, headed=False)
+    drift_error = "\n".join(s.drift for s in (pull, discussion) if s is not None and s.drift) or None
+    doc = _sync_document(repo_root, scope, pull, drift, discussion, plan, drift_error)
+    stages = {"pull": pull, "drift": drift, "discussion": discussion, "plan": plan}
+    _emit(args, doc, _sync_text(doc, stages, drift_error))
+    return 1 if drift_error else 0
 
 
 # --- link and adopt --------------------------------------------------------------------------------------------------
@@ -1918,15 +2128,21 @@ def _staleness(repo_root: Path, link: dict) -> tuple:
 
 
 def _pull_discussion(args, repo_root: Path) -> int:
+    _emit(args, *_discussion_outcome(args, repo_root))
+    return 0
+
+
+def _discussion_outcome(args, repo_root: Path) -> _Outcome:
+    """The discussion pull as data (`sync` runs it, on `--discussion` only, as its third stage). A `LedgerDrift` from
+    the append propagates before anything is printed."""
     need = _load(repo_root)
     if isinstance(need, str):
-        return _unavailable(args, repo_root, "pull --discussion", need, items=[])
+        return _unavailable_outcome(repo_root, "pull --discussion", need, items=[])
     cfg, _schema = need
     block = _discussion_cfg(cfg)
     if block.get("enabled", True) is False:
-        _emit(args, {"ok": True, "discussion": "disabled", "reason": DISCUSSION_OFF, "items": [], "skipped": 0},
-              f"{DISCUSSION_OFF}: set discussion.enabled: true in {CONFIG_FILE} to read the board's comments")
-        return 0
+        return _Outcome({"ok": True, "discussion": "disabled", "reason": DISCUSSION_OFF, "items": [], "skipped": 0},
+                        f"{DISCUSSION_OFF}: set discussion.enabled: true in {CONFIG_FILE} to read the board's comments")
     links = linked_items(read_ledger(repo_root))
     ids = [t.strip() for t in args.id or [] if t.strip()]
     refs, unmatched = _select_links(links, {}, ids, None)
@@ -1977,9 +2193,8 @@ def _pull_discussion(args, repo_root: Path) -> int:
     if skipped:
         lines.append(f"skipped: {skipped}  (over discussion.max_items_per_pull {cap}; the stalest are read first)")
     lines.append(cost)
-    _emit(args, {"ok": True, "discussion": "pulled", "as_of": ts, "items": rows, "skipped": skipped,
-                 "unmatched_ids": unmatched, "cost": cost}, "\n".join(lines))
-    return 0
+    return _Outcome({"ok": True, "discussion": "pulled", "as_of": ts, "items": rows, "skipped": skipped,
+                     "unmatched_ids": unmatched, "cost": cost}, "\n".join(lines))
 
 
 def _bound(item: dict, cfg: dict) -> bool:
@@ -2639,7 +2854,7 @@ def cmd_comment(args, repo_root: Path) -> int:
         return 0
     plan, path = _write_plan_file(repo_root, [row], ids=[target], posture=posture, stamp=stamp)
     offered = posture == "assisted"
-    closing = (f"Next: `ado_sync.py apply --confirm {plan} --by <you>` sends it, as whoever az is signed in as"
+    closing = (model.apply_next_line(plan)
                if offered else f"{NOT_OFFERED}; the comment stays drafted in the plan file")
     _emit(args, {"ok": True, "plan": plan, "path": path, "posture": posture, "apply_offered": offered, "row": row,
                  "notes": row["notes"]},
@@ -2877,6 +3092,22 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--kind", action="append", metavar="K", choices=KINDS,
                    help=f"Only this kind; repeatable: one of {', '.join(KINDS)}")
 
+    p = sub.add_parser("sync", parents=[common],
+                       help="The catch-up in one read: pull, drift, plan (and the discussion, only on --discussion); "
+                            "sends nothing")
+    p.add_argument("--kind", action="append", metavar="K", choices=KINDS,
+                   help=f"Only this kind (repeat for several): one of {', '.join(KINDS)}")
+    p.add_argument("--id", action="append", metavar="ID",
+                   help="Only this item: its id (0004, FE-03), ref (sdlc:spec:0004) or #work item; repeat for several")
+    p.add_argument("--sprint", default=None, metavar="SNN",
+                   help="Plan only this sprint and the specs it holds (the pull still reads every ledgered item)")
+    p.add_argument("--all", action="store_true", help="Every configured kind (also what no selector means)")
+    p.add_argument("--discussion", action="store_true",
+                   help="Also read and cache each item's comments (locally; ledger counts only). Only when asked for: "
+                        "no other flag implies it, and sync has no --full")
+    p.add_argument("--no-comments", action="store_true",
+                   help="Draft no comment rows in the plan: it holds field ops only (the same flag as `plan`)")
+
     p = sub.add_parser("link", parents=[common], help="Map one repository item to a work item that exists")
     p.add_argument("ref", help="The repository item: sdlc:<kind>:<id>, e.g. sdlc:spec:0004")
     p.add_argument("--work-item", default=None, metavar="N", help="The work item's number (4521 or #4521; not AB#4521)")
@@ -2976,13 +3207,15 @@ VERBS: dict[str, Callable[[argparse.Namespace, Path], int]] = {
     "status": cmd_status, "pull": cmd_pull, "drift": cmd_drift, "link": cmd_link, "adopt": cmd_adopt,
     "show": cmd_show, "discussion": cmd_discussion, "apply": cmd_apply, "link-pr": cmd_link_pr,
     "iteration": cmd_iteration, "posture": cmd_posture, "comment": cmd_comment, "reconcile": cmd_reconcile,
+    "sync": cmd_sync,
 }
 
 
 def _read_unavailable(args, verb: str, reason: str) -> int:
     """A read verb that could not answer for a reason that is not the board's (a ledger it cannot read, a file it
     could not write): `unavailable: <reason>` and exit 0 (house rule 4: reads exit 0 always)."""
-    payload = {"ok": True, "unavailable": reason, "reason": reason, **UNAVAILABLE_EXTRA.get(verb, {})}
+    flag = True if verb in BOOL_UNAVAILABLE_VERBS else reason   # `sync` says true, the sentence is in `reason`
+    payload = {"ok": True, "unavailable": flag, "reason": reason, **UNAVAILABLE_EXTRA.get(verb, {})}
     _emit(args, payload, f"Azure Boards mirror: {verb}\nunavailable: {reason}")
     return 0
 
@@ -3011,7 +3244,7 @@ def main(argv: list[str] | None = None) -> int:
                                 **UNAVAILABLE_EXTRA.get(args.verb, {}))
         return _error(args, str(exc), 1)
     except LedgerDrift as exc:  # house rule 7 on every write verb, `pull` and `discussion gc`; the other reads exit 0
-        code = 1 if args.verb not in READ_VERBS or args.verb == "pull" else 0  # pull's DRIFT is its only exit 1
+        code = 1 if args.verb not in READ_VERBS or args.verb in ("pull", "sync") else 0  # their DRIFT is the only exit 1
         if args.json:
             return _error(args, str(exc), code)
         print(exc)  # `DRIFT: ...` leads the line, as in sprint.py
