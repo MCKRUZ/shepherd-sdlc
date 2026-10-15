@@ -38,6 +38,7 @@ import { BuildBoard } from './components/BuildBoard'
 import { SprintHome } from './components/SprintHome'
 import { SpecStatusView } from './components/SpecStatusView'
 import { OpeningOverlay } from './components/OpeningOverlay'
+import { BoardsChanged, BoardsNudge, boardsTargetOf, type BoardsNudgeTarget } from './components/ado/BoardsNudge'
 
 // The rarely visited screens load on first use (studio-observatory.md §9): each is its own chunk,
 // so the main chunk a cold start parses stays under its budget. Named exports → `default` shim.
@@ -296,6 +297,12 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
   /** The spec this person just handed off with exit 0: the sprint home plays the baton once the
    * refreshed read holds it (§4 #30). */
   const [handedOff, setHandedOff] = useState<string | null>(null)
+  /** What this person just changed that the board mirrors (a spec verb, a hand-off, a decision): one nudge, drawn at the
+   * top of the screen until it is dismissed or the plan it led to was applied. Setting it asks the board NOTHING — every
+   * read is a click inside the nudge — and it is forgotten with the project it was set for. */
+  const [boardsNudge, setBoardsNudge] = useState<BoardsNudgeTarget | null>(null)
+  const nudgeProject = screen.kind === 'project' ? screen.projectPath : null
+  useEffect(() => { setBoardsNudge(null) }, [nudgeProject])
   /** The control that opened the spec card (a lane card, a Refining row), so Back / Esc hand focus
    * back to it when the home returns (§3.3). */
   const [specOpener, setSpecOpener] = useState<{ spec: string; where: 'lane' | 'refining'; seq: number } | null>(null)
@@ -771,6 +778,7 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
     return (
       <ProjectKeyProvider value={projectPath}>
       <ClaudeIssueContext.Provider value={claudeIssue}>
+      <BoardsChanged.Provider value={setBoardsNudge}>
       <Frame
         status={status}
         projectPath={projectPath}
@@ -797,6 +805,8 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
               onDone={() => {
                 // The baton plays for THIS person's hand-off only, once the refreshed read holds it.
                 if (verbIntent.intent.kind === 'sprint' && verbIntent.intent.request.verb === 'handoff') setHandedOff(verbIntent.intent.request.spec)
+                const changed = boardsTargetOf(verbIntent.intent)
+                if (changed) setBoardsNudge(changed)   // a verb that names nothing leaves the standing nudge alone
                 void refreshCommandCenter(); void refreshStatus()
               }}
               onHandOff={openHandOffFor}
@@ -810,6 +820,20 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
           <Notice tone="error" role="alert" className="mb-4">
             {error}
           </Notice>
+        )}
+        {/* The Boards nudge (B6-P3): what changed here that the board has not heard, said once, with every read a click
+            inside it. Rendered only while one stands (and the Boards block was read), so the screen root is still
+            `<main>`'s first child otherwise. */}
+        {boardsNudge && (
+          <BoardsNudge
+            target={boardsNudge}
+            projectPath={projectPath}
+            ado={commandCenter?.ado}
+            capabilities={commandCenter?.capabilities}
+            actor={commandCenter?.actor ?? null}
+            steering={area === 'steering'}
+            onDismiss={() => setBoardsNudge(null)}
+          />
         )}
         {/* Non-blocking (D4): the project is open; this says what its code-host CLI cannot do
             right now, in the §7.1 sentence. Same placement rule as the error above — rendered
@@ -870,6 +894,7 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
                 onHandedOff={() => {
                   // Back to the board, and forget the spec — its row is now stale, and the
                   // board re-reads on mount rather than showing what used to be true.
+                  setBoardsNudge({ kind: 'spec', id: openSpec.spec })
                   setHandingOff(false)
                   setOpenSpec(null)
                 }}
@@ -1000,6 +1025,7 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
             actor={actor}
             setOpening={setOpening}
             onSignedOff={() => { void refreshStatus(); void refreshCommandCenter() }}
+            onBoardPulled={() => { void refreshCommandCenter() }}
             onGoToClosing={() => setArea('closing')}
             onOpenDocument={(relPath, focus) => {
               setShowHistory(false)
@@ -1019,6 +1045,7 @@ function AppScreens({ setOpening }: { setOpening: (opening: Opening | null) => v
           />
         )}
       </Frame>
+      </BoardsChanged.Provider>
       </ClaudeIssueContext.Provider>
       </ProjectKeyProvider>
     )

@@ -16,6 +16,8 @@ import { TODAY_ROW_RISE } from '../../motion/presets'
 import { enabled as motionEnabled, reduced as motionReduced } from '../../motion/motion'
 import { engineFor } from '../../motion/useStudioGSAP'
 import { CcEmptyFigure } from '../brand/figures'
+import { useBoardsChanged } from '../ado/BoardsNudge'
+import { CatchUp } from '../ado/CatchUp'
 import { AdoTodayRows } from './AdoTodayRows'
 
 export interface TodayColumnProps {
@@ -152,7 +154,9 @@ export function TodayColumn({ cc, onRun, onDecide, onConfirmTier, onSince, onAct
         </p>
         <Button size="sm" variant="secondary" icon={Bell} disabled disabledReason={STANDUP_NOTES}>Standup notes</Button>
       </section>
-      {/* The Azure Boards rows: a sibling group, never a needs-you item (K18). */}
+      {/* The Azure Boards rows: a sibling group, never a needs-you item (K18) — and beside them, how old the mirror is
+          with the button that catches up (B6-P3; the project opening never asks the board). */}
+      <CatchUp projectPath={cc.projectPath} ado={cc.ado} capabilities={cc.capabilities} onPulled={(what) => { if (what === 'fields') onActed() }} />
       <AdoTodayRows cc={cc} strip={strip} />
     </section>
   )
@@ -163,6 +167,7 @@ function NeedsYouRow({ item, cc, onRun, onDecide, onConfirmTier, onActed }: { it
   const [resolution, setResolution] = useState('')
   const [deciding, setDeciding] = useState(false)
   const [outcome, setOutcome] = useState<string | null>(null)
+  const boardsChanged = useBoardsChanged()   // a recorded decision is something the board has not heard
   const Icon = ICON[item.kind]
   const late = item.overdue === true
   const run = async (fn: () => Promise<{ ok: boolean; text: string }>) => {
@@ -206,7 +211,7 @@ function NeedsYouRow({ item, cc, onRun, onDecide, onConfirmTier, onActed }: { it
       </div>
       <p className="mt-1 line-clamp-2 text-[13px] leading-[18px]" data-needs-you-text="">{item.text}</p>
       {deciding && item.kind === 'decide' && (
-        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (resolution.trim()) run(async () => { const r = await onDecide(item.id!, resolution.trim()); return { ok: r.ok, text: r.ok ? `decided · ${r.decided} by ${r.by}` : r.stderr } }) }}>
+        <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (resolution.trim()) run(async () => { const r = await onDecide(item.id!, resolution.trim()); if (r.ok) boardsChanged?.({ kind: 'decision', id: item.id! }); return { ok: r.ok, text: r.ok ? `decided · ${r.decided} by ${r.by}` : r.stderr } }) }}>
           <Input value={resolution} onChange={(e) => setResolution(e.target.value)} required placeholder="the resolution, in the log's own words" aria-label={`Resolution for ${item.id}`} />
           <Button size="sm" variant="primary" type="submit" data-write="" loading={busy}>Record</Button>
         </form>

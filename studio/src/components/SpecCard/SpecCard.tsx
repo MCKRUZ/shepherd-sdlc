@@ -9,20 +9,21 @@
 // lane card both open this card (plan §3.3); the old spec view's facts rail and dependency
 // neighbourhood ride in the right column under a disclosure, so nothing the Board showed is lost.
 //
-// The Azure Boards zone (B5-P4): the chip stays a status in the facts row (no write control there). Beneath that row
-// a Boards row holds `Pull now` (this spec's fields, `PullNow`), `Plan changes` and — once a pull has read drift for
-// this spec — `Settle drift`; the Discussion block (comment composer inside, `Pull discussion`) sits below the facts
-// rail. `Plan changes` runs nothing: the closed Boards request table is the build kit's seven verbs and `plan` is not
-// one of them (it writes a plan file and a ledger line), so — as the Today row's Propose spec does — it shows the
-// plugin lines that plan this spec and send that plan, and a person runs them. A host that is not Azure DevOps draws
-// none of it (the chip says why); steering mode draws the chip and the read-only discussion rows and nothing that
-// writes.
+// The Azure Boards zone (B5-P4, B6-P3): the chip stays a status in the facts row (no write control there). Beneath that
+// row a Boards row holds `Pull now` (this spec's fields, `PullNow`), `Plan changes` (`PlanChanges`) and — once a pull
+// has read drift for this spec — `Settle drift`; the Discussion block (comment composer inside, `Pull discussion`) sits
+// below the facts rail. `Plan changes` runs ONE closed `plan` request for this spec on the person's click and never
+// otherwise (K28; no effect here plans anything on open), says what the plugin found in one line, and hands the plan it
+// printed to the chip, whose **Review plan** opens the apply dialog on exactly those rows; an apply that landed drops
+// that plan. The card itself holds no request and no bridge call but its own two reads: every Boards spawn lives in
+// `components/ado/`. A host that is not Azure DevOps draws none of it (the chip says why); steering mode draws the chip
+// and the read-only discussion rows and nothing that writes.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { GitPullRequest } from 'lucide-react'
 import type { ActorInfo, AdoVerbResult, BoardRow, DocumentSection, RosterPerson, SpecCard as SpecCardRead, SprintVerb } from '../../../shared/types'
 import { hostFeatureReason, WORDING } from '../../../shared/codeHostModel'
 import { samePerson } from '../../../shared/identity'
-import { CAPABILITIES, NO_ACTOR, NO_DATA, NO_PR_YET, newerPlugin, VAGUE_LINE_REWRITE } from '../../../shared/reasons'
+import { CAPABILITIES, NO_ACTOR, NO_DATA, NO_PR_YET, VAGUE_LINE_REWRITE } from '../../../shared/reasons'
 import { slateToBoardRow } from '../../../shared/sprintModel'
 import { BackLink, Button, Card, Chip, Disclosure, Eyebrow, Icon, Notice } from '../../ui'
 import { backlogStore } from '../../stores/backlogStore'
@@ -37,6 +38,8 @@ import { stashBack } from '../../motion/choreo/sharedElement'
 import { PersonRing } from '../brand/figures'
 import { ringFor, riskTone } from '../planning/planningModel'
 import { AdoChip } from '../ado/AdoChip'
+import type { AdoPlanDoc } from '../ado/AdoApplyDialog'
+import { PlanChanges } from '../ado/PlanChanges'
 import { AdoReconcileDialog, readDriftItems, type AdoDriftItem } from '../ado/AdoReconcileDialog'
 import { DiscussionBlock } from '../ado/DiscussionBlock'
 import { PullNow, type PullKind } from '../ado/PullNow'
@@ -52,16 +55,9 @@ export const BACK_LABEL = '← Back to the board'
 
 export const FACTS_DISCLOSURE = 'Facts and neighbourhood'
 
-/** The plugin capability (`scripts/capabilities.py`) whose verb the `Plan changes` lines name: a plugin without it is
- * not shown a line it cannot run. Not an `AdoVerbRequest` capability — Shepherd never sends `plan`. */
+/** The plugin capability (`scripts/capabilities.py`) whose verb `Plan changes` runs: a plugin without it disables the
+ * button with `newerPlugin(cap)`. `PlanChanges` reads the same id from the closed table (`ADO_VERB_CAPABILITY.plan`). */
 export const PLAN_CAPABILITY = 'ado-plan'
-/** What `Plan changes` says above the lines: Shepherd does not run them, and why. */
-export const PLAN_NOT_RUN = 'Shepherd does not run this one: plan writes a plan file and a ledger line. Run it, read the plan it prints, then send that plan with apply and the hash it printed.'
-
-/** The plugin lines that plan this spec's changes and send the plan a person read, in the order they are run. Pure. */
-export function planLines(spec: string): string[] {
-  return [`ado_sync.py plan --kind spec --id ${spec}`, 'ado_sync.py apply --confirm <hash> --by <your handle>']
-}
 
 export interface SpecCardProps {
   projectPath: string
@@ -131,13 +127,17 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
   const connection = useConnection()
   const boardsOff = connection ? hostFeatureReason(connection, 'workItems') === WORDING.boardsNotConfigured : false
   const itemRef = `sdlc:spec:${row.spec}`
-  const [planShown, setPlanShown] = useState(false)
+  // The plan `Plan changes` drew up, kept with the spec and project it was drawn up for: it is only ever shown for them,
+  // so another spec starts from nothing without an effect having to remember to clear it.
+  const planKey = `${projectPath}|${row.spec}`
+  const [drawn, setDrawn] = useState<{ key: string; doc: AdoPlanDoc } | null>(null)
+  const planDoc = drawn !== null && drawn.key === planKey ? drawn.doc : null
   const [drift, setDrift] = useState<AdoDriftItem | null>(null)
   const [settling, setSettling] = useState(false)
   const [chipReads, setChipReads] = useState(0)
   const settledHere = useRef(false)
   // Another spec, another project: nothing is drawn from the last one.
-  useEffect(() => { setPlanShown(false); setDrift(null); setSettling(false) }, [row.spec, projectPath])
+  useEffect(() => { setDrift(null); setSettling(false) }, [row.spec, projectPath])
 
   // A pull of this spec's fields changed what the ledger says: the chip reads it again, and the drift it read is what
   // `Settle drift` opens.
@@ -152,9 +152,6 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
   }
 
   const has = (cap: string) => capabilities === undefined || capabilities.includes(cap)
-  // Showing a line needs no signed-in person (nothing runs), only a plugin that has the verb the line names.
-  const planReason = capabilities !== undefined && !capabilities.includes(PLAN_CAPABILITY) ? newerPlugin(PLAN_CAPABILITY) : undefined
-  const planOpen = planShown && !planReason
   const writeReason = actor === null ? NO_ACTOR : undefined
   const people = roster ?? []
   const me = actor?.name ?? null
@@ -203,7 +200,10 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
         {pr ? (
           <a href={pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-ident text-accent-text hover:underline"><Icon icon={GitPullRequest} size={16} />#{pr.number}</a>
         ) : <span className="text-ink-3" data-testid="no-pr">{NO_PR_YET}</span>}
-        <AdoChip key={`ado-${chipReads}`} projectPath={projectPath} specId={row.spec} capabilities={capabilities} actor={actor} steering={steering} />
+        <AdoChip
+          key={`ado-${chipReads}`} projectPath={projectPath} specId={row.spec} capabilities={capabilities} actor={actor} steering={steering}
+          plan={planDoc} onApplied={() => { setDrawn(null); setChipReads((n) => n + 1) }}
+        />
         {row.engReview && <Chip tone="neutral" casing="state">eng {row.engReview}</Chip>}
         {row.dataReview && <Chip tone="neutral" casing="state">data {row.dataReview}</Chip>}
       </div>
@@ -212,20 +212,7 @@ export function SpecCard({ projectPath, row, roster, capabilities, actor, onBack
       {!steering && !boardsOff && (
         <div data-testid="spec-boards" className="mt-2 flex flex-wrap items-start gap-2 text-xs">
           <PullNow projectPath={projectPath} capabilities={capabilities ?? null} itemRef={itemRef} scope="fields" onPulled={pulledHere} />
-          <div className="flex min-w-0 flex-col gap-1">
-            <Button
-              size="sm" variant="secondary" aria-expanded={planOpen} aria-controls={planOpen ? 'spec-plan-lines' : undefined}
-              disabled={Boolean(planReason)} disabledReason={planReason} onClick={() => setPlanShown((shown) => !shown)}
-            >Plan changes</Button>
-            {planOpen ? (
-              <div id="spec-plan-lines" data-testid="plan-lines" className="space-y-0.5 text-[11px] text-ink-3">
-                <p className="m-0 [overflow-wrap:anywhere]">{PLAN_NOT_RUN}</p>
-                {planLines(row.spec).map((line) => (
-                  <p key={line} className="m-0 [overflow-wrap:anywhere]"><code className="font-mono text-ident text-ink-2">{line}</code></p>
-                ))}
-              </div>
-            ) : null}
-          </div>
+          <PlanChanges key={planKey} projectPath={projectPath} capabilities={capabilities} kind="spec" id={row.spec} actor={actor} onPlanned={(doc) => setDrawn({ key: planKey, doc })} />
           {drift ? <Button size="sm" variant="secondary" onClick={() => setSettling(true)}>Settle drift</Button> : null}
         </div>
       )}
