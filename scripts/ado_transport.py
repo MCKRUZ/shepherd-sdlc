@@ -24,6 +24,7 @@ it); nothing in the suite spawns a real `az`.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -102,8 +103,34 @@ def remote(repo_root) -> code_host.RemoteInfo:
         if det.remote is None or det.remote.host != "azure-devops":
             raise AdoImportError(f"origin is not an Azure DevOps remote ({det.detail}); "
                                  f"set organization/project/repository in {code_host.CODE_HOST_FILE}")
+        _check_remote_names(det.remote)
         _SCOPE[key] = det.remote
     return _SCOPE[key]
+
+
+# On Windows `az` resolves to the `az.cmd` shim, so cmd.exe re-parses every argument; `list2cmdline` quotes only an
+# argument that contains a space, so a space-free `project=R&D` would run `D` as a second command. The organisation,
+# project and repository names come from `.sdlc/code-host.yaml` (committed, travels with the clone) or from `origin`,
+# so they are checked ONCE here, before any `az` argv is built — every call site (`scope`, `invoke`, `invoke_body`,
+# `rest_*`) goes through `remote()`. Security review of PR #5 (2026-10-16), MEDIUM.
+_ORG_URL_OK = re.compile(r"^https://(dev\.azure\.com/[\w.-]+|[\w-]+\.visualstudio\.com)/?$")
+_NAME_OK = re.compile(r"^[\w .()~@-]+$")          # letters/digits of any script, space, and the punctuation ADO allows
+
+
+def _check_remote_names(r) -> None:
+    """Refuse an organisation URL, project or repository name that cmd.exe would read as more than one argument
+    (`& | < > ^ % ! "`, quotes, brackets, backslashes, control characters). The refusal names the field, never
+    repeats the value."""
+    if not isinstance(r.org_url, str) or not _ORG_URL_OK.match(r.org_url):
+        raise AdoImportError(f"the Azure DevOps organisation URL in {code_host.CODE_HOST_FILE} (or origin) is not of the form "
+                             "https://dev.azure.com/<org> or https://<org>.visualstudio.com; refusing to call az with it")
+    for field, value in (("project", r.project), ("repository", r.repo)):
+        if value is None and field == "repository":
+            continue
+        if not isinstance(value, str) or not value.strip() or not _NAME_OK.match(value) or value != value.strip():
+            raise AdoImportError(f"the Azure DevOps {field} name in {code_host.CODE_HOST_FILE} (or origin) carries a character "
+                                 "the shell could interpret (one of & | < > ^ % ! \" ' [ ] \\ or a control character); "
+                                 "refusing to call az with it")
 
 
 def scope(repo_root, with_repository: bool = True) -> list[str]:

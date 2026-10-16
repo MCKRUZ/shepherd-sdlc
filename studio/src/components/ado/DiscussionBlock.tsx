@@ -112,6 +112,15 @@ export function parseDiscussion(doc: Record<string, unknown> | null): Discussion
 
 /** An address a person may be sent to: absolute http(s) only. Everything else — `javascript:`, `file:`, a
  * protocol-relative `//host`, nothing — is not a link. */
+/** The host of an already-vetted href, for display beside the link's name; never throws (the href came from safeHref). */
+export function hostOf(href: string): string {
+  try {
+    return new URL(href).host
+  } catch {
+    return ''
+  }
+}
+
 export function safeHref(url: string | null | undefined): string | null {
   if (typeof url !== 'string') return null
   const text = url.trim()
@@ -228,7 +237,14 @@ export function DiscussionBlock({ projectPath, itemRef, capabilities, steering =
           <ul role="list" className="m-0 list-none space-y-0.5 p-0">
             {links.map((a, i) => (
               <li key={i} role="listitem">
-                {a.href ? <a href={a.href} target="_blank" rel="noreferrer noopener" className="font-medium text-accent-text hover:underline">{a.name}</a> : <span className="text-ink-3">{a.name}</span>}
+                {a.href ? (
+                  <>
+                    <a href={a.href} target="_blank" rel="noreferrer noopener" className="font-medium text-accent-text hover:underline">{a.name}</a>
+                    {/* the link's host beside its name: a board comment's attachment is observed content, so the
+                        person sees where a click goes before making it (security review of PR #5, LOW) */}
+                    <span className="font-mono text-ident text-ink-3" data-testid="attachment-host"> · {hostOf(a.href)}</span>
+                  </>
+                ) : <span className="text-ink-3">{a.name}</span>}
               </li>
             ))}
           </ul>
