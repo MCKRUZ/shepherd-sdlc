@@ -188,10 +188,19 @@ export interface RunCommandOptions {
    * ConsoleEntry from the returned promise is always the complete, authoritative record. */
   onChunk?: (stdoutSoFarRedacted: string) => void
   /** Aborting kills the child (its whole process tree on Windows) and records a failed entry that
-   * `wasCancelled()` recognises. Already aborted on entry: nothing is started, and the same entry is
-   * recorded. Every other guarantee is unchanged: the stop is in the console like any other outcome. */
+   * `wasCancelled()` recognises, once the child has exited (at most CANCEL_EXIT_WAIT_MS later).
+   * Already aborted on entry: nothing is started, and the same entry is recorded. Every other
+   * guarantee is unchanged: the stop is in the console like any other outcome. */
   signal?: AbortSignal
 }
+
+/** How long a cancel waits for the stopped child to exit before it settles anyway. A cancel used to
+ * settle the moment the kill was sent, but the kill is asynchronous (on Windows `taskkill` is a
+ * process of its own), so the child could still be running when the caller moved on — and Windows
+ * refuses to remove a folder that a live process has as its working directory (the Windows CI job's
+ * `EBUSY ... rmdir`). Bounded, so a child that ignores the stop cannot hold its caller forever; the
+ * entry then says it had not exited. */
+export const CANCEL_EXIT_WAIT_MS = 5_000
 
 // A chunk-by-chunk broadcast for every stdout byte would flood the IPC channel to the
 // renderer for a chatty command — a real model reply streams in dozens of small pieces.
@@ -222,6 +231,7 @@ export function runCommand(
     let stderr = ''
     let settled = false
     let timeoutHandle: ReturnType<typeof setTimeout> | undefined
+    let cancelWaitHandle: ReturnType<typeof setTimeout> | undefined
     let lastStreamedAt = 0
     let cancelled = false
     let onAbort: (() => void) | undefined
@@ -232,6 +242,7 @@ export function runCommand(
       if (settled) return
       settled = true
       if (timeoutHandle) clearTimeout(timeoutHandle)
+      if (cancelWaitHandle) clearTimeout(cancelWaitHandle)
       if (onAbort) opts?.signal?.removeEventListener('abort', onAbort)
 
       const fullStdout = redact(stdout)
@@ -319,8 +330,16 @@ export function runCommand(
     if (opts?.signal) {
       onAbort = () => {
         cancelled = true
+        // Already exited, only its output still draining: nothing left to wait for.
+        if (child.exitCode !== null || child.signalCode !== null) { finish(null, 'Cancelled.'); return }
+        // Settles on the child's own 'exit' (Node emits it before 'close', so the entry records the
+        // cancel rather than the exit code the kill produced), or after CANCEL_EXIT_WAIT_MS without it.
+        child.once('exit', () => finish(null, 'Cancelled.'))
+        cancelWaitHandle = setTimeout(
+          () => finish(null, `Cancelled. It had not exited ${CANCEL_EXIT_WAIT_MS / 1000} s after it was stopped.`),
+          CANCEL_EXIT_WAIT_MS,
+        )
         killChildTree(child)
-        finish(null, 'Cancelled.')
       }
       opts.signal.addEventListener('abort', onAbort, { once: true })
     }
