@@ -91,3 +91,18 @@ def test_remote_still_resolves_a_clean_origin(tmp_path, az):
 def test_the_whitelists_are_the_module_s_own_constants():
     assert ado_transport._NAME_OK.pattern == r"^[\w .()~@-]+$"
     assert ado_transport._ORG_URL_OK.pattern == r"^https://(dev\.azure\.com/[\w.-]+|[\w-]+\.visualstudio\.com)/?$"
+
+
+# --- the az rest URL through the az.cmd shim (security review of PR #5, LOW) --------------------------------------
+
+def test_a_percent_pair_in_the_rest_url_is_refused_only_through_the_cmd_shim(monkeypatch):
+    template = "{project}/_apis/wit/workitems/{id}"
+    monkeypatch.setattr(ado_transport, "az_binary", lambda: r"C:\Program Files\Azure\CLI2\wbin\az.cmd")
+    assert ado_transport._fill_rest_path(template, {"project": "A B", "id": 7}) == "A%20B/_apis/wit/workitems/7"
+    with pytest.raises(AdoImportError) as exc:
+        ado_transport._fill_rest_path(template, {"project": "A B C", "id": 7})       # A%20B%20C holds `%20B%`
+    assert "az.cmd" in str(exc.value) and "A B C" not in str(exc.value)
+    monkeypatch.setattr(ado_transport, "az_binary", lambda: r"C:\tools\az.exe")
+    assert ado_transport._fill_rest_path(template, {"project": "A B C", "id": 7}) == "A%20B%20C/_apis/wit/workitems/7"
+    monkeypatch.setattr(ado_transport, "az_binary", lambda: "/opt/homebrew/bin/az")
+    assert ado_transport._fill_rest_path(template, {"project": "A B C", "id": 7}) == "A%20B%20C/_apis/wit/workitems/7"

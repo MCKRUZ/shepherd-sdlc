@@ -362,7 +362,16 @@ def _fill_rest_path(template: str, route: dict) -> str:
             return str(raw)
         if not isinstance(raw, str) or not raw.strip() or any(ord(c) < 32 or ord(c) == 127 for c in raw):
             raise AdoImportError(f"`az rest` path {template!r}: {name} must be a name, not {raw!r}")
-        return quote(raw, safe="")
+        encoded = quote(raw, safe="")
+        # The URL is an argument of `az rest`; on Windows `az` is the `az.cmd` shim and cmd.exe would expand a
+        # `%…%` pair inside it (`A%20B%20C` holds `%20B%`), so a value whose encoding carries two or more `%` is
+        # refused there rather than sent mangled (security review of PR #5, LOW). An `az.exe`, or any other OS,
+        # passes the URL through untouched.
+        if encoded.count("%") >= 2 and az_binary().lower().endswith((".cmd", ".bat")):
+            raise AdoImportError(f"`az rest` path {template!r}: the {name} name encodes to a URL with a `%…%` pair, which "
+                                 "the az.cmd shim's cmd.exe would expand; on Windows use an `az.exe` on PATH, or a "
+                                 "project name with at most one space or reserved character")
+        return encoded
     return _PLACEHOLDER_RE.sub(value, template)
 
 
