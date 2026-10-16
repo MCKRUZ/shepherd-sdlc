@@ -20,6 +20,17 @@ import { StageReadinessProvider } from '../src/components/StageReadinessContext'
 import { resetChatTurnStore } from '../src/stores/chatTurnStore'
 import { readinessWith } from './activityFixtures'
 import { block, CC, EMPTY_CC, withCc } from './sprintHomeFixture'
+import type { ConnectionInfo } from '../shared/types'
+import { connectionStore, resetConnectionStore } from '../src/stores/connectionStore'
+
+// Since B6 fix r4 the Today column mounts its Boards sections only where a board can exist (`BoardsToday`): the
+// connection says Azure DevOps, or a status was read. These rows are about an Azure DevOps project whose board
+// was never pulled, so the connection is set to one; `boardsToday.test.tsx` pins the other hosts.
+const AZURE_CONNECTION: ConnectionInfo = {
+  host: 'azure-devops', hostSource: 'remote', cli: { name: 'az', found: true, extension: true, signedIn: 'yes' }, lastPulledAt: null, branchProtected: null,
+} as unknown as ConnectionInfo
+beforeEach(() => { connectionStore.set(AZURE_CONNECTION) })
+afterEach(() => { resetConnectionStore() })
 
 const SOURCE = 'ado_sync.py status --json'
 const GOLDEN = resolve(__dirname, '..', '..', 'scripts', 'tests', 'golden', 'ado_status_nodata.json')

@@ -19,8 +19,7 @@ import { Button, Eyebrow, cn } from '../ui'
 import { useChatTurn } from '../stores/chatTurnStore'
 import { CcEmptyFigure } from './brand/figures'
 import { StageHome } from './StageHome'
-import { CatchUp } from './ado/CatchUp'
-import { AdoTodayRows } from './today/AdoTodayRows'
+import { BoardsToday } from './ado/BoardsToday'
 
 type StageHomeProps = Parameters<typeof StageHome>[0]
 
@@ -82,8 +81,7 @@ export function LifecycleHome({ commandCenter, onNeedsYou, onBoardPulled, ...sta
         <Group label="Decisions this week" source={commandCenter?.decisions.source ?? null}>
           <Decisions cc={commandCenter} />
         </Group>
-        <CatchUp projectPath={projectPath} ado={commandCenter?.ado} capabilities={commandCenter?.capabilities} onPulled={(what) => { if (what === 'fields') onBoardPulled?.() }} />
-        <AdoTodayRows cc={commandCenter} />
+        <BoardsToday projectPath={projectPath} cc={commandCenter} onPulled={(what) => { if (what === 'fields') onBoardPulled?.() }} />
       </section>
     </div>
   )

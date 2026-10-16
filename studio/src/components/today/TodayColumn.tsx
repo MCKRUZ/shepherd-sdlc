@@ -17,8 +17,7 @@ import { enabled as motionEnabled, reduced as motionReduced } from '../../motion
 import { engineFor } from '../../motion/useStudioGSAP'
 import { CcEmptyFigure } from '../brand/figures'
 import { useBoardsChanged } from '../ado/BoardsNudge'
-import { CatchUp } from '../ado/CatchUp'
-import { AdoTodayRows } from './AdoTodayRows'
+import { BoardsToday } from '../ado/BoardsToday'
 
 export interface TodayColumnProps {
   cc: CommandCenter
@@ -156,8 +155,7 @@ export function TodayColumn({ cc, onRun, onDecide, onConfirmTier, onSince, onAct
       </section>
       {/* The Azure Boards rows: a sibling group, never a needs-you item (K18) — and beside them, how old the mirror is
           with the button that catches up (B6-P3; the project opening never asks the board). */}
-      <CatchUp projectPath={cc.projectPath} ado={cc.ado} capabilities={cc.capabilities} onPulled={(what) => { if (what === 'fields') onActed() }} />
-      <AdoTodayRows cc={cc} strip={strip} />
+      <BoardsToday projectPath={cc.projectPath} cc={cc} strip={strip} onPulled={(what) => { if (what === 'fields') onActed() }} />
     </section>
   )
 }
