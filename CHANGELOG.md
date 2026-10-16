@@ -2,7 +2,7 @@
 
 ## 2.1.0 — 2026-10-14
 
-This section is the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`): Folds B1 to B5,
+This section is the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`): Folds B1 to B6,
 one pull request, one version bump (`.claude-plugin/plugin.json`,
 `.claude-plugin/marketplace.json`, `studio/package.json` and both version lines of `studio/package-lock.json`).
 
@@ -288,6 +288,84 @@ on the board can come back as a draft a named person lands. Nothing in this Fold
 - **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed before the
   mirror except Fold B4's one pin, and every `scripts/capabilities.py` row (the breadth kinds ride `plan --kind`, the
   draft rides `reconcile`).
+
+### Fold B6 — sync, catch-up, plan from the desktop
+
+A person can now catch up with the board in one step, and only when they say yes, and the desktop app can draw up a
+plan, so the apply dialog Fold B4 built is finally reachable. Nothing in this Fold adds a way to write to the board:
+`apply` and `link-pr` are still the only two verbs that do, and nothing reads the board when a project, a session or a
+spec card opens. Spec `0040-ado-boards-sync-and-catch-up.md` (MEDIUM).
+
+- **`ado_sync.py sync` — the catch-up in one read.** Four stages, always in `ado_sync_model.SYNC_STAGES` order:
+  **pull** reads the board's copy of the ledgered fields and records `observed` and `drift_seen` exactly as `pull`
+  does; **drift** is classified from that pull's own rows, and the board is not read a second time — `sync`'s `az`
+  calls equal `pull`'s then `plan`'s over the same board (pinned in `test_boards_sync_cli_b6.py`), and the search for
+  board items nobody tagged stays `drift`'s own, so here `unmapped` is `null` and reads "not searched"; **discussion**
+  runs only on `--discussion` and is `null` otherwise (`sync` has no `--full` and no `--by`); **plan** is `plan` for the
+  same `--kind`, `--id`, `--sprint`, `--all` and `--no-comments`, so its rows and 12-hex hash are the ones `plan` alone
+  prints. A stage that cannot read says `unavailable` with its reason and the next one still runs; when neither the pull
+  nor the plan could read, the document is `ado_sync_model.SYNC_NODATA` (golden
+  `scripts/tests/golden/ado_sync_unavailable.json`: `counts` and `next` are `null`, no integer zero) with the reasons
+  filled. Exit 0 on every path, 1 only on a pull-stage ledger `DRIFT:` (the plan stage still runs). It writes only what
+  `pull` and `plan` write, and the hook line twice — the pull stage's, then the plan stage's — so line 1 of
+  `hook-status.txt` is the plan's (K11). The capability `ado-sync` is declared in `scripts/capabilities.py`.
+- **One footer, and two new keys.** `comment`, `plan` and `sync` end their text with
+  `ado_sync_model.apply_next_line(<hash>)` — ``Next: `ado_sync.py apply --confirm <hash> --by <you>` sends it, as
+  whoever az is signed in as`` — wherever an apply is offered: posture `assisted`, and for `plan` and `sync` a plan that
+  holds a create, an update or a drafted comment. `plan --json` gains `apply_offered` and `next` (`null` when no apply
+  is offered), beside the `apply_offered` that `comment --json` already carried. Under `plan-only` the plan text stays byte-equal to the B2
+  golden `ado_plan_spec_0004.txt`, with no `Next:` line; `apply_next_line` raises on anything that is not a 12-hex hash.
+- **The catch-up is ask-first** in `/sprd-refine` (step 3, the agenda) and `/sprd-sprint` (step 5, `status`). Each first
+  prints the ledger's last measurement (`ado_sync.py status`: `Board as of <as_of>`, or `Board: no data (never
+  pulled)`), which costs the board nothing, then asks one question — `yes` / `yes, with the discussion` / `no` — and runs
+  `sync --sprint SNN` only on a yes. `--discussion` is added only on the second yes, never by the prose on its own. The
+  `next` line is printed verbatim for a named person to run through `/sprd-ado apply`'s gate, never by the agent.
+  `/sprd-ado` gains the `sync` section (step 7b) and its rows in the verb tables. `test_boards_prose_b6.py` pins the
+  question, the ledger-only read before it, the words "only on" beside `--discussion`, and that no fenced line applies,
+  runs `az` or pulls the discussion; `test_command_contracts.py` proves every `sync` flag the prose names.
+- **After a write, the board's count.** `/sprd-sprint` step 11 plans the slate after `slate`, `unslate` or `close`, and
+  the one spec after a `handoff`; `/sprd-handoff` step 5b plans the spec it handed off, before `--open` hands the
+  terminal over. Each prints `Board: N to create · M to update · K comments to send` (`unavailable (<reason>)`, or `no
+  data` for a null count) and the `next` line verbatim, and never runs `apply`: the hash and `--by` come only from the
+  named person.
+- **A decision closed from the board is confirmed.** In `/sprd-ado reconcile` (step 16), once `--take ado` on a decision
+  exits 0, a `plan --kind decision --id DL-NN` reads whether the board agrees: `in_sync` is the confirmation, a create or
+  update count says the two still differ, and an `unavailable` plan is reported as such, never "in sync".
+- **The desktop app draws up a plan on a click.** The closed `AdoVerbRequest` gains its eighth and last member, `plan`
+  — a read with no `--by`, scoped to `--sprint SNN` alone or to `--kind K` with `--id ID` (an unscoped plan is refused
+  before any spawn) — gated on `ado-plan` (`ADO_VERB_CAPABILITY.plan`); `studio/shared/reasons.ts` and its exact-list
+  test keep their 19 ids. On the spec card, **Plan changes** (`PlanChanges`) sends one `plan` request on the person's
+  click and never otherwise, says what the plugin found in one line (`N to create · M to update · K comments`; a count
+  the plugin did not print reads "no data"), and hands the plan to the work-item chip, whose **Review plan** opens the
+  existing `AdoApplyDialog` on exactly those rows; its Confirm, sending `apply --confirm <hash>`, stays the one way a
+  plan reaches the board. The card itself holds no request: every Boards spawn lies under `studio/src/components/ado/`.
+- **Catch up, and the Boards nudge.** The Today column and the lifecycle home gain `CatchUp`: how old the mirror is
+  (`Board as of <stamp>`, `Not pulled yet`, `Work items are not set up for this project`, or `no data`) and two
+  separate clicks — **Catch up** (`pull`, the fields) and **Pull discussion** (the comments, never implied by the first).
+  After a person changes something the board mirrors — a spec verb from the omnibar, a hand-off that landed, a decision
+  recorded from Today — `BoardsNudge` says once "Boards: spec NNNN changed here — the board has not heard" and spawns
+  nothing until clicked: **Plan board changes** runs `plan` for that item, **Review plan** appears only when the plan
+  has rows an apply would send, and the apply dialog's Confirm is the one write. It never pulls, and it is not drawn in
+  steering mode, off Azure DevOps, or when the Boards block was not read. Nothing under `studio/electron/**` changed.
+- **Gate G18 — nothing reads the board on open.** `studio/test/unit/noOpenAdoSpawn.test.ts` drives main's real
+  `studio:openProject` handler, the command-center read and a day of the open-project timer over a fake plugin that
+  declares every Boards capability, and holds every `ado_sync.py` spawn to `status <source> --json`; its source half
+  holds every `runAdo(` / `runAdoVerb(` call site under `studio/src/components/ado/` and every `useEffect` free of a
+  Boards request. Neither session-start hook names `ado_sync.py`: they print the cached hook line, as before.
+- **One binding decision amended (K28, owner decision 2026-10-15).** Fold B4 pinned the closed table at seven verbs;
+  it is now eight, the eighth (`plan`) a read, and no later Fold widens it without a kit amendment.
+- **How this Fold was measured.** (A) `$BASE` for gates G2 and G3 is `29a77a2`, PR #106's merge commit (merged
+  2026-10-13), as the build kit's §0 step 1 prescribes once #106 has merged; the branch merged master at `434d0e2`,
+  which brought #106's post-`325ac2b` changes to three desktop test files — upstream's own, not this Fold's. (B) G3
+  exempts, beside B4's `studio/test/reasons.test.ts`, exactly `scripts/tests/fixtures/code_host/azure_devops/redact.py`
+  and its `README.md`, which the B0 capture extended (new `--project`, `--team`, `--rename`, `--mask-free-text` and
+  `--indent` options; the default output is byte-identical): the human's capture tooling, not a test. (C) The B3 pin
+  `test_a_plan_with_no_comment_row_reads_as_it_did_before_comments_were_planned` now expects the `Next:` footer under
+  `assisted` with a pending row, because spec 0040's sixth acceptance check requires it; the plan-only golden is
+  unchanged.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed before the
+  mirror except Fold B4's one pin and the capture tooling in (B), and the version: the four version files stay at
+  2.1.0, which has not shipped.
 
 ## 2.0.0 — 2026-10-12
 

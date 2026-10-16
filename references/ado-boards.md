@@ -32,6 +32,7 @@ phase or blocks a gate.
 | B3 | `apply`, `link-pr`, `iteration bind`, `posture`, `comment` | writes, only from a confirmed plan, as the signed-in person |
 | B4 | `reconcile`, `pull --propose-specs`, the desktop app's view; the `finding` kind | no new board write: `reconcile` records a disposition and, for `--take ado`, runs the owning repository verb; finding items (opt-in: `plan --kind finding`, or `finding` in `kinds:`) go through a confirmed `apply` like every other kind |
 | B5 | the opt-in `nfr`, `rule`, `question`, `lifecycle` and `measurement` kinds (`plan --kind …`); `reconcile --take ado` on a co-owned text field writing `<artifact>.proposed`; the watermark feed (`scripts/ado_wit_feed.py`, a library no verb reads through yet); the retro's Boards section; the desktop app's reconcile dialog and Pull now | no new board write: the new kinds go through a confirmed `apply`; the feed only reads; a `.proposed` draft is a file in the working tree. The harness pack change below waits for the upstream kit (D-OWNER-4) and has not landed |
+| B6 | `sync` (the catch-up: pull, drift, the discussion pull only on `--discussion`, plan); the one `Next:` footer on `comment`, `plan` and `sync`; the ask-first catch-up in `/sprd-refine` and `/sprd-sprint`; the desktop app's `plan` request (Plan changes → Review plan → Apply), Catch up and the Boards nudge | reads only: `sync` reads the board for its pull and its plan and nothing else (the drift stage reads the pull's own rows), and sends nothing; `apply` stays the one verb that sends a plan |
 
 | File | Committed | Holds |
 |---|---|---|
@@ -40,6 +41,23 @@ phase or blocks a gate.
 | `.sdlc/metrics/ado-sync-log.jsonl` | yes | the append-only ledger — event names from `boards_contract.LEDGER_EVENTS`, never renamed |
 | `.sdlc/ado/local/**` | **never** (`config init` writes a `*` `.gitignore`) | plans, the discussion cache, `me.json`, `hook-status.txt`, the feed's `watermark` |
 | `<artifact>.proposed` (beside the artifact) | **never** — add `*.proposed` to the project's `.gitignore`; `config init` does not | a board text change (or a cached board comment's words) spliced into one field of the artifact, waiting for `/sprd-revise` |
+
+**The catch-up — `sync` (Fold B6).** `ado_sync.py sync` runs the mirror's reads in one pass, in
+`ado_sync_model.SYNC_STAGES` order: **pull** (the board's copy of the ledgered fields, recorded as `pull` records it),
+**drift** (classified from that pull's own rows — the board is not read a second time; the search for items nobody
+tagged stays `drift`'s own, so `sync`'s `unmapped` is `null`, "not searched"), **discussion** (only on `--discussion`,
+`null` otherwise; `sync` has no `--full` and no `--by`) and **plan** (`plan` for the same `--kind`, `--id`, `--sprint`,
+`--all` and `--no-comments`, so the hash is the one `plan` alone prints). A stage that cannot read says `unavailable`
+and the next one still runs; when neither the pull nor the plan could read, the document is `SYNC_NODATA` — `counts`
+and `next` `null`, never a 0. Exit 0 on every path, 1 only on a pull-stage ledger `DRIFT:`. It writes the hook line
+twice, so line 1 of `hook-status.txt` is the plan stage's. Under `assisted`, with something to send, `comment`, `plan`
+and `sync` end with the one footer `ado_sync_model.apply_next_line(<hash>)` (``Next: `ado_sync.py apply --confirm
+<hash> --by <you>` sends it, as whoever az is signed in as``), and `plan --json` carries it as `next` beside
+`apply_offered`; a plan-only clone prints no footer. **A catch-up is ask-first:** `/sprd-refine` and `/sprd-sprint`
+print the ledger's `Board as of <as_of>` (an `ado_sync.py status` read, which costs the board nothing), ask one
+question — `yes` / `yes, with the discussion` / `no` — and run `sync` only on a yes, adding `--discussion` only on the
+second yes. No hook, agent or timer runs `sync`, and nothing reads the board when a project, a session or a spec card
+opens.
 
 ---
 
@@ -472,36 +490,41 @@ a missing id as a `null` entry, counted in `count`.
 ## The desktop app
 
 Shepherd, the desktop app, shows the mirror and sends a small closed set of requests; it **runs the scripts and never
-re-implements them**. The renderer hands the privileged main process an `AdoVerbRequest`, a closed union of seven
-verbs (`apply`, `reconcile`, `link`, `pull`, `pullDiscussion`, `show`, `comment`); `studio/shared/adoVerbArgv.ts` — pure,
+re-implements them**. The renderer hands the privileged main process an `AdoVerbRequest`, a closed union of eight
+verbs (`apply`, `reconcile`, `link`, `pull`, `pullDiscussion`, `show`, `comment`, `plan` — Fold B6 added the eighth, a
+read, and no later Fold widens the table without a build-kit amendment, K28); `studio/shared/adoVerbArgv.ts` — pure,
 golden-tested — builds the argument list, and `studio/electron/main/adoWrites.ts` starts `ado_sync.py` once per verb
 through `runPluginScript`. Nothing it does reaches `az`; the plugin owns every call to the board.
 
 | Rule | How it holds |
 |---|---|
-| `--by` is a person, and main's | the request has no field for it; main resolves the signed-in actor and the table appends `--by <actor>` **last** on the four writes (`apply`, `reconcile`, `link`, `comment`) and never on the three reads (`pull`, `pullDiscussion`, `show`); no actor is `NO_ACTOR` with `exitCode: null` and nothing is spawned |
+| `--by` is a person, and main's | the request has no field for it; main resolves the signed-in actor and the table appends `--by <actor>` **last** on the four writes (`apply`, `reconcile`, `link`, `comment`) and never on the four reads (`pull`, `pullDiscussion`, `show`, `plan`); no actor is `NO_ACTOR` with `exitCode: null` and nothing is spawned |
+| A plan is scoped | `{ verb: 'plan' }` is `--sprint SNN` alone or `--kind K` with `--id ID`; an unscoped plan, a malformed sprint id, or a verb the table does not list (`planSpec`) is refused before any spawn |
 | Free text is one argument | a comment's message, a reconcile `--reason` and `--owner` travel as `--message=<text>`, `--reason=<text>`, `--owner=<text>`, so a quote, a newline, `$(`, non-ASCII text or a leading `-` reaches argparse as one value; a message is sent byte for byte |
-| The plugin's JSON, not its prose | every verb ends in `--json`; the composer's `apply --confirm` hash comes from `comment --json` and is checked against `^[0-9a-f]{12}$` before it is sent |
-| One spawn per verb | `comment` drafts and prints a plan hash, a person reads the preview, and a second call, `apply`, sends it; main never chains the two, so a plan is never sent without a second click |
+| The plugin's JSON, not its prose | every verb ends in `--json`; the `apply --confirm` hash comes from `plan --json` or `comment --json` and is checked against `^[0-9a-f]{12}$` before it is sent |
+| One spawn per verb | `plan` and `comment` draw up a plan and print its hash, a person reads the preview, and a second call, `apply`, sends it; main never chains the two, so a plan is never sent without a second click |
 | The exit code is the truth | 0 done, 1 not done, 2 refused by the plugin; `exitCode: null` is "Shepherd did not ask" (no actor, no plugin, a bad request, a capability the plugin lacks) |
-| Capabilities gate every control | each verb needs a capability (`ado-apply`, `ado-reconcile`, `ado-link`, `ado-pull`, `ado-pull-discussion`, `ado-show`, `ado-comment`) and the Boards block needs `ado-status-json`; a plugin without one disables the control with `arrives with a newer plugin: lacks <name>` |
+| Capabilities gate every control | each verb needs a capability (`ado-apply`, `ado-reconcile`, `ado-link`, `ado-pull`, `ado-pull-discussion`, `ado-show`, `ado-comment`, `ado-plan`) and the Boards block needs `ado-status-json`; `ado-sync` is declared for the command prose's catch-up and no desktop control sends `sync`; a plugin without one disables the control with `arrives with a newer plugin: lacks <name>` |
 | The renderer never reads the mirror's files | no `.sdlc/ado/**` read, no allowlist row (`grep -rn 'ado/local' studio/src` prints 0); what a screen shows is the command center's `ado` block, the plugin's own `status --json` |
-| Nothing runs on a timer | no timer mutates a ledger, and `pull --discussion` is a person's click; the command center's local blocks are invalidated on every exit, so the next read is fresh |
+| Nothing runs on a timer | no timer mutates a ledger, and `pull --discussion` is a person's click; the command center's local blocks are invalidated on every exit, so the next read is fresh; and nothing reads the board on project open: the open path and the command center spawn `status` only (gate G18) |
 
 | Surface | Where | What it says and does |
 |---|---|---|
-| Work-item chip, `AdoChip` | the spec card, beside the PR chip | the mirror's status in words: **Work items are not set up for this project**, **Work items · no data**, **Work items · Not pulled yet**, or the drift on this spec past its two business days, by field and never by person; **Review plan** opens the apply dialog; in steering mode it draws a status and nothing that writes |
-| Apply dialog, `AdoApplyDialog` | opened from the chip | the preview is the plan's own rows; Confirm sends `{ verb: 'apply', confirm: <hash> }` and is disabled with its reason when the plugin lacks `ado-apply` |
+| Work-item chip, `AdoChip` | the spec card, beside the PR chip | the mirror's status in words: **Work items are not set up for this project**, **Work items · no data**, **Work items · Not pulled yet**, or the drift on this spec past its two business days, by field and never by person; **Review plan** appears only when **Plan changes** handed it a plan with rows an apply would send, and opens the apply dialog on exactly that plan; in steering mode it draws a status and nothing that writes |
+| Apply dialog, `AdoApplyDialog` | opened from **Review plan** on the chip or in the Boards nudge | the preview is the plan's own rows; Confirm sends `{ verb: 'apply', confirm: <hash> }` and is disabled with its reason when the plugin lacks `ado-apply`; after an apply that landed the plan is dropped, so what was sent is not offered again |
 | Discussion block and comment composer, `DiscussionBlock`, `CommentComposer` | the spec card, below its facts rail (B5), with a **Pull discussion** button | comment text is escaped, a line that reads as an instruction is marked `⚑`, attachments are links and are never fetched; the composer is hidden in steering mode and its Confirm is withheld while az and Shepherd disagree on who is writing (`Signed in to az as @x; Shepherd knows you as @y`) |
 | Today rows, `AdoTodayRows` | a sibling `<section data-testid="ado-today">` in `TodayColumn` and `LifecycleHome` | **Changed on the board** and **Not yet a spec**, each a `role="listitem"` with one action and no write control; **Not pulled yet** until a pull has measured them; **Not yet a spec** counts only an `UNMAPPED_IN_ADO` figure the plugin gave and otherwise reads **not counted** (a pull classes the ledgered items and never runs that search), never a zero; `NeedsYouItem.kind` is not widened |
-| Boards row of the spec card | `spec-boards`, outside the facts row | **Pull now** (`PullNow`, `{ verb: 'pull', id }` — this spec's fields), **Plan changes**, and **Settle drift** once a pull read drift for this spec; **Plan changes** runs nothing: it shows the `ado_sync.py plan --kind spec --id <NNNN>` and `apply --confirm <hash> --by <your handle>` lines with a sentence saying Shepherd does not run them, because the table stays the seven verbs above (a plan request is refused before any spawn), and is disabled with `arrives with a newer plugin: lacks ado-plan` on a plugin without `plan` |
-| Pull now / Pull discussion, `PullNow` | the Boards row and the Discussion block | two `data-write` buttons, never on a timer, on open or after another verb; an exit 0 that carries an `unavailable` board or a switched-off discussion says so, with the plugin's reason, never "Done"; an item the plugin could not read is listed by ref with its own reason |
+| Boards row of the spec card | `spec-boards`, outside the facts row | **Pull now** (`PullNow`, `{ verb: 'pull', id }` — this spec's fields), **Plan changes** (`PlanChanges`), and **Settle drift** once a pull read drift for this spec; **Plan changes** runs `plan` — one `{ verb: 'plan', kind: 'spec', id }` on the person's click and never otherwise (no effect plans anything when the card opens) — says what the plugin found in one line (`N to create · M to update · K comments`; a count the plugin did not print reads `no data`, and a plan that could not be drawn up says so with the plugin's reason), and offers **Review plan** → the apply dialog → Confirm (`apply`) on exactly the plan it printed; it is disabled with `arrives with a newer plugin: lacks ado-plan` on a plugin without `plan`. The card itself holds no request: every Boards spawn lies under `studio/src/components/ado/` |
+| Catch up, `CatchUp` | a sibling section beside the Today rows, in `TodayColumn` and `LifecycleHome` | how old the mirror is, from the command center's `status --json` and never the board: `Board as of <stamp>`, **Not pulled yet**, **Work items are not set up for this project** (and then no button), or `no data`; **Catch up** is `pull` (the fields of every ledgered item) on a click, and **Pull discussion** stays its own click, never implied by the first; no effect and no timer, so opening a project or letting a day pass reads nothing |
+| Boards nudge, `BoardsNudge` | the top of the project screen, after a spec verb from the omnibar, a hand-off or a decision recorded from Today landed | says once "Boards: spec NNNN changed here — the board has not heard" (or `sprint SNN`, `decision DL-NN`) and spawns nothing until clicked: **Plan board changes** runs one `plan` for that item or sprint, **Review plan** appears only when that plan has rows an apply would send and opens the apply dialog on it, and the dialog's Confirm is the one write; it never pulls; it is not drawn in steering mode, off Azure DevOps, or when the Boards block was not read, and closing the dialog after an apply that landed dismisses it |
+| Pull now / Pull discussion, `PullNow` | the Boards row, the Discussion block and Catch up | two `data-write` buttons, never on a timer, on open or after another verb; an exit 0 that carries an `unavailable` board or a switched-off discussion says so, with the plugin's reason, never "Done"; an item the plugin could not read is listed by ref with its own reason |
 | Reconcile dialog, `AdoReconcileDialog` | **Settle drift** on the spec card | one choice per drifted field (leave open, take the board's, keep the repository's, acknowledge with an owner, not drift with a reason) beside the field's diff; the preview is the exact `reconcile` argument line per chosen field; one Confirm runs one `{ verb: 'reconcile' }` per field, in order, as the signed-in person, and stops at the first the plugin did not settle; a result whose JSON carries `proposed` names that `.proposed` file and says the artifact itself was not changed; rows come from `pull --json` |
 
 Every one of these draws nothing in steering mode. `link` is in the table and no screen sends it yet, so pairing an
 item is `/sprd-ado link` for now, and **Propose spec** on the Today row shows the `ado_sync.py pull --propose-specs`
-line rather than running it. Nothing under `studio/electron/**` changed for B5: the dialog and the buttons use the IPC
-Fold B4 registered (`registerAdoIpc(ipcMain, resolvePluginScriptsDir)` in `studio/electron/main/adoIpc.ts`).
+line rather than running it. Nothing under `studio/electron/**` changed for B5 or B6: the dialogs and the buttons use the
+IPC Fold B4 registered (`registerAdoIpc(ipcMain, resolvePluginScriptsDir)` in `studio/electron/main/adoIpc.ts`), and main
+builds the `plan` argv from the same table it already ran every other verb from.
 
 ---
 
