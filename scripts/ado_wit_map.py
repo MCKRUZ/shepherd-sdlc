@@ -369,8 +369,10 @@ def build_create_patch(projection: dict, schema: dict, hyperlink: str, history_l
 _WIQL_SELECT = ("SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],"
                 "[System.AssignedTo] FROM WorkItems")
 # A project name: letters and digits of any script, space and the punctuation Azure DevOps allows in one, but no
-# quote, bracket, backslash or control character (the doubling in `_literal` stays the second lock).
-_PROJECT_OK = re.compile(r"[\w .()&!~^%@-]+")
+# quote, bracket, backslash or control character (the doubling in `_literal` stays the second lock). `%` and `!`
+# are refused as well: on Windows `az` resolves to `az.cmd`, cmd.exe re-parses the argv, and `%VAR%` / `!VAR!`
+# would be expanded inside the quoted WIQL (security review of PR #5, 2026-10-16).
+_PROJECT_OK = re.compile(r"[\w .()&~^@-]+")
 
 
 def _literal(value, pattern: re.Pattern, what: str) -> str:

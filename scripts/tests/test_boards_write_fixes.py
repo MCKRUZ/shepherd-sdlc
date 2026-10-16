@@ -252,3 +252,20 @@ def test_drift_says_when_the_untagged_search_printed_nothing(repo, board, capsys
     text = wiql[wiql.index("--wiql") + 1]
     assert "@project" not in text and "[System.TeamProject] = 'Claims'" in text
     assert ado_transport.remote(repo).project == "Claims"
+
+
+# --- security review of PR #5 (2026-10-16): a project name never carries a cmd.exe expansion character -----------
+
+def test_a_project_name_with_a_cmd_expansion_character_is_refused():
+    """On Windows `az` resolves to `az.cmd` and cmd.exe re-parses the argv, so `%VAR%` / `!VAR!` inside the quoted
+    WIQL would expand before the board saw it. The whitelist refuses both; the characters Azure DevOps really allows
+    in a project name (letters of any script, digits, space, `.()&~^@-`) still pass."""
+    import ado_wit_map as wm
+    for ok in ("Expedition One", "Claims", "Ops-2026", "R&D (EU)", "Proj~1", "a^b", "Café", "x@y"):
+        assert wm.project_clause(ok) == f"[System.TeamProject] = '{ok}'"
+    for bad in ("%PATH%", "!X!", "a%b", "bang!", "it's", "x\\y", "[p]", "tab\tname"):
+        try:
+            wm.project_clause(bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"{bad!r} should have been refused")
