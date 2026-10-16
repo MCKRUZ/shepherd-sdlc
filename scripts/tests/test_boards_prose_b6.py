@@ -466,7 +466,9 @@ def test_handoff_hands_the_terminal_over_only_after_the_board_line_was_read(text
 
 
 def test_activities_yaml_is_unchanged():
-    data = (REPO_ROOT / "phases" / "activities.yaml").read_bytes()
+    # Hash the LF form: a Windows checkout (core.autocrlf) hands back CRLF bytes for the same file, and the
+    # pin is about the declaration's content, not the line endings git chose for the working tree.
+    data = (REPO_ROOT / "phases" / "activities.yaml").read_bytes().replace(b"\r\n", b"\n")
     assert hashlib.sha256(data).hexdigest() == ACTIVITIES_SHA256
 
 
