@@ -62,7 +62,7 @@ owns it, `/sprd-data` works it, and it is done only when the data really flows. 
 - **The protected core is byte-for-byte unchanged** (`new_spec.py`, `check_spec.py`, `sprint.py`,
   `sprint_model.py`, `spec_transition.py`, `spec.md` and its shape, `harness/**`, and the rest of
   the list in the kit's §6). One existing test was edited: the build-phase activities pin in
-  `test_activities_model.py` gained `data-spec`. The full suite passes: 4029 passed, 19 skipped.
+  `test_activities_model.py` gained `data-spec`. The full suite passes: 4158 passed, 19 skipped.
 
 ---
 
