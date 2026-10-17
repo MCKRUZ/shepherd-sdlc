@@ -1,0 +1,78 @@
+template: decision-memo
+version: "1.0"
+description: "Why a data design was chosen over the others - the constraints, the options weighed, a scorecard, and the named human who decided."
+
+# required: true only on what the memo is meaningless without: which feature it is for, the
+# constraints the design had to meet, the options weighed, and the Decision section's three parts -
+# what was chosen, why, and who chose it. The scorecard is a useful summary but a memo with a clear
+# options table and a reasoned decision still stands without it, and the owner, date and decision-log
+# reference are context, so those stay optional.
+#
+# "Decided by" must be a named human, never an agent: a decision with nobody to ask about it is not
+# a decision. The shape can only require that the field is filled; the guidance says whose name goes in it.
+
+sections:
+  - heading: Memo identity
+    fields:
+      - label: Feature / spec
+        anchor: inline
+        type: text
+        required: true
+        guidance: The feature id and spec this memo belongs to
+      - label: Owner
+        anchor: inline
+        type: text
+        required: false
+        guidance: The person from the Data discipline who owns this decision
+      - label: Date
+        anchor: inline
+        type: date
+        required: false
+        guidance: The date the decision was made
+      - label: Decision-log ref
+        anchor: inline
+        type: text
+        required: false
+        guidance: The decision-log item (DL-NN) that tracks this decision's owner and clock
+
+  - heading: Constraints
+    fields:
+      - label: Constraints
+        anchor: section
+        type: checklist
+        required: true
+        guidance: The numbered constraints (C1, C2, ...) the design must satisfy, each stated so it can be checked
+
+  - heading: Options
+    fields:
+      - label: Options
+        anchor: section
+        type: table
+        required: true
+        guidance: Every option weighed - what was measured for it, what it costs, what could go wrong, and whether it can be undone
+
+  - heading: Scorecard
+    fields:
+      - label: Scorecard
+        anchor: section
+        type: table
+        required: false
+        guidance: Each option as a row scored against each numbered constraint
+
+  - heading: Decision
+    fields:
+      - label: Chosen
+        anchor: inline
+        type: text
+        required: true
+        guidance: The option that was chosen, by name
+      - label: Why
+        anchor: labeled_block
+        type: longtext
+        required: true
+        guidance: Which constraints decided it, what was traded away, and what would make the team revisit
+      - label: Decided by
+        anchor: inline
+        type: text
+        required: true
+        guidance: The named human who made the decision - never an agent

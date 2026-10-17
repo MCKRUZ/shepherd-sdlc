@@ -1,0 +1,59 @@
+template: data-dictionary
+version: "1.0"
+description: "What each input to a feature actually is - where it comes from and what a profile of the real data measured - so nobody builds on a belief."
+
+# required: true only on the content the dictionary is meaningless without - which feature it is for
+# (the identity line) and the Inputs table itself. The serving objects and the notes are context a
+# first draft may not have yet, and the identity's other lines (what it serves, when and where it
+# was profiled) are context too, so they stay optional.
+#
+# The honesty rule lives in the Inputs guidance and in the template's prose: a value nobody measured
+# reads `not measured`, never `0`, and every number cites the profile query it came from.
+
+sections:
+  - heading: Dictionary identity
+    fields:
+      - label: Feature / spec
+        anchor: inline
+        type: text
+        required: true
+        guidance: The feature id and spec this dictionary belongs to
+      - label: Serves
+        anchor: inline
+        type: text
+        required: false
+        guidance: The build spec this data work serves
+      - label: Profiled on
+        anchor: inline
+        type: text
+        required: false
+        guidance: The date and the environment the profile queries ran against
+      - label: Profile source
+        anchor: inline
+        type: text
+        required: false
+        guidance: Where the profile queries live - a notebook, a SQL file or a dashboard
+
+  - heading: Inputs
+    fields:
+      - label: Inputs
+        anchor: section
+        type: table
+        required: true
+        guidance: One row per input - its source object, how it is derived, and null %, distinct count, min-max and median from a live profile query that is cited in the row. A value nobody measured reads "not measured", never 0
+
+  - heading: Serving objects
+    fields:
+      - label: Serving objects
+        anchor: section
+        type: table
+        required: false
+        guidance: Each object the build team reads from - its kind (view, function, endpoint or table), grain, keys and refresh
+
+  - heading: Notes
+    fields:
+      - label: Notes
+        anchor: section
+        type: longtext
+        required: false
+        guidance: How the sample was drawn, columns skipped and why, surprises the profile found, and anything still "not measured" with the decision-log item that will measure it

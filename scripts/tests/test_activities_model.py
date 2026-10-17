@@ -41,7 +41,7 @@ class TestTheShippedDeclarationIsTrue:
 
     def test_the_build_phase_declares_the_sprint_layer(self):
         ids = [a["id"] for a in am.load()["build"]]
-        assert ids == ["sprint", "refine", "phase-report", "coach"]
+        assert ids == ["sprint", "data-spec", "refine", "phase-report", "coach"]
 
     def test_refinement_starts_at_foundation(self):
         assert "refine" in [a["id"] for a in am.load()["3"]]

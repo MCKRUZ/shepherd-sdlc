@@ -210,6 +210,11 @@
     command: sprd-sprint
     kind: run
 
+  - id: data-spec
+    label: "Link a data spec to the build spec it serves"
+    command: sprd-data
+    kind: run
+
   - id: refine
     label: "Refine the next sprint's specs"
     command: sprd-refine

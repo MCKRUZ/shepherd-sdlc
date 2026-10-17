@@ -1,0 +1,79 @@
+template: data-handoff
+version: "1.0"
+description: "The one page the build team reads - what data is live and where, how to call it, what a degraded result means, and how it was proven."
+
+# required: true on what the build team cannot start without: which feature this is for, what is
+# live, how to call it, what the degraded results mean, and the smoke tests that prove it works.
+# Who it serves and who owns it are context, and "what is left" and the owners table may honestly be
+# empty or short on a small hand-off, so those stay optional.
+#
+# `Smoke tests` is a longtext, not a table: it holds a command and a link to its output. A link is a
+# path or a URL a reader can open - it is not a bracketed placeholder, and the data spec's advisory
+# check reads a bracketed placeholder there as "the hand-off is not finished".
+
+sections:
+  - heading: Handoff identity
+    fields:
+      - label: Feature / spec
+        anchor: inline
+        type: text
+        required: true
+        guidance: The feature id and spec this hand-off belongs to
+      - label: Serves
+        anchor: inline
+        type: text
+        required: false
+        guidance: The build spec that calls this data
+      - label: Owner
+        anchor: inline
+        type: text
+        required: false
+        guidance: The person from the Data discipline who owns this hand-off
+
+  - heading: What is live
+    fields:
+      - label: What is live
+        anchor: section
+        type: table
+        required: true
+        guidance: Each object that runs now - the environment it runs on, since when, and who to ask when it breaks
+
+  - heading: How to call it
+    fields:
+      - label: How to call it
+        anchor: section
+        type: longtext
+        required: true
+        guidance: How the build team reaches the data - the object, its arguments and what comes back, with a runnable code example
+
+  - heading: Degraded results
+    fields:
+      - label: Degraded results
+        anchor: section
+        type: table
+        required: true
+        guidance: Each result that is neither an error nor a full answer - what it means and what the caller should do about it
+
+  - heading: Smoke tests
+    fields:
+      - label: Smoke tests
+        anchor: section
+        type: longtext
+        required: true
+        guidance: The command that runs the smoke tests and a link to the output of the run that passed
+
+  - heading: What is left
+    fields:
+      - label: What is left
+        anchor: section
+        type: checklist
+        required: false
+        guidance: Anything not yet live, not yet measured or waiting on a decision, each with its decision-log item
+
+  - heading: Owners
+    fields:
+      - label: Owners
+        anchor: section
+        type: table
+        required: false
+        guidance: Who owns each area - the pipeline, each serving object, data quality
