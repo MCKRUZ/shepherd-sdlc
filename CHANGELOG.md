@@ -379,8 +379,10 @@ What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) f
   comparison), the mirror never issues a Tags op whose only difference is case, a write it must make for another
   reason keeps the board's own casing for every tag it keeps and the repository's only for a genuinely new one
   (`merge_tags`), a plugin prefix the board holds in any casing (`Risk:High`) is the repository's family rather than
-  a person's tag, the by-tag ref match (`_tag_map`, `_other_refs`) is case-insensitive, and a case-only tag change on
-  the board is `ADO_OWNED_CHANGE` (owner `C`), never `SDLC_OWNED_DRIFT`. A plan row for a real tag change no longer
+  a person's tag (so a person's capitalised `Type:Bug` or `Severity:High` is now the mirror's too: a plan shows a Tags
+  row removing it and the next write strips it), the by-tag ref match (`_tag_map`, `_other_refs`) is
+  case-insensitive, and a case-only tag change on the board is `ADO_OWNED_CHANGE` (owner `C`), never
+  `SDLC_OWNED_DRIFT`. A plan row for a real tag change no longer
   names a tag only to re-spell it; no verb, flag, exit code or ledger line changed, and the plan-only golden is
   byte-identical.
 - **A create whose State the process does not allow at creation is created in the initial state, then moved.** A
@@ -391,13 +393,20 @@ What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) f
   moved)`, the plan hash covers it, and `cost` counts the extra write; apply creates the item, ledgers it, then sends
   one `test /rev` PATCH. A refused move leaves the item created and linked (a `failed` update row, `created #N; moving
   it to Closed failed`), the next `plan` offers the State as an update (also for a kind whose State the board owns,
-  through `state_pending` on the create's ledger line) and never a second create, and applying the same plan again
-  retries the move. A State reachable in neither hop is a `validation` finding on a row that stays a create; a type
-  whose transitions were never read behaves as before. Existing pins changed because the hand-written process creates
-  a User Story in New, so spec 0004 (Ready) and 0005 are now two-step creates there: eight tests in
-  `test_boards_sync_apply.py`, `test_boards_sync_cli_b2.py`, `test_boards_sync_cli_b3.py` and
-  `test_boards_write_fixes.py` (each named in the commit) expect the extra write; a plan with a move now needs the
-  Entra sign-in an update needs.
+  through `state_pending` on the create's ledger line, and only while the item's revision is still the one the create
+  returned: once anyone has touched it the State is the board's again and is never pushed back) and never a second
+  create, and applying the same plan again retries the move. A State reachable in neither hop is a `validation`
+  finding on a row that stays a create; a type whose transitions were never read behaves as before. Existing pins
+  changed because the hand-written process creates a User Story in New, so spec 0004 (Ready) and 0005 are now
+  two-step creates there: eight tests in `test_boards_sync_apply.py`, `test_boards_sync_cli_b2.py`,
+  `test_boards_sync_cli_b3.py` and `test_boards_write_fixes.py` (each named in the commit) expect the extra write; a
+  plan with a move now needs the Entra sign-in an update needs.
+- **Review follow-up to the two fixes above.** `state_pending` used to outlive the board's own change of State: a
+  person who closed the item by hand left the flag on the create's ledger line, so a later reopen was pushed back to
+  Closed. The exception for an owed move now holds only while the item's revision is still the one the create
+  returned (`ado_sync_model.ownership_for_link` takes the board's item), the same revision the move tests. The
+  one-hop creation finding (`Issue does not allow creation -> Closed`, said under `plan --validate` when the second
+  hop is not known) has its pin back.
 
 ## 2.0.0 — 2026-10-12
 

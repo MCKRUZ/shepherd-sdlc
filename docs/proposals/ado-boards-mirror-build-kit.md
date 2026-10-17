@@ -539,7 +539,7 @@ Replace `<PROTECTED>` in the two gate commands with the space-joined `protectedL
 | 27 | Implies `--discussion` from `--full`, or adds it in command prose | `sync` has no `--full` (its parser is pinned); the prose pin requires the words 'only on' beside `--discussion` |
 | 28 | Builds the `plan` argv in the renderer | the request is a closed `AdoVerbRequest` and main builds the argv from the pure table; `SpecCard.tsx` has no `verb: '` (source pin) |
 | 29 | A Tags op whose only difference is case | Azure Boards keeps the organisation's first-seen casing of a tag, so tags are compared by `ado_sync_model.tag_key` and a write keeps the board's casing for a tag it keeps; pinned by `test_boards_live_fixes.py` |
-| 30 | A create that asks for a State the process does not allow at creation | created in the initial state, then moved with a `test /rev` PATCH; a failed move leaves a linked item and the next plan shows an update; pinned by `test_boards_live_fixes.py` |
+| 30 | A create that asks for a State the process does not allow at creation | created in the initial state, then moved with a `test /rev` PATCH; a failed move leaves a linked item and the next plan shows an update (only while the item's `rev` is still the one the create returned: `ownership_for_link`); pinned by `test_boards_live_fixes.py` |
 
 ---
 

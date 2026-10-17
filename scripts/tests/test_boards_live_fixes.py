@@ -747,3 +747,120 @@ def test_a_move_that_hits_a_throttle_stops_the_run_like_any_other_write(apply_re
     assert [(d["ref"], d["action"], d["why"]) for d in res["deferred"]] == [("sdlc:decision:03", "create", "stopped")]
     assert [(a["ref"], a["action"]) for a in res["applied"]] == [(DL02, "create")]
     assert res["exit"] == 1 and len(sent_of(apply_board, "POST wit/workItems")) == 1
+
+
+# ====================================================================================================================
+# Review of the two commits above (tag case, two-step create), 2026-10-17. Two findings, both MEDIUM.
+#
+#   * `state_pending` outlived the board's own change of State. `ownership_for_link` made System.State the repository's
+#     for as long as the create's `applied` line carried `state_pending`, and only a later `applied`/`linked`/`adopted`
+#     line cleared it. A person who closed the item by hand (or a move that landed whose answer or ledger line was
+#     lost) left the flag in place, so a LATER board-side reopen was pushed back to Closed, overwriting the person's
+#     change. The exception now holds only while the board is as the create left it: `remote["rev"]` is still the
+#     `rev_after` the create returned (the revision the move itself tests).
+#   * the one-hop creation finding (`<Type> does not allow creation -> <State>`, said when the second hop is not
+#     known) lost its only pin when the b2 --validate test was edited for the two-step create.
+# ====================================================================================================================
+
+def board_at(board, create_body, state: str, rev: int) -> None:
+    """The board answers the item DL-02's create made (#5001) as `state` at `rev`: what a batch read returns after
+    someone has edited it."""
+    ap.put_batch(board, batch_row_from_create(create_body, 5001, rev, "Issue", state))
+
+
+@pytest.mark.parametrize("failure", ["rule_violation", "throttled"])
+def test_a_state_the_board_has_moved_on_from_is_the_boards_and_is_not_pushed_back(apply_repo, apply_board, capsys,
+                                                                                   failure):
+    # old: after a person closed the item (rev 2) and reopened it (rev 3), the plan offered `System.State Active ->
+    # Closed` again, because `state_pending` was still on the create's ledger line. `throttled` is a move whose outcome
+    # is unknown (it may have landed): its create line keeps `state_pending` the same way.
+    doc = plan_of(apply_repo, capsys, "decision", "DL-02")
+    refuse_moves(apply_board, load_wit_error(failure))
+    assert ap.apply(apply_repo, doc)["exit"] == 1
+    (create,) = ap.events_of(apply_repo, "applied")
+    assert create["action"] == "create" and create["state_pending"] == "Closed" and create["rev_after"] == 1
+    create_body = sent_of(apply_board, "POST wit/workItems")[0][2]
+    # nobody has touched the item: the owed move is still the repository's to push (the recovery the existing pins cover)
+    board_at(apply_board, create_body, "Active", 1)
+    (row,) = plan_of(apply_repo, capsys, "decision", "DL-02")["rows"]
+    assert row["action"] == "update" and row["ops"] == [{"op": "replace", "path": STATE, "old": "Active", "new": "Closed"}]
+    # a person closes it by hand: the board holds what the repository wants, so there is nothing to say
+    board_at(apply_board, create_body, "Closed", 2)
+    assert plan_of(apply_repo, capsys, "decision", "DL-02")["rows"] == []
+    # and reopens it: a decision's State is the board's once anyone has touched the item, so it is not pushed back
+    board_at(apply_board, create_body, "Active", 3)
+    again = run_plan_json(apply_repo, capsys, "decision", "DL-02")
+    assert again["rows"] == [] and again["counts"]["update"] == 0 and again["counts"]["in_sync"] == 1
+    assert len(sent_of(apply_board, "PATCH wit/workItems")) == 1                          # nothing was ever sent to push it
+
+
+def test_the_owed_move_ends_with_the_boards_first_change_to_the_item_whatever_that_change_was(apply_repo, apply_board,
+                                                                                               capsys):
+    # old: a rev that moved to 2 with the State still Active (a person edited something else) kept the exception, so
+    # the plan still pushed the State; the move would have been refused as stale anyway (`test /rev 1`)
+    doc = plan_of(apply_repo, capsys, "decision", "DL-02")
+    refuse_moves(apply_board, load_wit_error("rule_violation"))
+    assert ap.apply(apply_repo, doc)["exit"] == 1
+    create_body = sent_of(apply_board, "POST wit/workItems")[0][2]
+    board_at(apply_board, create_body, "Active", 2)
+    assert plan_of(apply_repo, capsys, "decision", "DL-02")["rows"] == []
+
+
+def test_ownership_for_link_gives_the_repository_the_state_only_while_the_board_is_as_the_create_left_it():
+    # old: `ownership_for_link(kind, link)` read only the link, so the revision was never asked
+    owed = {"state_pending": "Closed", "rev_after": 4}
+    board_state = model.ownership_for("decision")["System.State"]
+    assert board_state == "A"                                                        # a decision's State is the board's
+    assert model.ownership_for_link("decision", owed, {"rev": 4})["System.State"] == "S"
+    assert model.ownership_for_link("decision", owed, {"rev": 5})["System.State"] == board_state
+    assert model.ownership_for_link("decision", owed, {"rev": 3})["System.State"] == board_state
+    # nothing owed: no exception, whatever the revisions say
+    assert model.ownership_for_link("decision", {"rev_after": 4}, {"rev": 4})["System.State"] == board_state
+    assert model.ownership_for_link("decision", {"state_pending": " ", "rev_after": 4}, {"rev": 4}) \
+        == model.ownership_for("decision")
+    # a revision that cannot be compared ends it: nothing is pushed on a guess
+    for link, held in [({"state_pending": "Closed"}, {"rev": 4}), ({"state_pending": "Closed", "rev_after": "4"}, {"rev": 4}),
+                       ({"state_pending": "Closed", "rev_after": 4}, {"rev": None}), (owed, {}), (owed, None),
+                       ({"state_pending": "Closed", "rev_after": True}, {"rev": True}), (None, {"rev": 4})]:
+        assert model.ownership_for_link("decision", link, held)["System.State"] == board_state, (link, held)
+    # only System.State changes, and a kind that already owns it (spec) is unchanged
+    assert {**model.ownership_for_link("decision", owed, {"rev": 4}), "System.State": board_state} \
+        == model.ownership_for("decision")
+    assert model.ownership_for_link("spec", owed, {"rev": 9}) == model.ownership_for("spec")
+
+
+# --- the one-hop creation finding (the pin the two-step create's edit of the b2 test removed) ----------------------
+
+@pytest.mark.parametrize("transitions", [{"": ["Active"]}, {"": []}], ids=["initial-state-not-listed", "no-creation-state"])
+def test_validate_says_the_one_hop_sentence_when_the_second_hop_is_not_known(apply_repo, capsys, transitions):
+    # passes before and after this commit: it restores the pin of `_state_findings`' `unknown` branch, which the
+    # two-step create's edit of test_boards_sync_cli_b2.py::test_plan_validate_checks_the_process_locally_and_still_
+    # never_writes left with no test. The route is `unknown` because the initial state's own transitions are not read
+    # (`{"": ["Active"]}` has no "Active" row; `{"": []}` lists no state to create in), and creation -> Closed is refused.
+    edit_schema(apply_repo, Issue={"transitions": transitions})
+    assert sm.creation_route(json.loads((apply_repo / bc.SCHEMA_FILE).read_text(encoding="utf-8")), "Issue",
+                             "Closed")[0] == "unknown"
+    plain = run_plan_json(apply_repo, capsys, "decision", "DL-02")
+    (plain_row,) = plain["rows"]
+    assert "validation" not in plain_row                                       # said under --validate only: it is not `unreachable`
+    checked = run_plan_json(apply_repo, capsys, "decision", "DL-02", extra=["--validate"])
+    (row,) = checked["rows"]
+    assert row["action"] == "create"
+    assert row["validation"] == ["Issue does not allow creation -> Closed"]    # the one-hop sentence, no `nor` clause
+    assert state_op(row) == {"op": "add", "path": STATE, "old": None, "new": "Closed"}      # no `via`: nothing is two-step
+    assert checked["cost"]["writes"] == 0 and checked["cost"]["az_spawns"] == 1
+    code = ado_sync.main(["plan", "--kind", "decision", "--id", "DL-02", "--no-comments", "--validate", "--repo",
+                          str(apply_repo)])
+    text = capsys.readouterr().out
+    assert code == 0 and "  validate: Issue does not allow creation -> Closed" in text and "nor" not in text
+
+
+def test_validate_says_nothing_when_the_creation_row_allows_the_state_or_the_transitions_are_unread(apply_repo, capsys):
+    # passes before and after: the one-hop sentence needs `creation -> State` to be KNOWN refused; a creation row that
+    # lists the State, or no transitions at all, is not a finding
+    edit_schema(apply_repo, Issue={"transitions": {"": ["Active", "Closed"]}})
+    row, = run_plan_json(apply_repo, capsys, "decision", "DL-02", extra=["--validate"])["rows"]
+    assert row["validation"] == [] and "via" not in state_op(row)
+    edit_schema(apply_repo, Issue={"transitions": None})
+    row, = run_plan_json(apply_repo, capsys, "decision", "DL-02", extra=["--validate"])["rows"]
+    assert row["validation"] == []

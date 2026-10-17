@@ -38,8 +38,10 @@ else. It writes to the board AS the person whose `az` login is active, so every 
     row of action `update` whose detail begins `created #N; moving it to <State> failed`. The create's `applied` line
     carries `state_pending: <State>` until the move lands, so applying the same plan again tries the move (never a
     second create) and the next `plan` offers an `update` row for the State (the one State the mirror pushes that it
-    does not otherwise own: `ado_sync_model.ownership_for_link`). A plan written before this change has no `via`
-    and is sent as it showed, one write.
+    does not otherwise own: `ado_sync_model.ownership_for_link`) -- but only while the board is as the create left
+    it, its revision still the one the create returned: once anyone has touched the item (a person closing it by
+    hand, a move that landed unseen, a reopen) the State is the board's again and is never pushed back. A plan
+    written before this change has no `via` and is sent as it showed, one write.
   * A comment POST whose outcome is unknown (a timeout, an unreadable answer) is never retried: the item's newest 20
     comments are re-listed and the one carrying the row's `text_sha`, by the same identity, within 10 minutes is
     ledgered `commented{recovered: true}`; no match stops the run.
@@ -738,7 +740,7 @@ class _Run:
             return self.conflict(row, "update", wid, "rev_moved", rev_now=remote["rev"])
         try:   # the ownership the plan used: a State a two-step create's move still owes is the repository's to push
             patch = wm.build_update_patch(remote, proj, ownership=model.ownership_for_link(proj.get("kind"),
-                                                                                         self.links.get(ref)))
+                                                                                         self.links.get(ref), remote))
         except ValueError:
             return self.conflict(row, "update", wid, "unbuildable")
         if not wm.has_changes(patch):

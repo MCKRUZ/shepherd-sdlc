@@ -1238,11 +1238,22 @@ def pending_state(link) -> str | None:
     return value if isinstance(value, str) and value.strip() else None
 
 
-def ownership_for_link(kind: str | None, link) -> dict[str, str]:
-    """`ownership_for(kind)`, except that while a two-step create's move is still owed (`pending_state(link)`) the
-    repository owns `System.State`: it is the one State the mirror pushes that it does not otherwise own (a decision's
-    or an epic's State is the board's once the item exists, `A`), because the create never got it there and the
-    person was told so. A State op appears only while the board's State still differs from the projection's, and the
-    move's own `applied` line ends the exception."""
+def ownership_for_link(kind: str | None, link, remote) -> dict[str, str]:
+    """`ownership_for(kind)`, except that while a two-step create's move is still owed (`pending_state(link)`) AND the
+    board is exactly as the create left it, the repository owns `System.State`: it is the one State the mirror pushes
+    that it does not otherwise own (a decision's or an epic's State is the board's once the item exists, `A`), because
+    the create never got it there and the person was told so.
+
+    "As the create left it" is the one revision the create returned (`link["rev_after"]`, the same revision the move
+    tests): `remote["rev"]` is still it. Any edit since -- a person closing the item by hand, a move that landed whose
+    answer or ledger line was lost, a reopen -- moves the revision, and from then on the State is the board's again,
+    so a later change of it is never pushed back. The same revision test the move itself carries: a board that has
+    moved on makes the owed move a conflict, not an overwrite. A revision that is not an integer on either side
+    cannot be compared and ends the exception (nothing is pushed on a guess). The move's own `applied` line also ends
+    it, being a later link without `state_pending`."""
     own = ownership_for(kind)
-    return {**own, "System.State": "S"} if pending_state(link) else own
+    if not pending_state(link):
+        return own
+    owed_at, now = link.get("rev_after"), remote.get("rev") if isinstance(remote, dict) else None
+    untouched = all(isinstance(r, int) and not isinstance(r, bool) for r in (owed_at, now)) and owed_at == now
+    return {**own, "System.State": "S"} if untouched else own

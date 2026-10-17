@@ -1170,7 +1170,8 @@ def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | Non
         if remote["type"] != type_name:
             return _row(p, "held", type_name, work_item=wid, rev=remote["rev"],
                         reason=f"#{wid} is a {remote['type']} on the board but {p['kind']} maps to {type_name}")
-        own = model.ownership_for_link(p.get("kind"), link)   # a move a two-step create still owes is pushed again
+        # a move a two-step create still owes is pushed again, but only while the board is as the create left it
+        own = model.ownership_for_link(p.get("kind"), link, remote)
         try:
             patch = wm.build_update_patch(remote, p, ownership=own)
         except ValueError as exc:
