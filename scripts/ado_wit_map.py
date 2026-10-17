@@ -50,7 +50,8 @@ from urllib.parse import quote
 from ado_map import AdoImportError, _require
 from ado_schema_map import refused_fields
 from ado_sync_model import (BOOKKEEPING_FIELDS, BOOKKEEPING_PREFIXES, FORBIDDEN_FIELD_PREFIXES, HISTORY_FIELD,
-                            IDENTITY_FIELDS, MARKER_BEGIN, MARKER_END, PARENT_REL, diff, ownership_for)
+                            IDENTITY_FIELDS, MARKER_BEGIN, MARKER_END, PARENT_REL, diff, is_plugin_tag, ownership_for,
+                            tag_key, tag_keys)
 from boards_contract import EMAIL_RE, GUID_RE, HANDLE_RE, PLUGIN_TAG_PREFIXES, REF_RE
 from code_host_remote import RemoteInfo
 
@@ -99,7 +100,7 @@ def _split_tags(value) -> list[str]:
 
 
 def _plugin_tags(value) -> set[str]:
-    return {t for t in _split_tags(value) if t.startswith(PLUGIN_TAG_PREFIXES)}
+    return {t for t in _split_tags(value) if is_plugin_tag(t)}
 
 
 def _is_effort(ref: str) -> bool:
@@ -185,7 +186,12 @@ def remote_item(row: dict, roster_emails: dict[str, str] | None = None) -> dict:
 def merge_tags(existing: str | None, plugin_tags: set[str]) -> str:
     """The tags a write sends: every tag the board holds that is NOT plugin-prefixed (a person's), plus exactly
     `plugin_tags` (the repository's — a plugin tag it no longer wants is withdrawn). `; `-joined and sorted.
-    A `plugin_tags` member that is not plugin-prefixed, or that would add a second tag through a `;`, raises."""
+    A `plugin_tags` member that is not plugin-prefixed, or that would add a second tag through a `;`, raises.
+    Tag case (`ado_sync_model.tag_key`): Azure Boards tags are case-insensitive and the organisation keeps the
+    first-seen casing, so a wanted tag the board already holds in another casing is sent in the BOARD's casing (a
+    `risk:HIGH` wanted while the board holds `risk:high` sends `risk:high`); only a genuinely new tag keeps the
+    repository's casing, and a plugin prefix the board holds in any casing is the repository's family, not a
+    person's."""
     wanted = set()
     for tag in plugin_tags:
         if (not isinstance(tag, str) or tag != tag.strip() or ";" in tag or _control(tag)
@@ -193,8 +199,13 @@ def merge_tags(existing: str | None, plugin_tags: set[str]) -> str:
             raise ValueError(f"not a plugin tag the mirror may write: {tag!r} (it must start with one of "
                              f"{', '.join(PLUGIN_TAG_PREFIXES)} and be a single tag)")
         wanted.add(tag)
-    kept = {t for t in _split_tags(existing) if not t.startswith(PLUGIN_TAG_PREFIXES)}
-    return "; ".join(sorted(kept | wanted))
+    held_tags = _split_tags(existing)
+    held: dict[str, str] = {}
+    for tag in sorted(held_tags):
+        if is_plugin_tag(tag):
+            held.setdefault(tag_key(tag), tag)
+    kept = {t for t in held_tags if not is_plugin_tag(t)}
+    return "; ".join(sorted(kept | {held.get(tag_key(t), t) for t in wanted}))
 
 
 def _inner(block) -> str:
@@ -259,8 +270,8 @@ def build_update_patch(remote: dict, projection: dict) -> list[dict]:
         ref, new = op["path"][len(_FIELDS):], op["new"]
         if ref == _TAGS:
             value = merge_tags("; ".join(sorted(remote.get("tags") or ())), _plugin_tags(projection.get("tags")))
-            if set(_split_tags(value)) == set(remote.get("tags") or ()):
-                continue
+            if tag_keys(_split_tags(value)) == tag_keys(remote.get("tags") or ()):
+                continue  # nothing but case differs: the board keeps its own casing, so there is nothing to send
         elif new is None:
             continue  # no value is not an instruction to blank the field
         elif ref == _DESCRIPTION:

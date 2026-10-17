@@ -538,6 +538,7 @@ Replace `<PROTECTED>` in the two gate commands with the space-joined `protectedL
 | 26 | Runs `plan` when a spec card opens | a source regex pin (no `useEffect` whose body names `plan`) + G18; the B5-P4 click-count pin extended to one request per click |
 | 27 | Implies `--discussion` from `--full`, or adds it in command prose | `sync` has no `--full` (its parser is pinned); the prose pin requires the words 'only on' beside `--discussion` |
 | 28 | Builds the `plan` argv in the renderer | the request is a closed `AdoVerbRequest` and main builds the argv from the pure table; `SpecCard.tsx` has no `verb: '` (source pin) |
+| 29 | A Tags op whose only difference is case | Azure Boards keeps the organisation's first-seen casing of a tag, so tags are compared by `ado_sync_model.tag_key` and a write keeps the board's casing for a tag it keeps; pinned by `test_boards_live_fixes.py` |
 
 ---
 

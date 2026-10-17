@@ -707,6 +707,7 @@ def linked_items(ledger: list[dict]) -> dict[str, dict]:
 
 
 REF_SEGMENT_KIND = {"fr": "requirement"}  # a requirement's ref is `sdlc:fr:<digits>` (ado_sync_sources_tree)
+REF_ANY_CASE = re.compile(REF_RE.pattern, re.IGNORECASE)  # a ref as the board may hold it: tags are case-insensitive
 
 
 def _kind_of(ref: str) -> str | None:
@@ -862,12 +863,19 @@ def _query_tagged(repo_root: Path, refs: list[str]) -> list[int]:
 
 
 def _tag_map(items: dict[int, dict], refs: list[str]) -> dict[str, list[int]]:
-    """`ref` -> the ids of the items whose tags name it exactly (a tag the query matched loosely is dropped here)."""
+    """`ref` -> the ids of the items whose tags name it exactly (a tag the query matched loosely is dropped here).
+    "Exactly" is the tag-case rule (`ado_sync_model.tag_key`): Azure Boards tags are case-insensitive and keep the
+    organisation's first-seen casing, so an item holding `SDLC:spec:0004` names the ref `sdlc:spec:0004` (the ref
+    the mirror writes is lower case; the board may hold it otherwise)."""
     found: dict[str, list[int]] = {ref: [] for ref in refs}
+    by_key: dict[str, list[str]] = {}
+    for ref in refs:
+        by_key.setdefault(model.tag_key(ref), []).append(ref)
     for wid, item in sorted(items.items()):
         for tag in item["tags"]:
-            if tag in found:
-                found[tag].append(wid)
+            for ref in by_key.get(model.tag_key(tag), ()):
+                if wid not in found[ref]:
+                    found[ref].append(wid)
     return found
 
 
@@ -973,8 +981,14 @@ def _split_tags(value) -> list[str]:
 
 
 def _tags_op(op: str, have: set, want: set) -> dict:
-    kept = sum(1 for t in have if not t.startswith(bc.PLUGIN_TAG_PREFIXES))
-    return {"op": op, "path": TAGS_PATH, "add": sorted(want - have), "remove": sorted(have - want), "kept": kept}
+    """A Tags op as the screen shows it: what the value adds to and removes from what the board holds. Compared by
+    `model.tag_key`, so a tag the board holds in another casing is neither added nor removed (the tag-case rule: a
+    Tags row never exists for a difference in case alone)."""
+    held = {model.tag_key(t): t for t in sorted(have)}
+    wanted = {model.tag_key(t): t for t in sorted(want)}
+    kept = sum(1 for t in have if not model.is_plugin_tag(t))
+    return {"op": op, "path": TAGS_PATH, "add": sorted(t for k, t in wanted.items() if k not in held),
+            "remove": sorted(t for k, t in held.items() if k not in wanted), "kept": kept}
 
 
 def _update_ops(patch: list[dict], remote: dict, projection: dict, emails: dict[str, str]) -> list[dict]:
@@ -1946,8 +1960,10 @@ def _work_item_arg(text: str | None) -> int:
 
 
 def _other_refs(item: dict, ref: str) -> list[str]:
-    """The mirror refs an item's tags name besides `ref` (`sdlc:spec:0004`; a status tag is not a ref)."""
-    return sorted(t for t in item["tags"] if REF_RE.fullmatch(t) and _kind_of(t) is not None and t != ref)
+    """The mirror refs an item's tags name besides `ref` (`sdlc:spec:0004`; a status tag is not a ref). A tag is the
+    same tag in any casing (the tag-case rule), so `SDLC:spec:0004` is `ref` itself and `SDLC:spec:0005` another."""
+    return sorted(t for t in item["tags"] if REF_ANY_CASE.fullmatch(t) and _kind_of(t.casefold()) is not None
+                  and model.tag_key(t) != model.tag_key(ref))
 
 
 def _mapped_elsewhere(links: dict, ref: str, wid: int) -> str | None:

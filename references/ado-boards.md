@@ -316,6 +316,12 @@ board-side removal of one is `SDLC_OWNED_DRIFT` that the next confirmed apply pu
 (`team-alpha`) moving is still the board's. A board that already holds a person's tag spelled `domain:…` will have
 it treated as the mirror's.
 
+**Tags are case-insensitive.** Azure Boards keeps an organisation's first-seen casing of a tag, so a tag the board
+holds in any casing satisfies the projection's tag, the mirror never issues a Tags op whose only difference is case,
+and a write it makes for another reason keeps the board's casing for every tag it keeps and the repository's only for
+a tag that is new; a case-only tag change on the board is `ADO_OWNED_CHANGE` (the board's), never drift
+(`ado_sync_model.tag_key`; `test_boards_live_fixes.py`).
+
 **Area mode is not implemented.** A domain fitted to an Area Path (`fit.domain.mode: area`, which needs domain
 names the fit can match to area nodes) still rides as its `domain:<slug>` tag, and the item's note says
 `matches the Area Path <path>, but setting System.AreaPath from the fit is not implemented`. Setting

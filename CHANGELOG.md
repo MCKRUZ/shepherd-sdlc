@@ -367,6 +367,23 @@ spec card opens. Spec `0040-ado-boards-sync-and-catch-up.md` (MEDIUM).
   mirror except Fold B4's one pin and the capture tooling in (B), and the version: the four version files stay at
   2.1.0, which has not shipped.
 
+### Live-test fixes
+
+What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) found, each pinned by
+`scripts/tests/test_boards_live_fixes.py`. Only `scripts/ado_*.py`, tests, docs and this file change.
+
+- **Tags are compared the way Azure Boards compares them — without case.** An organisation keeps the first-seen
+  casing of a tag, so a plan that wanted `risk:HIGH` against an organisation that already owned `risk:high` got the item
+  back holding `risk:high`, and `plan` and `sync` offered the same `System.Tags + risk:HIGH - risk:high` row on every
+  run. A tag the board holds in any casing now satisfies the projection's tag (`ado_sync_model.tag_key`, the one
+  comparison), the mirror never issues a Tags op whose only difference is case, a write it must make for another
+  reason keeps the board's own casing for every tag it keeps and the repository's only for a genuinely new one
+  (`merge_tags`), a plugin prefix the board holds in any casing (`Risk:High`) is the repository's family rather than
+  a person's tag, the by-tag ref match (`_tag_map`, `_other_refs`) is case-insensitive, and a case-only tag change on
+  the board is `ADO_OWNED_CHANGE` (owner `C`), never `SDLC_OWNED_DRIFT`. A plan row for a real tag change no longer
+  names a tag only to re-spell it; no verb, flag, exit code or ledger line changed, and the plan-only golden is
+  byte-identical.
+
 ## 2.0.0 — 2026-10-12
 
 ### Shepherd — the brand update

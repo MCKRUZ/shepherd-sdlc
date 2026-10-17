@@ -157,8 +157,45 @@ def _tags(value) -> set[str]:
     return {str(t).strip() for t in value if str(t).strip()}
 
 
+# Tag case (live test, Azure Boards 2026-10-15..17). Azure Boards tags are case-insensitive and an organisation keeps
+# the FIRST-SEEN casing of a tag: the plan for spec 0004 wanted `risk:HIGH`, the organisation already owned `risk:high`,
+# so the item came back holding `risk:high` and every `plan` offered the same replace op. The rule, one place:
+#   * a tag the board holds in ANY casing satisfies the projection's tag (`tag_key` is the one comparison key);
+#   * the plugin never issues a Tags op whose only difference is case;
+#   * when it must write System.Tags for another reason (a real add or remove), the value keeps the board's own
+#     casing for every tag it keeps (`board_casing`) and the projection's casing only for tags that are genuinely new;
+#   * a plugin prefix is recognised on what the board holds in any casing (`is_plugin_tag`: a board-held `Risk:HIGH`
+#     is the repository's `risk:` family, not a person's tag);
+#   * drift treats a case-only tag change as the board's (owner C), never SDLC_OWNED_DRIFT.
+def tag_key(tag) -> str:
+    """The key two tags are the same tag by: Azure Boards compares tags case-insensitively."""
+    return str(tag).strip().casefold()
+
+
+def tag_keys(tags) -> frozenset[str]:
+    """The `tag_key` of every tag in a `;`-separated string or any iterable of tags."""
+    return frozenset(tag_key(t) for t in _tags(tags))
+
+
+def is_plugin_tag(tag) -> bool:
+    """True for a tag in the repository's families (`bc.PLUGIN_TAG_PREFIXES`), whatever casing the board holds it in."""
+    return tag_key(tag).startswith(bc.PLUGIN_TAG_PREFIXES)
+
+
+def board_casing(want, held) -> list[str]:
+    """`want`'s tags, sorted and de-duplicated by `tag_key`, each in the casing `held` (what the board holds) already
+    has for it, else as given: the casing a write must send so the board keeps its own."""
+    first_seen: dict[str, str] = {}
+    for tag in sorted(_tags(held)):
+        first_seen.setdefault(tag_key(tag), tag)
+    out: dict[str, str] = {}
+    for tag in sorted(_tags(want)):
+        out.setdefault(tag_key(tag), first_seen.get(tag_key(tag), tag))
+    return sorted(out.values())
+
+
 def _plugin_tags(tags) -> set[str]:
-    return {t for t in _tags(tags) if t.startswith(bc.PLUGIN_TAG_PREFIXES)}
+    return {t for t in _tags(tags) if is_plugin_tag(t)}
 
 
 def constant_fields(projection: dict | None) -> frozenset[str]:
@@ -220,12 +257,12 @@ def diff(projection: dict, remote: dict | None, ownership: dict = bc.OWNERSHIP) 
     a source's neutral data, such as the requirements tree's `description_rows`) is never an op, so neither patch
     builder can send it. No item yet: every field is an `add` (`NEVER_PUSHED`). An
     existing item: only an `S` field (by `ownership`; a pushed field the map does not name is the repo's) that
-    differs after normalisation (trimmed text, case-folded e-mail, tag sets, the Description's marker block) is an
-    op (`SDLC_OWNED_DRIFT`); an `A`/`C` field is the board's after create, so it never is. A field the remote
-    document does not carry is not compared (the B2-P1 patch builder reads the whole item). A constant (a field the
-    projection names in `constant_fields`, from a `fields.<kind>.<key>: {field, value}` rule) is pushed at create and,
-    on an existing item, only while the board's field is empty (`NEVER_PUSHED`): whatever the board holds there
-    afterwards is the board's, whatever `ownership` says of the field."""
+    differs after normalisation (trimmed text, case-folded e-mail, tag sets by `tag_key`, the Description's marker
+    block) is an op (`SDLC_OWNED_DRIFT`); an `A`/`C` field is the board's after create, so it never is. A field the
+    remote document does not carry is not compared (the B2-P1 patch builder reads the whole item). A constant (a
+    field the projection names in `constant_fields`, from a `fields.<kind>.<key>: {field, value}` rule) is pushed at
+    create and, on an existing item, only while the board's field is empty (`NEVER_PUSHED`): whatever the board holds
+    there afterwards is the board's, whatever `ownership` says of the field."""
     want = {ref: value for ref, value in (projection.get("fields") or {}).items()
             if isinstance(ref, str) and REFERENCE_NAME_RE.fullmatch(ref)}
     tags = sorted(_plugin_tags(projection.get("tags")))
@@ -255,9 +292,11 @@ def diff(projection: dict, remote: dict | None, ownership: dict = bc.OWNERSHIP) 
             ops.append({"op": "add" if old is None else "replace", "path": f"/fields/{ref}", "old": old, "new": new,
                         "class": "SDLC_OWNED_DRIFT"})
     have = sorted(_plugin_tags(remote.get("tags")))
-    if ownership.get("System.Tags", "S") == "S" and "tags" in remote and have != tags:
+    # compared by `tag_key`: a tag the board holds in another casing is held (see the tag-case rule above)
+    if ownership.get("System.Tags", "S") == "S" and "tags" in remote and tag_keys(have) != tag_keys(tags):
         ops.append({"op": "replace" if have else "add", "path": "/fields/System.Tags",
-                    "old": "; ".join(have) if have else None, "new": "; ".join(tags), "class": "SDLC_OWNED_DRIFT"})
+                    "old": "; ".join(have) if have else None, "new": "; ".join(board_casing(tags, have)),
+                    "class": "SDLC_OWNED_DRIFT"})
     return sorted(ops, key=lambda o: o["path"])
 
 
@@ -274,7 +313,8 @@ def _field_class(kind: str | None, own: dict, ref: str, change: dict, projection
     if ref == "System.TeamProject":
         return "MOVED", "C"
     if ref == "System.Tags":
-        owner = "S" if _plugin_tags(old) != _plugin_tags(new) else "C"  # human tags are the board's
+        # human tags are the board's, and so is a plugin tag that only changed case (the tag-case rule above)
+        owner = "S" if tag_keys(_plugin_tags(old)) != tag_keys(_plugin_tags(new)) else "C"
     elif ref in constant_fields(projection):
         owner = "C"  # a constant is written once; what the board does with it afterwards is the board's
     elif ref == "System.Description":
