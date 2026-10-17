@@ -1,0 +1,73 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "comments",
+  "--route-parameters",
+  "project=Claims",
+  "workItemId=1",
+  "--http-method",
+  "POST",
+  "--in-file",
+  "<request body file>",
+  "--media-type",
+  "application/json",
+  "--query-parameters",
+  "format=markdown",
+  "--api-version",
+  "7.1-preview"
+ ],
+ "_body": {
+  "text": "probe from sdlc · sprd 000000000000"
+ },
+ "value": {
+  "continuation_token": null,
+  "createdBy": {
+   "_links": {
+    "avatar": {
+     "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+    }
+   },
+   "descriptor": "aad.anonymised-1",
+   "displayName": "Participant 1",
+   "id": "00000000-0000-0000-0000-000000000001",
+   "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+   "uniqueName": "person1@example.com",
+   "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+  },
+  "createdDate": "2026-10-15T13:04:53.993Z",
+  "format": "markdown",
+  "id": 1,
+  "modifiedBy": {
+   "_links": {
+    "avatar": {
+     "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+    }
+   },
+   "descriptor": "aad.anonymised-1",
+   "displayName": "Participant 1",
+   "id": "00000000-0000-0000-0000-000000000001",
+   "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+   "uniqueName": "person1@example.com",
+   "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000001"
+  },
+  "modifiedDate": "2026-10-15T13:04:53.993Z",
+  "renderedText": "[redacted: free text]",
+  "text": "[redacted: free text]",
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/_apis/wit/workItems/1/comments/1",
+  "version": 1,
+  "workItemId": 1
+ }
+}

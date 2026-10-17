@@ -1,0 +1,101 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "classificationNodes",
+  "--route-parameters",
+  "project=Claims",
+  "--query-parameters",
+  "$depth=3",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 2,
+  "value": [
+   {
+    "id": 1,
+    "identifier": "00000000-0000-0000-0000-000000000101",
+    "name": "Claims",
+    "structureType": "area",
+    "hasChildren": true,
+    "children": [
+     {
+      "id": 2,
+      "identifier": "00000000-0000-0000-0000-000000000102",
+      "name": "SDLC",
+      "structureType": "area",
+      "hasChildren": true,
+      "children": [
+       {
+        "id": 3,
+        "identifier": "00000000-0000-0000-0000-000000000103",
+        "name": "Intake",
+        "structureType": "area",
+        "hasChildren": false,
+        "path": "\\Claims\\Area\\SDLC\\Intake",
+        "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Areas/SDLC/Intake"
+       },
+       {
+        "id": 4,
+        "identifier": "00000000-0000-0000-0000-000000000104",
+        "name": "Payments",
+        "structureType": "area",
+        "hasChildren": false,
+        "path": "\\Claims\\Area\\SDLC\\Payments",
+        "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Areas/SDLC/Payments"
+       },
+       {
+        "id": 5,
+        "identifier": "00000000-0000-0000-0000-000000000105",
+        "name": "Fraud",
+        "structureType": "area",
+        "hasChildren": false,
+        "path": "\\Claims\\Area\\SDLC\\Fraud",
+        "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Areas/SDLC/Fraud"
+       }
+      ],
+      "path": "\\Claims\\Area\\SDLC",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Areas/SDLC"
+     }
+    ],
+    "path": "\\Claims\\Area",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Areas"
+   },
+   {
+    "id": 10,
+    "identifier": "00000000-0000-0000-0000-000000000201",
+    "name": "Claims",
+    "structureType": "iteration",
+    "hasChildren": true,
+    "children": [
+     {
+      "id": 11,
+      "identifier": "00000000-0000-0000-0000-000000000202",
+      "name": "Sprint 7",
+      "structureType": "iteration",
+      "hasChildren": false,
+      "attributes": {
+       "startDate": "2026-10-05T00:00:00Z",
+       "finishDate": "2026-10-16T00:00:00Z"
+      },
+      "path": "\\Claims\\Iteration\\Sprint 7",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Iterations/Sprint%207"
+     }
+    ],
+    "path": "\\Claims\\Iteration",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/classificationNodes/Iterations"
+   }
+  ],
+  "continuation_token": null
+ }
+}

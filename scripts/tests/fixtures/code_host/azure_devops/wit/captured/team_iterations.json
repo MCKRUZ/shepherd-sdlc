@@ -1,0 +1,151 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "work",
+  "--resource",
+  "iterations",
+  "--route-parameters",
+  "project=Claims",
+  "team=Claims Team",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 11,
+  "value": [
+   {
+    "attributes": {
+     "finishDate": "2026-07-28T00:00:00Z",
+     "startDate": "2026-07-15T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000001",
+    "name": "Sprint 1",
+    "path": "Claims\\Sprint 1",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000001"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-08-11T00:00:00Z",
+     "startDate": "2026-07-29T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000004",
+    "name": "Sprint 2",
+    "path": "Claims\\Sprint 2",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000004"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-08-25T00:00:00Z",
+     "startDate": "2026-08-12T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000005",
+    "name": "Sprint 3",
+    "path": "Claims\\Sprint 3",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000005"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-09-08T00:00:00Z",
+     "startDate": "2026-08-26T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000006",
+    "name": "Sprint 4",
+    "path": "Claims\\Sprint 4",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000006"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-09-22T00:00:00Z",
+     "startDate": "2026-09-09T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000007",
+    "name": "Sprint 5",
+    "path": "Claims\\Sprint 5",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000007"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-10-06T00:00:00Z",
+     "startDate": "2026-09-23T00:00:00Z",
+     "timeFrame": "past"
+    },
+    "id": "00000000-0000-0000-0000-000000000008",
+    "name": "Sprint 6",
+    "path": "Claims\\Sprint 6",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000008"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-10-20T00:00:00Z",
+     "startDate": "2026-10-07T00:00:00Z",
+     "timeFrame": "current"
+    },
+    "id": "00000000-0000-0000-0000-000000000009",
+    "name": "Sprint 7",
+    "path": "Claims\\Sprint 7",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000009"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-11-03T00:00:00Z",
+     "startDate": "2026-10-21T00:00:00Z",
+     "timeFrame": "future"
+    },
+    "id": "00000000-0000-0000-0000-000000000010",
+    "name": "Sprint 8",
+    "path": "Claims\\Sprint 8",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000010"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-11-17T00:00:00Z",
+     "startDate": "2026-11-04T00:00:00Z",
+     "timeFrame": "future"
+    },
+    "id": "00000000-0000-0000-0000-000000000011",
+    "name": "Sprint 9",
+    "path": "Claims\\Sprint 9",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000011"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-12-01T00:00:00Z",
+     "startDate": "2026-11-18T00:00:00Z",
+     "timeFrame": "future"
+    },
+    "id": "00000000-0000-0000-0000-000000000012",
+    "name": "Sprint 10",
+    "path": "Claims\\Sprint 10",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000012"
+   },
+   {
+    "attributes": {
+     "finishDate": "2026-12-15T00:00:00Z",
+     "startDate": "2026-12-02T00:00:00Z",
+     "timeFrame": "future"
+    },
+    "id": "00000000-0000-0000-0000-000000000013",
+    "name": "Sprint 11",
+    "path": "Claims\\Sprint 11",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000002/00000000-0000-0000-0000-000000000003/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000013"
+   }
+  ]
+ }
+}

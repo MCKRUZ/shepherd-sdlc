@@ -1,0 +1,1624 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypes",
+  "--route-parameters",
+  "project=Claims",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 6,
+  "value": [
+   {
+    "name": "Epic",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Epic",
+    "description": "A large body of work, delivered through features.",
+    "color": "FF7B00",
+    "icon": {
+     "id": "icon_crown",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_crown?color=FF7B00&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "New",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "Business",
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.ValueArea",
+      "name": "Value Area",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.ValueArea"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "New",
+       "actions": null
+      }
+     ],
+     "New": [
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Resolved": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Removed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "New",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Epic"
+   },
+   {
+    "name": "Feature",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Feature",
+    "description": "A shippable capability, delivered through stories.",
+    "color": "773B93",
+    "icon": {
+     "id": "icon_trophy",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_trophy?color=773B93&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "New",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "Business",
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.ValueArea",
+      "name": "Value Area",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.ValueArea"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "New",
+       "actions": null
+      }
+     ],
+     "New": [
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Resolved": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Removed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "New",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Feature"
+   },
+   {
+    "name": "User Story",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.UserStory",
+    "description": "A unit of value a team delivers in a sprint.",
+    "color": "009CCC",
+    "icon": {
+     "id": "icon_book",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_book?color=009CCC&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "New",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.AcceptanceCriteria",
+      "name": "Acceptance Criteria",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.AcceptanceCriteria"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "Business",
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.ValueArea",
+      "name": "Value Area",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.ValueArea"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.StoryPoints",
+      "name": "Story Points",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.StoryPoints"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Custom.RiskTier",
+      "name": "Risk Tier",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Custom.RiskTier"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "New",
+       "actions": null
+      }
+     ],
+     "New": [
+      {
+       "to": "Ready",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Ready": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Ready",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Resolved": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Ready",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Ready",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Removed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Ready",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "New",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Ready",
+      "color": "5688e0",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/User%20Story"
+   },
+   {
+    "name": "Task",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Task",
+    "description": "A piece of work that delivers a story.",
+    "color": "F2CB1D",
+    "icon": {
+     "id": "icon_clipboard",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_clipboard?color=F2CB1D&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "New",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Activity",
+      "name": "Activity",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Activity"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.OriginalEstimate",
+      "name": "Original Estimate",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.OriginalEstimate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.RemainingWork",
+      "name": "Remaining Work",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.RemainingWork"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.CompletedWork",
+      "name": "Completed Work",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.CompletedWork"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "New",
+       "actions": null
+      }
+     ],
+     "New": [
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Removed",
+       "actions": null
+      }
+     ],
+     "Removed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "New",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+   },
+   {
+    "name": "Bug",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Bug",
+    "description": "A defect found in the product.",
+    "color": "CC293D",
+    "icon": {
+     "id": "icon_insect",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_insect?color=CC293D&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "New",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.TCM.ReproSteps",
+      "name": "Repro Steps",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.TCM.ReproSteps"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "3 - Medium",
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Severity",
+      "name": "Severity",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Severity"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.ResolvedReason",
+      "name": "Resolved Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.ResolvedReason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.StoryPoints",
+      "name": "Story Points",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.StoryPoints"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "New",
+       "actions": null
+      }
+     ],
+     "New": [
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ],
+     "Resolved": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "New",
+       "actions": null
+      },
+      {
+       "to": "Active",
+       "actions": null
+      },
+      {
+       "to": "Resolved",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "New",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Bug"
+   },
+   {
+    "name": "Issue",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Issue",
+    "description": "A blocker, risk or decision the team tracks.",
+    "color": "B4009E",
+    "icon": {
+     "id": "icon_traffic_cone",
+     "url": "https://dev.azure.com/contoso/_apis/wit/workItemIcons/icon_traffic_cone?color=B4009E&v=2"
+    },
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Id"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Description"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": "Active",
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Reason",
+      "name": "Reason",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Reason"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AssignedTo",
+      "name": "Assigned To",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AssignedTo"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.AreaPath",
+      "name": "Area Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.IterationPath",
+      "name": "Iteration Path",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.IterationPath"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Tags",
+      "name": "Tags",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Tags"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.WorkItemType",
+      "name": "Work Item Type",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.WorkItemType"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Rev",
+      "name": "Rev",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.Rev"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.History",
+      "name": "History",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.History"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.CreatedDate",
+      "name": "Created Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.CreatedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.ChangedDate",
+      "name": "Changed Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.ChangedDate"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": 2,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.Priority",
+      "name": "Priority",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.Priority"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Common.StackRank",
+      "name": "Stack Rank",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Common.StackRank"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "Microsoft.VSTS.Scheduling.DueDate",
+      "name": "Due Date",
+      "url": "https://dev.azure.com/contoso/_apis/wit/fields/Microsoft.VSTS.Scheduling.DueDate"
+     }
+    ],
+    "transitions": {
+     "": [
+      {
+       "to": "Active",
+       "actions": null
+      }
+     ],
+     "Active": [
+      {
+       "to": "Closed",
+       "actions": null
+      }
+     ],
+     "Closed": [
+      {
+       "to": "Active",
+       "actions": null
+      }
+     ]
+    },
+    "states": [
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "Proposed"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Issue"
+   }
+  ],
+  "continuation_token": null
+ }
+}

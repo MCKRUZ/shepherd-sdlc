@@ -1,0 +1,37 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "states",
+  "--route-parameters",
+  "project=Claims",
+  "type=Issue",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 2,
+  "value": [
+   {
+    "category": "Proposed",
+    "color": "007acc",
+    "name": "Active"
+   },
+   {
+    "category": "Completed",
+    "color": "339933",
+    "name": "Closed"
+   }
+  ],
+  "continuation_token": null
+ }
+}

@@ -1,0 +1,25 @@
+{
+  "as_of": null,
+  "counts": null,
+  "discussion": null,
+  "drift": {
+    "reason": null,
+    "unavailable": true
+  },
+  "drift_error": null,
+  "hook_line": null,
+  "next": null,
+  "ok": true,
+  "plan": {
+    "reason": null,
+    "unavailable": true
+  },
+  "pull": {
+    "reason": null,
+    "unavailable": true
+  },
+  "reason": null,
+  "scope": null,
+  "unavailable": true,
+  "verb": "sync"
+}

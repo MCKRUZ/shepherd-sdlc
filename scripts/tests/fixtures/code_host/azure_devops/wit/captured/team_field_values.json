@@ -1,0 +1,56 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "work",
+  "--resource",
+  "teamfieldvalues",
+  "--route-parameters",
+  "project=Claims",
+  "team=Claims Team",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "_links": {
+   "areaPathClassificationNodes": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/classificationNodes/Areas"
+   },
+   "project": {
+    "href": "https://dev.azure.com/contoso/_apis/projects/00000000-0000-0000-0000-000000000001"
+   },
+   "self": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002/_apis/work/teamsettings/teamfieldvalues"
+   },
+   "team": {
+    "href": "https://dev.azure.com/contoso/_apis/projects/00000000-0000-0000-0000-000000000001/teams/00000000-0000-0000-0000-000000000002"
+   },
+   "teamSettings": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002/_apis/work/teamsettings"
+   }
+  },
+  "continuation_token": null,
+  "defaultValue": "Claims\\Claims Team",
+  "field": {
+   "referenceName": "System.AreaPath",
+   "url": "https://dev.azure.com/contoso/_apis/wit/fields/System.AreaPath"
+  },
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/00000000-0000-0000-0000-000000000002/_apis/work/teamsettings/teamfieldvalues",
+  "values": [
+   {
+    "includeChildren": false,
+    "value": "Claims\\Claims Team"
+   }
+  ]
+ }
+}

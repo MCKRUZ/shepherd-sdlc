@@ -18,6 +18,7 @@ import { getSprintList, getSprintLog, getSprintStatus, run, sourceArgs, type Rea
 import { resolveActor } from './actor'
 import { parseDocument, readDecisions, readFindings, readRoster, readScorecard } from './commandCenterReaders'
 import { samePerson } from '../../shared/identity'
+import { ADO_SYNC_COUNT_KEYS, ADO_SYNC_VIEW_KEYS, type AdoDebtRow, type AdoLastPlan, type AdoSyncCounts, type AdoSyncView } from '../../shared/adoTypes'
 import { CAPABILITIES, NO_ACTOR, newerPlugin } from '../../shared/reasons'
 import type {
   ActorInfo, Board, CommandCenter, DecisionsView, NeedsYouItem, SinceWindow, SourcedBlock, SprintLogView, SprintView,
@@ -31,6 +32,7 @@ export const SOURCES = {
   findings: 'record_findings.py report --json', scorecard: 'scorecard.py report --json',
   roster: 'project_settings.py --json', log: (since: string) => `sprint.py log --since ${since} --json`,
   capabilities: 'generate_status.py --json',
+  ado: 'ado_sync.py status --json',
 } as const
 
 type BoardBlockData = Board & { warnings: string[] }
@@ -114,6 +116,52 @@ async function readOne<T>(scriptsDir: string, script: string, args: string[], re
   const ran = await run(scriptsDir, script, args)
   const data = ran.raw ? read(ran.raw) : null
   return data !== null ? { ok: true, data } : { ok: false, error: ran.stderr.trim() || ran.stdout.trim() || `${script} gave no readable answer` }
+}
+
+const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v)
+const isText = (v: unknown): v is string => typeof v === 'string'
+const isCount = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && v >= 0
+
+/** The `ado_sync.py status --json` document as `AdoSyncView`, or null when it is not that document: every key
+ * the plugin documents (`adoTypes.ADO_SYNC_VIEW_KEYS`, and the counts' own) must be there with its type. A count
+ * the plugin printed as `null` stays `null` — never read as 0 — and a document that is not the status document is
+ * "no data", never a zeroed shape. Keys the plugin adds later are ignored, not carried. */
+export function readAdoStatus(raw: unknown): AdoSyncView | null {
+  if (!isObject(raw) || !ADO_SYNC_VIEW_KEYS.every((k) => k in raw)) return null
+  const rawCounts = raw.counts
+  if (!isObject(rawCounts) || !ADO_SYNC_COUNT_KEYS.every((k) => k in rawCounts)) return null
+  const counts = {} as AdoSyncCounts
+  for (const key of ADO_SYNC_COUNT_KEYS) {
+    const v = rawCounts[key]
+    if (v !== null && !isCount(v)) return null
+    counts[key] = v
+  }
+  let byClass: Record<string, number> | null = null
+  if (raw.by_class !== null) {
+    if (!isObject(raw.by_class) || !Object.values(raw.by_class).every(isCount)) return null
+    byClass = { ...(raw.by_class as Record<string, number>) }
+  }
+  let debt: AdoDebtRow[] | null = null
+  if (raw.debt !== null) {
+    if (!Array.isArray(raw.debt)) return null
+    debt = []
+    for (const row of raw.debt) {
+      if (!isObject(row) || !isText(row.ref) || !(row.field === null || isText(row.field)) || !isText(row.class) || !isText(row.seen) || !isText(row.due)) return null
+      debt.push({ ref: row.ref, field: row.field, class: row.class, seen: row.seen, due: row.due })
+    }
+  }
+  let lastPlan: AdoLastPlan | null = null
+  if (raw.last_plan !== null) {
+    const p = raw.last_plan
+    if (!isObject(p) || !isText(p.plan) || !(p.ts === null || isText(p.ts)) || !isCount(p.rows)) return null
+    lastPlan = { plan: p.plan, ts: p.ts, rows: p.rows }
+  }
+  if (!(raw.as_of === null || isText(raw.as_of)) || !isText(raw.hook_line) || !isText(raw.ledger)) return null
+  if (!Array.isArray(raw.notes) || !raw.notes.every(isText) || typeof raw.schema !== 'number' || !Number.isFinite(raw.schema)) return null
+  return {
+    as_of: raw.as_of, by_class: byClass, counts, debt, hook_line: raw.hook_line, last_plan: lastPlan, ledger: raw.ledger,
+    notes: [...raw.notes], schema: raw.schema,
+  }
 }
 
 /** `generate_status.py --json` capabilities — the plugin's own declaration (§2.6). A project
@@ -262,7 +310,7 @@ async function readCommandCenter(
   const capabilities = await getCapabilities(projectPath, scriptsDir)
   const gated = <T>(cap: string, source: string, fetch: () => Promise<Read<T>>) =>
     capabilities.includes(cap) ? fetch() : Promise.resolve<Read<T>>({ ok: false, error: newerPlugin(cap) })
-  const [actor, sprint, sprints, host, decisions, findings, scorecard, roster, log] = await Promise.all([
+  const [actor, sprint, sprints, host, decisions, findings, scorecard, roster, log, ado] = await Promise.all([
     opts.actor !== undefined ? opts.actor : resolveActor(projectPath, scriptsDir),
     local(projectPath, 'sprint', SOURCES.sprint, async () => {
       const r = await getSprintStatus(projectPath, scriptsDir)
@@ -275,13 +323,15 @@ async function readCommandCenter(
     local(projectPath, 'scorecard', SOURCES.scorecard, () => readOne(scriptsDir, 'scorecard.py', ['report', ...sourceArgs(projectPath), '--json'], readScorecard)),
     local(projectPath, 'roster', SOURCES.roster, () => readOne(scriptsDir, 'project_settings.py', ['--repo', projectPath, '--json'], readRoster)),
     local(projectPath, `log:${sinceDate}`, SOURCES.log(sinceDate), () => gated(CAPABILITIES.sprintLog, SOURCES.log(sinceDate), () => getSprintLog(projectPath, scriptsDir, sinceDate))),
+    // The Azure Boards mirror's read side: the plugin's own `status --json`, never `az`, never `.sdlc/ado/**` read here.
+    local(projectPath, 'ado', SOURCES.ado, () => gated(CAPABILITIES.adoStatus, SOURCES.ado, () => readOne(scriptsDir, 'ado_sync.py', ['status', ...sourceArgs(projectPath), '--json'], readAdoStatus))),
   ])
   const board = host.block
   const needs = needsYou({ actor, sprint, board, decisions, capabilities, unconfirmedTierSpecs: host.unconfirmedTierSpecs })
   // The stamp is the stalest block's, so a cache hit never reads "as of now" (freshness is a fact).
-  const fetchedAt = oldestFetchedAt([sprint, sprints, board, decisions, findings, scorecard, roster, log]) ?? now.toISOString()
+  const fetchedAt = oldestFetchedAt([sprint, sprints, board, decisions, findings, scorecard, roster, log, ado]) ?? now.toISOString()
   return {
-    projectPath, fetchedAt, actor, capabilities, sprint, sprints, board, decisions, findings, scorecard, roster, log,
+    projectPath, fetchedAt, actor, capabilities, sprint, sprints, board, decisions, findings, scorecard, roster, log, ado,
     needsYou: needs.items, needsYouReason: needs.reason, sinceYesterday: sinceYesterday({ log, board, since: sinceDate }), since,
   }
 }

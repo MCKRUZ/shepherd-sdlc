@@ -1,0 +1,57 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "boards",
+  "query",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--project",
+  "Claims",
+  "--wiql",
+  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND ([System.AreaPath] UNDER 'Claims\\SDLC' OR [System.IterationPath] UNDER 'Claims\\Sprint 7') AND NOT [System.Tags] CONTAINS 'sdlc-repo:claims-api'",
+  "--only-show-errors",
+  "-o",
+  "json"
+ ],
+ "value": [
+  {
+   "id": 4530,
+   "rev": 2,
+   "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4530",
+   "fields": {
+    "System.Id": 4530,
+    "System.WorkItemType": "User Story",
+    "System.Title": "Export open claims to CSV",
+    "System.State": "New",
+    "System.Tags": "customer-ask",
+    "System.AssignedTo": {
+     "displayName": "Person 3",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000004",
+     "uniqueName": "person3@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+     "descriptor": "aad.anonymised-3"
+    }
+   }
+  },
+  {
+   "id": 4531,
+   "rev": 1,
+   "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4531",
+   "fields": {
+    "System.Id": 4531,
+    "System.WorkItemType": "Bug",
+    "System.Title": "Upload fails on a 10 MB PDF",
+    "System.State": "Active"
+   }
+  }
+ ]
+}

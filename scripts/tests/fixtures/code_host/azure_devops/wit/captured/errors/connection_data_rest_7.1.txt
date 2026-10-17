@@ -1,0 +1,2 @@
+# captured 2026-10-14 (org anonymised)
+ERROR: Bad Request({"$id":"1","innerException":null,"message":"The requested version \"7.1\" of the resource is under preview. The -preview flag must be supplied in the api-version for such requests. For example: \"7.1-preview\"","typeName":"Microsoft.VisualStudio.Services.WebApi.VssInvalidPreviewVersionException, Microsoft.VisualStudio.Services.WebApi","typeKey":"VssInvalidPreviewVersionException","errorCode":0,"eventId":3000})

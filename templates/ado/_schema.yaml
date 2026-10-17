@@ -1,0 +1,233 @@
+# Azure Boards mirror config schema — validates .sdlc/ado.yaml
+# JSON Schema (draft 2020-12) written in YAML, in the style of profiles/_schema.yaml and
+# templates/team/_schema.yaml. Read by scripts/ado_sync_config.py. The leading underscore keeps
+# this file out of test_shapes_cover_templates.py (which globs *.shape.yaml).
+#
+# This is the schema of record for the SHAPE of the file. ado_sync_config.validate_config turns
+# each violation into one row:
+#   additionalProperties, enum, const, minimum, maximum, pattern  -> level "refused"
+#   type, required                                                -> level "invalid"
+# so a value outside a closed set or a range is refused, while a wrong type or a missing key is
+# invalid. Rules that cross keys (a reviewer is named before free text is switched on, a field is
+# not an activity metric) and checks against the discovered process live in ado_sync_config.py.
+# On a const or pattern subschema, `description` completes the sentence "it must be ..." in the row.
+#
+# YAML 1.1 reads a bare on/off as a boolean, so every on/off switch accepts true/false and the
+# words "on"/"off".
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: ".sdlc/ado.yaml"
+type: object
+additionalProperties: false
+required: [version]
+
+$defs:
+  # The kinds the mirror can project: boards_contract.KINDS plus `nfr`, which the design's closed
+  # set names (test_boards_sync_config.py keeps the two in step).
+  kind_name:
+    enum: [outcome, domain, requirement, epic, feature, spec, spike, sprint, decision,
+           finding, lifecycle, nfr, rule, question, measurement]
+  on_off:
+    enum: [true, false, "on", "off"]
+  name_or_null:
+    type: [string, "null"]
+
+properties:
+  version:
+    type: integer
+    const: 1
+    description: "version 1, the only config format this plugin reads"
+
+  team:
+    $ref: "#/$defs/name_or_null"
+    description: "Optional. The Azure DevOps team; enables backlogconfiguration and team iterations."
+
+  area_path:
+    $ref: "#/$defs/name_or_null"
+    description: "Optional. Set at create time only; must exist in the discovered area tree."
+
+  posture:
+    type: string
+    enum: [plan-only, assisted]
+    description: "plan-only (the default) never writes to the board; assisted offers apply."
+
+  description_mode:
+    type: string
+    enum: [link, full]
+    description: "link writes a link back to the repository; full copies prose and needs pii_reviewed_by."
+
+  pii_reviewed_by:
+    $ref: "#/$defs/name_or_null"
+    description: "The named person who reviewed the text for personal data."
+
+  limits:
+    type: object
+    additionalProperties: false
+    properties:
+      writes_per_run: {type: integer, minimum: 0}
+      first_seed: {type: integer, minimum: 0}
+
+  kinds:
+    type: array
+    items: {$ref: "#/$defs/kind_name"}
+    description: "The kinds to mirror (a closed set)."
+
+  types:
+    type: object
+    additionalProperties: false
+    description: "Optional pins: a work item type name per kind. Validated against the discovered process."
+    properties:
+      outcome: &type_pin {$ref: "#/$defs/name_or_null"}
+      domain: *type_pin
+      requirement: *type_pin
+      epic: *type_pin
+      feature: *type_pin
+      spec: *type_pin
+      spike: *type_pin
+      sprint: *type_pin
+      decision: *type_pin
+      finding: *type_pin
+      lifecycle: *type_pin
+      nfr: *type_pin
+      rule: *type_pin
+      question: *type_pin
+      measurement: *type_pin
+
+  states:
+    type: object
+    additionalProperties: false
+    description: "Optional per-kind state overrides, by status: a category name, or {category, prefer}."
+    properties:
+      outcome: &state_rules
+        type: object
+        additionalProperties:
+          type: [string, object]
+          properties:
+            category: {type: string}
+            prefer: {type: string}
+          required: [category]
+          additionalProperties: false
+      domain: *state_rules
+      requirement: *state_rules
+      epic: *state_rules
+      feature: *state_rules
+      spec: *state_rules
+      spike: *state_rules
+      sprint: *state_rules
+      decision: *state_rules
+      finding: *state_rules
+      lifecycle: *state_rules
+      nfr: *state_rules
+      rule: *state_rules
+      question: *state_rules
+      measurement: *state_rules
+
+  fields:
+    type: object
+    additionalProperties: false
+    description: >-
+      Optional extra field writes per kind: a field reference name, {field, values}, or a constant
+      {field, value} — a value no artifact carries (a required ValueArea, say), written verbatim at
+      create and on update only while the board's field is empty; a board-side change to it is the
+      board's, never drift. A constant is checked against the field's allowed values when discovered.
+    properties:
+      outcome: &field_rules
+        type: object
+        additionalProperties:
+          type: [string, object]
+          properties:
+            field: {type: string}
+            values:
+              type: object
+              additionalProperties: {type: string}
+            value: {type: [string, integer, number, boolean]}
+          required: [field]
+          additionalProperties: false
+      domain: *field_rules
+      requirement: *field_rules
+      epic: *field_rules
+      feature: *field_rules
+      spec: *field_rules
+      spike: *field_rules
+      sprint: *field_rules
+      decision: *field_rules
+      finding: *field_rules
+      lifecycle: *field_rules
+      nfr: *field_rules
+      rule: *field_rules
+      question: *field_rules
+      measurement: *field_rules
+
+  identity_field:
+    $ref: "#/$defs/name_or_null"
+    description: "Optional. A custom field the repository id is written to; used only if discovered, never created."
+
+  iterations:
+    type: object
+    description: "Sprint id (SNN) -> team iteration path, written by `iteration bind`."
+    propertyNames:
+      pattern: "^S\\d{2,}$"
+      description: "a sprint id: S followed by at least two digits, such as S07"
+    additionalProperties: {type: string}
+
+  tree:
+    type: object
+    additionalProperties: false
+    properties:
+      fit:
+        type: [string, object]
+        if: {type: string}
+        then:
+          const: auto
+          description: "`auto`, or a mapping of outcome, domain and requirement to item, area or tag"
+        properties:
+          outcome: {enum: [item, tag]}
+          domain: {enum: [item, area, tag]}
+          requirement: {enum: [item, tag]}
+        additionalProperties: false
+      outcome_edge: {type: string, enum: [related, parent]}
+      spec_traces: {type: boolean}
+      domain_outcomes:
+        type: object
+        additionalProperties:
+          type: array
+          items: {type: string}
+
+  comments:
+    type: object
+    additionalProperties: false
+    properties:
+      transport: {type: string, enum: [comments-api, history]}
+      format: {type: string, enum: [markdown, html]}
+      trailer: {type: string, enum: [none, hash, drafted]}
+      include_text: {type: boolean}
+      per_item_budget: {type: integer, minimum: 1, maximum: 1000}
+      max_chars: {type: integer, minimum: 1, maximum: 100000}
+      mention_lookup: {type: string, enum: [cache, identities]}
+      identity_scope_acknowledged_by: {$ref: "#/$defs/name_or_null"}
+      events:
+        type: object
+        additionalProperties: false
+        description: "The closed set of comment events, each on or off."
+        properties:
+          handoff: {$ref: "#/$defs/on_off"}
+          spec_deferred: {$ref: "#/$defs/on_off"}
+          decision_resolved: {$ref: "#/$defs/on_off"}
+          sprint_carried: {$ref: "#/$defs/on_off"}
+          gate_passed: {$ref: "#/$defs/on_off"}
+          verdict_recorded: {$ref: "#/$defs/on_off"}
+          finding_disposition: {$ref: "#/$defs/on_off"}
+          sprint_dropped: {$ref: "#/$defs/on_off"}
+          review_summary: {$ref: "#/$defs/on_off"}
+          pr_linked: {$ref: "#/$defs/on_off"}
+          spec_merged: {$ref: "#/$defs/on_off"}
+
+  discussion:
+    type: object
+    additionalProperties: false
+    properties:
+      enabled: {type: boolean}
+      retain_days: {type: integer, minimum: 0}
+      max_comments_per_item: {type: integer, minimum: 0}
+      max_items_per_pull: {type: integer, minimum: 0}
+      mention_window_days: {type: integer, minimum: 0}
+      directive_scan: {$ref: "#/$defs/on_off"}

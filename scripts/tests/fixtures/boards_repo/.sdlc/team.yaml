@@ -1,0 +1,20 @@
+# The mini repository's roster. Handles and names are fictional; the one address is on example.com.
+version: "1.0"
+
+teams:
+  - name: core
+    lead: "@dev-one"
+
+people:
+  - handle: "@dev-one"
+    name: "Person 1"
+    email: "dev.one@example.com"
+    team: core
+    roles: [owner, developer, checker, lead]
+    signs_off: ["1", "2", "build"]
+
+  - handle: "@dev-two"
+    name: "Person 2"
+    team: core
+    roles: [developer]
+    signs_off: ["build"]

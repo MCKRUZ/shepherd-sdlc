@@ -1,0 +1,38 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "work",
+  "--resource",
+  "iterations",
+  "--route-parameters",
+  "project=Claims",
+  "team=Claims Team",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 1,
+  "value": [
+   {
+    "id": "00000000-0000-0000-0000-000000000202",
+    "name": "Sprint 7",
+    "path": "Claims\\Sprint 7",
+    "attributes": {
+     "startDate": "2026-10-05T00:00:00Z",
+     "finishDate": "2026-10-16T00:00:00Z",
+     "timeFrame": "current"
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/00000000-0000-0000-0000-000000000021/_apis/work/teamsettings/iterations/00000000-0000-0000-0000-000000000202"
+   }
+  ],
+  "continuation_token": null
+ }
+}

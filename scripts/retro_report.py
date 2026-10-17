@@ -28,8 +28,24 @@ Two more sections read the sprint ledger (sprint-log.jsonl, written by sprint.py
   6. BOUNCE CAUSES        — `verdict: returned` events grouped by lane (eng | data) and reason
                             category; rendered only when at least one return exists.
 
-Everything is keyed by category / artifact / stem / spec / lane — never by actor. There is deliberately
-no flag to rank by person, the `by` field of every sprint event is dropped on read, and the forbidden
+One more section reads the Azure Boards mirror's own ledger (`.sdlc/metrics/ado-sync-log.jsonl`, written by
+ado_sync.py) when it holds at least one event the mirror wrote:
+
+  7. AZURE BOARDS MIRROR  — three counts, each keyed by a work item, a reason or a drift class: board comments
+                            with a line that reads as an instruction (`directive_seen`, per work item, against how
+                            many comments were read — the tuning signal for the scan, design D47), the reasons
+                            comment drafts were refused (`comment_refused`), and the drift-disposition rollup
+                            (open rows, those past the two-business-day line, by class, and each disposition
+                            recorded against how many of its lines carry what the disposition claims). The drift
+                            numbers are `ado_sync_model.summarize`'s own, the ones `ado_sync.py status` prints.
+                            ADDITIVE and absent when there is no such ledger: a repository that never used the
+                            mirror prints exactly the text and the JSON it printed before (the frozen pins in
+                            test_retro_report.py hold the key set and the "no data" count), and with the ledger
+                            every pre-existing key keeps its value. A count nobody measured is `no data` / null —
+                            never 0 — and a comment's text, a person and their handle are never read.
+
+Everything is keyed by category / artifact / stem / spec / lane / work item / reason — never by actor. There is
+deliberately no flag to rank by person, the `by` field of every sprint event is dropped on read, and the forbidden
 activity metrics (velocity, story points, PR count, LOC) are never computed. Patterns, not people.
 
 Standalone or Workflow (CLAUDE.md design rule):
@@ -43,14 +59,18 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ado_sync_model as asm
 import artifact_model as am
 import audit_artifacts as aa
+import boards_contract as bc
 import findings_model as fm
 import sprint_model as sm
 import track_specs as ts
 
 FINDINGS_LEDGER_NAME = "findings-log.jsonl"
 SPRINT_LEDGER_NAME = "sprint-log.jsonl"
+BOARDS_LEDGER_NAME = Path(bc.LEDGER).name  # ado-sync-log.jsonl, the Azure Boards mirror's ledger
+OTHER_REASON = "other"  # a reason, class or disposition outside the mirror's own words: counted, never echoed
 NO_REASON = "(no reason recorded)"
 RECURRENCE_THRESHOLD = 2  # carried out of >= 2 sprints => RECURRING
 
@@ -360,6 +380,185 @@ def bounce_causes(sprint_events: list[dict], cutoff: datetime | None) -> list[di
     return out
 
 
+# --- Section 7: the Azure Boards mirror's ledger -----------------------------------------------
+#
+# Reads only what the mirror's ledger already holds (counts, ids, class names, hashes): never a comment's text, never a
+# person. Keyed by work item, reason and class; there is no actor key anywhere in what these return.
+
+NO_DIRECTIVE = {"comments_seen": None, "flagged_comments": None, "flagged_lines": None, "by_work_item": []}
+NO_DRIFT = {"as_of": None, "open": None, "drifted": None, "conflicts": None, "debt": None, "by_class": None,
+            "debt_rows": None, "dispositions": []}
+
+
+def _today():
+    """Today in UTC (a seam, so the aging of drift debt can be tested)."""
+    return datetime.now(timezone.utc).date()
+
+
+def _id(value):
+    """A work item or comment id: a real positive integer; never a bool, never a string that looks like a number."""
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
+
+
+def _line_numbers(value) -> set:
+    return ({n for n in value if isinstance(n, int) and not isinstance(n, bool) and n >= 0}
+            if isinstance(value, list) else set())
+
+
+def directive_counts(events: list[dict], cutoff: datetime | None) -> tuple[dict, bool]:
+    """Board comments with a line that reads as an instruction (`directive_seen`), per work item, against the comments
+    read (`comment_seen`: one per distinct work item + comment id). A comment seen again after an edit is one comment and
+    its repeated line is one line; every event is still counted in `events`. `comments_seen` is None when no comment was
+    ever read (a denominator nobody measured) and the flagged counts are None with it when nothing was flagged either.
+    Returns `(section, has_data)`."""
+    seen: set[tuple] = set()
+    per_item: dict[int, dict] = {}
+    for e in events:
+        if not in_window(e.get("ts", ""), cutoff):
+            continue
+        item, comment = _id(e.get("work_item")), _id(e.get("comment"))
+        if item is None or comment is None:
+            continue
+        name = e.get("event")
+        if name == "comment_seen":
+            seen.add((item, comment))
+        elif name == "directive_seen":
+            lines = _line_numbers(e.get("lines"))
+            if not lines:
+                continue
+            g = per_item.setdefault(item, {"work_item": item, "ref": None, "comments": set(), "lines": set(),
+                                           "events": 0})
+            if g["ref"] is None and isinstance(e.get("ref"), str) and bc.REF_RE.fullmatch(e["ref"]):
+                g["ref"] = e["ref"]       # only an sdlc:<kind>:<id> ref is shown; any other string stays unread
+            g["events"] += 1
+            g["comments"].add(comment)
+            g["lines"] |= {(comment, n) for n in lines}
+    if not seen and not per_item:
+        return dict(NO_DIRECTIVE, by_work_item=[]), False
+    rows = [{"work_item": g["work_item"], "ref": g["ref"], "comments": len(g["comments"]), "lines": len(g["lines"]),
+             "events": g["events"]} for g in per_item.values()]
+    rows.sort(key=lambda r: (-r["lines"], -r["comments"], r["work_item"]))
+    return {"comments_seen": len(seen) if seen else None,
+            "flagged_comments": sum(r["comments"] for r in rows),
+            "flagged_lines": sum(r["lines"] for r in rows),
+            "by_work_item": rows}, True
+
+
+def refusal_counts(events: list[dict], cutoff: datetime | None) -> tuple[list[dict], bool]:
+    """The reasons comment drafts were refused, `[{"reason", "times", "work_items"}]`, most frequent first. A reason
+    outside `boards_contract.COMMENT_REFUSALS` is counted under `other` and never echoed (a ledger line is not trusted to
+    carry only an enum). `has_data` is true once the ledger shows any comment activity at all (a comment posted or a
+    draft refused), so an empty list after that is an honest "none", not a missing measurement."""
+    attempted = any(e.get("event") in ("commented", "comment_refused") for e in events)
+    known = set(bc.COMMENT_REFUSALS)
+    groups: dict[str, dict] = {}
+    for e in events:
+        if e.get("event") != "comment_refused" or not in_window(e.get("ts", ""), cutoff):
+            continue
+        reason = e.get("reason") if isinstance(e.get("reason"), str) and e.get("reason") in known else OTHER_REASON
+        g = groups.setdefault(reason, {"reason": reason, "times": 0, "items": set()})
+        g["times"] += 1
+        if _id(e.get("work_item")) is not None:
+            g["items"].add(e["work_item"])
+    rows = [{"reason": g["reason"], "times": g["times"], "work_items": len(g["items"])} for g in groups.values()]
+    rows.sort(key=lambda r: (-r["times"], r["reason"]))
+    return rows, attempted
+
+
+def drift_rollup(events: list[dict], cutoff: datetime | None, today) -> tuple[dict, bool]:
+    """The drift-disposition rollup. Open rows, rows past the two-business-day line and the open rows by class are
+    `ado_sync_model.summarize`'s own numbers (a now-measurement: the window never applies, as it does not for the other
+    debt) and are None until a pull was ledgered (`observed`) -- never a fabricated 0. `dispositions` tallies each
+    `reconciled` line by its disposition word, with how many of those lines carry what the word claims
+    (`ado_sync_model.validate_disposition`: an ACKNOWLEDGED with no owner, a NOT_DRIFT with no reason or a TAKE_* with no
+    recorded child exit 0 is recorded, not settled). A class or a disposition outside the model's words is `other`."""
+    status = asm.summarize(events, today)
+    counts = status["counts"]
+    measured = status.get("as_of") is not None
+    by_class = None
+    if measured and isinstance(status.get("by_class"), dict):
+        by_class = {}
+        for cls, n in status["by_class"].items():
+            key = cls if cls in asm.DRIFT_CLASSES else OTHER_REASON
+            by_class[key] = by_class.get(key, 0) + n
+        by_class = dict(sorted(by_class.items()))
+    tally: dict[str, dict] = {}
+    for e in events:
+        if e.get("event") != "reconciled" or not in_window(e.get("ts", ""), cutoff):
+            continue
+        word = str(e.get("disposition") or "").strip().upper()
+        word = word if word in asm.DISPOSITIONS else OTHER_REASON
+        g = tally.setdefault(word, {"disposition": word, "recorded": 0, "settled": 0})
+        g["recorded"] += 1
+        g["settled"] += 1 if asm.validate_disposition(e)[0] else 0
+    return {"as_of": status["as_of"] if measured else None,
+            "open": counts["open"] if measured else None,
+            "drifted": counts["drifted"] if measured else None,
+            "conflicts": counts["conflicts"] if measured else None,
+            "debt": counts["debt"] if measured else None,
+            "by_class": by_class,
+            "debt_rows": [dict(r) for r in (status.get("debt") or [])] if measured else None,
+            "dispositions": sorted(tally.values(), key=lambda g: g["disposition"])}, measured
+
+
+def boards_section(events: list[dict], cutoff: datetime | None, today) -> dict:
+    """The `boards` section of the payload: the three counts, each with its own has_data flag. A block that cannot be
+    read is reported as no data (never raised, never a zero); the others still read."""
+    directive, has_directive = _safe(lambda: directive_counts(events, cutoff),
+                                     (dict(NO_DIRECTIVE, by_work_item=[]), False))
+    refused, has_refused = _safe(lambda: refusal_counts(events, cutoff), ([], False))
+    drift, has_drift = _safe(lambda: drift_rollup(events, cutoff, today), (dict(NO_DRIFT, dispositions=[]), False))
+    return {"ledger": bc.LEDGER,
+            "has_data": {"directive_seen": has_directive, "comment_refused": has_refused, "drift_debt": has_drift},
+            "directive_seen": directive, "comment_refused": refused, "drift_debt": drift}
+
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
+
+
+def format_boards(b: dict) -> list[str]:
+    """The text block for the `boards` section (no trailing blank line)."""
+    hd = b["has_data"]
+    L = [f"Azure Boards mirror ({BOARDS_LEDGER_NAME} — per work item, reason and class, never per person):",
+         "  Comment lines that read as instructions (the scan's tuning signal):"]
+    if not hd["directive_seen"]:
+        L.append("    no data (no board comment was read)")
+    else:
+        d = b["directive_seen"]
+        read = ("comments read: no data" if d["comments_seen"] is None
+                else f"{_plural(d['comments_seen'], 'comment')} read")
+        if d["flagged_comments"]:
+            flagged = (f"{d['flagged_comments']} had a line that reads as an instruction "
+                       f"({_plural(d['flagged_lines'], 'line')})")
+        else:
+            flagged = "none had a line that reads as an instruction"
+        L.append(f"    {read}; {flagged}")
+        for r in d["by_work_item"]:
+            L.append(f"    • #{r['work_item']} {r['ref'] or '(no ref)'} — {_plural(r['comments'], 'comment')}, "
+                     f"{_plural(r['lines'], 'line')}")
+    L.append("  Refused comment drafts, by reason:")
+    if not hd["comment_refused"]:
+        L.append("    no data (no comment was drafted)")
+    elif not b["comment_refused"]:
+        L.append("    none recorded")
+    else:
+        for r in b["comment_refused"]:
+            L.append(f"    • {r['reason']} — {_plural(r['times'], 'time')} ({_plural(r['work_items'], 'work item')})")
+    L.append("  Drift dispositions (an open row is debt in waiting):")
+    if not hd["drift_debt"]:
+        L.append("    no data (never pulled)")
+    else:
+        d = b["drift_debt"]
+        L.append(f"    open {d['open']} · past the {asm.DEBT_BUSINESS_DAYS}-business-day line {d['debt']} · "
+                 f"conflicts {d['conflicts']} · as of {d['as_of']}")
+        classes = ", ".join(f"{k} {v}" for k, v in (d["by_class"] or {}).items())
+        L.append(f"    by class: {classes or 'none open'}")
+        recorded = ", ".join(f"{g['disposition']} {g['recorded']} ({g['settled']} settled)" for g in d["dispositions"])
+        L.append(f"    recorded: {recorded or 'none'}")
+    return L
+
+
 # --- Assembly ----------------------------------------------------------------------------------
 
 def build_payload(args) -> dict:
@@ -391,7 +590,7 @@ def build_payload(args) -> dict:
         "carry_over_recurrence": bool(carry_over),
         "bounce_causes": bool(bounces),
     }
-    return {
+    payload = {
         "has_data": has_data,
         "recurring_findings": recurring,
         "repeat_stale": stale,
@@ -404,6 +603,12 @@ def build_payload(args) -> dict:
         "sprint_ledger_present": bool(sprint_events),
         "window_days": getattr(args, "window_days", None),
     }
+    # Section 7 exists only when the mirror's ledger holds an event the mirror wrote -- never a phantom block, so a
+    # repository that never used the mirror keeps the exact key set and the exact text it always had.
+    boards_events = [e for e in load_jsonl(metrics_dir / BOARDS_LEDGER_NAME) if e.get("event") in asm.LEDGER_EVENTS]
+    if boards_events:
+        payload["boards"] = boards_section(boards_events, cutoff, _today())
+    return payload
 
 
 def format_report(p: dict) -> str:
@@ -493,6 +698,11 @@ def format_report(p: dict) -> str:
                 specs = f"; specs {', '.join(b['specs'])}" if b["specs"] else ""
                 L.append(f"    • {b['reason']} ({b['times']} time{'s' if b['times'] != 1 else ''}{specs})")
             L.append("")
+
+    # Section 7, only when the payload carries it (the mirror's ledger exists): the text before it is unchanged.
+    if p.get("boards"):
+        L.extend(format_boards(p["boards"]))
+        L.append("")
 
     L.append("=" * 60)
     L.append("ADVISORY — read-only; patterns, not people; never blocks (exit 0).")

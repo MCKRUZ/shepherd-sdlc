@@ -1,0 +1,89 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemRevisions",
+  "--route-parameters",
+  "project=Claims",
+  "--query-parameters",
+  "startDateTime=2026-10-10T00:00:00Z",
+  "fields=System.Id,System.Rev,System.WorkItemType,System.State,System.ChangedDate,System.Tags",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "values": [
+   {
+    "id": 4521,
+    "rev": 7,
+    "fields": {
+     "System.Id": 4521,
+     "System.Rev": 7,
+     "System.WorkItemType": "User Story",
+     "System.State": "Active",
+     "System.ChangedDate": "2026-10-10T08:30:00Z",
+     "System.Tags": "risk:MEDIUM; sdlc-repo:claims-api; sdlc:spec:0004; sdlc:status:in-flight"
+    }
+   },
+   {
+    "id": 4530,
+    "rev": 1,
+    "fields": {
+     "System.Id": 4530,
+     "System.Rev": 1,
+     "System.WorkItemType": "User Story",
+     "System.State": "New",
+     "System.ChangedDate": "2026-10-10T13:05:00Z",
+     "System.Tags": "customer-ask"
+    }
+   },
+   {
+    "id": 4530,
+    "rev": 2,
+    "fields": {
+     "System.Id": 4530,
+     "System.Rev": 2,
+     "System.WorkItemType": "User Story",
+     "System.State": "New",
+     "System.ChangedDate": "2026-10-11T09:40:00Z",
+     "System.Tags": "customer-ask"
+    }
+   },
+   {
+    "id": 4523,
+    "rev": 2,
+    "fields": {
+     "System.Id": 4523,
+     "System.Rev": 2,
+     "System.WorkItemType": "User Story",
+     "System.State": "New",
+     "System.ChangedDate": "2026-10-11T16:20:00Z",
+     "System.Tags": "risk:LOW; sdlc-repo:claims-api; sdlc:spec:0005; sdlc:status:ready"
+    }
+   },
+   {
+    "id": 4531,
+    "rev": 1,
+    "fields": {
+     "System.Id": 4531,
+     "System.Rev": 1,
+     "System.WorkItemType": "Bug",
+     "System.State": "Active",
+     "System.ChangedDate": "2026-10-12T08:15:00Z"
+    }
+   }
+  ],
+  "nextLink": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/reporting/workItemRevisions?continuationToken=d2F0ZXJtYXJrLTQ3&api-version=7.1",
+  "continuationToken": "d2F0ZXJtYXJrLTQ3",
+  "isLastBatch": true
+ }
+}

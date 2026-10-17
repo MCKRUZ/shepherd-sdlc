@@ -1,0 +1,446 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "updates",
+  "--route-parameters",
+  "project=Claims",
+  "id=4521",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 5,
+  "value": [
+   {
+    "id": 1,
+    "workItemId": 4521,
+    "rev": 1,
+    "revisedBy": {
+     "displayName": "Person 1",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000002",
+     "uniqueName": "person1@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+     "descriptor": "aad.anonymised-1"
+    },
+    "revisedDate": "2026-10-07T10:00:00Z",
+    "fields": {
+     "System.Id": {
+      "newValue": 4521
+     },
+     "System.Rev": {
+      "newValue": 1
+     },
+     "System.AuthorizedDate": {
+      "newValue": "2026-10-05T09:00:00Z"
+     },
+     "System.RevisedDate": {
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "newValue": "2026-10-05T09:00:00Z"
+     },
+     "System.CreatedDate": {
+      "newValue": "2026-10-05T09:00:00Z"
+     },
+     "System.Watermark": {
+      "newValue": 41
+     },
+     "System.TeamProject": {
+      "newValue": "Claims"
+     },
+     "System.AreaPath": {
+      "newValue": "Claims\\SDLC\\Intake"
+     },
+     "System.IterationPath": {
+      "newValue": "Claims"
+     },
+     "System.WorkItemType": {
+      "newValue": "User Story"
+     },
+     "System.State": {
+      "newValue": "New"
+     },
+     "System.Reason": {
+      "newValue": "New"
+     },
+     "System.Title": {
+      "newValue": "0004 · duplicate claim 409"
+     },
+     "System.Tags": {
+      "newValue": "risk:MEDIUM; sdlc-repo:claims-api; sdlc:spec:0004; sdlc:status:ready"
+     },
+     "System.History": {
+      "newValue": "sprd · created from the repository at abc1234"
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/updates/1"
+   },
+   {
+    "id": 2,
+    "workItemId": 4521,
+    "rev": 2,
+    "revisedBy": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    },
+    "revisedDate": "2026-10-08T14:00:00Z",
+    "fields": {
+     "System.Rev": {
+      "oldValue": 1,
+      "newValue": 2
+     },
+     "System.AuthorizedDate": {
+      "oldValue": "2026-10-05T09:00:00Z",
+      "newValue": "2026-10-07T10:00:00Z"
+     },
+     "System.RevisedDate": {
+      "oldValue": "2026-10-07T10:00:00Z",
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "oldValue": "2026-10-05T09:00:00Z",
+      "newValue": "2026-10-07T10:00:00Z"
+     },
+     "System.Watermark": {
+      "oldValue": 42,
+      "newValue": 43
+     },
+     "System.State": {
+      "oldValue": "New",
+      "newValue": "Active"
+     },
+     "System.Reason": {
+      "oldValue": "New",
+      "newValue": "Implementation started"
+     },
+     "System.IterationPath": {
+      "oldValue": "Claims",
+      "newValue": "Claims\\Sprint 7"
+     },
+     "Microsoft.VSTS.Common.ActivatedDate": {
+      "newValue": "2026-10-07T10:00:00Z"
+     },
+     "Microsoft.VSTS.Common.ActivatedBy": {
+      "newValue": {
+       "displayName": "Person 2",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000003",
+       "uniqueName": "person2@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+       "descriptor": "aad.anonymised-2"
+      }
+     },
+     "System.ChangedBy": {
+      "oldValue": {
+       "displayName": "Person 1",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000002",
+       "uniqueName": "person1@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+       "descriptor": "aad.anonymised-1"
+      },
+      "newValue": {
+       "displayName": "Person 2",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000003",
+       "uniqueName": "person2@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+       "descriptor": "aad.anonymised-2"
+      }
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/updates/2"
+   },
+   {
+    "id": 3,
+    "workItemId": 4521,
+    "rev": 3,
+    "revisedBy": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    },
+    "revisedDate": "2026-10-09T10:00:00Z",
+    "fields": {
+     "System.Rev": {
+      "oldValue": 2,
+      "newValue": 3
+     },
+     "System.AuthorizedDate": {
+      "oldValue": "2026-10-07T10:00:00Z",
+      "newValue": "2026-10-08T14:00:00Z"
+     },
+     "System.RevisedDate": {
+      "oldValue": "2026-10-08T14:00:00Z",
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "oldValue": "2026-10-07T10:00:00Z",
+      "newValue": "2026-10-08T14:00:00Z"
+     },
+     "System.Watermark": {
+      "oldValue": 43,
+      "newValue": 44
+     },
+     "System.AssignedTo": {
+      "oldValue": {
+       "displayName": "Person 1",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000002",
+       "uniqueName": "person1@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+       "descriptor": "aad.anonymised-1"
+      },
+      "newValue": {
+       "displayName": "Person 2",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000003",
+       "uniqueName": "person2@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+       "descriptor": "aad.anonymised-2"
+      }
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/updates/3"
+   },
+   {
+    "id": 4,
+    "workItemId": 4521,
+    "rev": 4,
+    "revisedBy": {
+     "displayName": "Person 3",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000004",
+     "uniqueName": "person3@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+     "descriptor": "aad.anonymised-3"
+    },
+    "revisedDate": "2026-10-10T08:30:00Z",
+    "fields": {
+     "System.Rev": {
+      "oldValue": 3,
+      "newValue": 4
+     },
+     "System.AuthorizedDate": {
+      "oldValue": "2026-10-08T14:00:00Z",
+      "newValue": "2026-10-09T10:00:00Z"
+     },
+     "System.RevisedDate": {
+      "oldValue": "2026-10-09T10:00:00Z",
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "oldValue": "2026-10-08T14:00:00Z",
+      "newValue": "2026-10-09T10:00:00Z"
+     },
+     "System.Watermark": {
+      "oldValue": 44,
+      "newValue": 45
+     },
+     "System.ChangedBy": {
+      "oldValue": {
+       "displayName": "Person 2",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000003",
+       "uniqueName": "person2@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+       "descriptor": "aad.anonymised-2"
+      },
+      "newValue": {
+       "displayName": "Person 3",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000004",
+       "uniqueName": "person3@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+       "descriptor": "aad.anonymised-3"
+      }
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/updates/4",
+    "relations": {
+     "added": [
+      {
+       "rel": "ArtifactLink",
+       "url": "vstfs:///Git/PullRequestId/00000000-0000-0000-0000-000000000020%2F00000000-0000-0000-0000-000000000030%2F57",
+       "attributes": {
+        "authorizedDate": "2026-10-09T10:00:00Z",
+        "id": 101,
+        "resourceCreatedDate": "2026-10-09T10:00:00Z",
+        "resourceModifiedDate": "2026-10-09T10:00:00Z",
+        "revisedDate": "9999-01-01T00:00:00Z",
+        "name": "Pull Request"
+       }
+      }
+     ]
+    }
+   },
+   {
+    "id": 5,
+    "workItemId": 4521,
+    "rev": 5,
+    "revisedBy": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    },
+    "revisedDate": "9999-01-01T00:00:00Z",
+    "fields": {
+     "System.Rev": {
+      "oldValue": 4,
+      "newValue": 5
+     },
+     "System.AuthorizedDate": {
+      "oldValue": "2026-10-09T10:00:00Z",
+      "newValue": "2026-10-10T08:30:00Z"
+     },
+     "System.RevisedDate": {
+      "oldValue": "2026-10-10T08:30:00Z",
+      "newValue": "9999-01-01T00:00:00Z"
+     },
+     "System.ChangedDate": {
+      "oldValue": "2026-10-09T10:00:00Z",
+      "newValue": "2026-10-10T08:30:00Z"
+     },
+     "System.Watermark": {
+      "oldValue": 45,
+      "newValue": 46
+     },
+     "System.History": {
+      "newValue": "<div>Attached the field list.</div>"
+     },
+     "System.CommentCount": {
+      "oldValue": 1,
+      "newValue": 2
+     },
+     "System.ChangedBy": {
+      "oldValue": {
+       "displayName": "Person 3",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000004",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000004",
+       "uniqueName": "person3@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-3",
+       "descriptor": "aad.anonymised-3"
+      },
+      "newValue": {
+       "displayName": "Person 2",
+       "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+       "_links": {
+        "avatar": {
+         "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+        }
+       },
+       "id": "00000000-0000-0000-0000-000000000003",
+       "uniqueName": "person2@example.com",
+       "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+       "descriptor": "aad.anonymised-2"
+      }
+     }
+    },
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/updates/5",
+    "relations": {
+     "added": [
+      {
+       "rel": "AttachedFile",
+       "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/attachments/00000000-0000-0000-0000-000000000401?fileName=Spec.txt",
+       "attributes": {
+        "authorizedDate": "2026-10-10T08:30:00Z",
+        "id": 102,
+        "resourceCreatedDate": "2026-10-10T08:29:00Z",
+        "resourceModifiedDate": "2026-10-10T08:29:00Z",
+        "revisedDate": "9999-01-01T00:00:00Z",
+        "resourceSize": 2048,
+        "name": "Spec.txt"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

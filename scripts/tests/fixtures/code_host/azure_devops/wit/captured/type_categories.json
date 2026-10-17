@@ -1,0 +1,290 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeCategories",
+  "--route-parameters",
+  "project=Claims",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 15,
+  "value": [
+   {
+    "defaultWorkItemType": {
+     "name": "Bug",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Bug"
+    },
+    "name": "Bug Category",
+    "referenceName": "Microsoft.BugCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.BugCategory",
+    "workItemTypes": [
+     {
+      "name": "Bug",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Bug"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Epic",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Epic"
+    },
+    "name": "Epic Category",
+    "referenceName": "Microsoft.EpicCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.EpicCategory",
+    "workItemTypes": [
+     {
+      "name": "Epic",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Epic"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Feature",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Feature"
+    },
+    "name": "Feature Category",
+    "referenceName": "Microsoft.FeatureCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.FeatureCategory",
+    "workItemTypes": [
+     {
+      "name": "Feature",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Feature"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Spec",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Agile_Claims.Spec"
+    },
+    "name": "Requirement Category",
+    "referenceName": "Microsoft.RequirementCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.RequirementCategory",
+    "workItemTypes": [
+     {
+      "name": "Spec",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Agile_Claims.Spec"
+     },
+     {
+      "name": "User Story",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.UserStory"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Test Case",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestCase"
+    },
+    "name": "Test Case Category",
+    "referenceName": "Microsoft.TestCaseCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.TestCaseCategory",
+    "workItemTypes": [
+     {
+      "name": "Test Case",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestCase"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Shared Steps",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedStep"
+    },
+    "name": "Shared Step Category",
+    "referenceName": "Microsoft.SharedStepCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.SharedStepCategory",
+    "workItemTypes": [
+     {
+      "name": "Shared Steps",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedStep"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Shared Parameter",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedParameter"
+    },
+    "name": "Shared Parameter Category",
+    "referenceName": "Microsoft.SharedParameterCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.SharedParameterCategory",
+    "workItemTypes": [
+     {
+      "name": "Shared Parameter",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedParameter"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Code Review Request",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewRequest"
+    },
+    "name": "Code Review Request Category",
+    "referenceName": "Microsoft.CodeReviewRequestCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.CodeReviewRequestCategory",
+    "workItemTypes": [
+     {
+      "name": "Code Review Request",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewRequest"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Code Review Response",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewResponse"
+    },
+    "name": "Code Review Response Category",
+    "referenceName": "Microsoft.CodeReviewResponseCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.CodeReviewResponseCategory",
+    "workItemTypes": [
+     {
+      "name": "Code Review Response",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewResponse"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Feedback Request",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackRequest"
+    },
+    "name": "Feedback Request Category",
+    "referenceName": "Microsoft.FeedbackRequestCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.FeedbackRequestCategory",
+    "workItemTypes": [
+     {
+      "name": "Feedback Request",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackRequest"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Feedback Response",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackResponse"
+    },
+    "name": "Feedback Response Category",
+    "referenceName": "Microsoft.FeedbackResponseCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.FeedbackResponseCategory",
+    "workItemTypes": [
+     {
+      "name": "Feedback Response",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackResponse"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Test Plan",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestPlan"
+    },
+    "name": "Test Plan Category",
+    "referenceName": "Microsoft.TestPlanCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.TestPlanCategory",
+    "workItemTypes": [
+     {
+      "name": "Test Plan",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestPlan"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Test Suite",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestSuite"
+    },
+    "name": "Test Suite Category",
+    "referenceName": "Microsoft.TestSuiteCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.TestSuiteCategory",
+    "workItemTypes": [
+     {
+      "name": "Test Suite",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestSuite"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Task",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Task"
+    },
+    "name": "Task Category",
+    "referenceName": "Microsoft.TaskCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.TaskCategory",
+    "workItemTypes": [
+     {
+      "name": "Task",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.Task"
+     }
+    ]
+   },
+   {
+    "defaultWorkItemType": {
+     "name": "Code Review Request",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewRequest"
+    },
+    "name": "Hidden Types Category",
+    "referenceName": "Microsoft.HiddenCategory",
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypeCategories/Microsoft.HiddenCategory",
+    "workItemTypes": [
+     {
+      "name": "User Story",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.UserStory"
+     },
+     {
+      "name": "Code Review Request",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewRequest"
+     },
+     {
+      "name": "Code Review Response",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.CodeReviewResponse"
+     },
+     {
+      "name": "Feedback Request",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackRequest"
+     },
+     {
+      "name": "Feedback Response",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.FeedbackResponse"
+     },
+     {
+      "name": "Shared Steps",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedStep"
+     },
+     {
+      "name": "Shared Parameter",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.SharedParameter"
+     },
+     {
+      "name": "Test Plan",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestPlan"
+     },
+     {
+      "name": "Test Suite",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Microsoft.VSTS.WorkItemTypes.TestSuite"
+     }
+    ]
+   }
+  ]
+ }
+}

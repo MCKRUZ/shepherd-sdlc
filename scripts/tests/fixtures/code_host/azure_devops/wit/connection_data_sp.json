@@ -1,0 +1,54 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "core",
+  "--resource",
+  "connectionData",
+  "--route-parameters",
+  "",
+  "--query-parameters",
+  "connectOptions=0",
+  "--api-version",
+  "7.1-preview",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "authenticatedUser": {
+   "id": "00000000-0000-0000-0000-000000000050",
+   "descriptor": "Microsoft.VisualStudio.Services.Claims.AadServicePrincipal;00000000-0000-0000-0000-000000000009\\00000000-0000-0000-0000-000000000051",
+   "subjectDescriptor": "aadsp.anonymised-50",
+   "providerDisplayName": "00000000-0000-0000-0000-000000000052",
+   "isActive": true,
+   "properties": {},
+   "resourceVersion": 2,
+   "metaTypeId": 0
+  },
+  "authorizedUser": {
+   "id": "00000000-0000-0000-0000-000000000050",
+   "descriptor": "Microsoft.VisualStudio.Services.Claims.AadServicePrincipal;00000000-0000-0000-0000-000000000009\\00000000-0000-0000-0000-000000000051",
+   "subjectDescriptor": "aadsp.anonymised-50",
+   "providerDisplayName": "00000000-0000-0000-0000-000000000052",
+   "isActive": true,
+   "properties": {},
+   "resourceVersion": 2,
+   "metaTypeId": 0
+  },
+  "instanceId": "00000000-0000-0000-0000-000000000098",
+  "deploymentId": "00000000-0000-0000-0000-000000000097",
+  "deploymentType": "hosted",
+  "locationServiceData": {
+   "serviceOwner": "00000000-0000-0000-0000-000000000000",
+   "defaultAccessMappingMoniker": "PublicAccessMapping",
+   "lastChangeId": 1,
+   "lastChangeId64": 1
+  },
+  "continuation_token": null
+ }
+}

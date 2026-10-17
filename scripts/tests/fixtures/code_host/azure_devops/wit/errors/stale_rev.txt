@@ -1,0 +1,2 @@
+# hand-written (unverified)
+ERROR: Test operation failed. Path: /rev, Value: 1. Work item 4560 is at rev 2: it has been changed by someone else since rev 1 was read (TestPatchOperationFailedException). (HTTP 412 Precondition Failed)

@@ -1,0 +1,62 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "core",
+  "--resource",
+  "connectionData",
+  "--route-parameters",
+  "",
+  "--api-version",
+  "7.1-preview",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "authenticatedUser": {
+   "id": "00000000-0000-0000-0000-000000000002",
+   "descriptor": "Microsoft.IdentityModel.Claims.ClaimsIdentity;00000000-0000-0000-0000-000000000009\\person1@example.com",
+   "subjectDescriptor": "aad.anonymised-1",
+   "providerDisplayName": "Person 1",
+   "isActive": true,
+   "properties": {
+    "Account": {
+     "$type": "System.String",
+     "$value": "person1@example.com"
+    }
+   },
+   "resourceVersion": 2,
+   "metaTypeId": 0
+  },
+  "authorizedUser": {
+   "id": "00000000-0000-0000-0000-000000000002",
+   "descriptor": "Microsoft.IdentityModel.Claims.ClaimsIdentity;00000000-0000-0000-0000-000000000009\\person1@example.com",
+   "subjectDescriptor": "aad.anonymised-1",
+   "providerDisplayName": "Person 1",
+   "isActive": true,
+   "properties": {
+    "Account": {
+     "$type": "System.String",
+     "$value": "person1@example.com"
+    }
+   },
+   "resourceVersion": 2,
+   "metaTypeId": 0
+  },
+  "instanceId": "00000000-0000-0000-0000-000000000098",
+  "deploymentId": "00000000-0000-0000-0000-000000000097",
+  "deploymentType": "hosted",
+  "locationServiceData": {
+   "serviceOwner": "00000000-0000-0000-0000-000000000000",
+   "defaultAccessMappingMoniker": "PublicAccessMapping",
+   "lastChangeId": 1,
+   "lastChangeId64": 1
+  },
+  "continuation_token": null
+ }
+}

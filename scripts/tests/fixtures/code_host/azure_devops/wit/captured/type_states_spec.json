@@ -1,0 +1,60 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeStates",
+  "--route-parameters",
+  "project=Claims",
+  "type=Spec",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 6,
+  "value": [
+   {
+    "category": "Proposed",
+    "color": "b2b2b2",
+    "name": "New"
+   },
+   {
+    "category": "InProgress",
+    "color": "5688E0",
+    "name": "In-Dev"
+   },
+   {
+    "category": "InProgress",
+    "color": "6951aa",
+    "name": "In QA"
+   },
+   {
+    "category": "InProgress",
+    "color": "eb3345",
+    "name": "Blocked"
+   },
+   {
+    "category": "Resolved",
+    "color": "FF9D00",
+    "name": "Ready for Release"
+   },
+   {
+    "category": "Completed",
+    "color": "339933",
+    "name": "Closed"
+   }
+  ]
+ }
+}

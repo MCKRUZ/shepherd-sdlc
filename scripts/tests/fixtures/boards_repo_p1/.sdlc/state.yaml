@@ -1,0 +1,71 @@
+# The breadth mini repository's state file (generic names; every address is @example.com).
+# fixture: phase 0 is signed off by a roster handle, phase 1 by an address (which must never reach a
+# work item), phase 2 is the active one, and the rest have not started.
+version: "1.0"
+profile_id: "mini-repo-p1"
+project_name: "Sample Order Portal"
+created_at: "2026-09-01T00:00:00Z"
+project_type: service
+
+current_phase: "2"
+phase_name: "design"
+
+phases:
+  "0":
+    name: discovery
+    status: completed
+    entered_at: "2026-09-01T00:00:00Z"
+    completed_at: "2026-09-12T10:00:00Z"
+    gate_results:
+      passed: 6
+      failed: 0
+      manual: 1
+      signed_off_by: "@priya-n"
+    artifacts: []
+    artifact_checksums: {}
+  "1":
+    name: requirements
+    status: completed
+    entered_at: "2026-09-12T10:00:00Z"
+    completed_at: "2026-09-26T15:30:00Z"
+    gate_results:
+      passed: 8
+      failed: 0
+      manual: 2
+      signed_off_by: "pat.example@example.com"
+    sign_offs:
+      - discipline: bizreq
+        section: business-rules
+        by: "@priya-n"
+        at: "2026-09-26T15:30:00Z"
+      - discipline: data
+        section: data-touchpoints
+        by: "Pat Example"
+        at: "2026-09-26T15:30:00Z"
+    artifacts: []
+    artifact_checksums:
+      requirements.md: "0123456789abcdef"
+  "2":
+    name: design
+    status: active
+    entered_at: "2026-09-26T15:30:00Z"
+    completed_at: null
+    gate_results: {}
+    artifacts: []
+    artifact_checksums: {}
+  "3":
+    name: foundation
+    status: pending
+    entered_at: null
+    completed_at: null
+    gate_results: {}
+    artifacts: []
+    artifact_checksums: {}
+  "build":
+    name: build
+    status: pending
+    entered_at: null
+    completed_at: null
+    gate_results: {}
+    artifacts: []
+    artifact_checksums: {}

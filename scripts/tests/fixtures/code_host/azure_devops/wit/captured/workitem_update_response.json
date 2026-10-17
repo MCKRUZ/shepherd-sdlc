@@ -1,0 +1,102 @@
+{
+ "_provenance": "captured 2026-10-15 (org anonymised)",
+ "_command": [
+  "az",
+  "rest",
+  "--method",
+  "patch",
+  "--resource",
+  "499b84ac-1321-427f-aa17-267ca6975798",
+  "--url",
+  "https://dev.azure.com/contoso/Claims/_apis/wit/workitems/1?api-version=7.1",
+  "--headers",
+  "Content-Type=application/json-patch+json",
+  "--body",
+  "<request body file, given with a leading at-sign>",
+  "--only-show-errors",
+  "-o",
+  "json"
+ ],
+ "_body": [
+  {
+   "op": "test",
+   "path": "/rev",
+   "value": 1
+  },
+  {
+   "op": "replace",
+   "path": "/fields/System.Title",
+   "value": "sdlc probe 2"
+  }
+ ],
+ "value": {
+  "_links": {
+   "fields": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/fields"
+   },
+   "html": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_workitems/edit/1"
+   },
+   "self": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1"
+   },
+   "workItemComments": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1/comments"
+   },
+   "workItemRevisions": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1/revisions"
+   },
+   "workItemType": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItemTypes/Task"
+   },
+   "workItemUpdates": {
+    "href": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1/updates"
+   }
+  },
+  "fields": {
+   "Microsoft.VSTS.Common.Priority": 2,
+   "Microsoft.VSTS.Common.StateChangeDate": "2026-10-15T12:57:36.467Z",
+   "System.AreaPath": "Claims\\Claims Team",
+   "System.ChangedBy": {
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "descriptor": "aad.anonymised-1",
+    "displayName": "Participant 1",
+    "id": "00000000-0000-0000-0000-000000000002",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "uniqueName": "person1@example.com",
+    "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+   },
+   "System.ChangedDate": "2026-10-15T13:01:31.397Z",
+   "System.CommentCount": 0,
+   "System.CreatedBy": {
+    "_links": {
+     "avatar": {
+      "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+     }
+    },
+    "descriptor": "aad.anonymised-1",
+    "displayName": "Participant 1",
+    "id": "00000000-0000-0000-0000-000000000002",
+    "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+    "uniqueName": "person1@example.com",
+    "url": "https://app.vssps.visualstudio.com/A00000000-0000-0000-0000-000000000003/_apis/Identities/00000000-0000-0000-0000-000000000002"
+   },
+   "System.CreatedDate": "2026-10-15T12:57:36.467Z",
+   "System.IterationPath": "Claims",
+   "System.Reason": "New",
+   "System.State": "New",
+   "System.Tags": "sdlc-probe",
+   "System.TeamProject": "Claims",
+   "System.Title": "sdlc probe 2",
+   "System.WorkItemType": "Task"
+  },
+  "id": 1,
+  "multilineFieldsFormat": {},
+  "rev": 2,
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000001/_apis/wit/workItems/1"
+ }
+}

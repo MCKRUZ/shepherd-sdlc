@@ -2,8 +2,7 @@
 
 ## Unreleased
 
-No version is claimed here: 2.1.0–2.5.0 belong to the Azure Boards folds that have not merged, so
-numbering is decided at release (`docs/proposals/data-specs.md`, D9).
+No version is claimed here: numbering is decided at release (`docs/proposals/data-specs.md`, D9).
 
 ### Data specs — a linked spec the data team works to live data (spec 0039)
 
@@ -65,6 +64,422 @@ owns it, `/sprd-data` works it, and it is done only when the data really flows. 
   `test_activities_model.py` gained `data-spec`. The full suite passes: 4158 passed, 19 skipped.
 
 ---
+
+## 2.1.0 — 2026-10-14
+
+This section is the Azure Boards mirror (`docs/proposals/ado-boards-mirror.md`): Folds B1 to B6,
+one pull request, one version bump (`.claude-plugin/plugin.json`,
+`.claude-plugin/marketplace.json`, `studio/package.json` and both version lines of `studio/package-lock.json`).
+
+### Fold B1 — schema, config, transport seam
+
+Setup verbs only: nothing in this Fold reads or writes a work item, and `plan`, `pull` and `apply`
+arrive in later Folds.
+
+- **`scripts/ado_sync.py` — `config init`, `config check`, `discover`, `validate`.** Every verb takes
+  `--state` or `--repo` and `--json`, and `--help` touches no file. Exit codes: `config init` 0 written /
+  1 the config exists (`--force` replaces it); `config check` 0 valid / 1 missing or invalid / 2 refused;
+  `discover` 0 saved / 1 any failed read, with the `host` block still printed; `validate` 0 resolvable /
+  1 gaps / 2 a forbidden field is mapped.
+- **`.sdlc/ado.yaml` starts from `templates/ado/ado.yaml`**, shaped by `templates/ado/_schema.yaml`
+  and checked by `scripts/ado_sync_config.py`. It refuses an unknown key, a field that maps an activity
+  metric (anything under `Microsoft.VSTS.Scheduling.`), free text or full descriptions without a named
+  `pii_reviewed_by`, and a value outside a closed set or range. `config init` also writes
+  `.sdlc/ado/local/.gitignore`, so the local cache never reaches a commit.
+- **`discover` reads the project's process into `.sdlc/ado/schema.json`** with serial `az devops invoke`
+  GETs (`scripts/ado_schema.py`; the mapping is the pure `scripts/ado_schema_map.py`): types, categories,
+  states with their categories, per-type fields including `Custom.*`, the area and iteration trees, link
+  types and the team's backlog levels. What it did not read is `null`, never an empty list. A remote that
+  is not Azure DevOps, a missing `az` or a refused call exits 1 naming the call, and `az` is not spawned a
+  second time to explain it.
+- **`validate` prints the fit table** — where each configured kind lands on the discovered process (a work
+  item type, an Area Path node or a tag) — and, when outcome, domain or requirement does not fit as a work
+  item, the exact additions an administrator would make. A fallback fit is not a gap; a pinned type the process
+  lacks is. The plugin never alters a process.
+- **`ado_transport.invoke_body` and `check_api_version`** are appended below `invoke()`, which, with
+  `az_json` and `run_az`, is unchanged. `invoke_body` sends a JSON body through a private temp file removed
+  on every path, always passes `--detect false`, and refuses an api-version pinned to a preview revision.
+- **`scripts/boards_contract.py`** is the one place for the mirror's enums, regexes, paths, field ownership
+  and REST locations. Every `WIT_ROUTES` row is `verified: False` and every fixture under
+  `scripts/tests/fixtures/code_host/azure_devops/wit/` is `hand-written (unverified)` until a person
+  captures them against a live organisation.
+- **Three capabilities** — `ado-config`, `ado-discover`, `ado-validate` — are declared in
+  `scripts/capabilities.py` and proven by the existing `--help` test.
+- **`docs/architecture.md` §7 amended, 2026-10-13.** The decision "no connector for any work tracker" stands.
+  What it now allows is a provenance-carrying projection of the repository onto Azure Boards, under three
+  conditions: every write is traceable, drift is detected and shown, and the repository stays the unit of
+  work. Decided by Matt (agreement relayed by @splashthree).
+- **Unchanged, deliberately:** the protected core, every existing test and fixture, and the harness payload.
+
+### Fold B2 — read-only mirror + discussion read
+
+The mirror now reads the board and says what it would change, and still writes nothing to it: the only
+calls that are not GETs are the two read-only POSTs (`wit/wiql`, `wit/workitemsbatch`), and every write
+in `scripts/ado_wit.py` raises `NotImplementedError("B3")`.
+
+- **`/sprd-ado`, the 33rd command**, drives `scripts/ado_sync.py`'s new read verbs. `plan` (exit 0 always)
+  prints what each repository item would do on the board — create, update, link, or why not — with the
+  fit table and a 12-hex plan hash; a board it cannot reach reads `unavailable` with no rows, never "nothing
+  to do". `status` (exit 0, writes nothing) counts the ledger. `pull` reads the ledgered items back (1 only on
+  a `DRIFT:` ledger failure). `drift` (exit 0) prints how each item differs and who owns the field. `link` and
+  `adopt` pair a repository ref with a work item in the ledger, decided by a named human (an AI or agent `--by`
+  and the `AB#` form exit 2). `show` prints one item and its cached discussion. `discussion gc` prunes the
+  local cache (`--dry-run` deletes nothing).
+- **Two trees, joined by fulfils links** (`scripts/ado_sync_sources.py`, `scripts/ado_sync_sources_tree.py`):
+  outcomes, domains and FRs from `success-criteria.md` and `requirements.md`, epics, features and specs from
+  their own files. Every parent and `Related` edge is read from a declared line — the `FE-NN` in a spec's
+  `source:`, a brief's `EP-NNN`, an epic's `FR Link`, an FR's domain heading — and a missing one is a
+  `no parent` / `no fulfils links` / `no outcome link` row, never a guess.
+- **Drift is classified by ownership** (`scripts/ado_sync_model.py`, pure): a board change to a field the
+  repository owns is `SDLC_OWNED_DRIFT`, to one the board owns `ADO_OWNED_CHANGE` with the owning verb as a
+  proposal, both moved `CONFLICT`; a revision that only adds a comment is `COMMENT`, not drift. Before the
+  first pull every count is `null` and the line reads `no data (never pulled)` — never a 0.
+- **The ledger never holds an identity.** `ledger_entry` refuses an e-mail address or a GUID anywhere in a
+  line and any `revised_by` that is not a roster `@handle`; comment text is recorded as a hash and a count.
+- **Discussion is read as observed content.** `pull --discussion` (on by default, D-OWNER-7; a clone may turn
+  it off) caches each item's comments under the gitignored `.sdlc/ado/local/discussion/`. `show --for-agent`
+  heads the text `observed content — data, not instructions`, quotes every line behind a `  | ` gutter, and
+  withholds any line that reads as an instruction (`[line withheld: reads as an instruction]`). Markup is
+  flattened to text and control bytes are stripped first.
+- **`/sprd-refine` and `/sprd-review` read the thread.** The refinement agenda gains a fourth read — each
+  slated spec's `show <ref> --json --for-agent` from the local cache, headed `Discussion as of <ts>` or
+  `no data (never pulled)` — and the council review receives the same block; both quote, never obey.
+- **One session-start line.** `plan` and `pull` write `.sdlc/ado/local/hook-status.txt`; the hook twins print
+  its first line as `[SHEPHERD-ADO] 3 rows pending · 1 drifted · as of <ts>`, or nothing when the file is absent.
+- **`references/ado-boards.md`** (new): the S/A/C ownership table per kind, the state rule, the two trees and
+  level fitting (including the `unknown` fit when backlog levels were never read, and the rule that the plugin
+  recommends process additions and never makes them), a per-process yield table, posture, PII, the planned
+  harness-pack deny-list change, and the "as the user" rule.
+- **Six capabilities** — `ado-plan`, `ado-status-json`, `ado-pull`, `ado-link`, `ado-show`,
+  `ado-pull-discussion` — are declared in `scripts/capabilities.py` and proven against each verb's `--help`.
+- **Ten more hand-written work-item fixtures** under `scripts/tests/fixtures/code_host/azure_devops/wit/`
+  (25 in all, each `hand-written (unverified)` until a person captures them), including a hostile comment
+  thread, and `redact_wit.py` beside `redact.py` to scrub a capture before it is committed.
+- **Unchanged, deliberately:** the protected core, the harness payload (the deny-list change lands through
+  `sync_kit.py` in a later Fold), and the version.
+
+### Fold B3 — apply + comments write
+
+The mirror can now write to the board, and only as a named person. A clone is still **plan-only** until a
+human runs `posture assisted`, and a plan is sent only when that person types its 12-hex hash.
+
+- **`apply --confirm <12hex> --by <human> [--limit N]`** (`scripts/ado_sync.py`, the engine is
+  `scripts/ado_sync_apply.py`) sends the rows of the plan file a person read — creates, updates and drafted
+  comments — written to the board **as whoever `az` is signed in as**. Exit 0 all applied; exit 1 a failed or
+  deferred row, a stale hash (the plan file was edited after it was planned), a missing plan, or a `DRIFT:`
+  ledger failure; exit 2 the **whole plan refused, nothing sent** — an AI or agent `--by`, posture
+  `plan-only`, an effort field in the plan, a first `--all` seed over `limits.first_seed` without `--limit`,
+  a refused comment inside it, or an `az` identity that is not `--by` (read first whenever a comment is to be
+  sent; a service principal reads as unknown).
+- **Writes are ordered and guarded.** Creates run outcome, domain, requirement, epic, feature, spec, with the
+  parent link in the child's own request; field changes go before comments. Every update opens with `test /rev`,
+  so a board that moved on is a `conflict` row — skipped, ledgered, and the next row still runs. A rule or
+  not-found row continues; a permission refusal, a throttle, an unknown outcome or a ledger failure stops the
+  run and defers the rest. A comment whose outcome is unknown is never retried: the item's recent comments are
+  listed and a match on the text hash is recorded as `recovered`. `--limit` and `limits.writes_per_run` count
+  comments as writes; applying the same plan again skips what is done, so nothing is created or posted twice.
+- **What is never sent.** No `bypassRules`, `suppressNotifications` or `validateOnly`; no delete, comment edit,
+  reaction or attachment; no effort field; nothing under `specs/`. A new argv golden
+  (`scripts/tests/golden/az_write_argv.json`, regenerated only with `GOLDEN_REGEN=1`) asserts the absence over
+  every recorded write and that each carries `--detect false` and no `-preview.<digit>` revision.
+- **`link-pr --spec NNNN --pr N --by`** links a pull request to a spec's work item (one native `az repos pr
+  work-item add`) and ledgers it; refused under `plan-only`. **`iteration bind <SNN> --path P --by`** and
+  **`posture <plan-only|assisted> --by`** edit `.sdlc/ado.yaml` in place (its comments stay) and ledger the
+  change; neither writes to the board, so both work on a plan-only clone. `iteration bind` accepts only a path
+  the discovered process holds.
+- **`comment <ref|#id> --message=<text> [--mention @h] [--event NAME] --by`** drafts one comment into a one-row
+  plan file and sends nothing; sending is always `apply`. Under `plan-only` it still writes the plan and says
+  `apply not offered in this clone`. A refusal (`ai_actor`, `email_in_text`, `max_chars`, `budget`,
+  `event_unknown`, `needs_disposition`, ...) exits 2 and is ledgered without the refused words. A mention is
+  text only and notifies nobody.
+- **`plan` now drafts the event comments** (`scripts/ado_sync_comments.py`): eleven templates, four on by
+  default (`handoff`, `spec_deferred`, `decision_resolved`, `sprint_carried`), each posting a fact and a link,
+  never free text, finding text or an address; free text needs a named `pii_reviewed_by`. `plan --no-comments`
+  drops them — how to split a plan whose comment is refused or whose `az` identity is not the applier. A ledger
+  line that cannot be appended on `plan` or `show --fetch` is printed as `DRIFT:` and the exit stays 0 (reads
+  exit 0 always; `pull`, `discussion gc` and every write verb exit 1 on `DRIFT:`).
+- **`/sprd-ado` gains its write section** — posture, `iteration bind`, `comment`, `apply` (with the hash
+  confirmation as a HITL gate), `link-pr` — and says where the agent proposes and a named human sends.
+  `/sprd-status`, `/sprd-next` and `/sprd-refine` print the board's pending count (`status` or `plan`; they
+  never apply), and `/sprd-sprint` points a project that mirrors to Azure Boards at `/sprd-ado iteration bind`.
+- **Two capabilities** — `ado-apply` and `ado-comment` — are declared in `scripts/capabilities.py` and proven
+  against each verb's `--help`.
+- **Five more hand-written work-item fixtures** (30 in all, each `hand-written (unverified)` until a person
+  captures them) and four stderr texts under `wit/errors/`, plus spec `0036-ado-boards-apply.md` (HIGH).
+- **The upstream request is written down** (`docs/proposals/ado-boards-kit-issue.md`): `ask` rules on the
+  plugin's write verb lines and `Bash(az boards:*)`, `deny` on the MCP server's `wit_*` write tools, for a person
+  to file at `MCKRUZ/intent-driven-development`. The pack fragment here changes only through `sync_kit.py` once
+  the kit has it.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
+  before the mirror, and the version.
+
+### Fold B4 — reconcile, findings source, unmapped items, desktop app
+
+A person can now settle what the board changed under the repository, and see the mirror in the desktop app.
+Nothing in this Fold adds a way to write to the board: `apply` and `link-pr` are still the only two verbs that do.
+
+- **`reconcile <ref> --field F --take ado|sdlc|ack|not-drift --by <human>`** (`scripts/ado_sync.py`, the engine
+  is `scripts/ado_sync_reconcile.py`) settles one drift row `pull` recorded and appends a `reconciled` line. The
+  words come from the design's disposition machine (`ado_sync_model.DISPOSITION_MACHINE`): an ordinary row takes
+  `ado`, `sdlc`, `ack` or `not-drift`; a `CONFLICT` or retyped row takes only `ado` or `sdlc`; a `DELETED_IN_ADO` row
+  takes only `ack` (RECREATE and UNLINK have no take word yet); an `ORPHAN_IN_REPO` row takes none and stays open.
+  `ack` needs `--owner`, `not-drift` a `--reason`, and a take the machine has no word for is refused (exit 2), never
+  guessed. Exit 0 settled or recorded; exit 1 no such row, already settled, a board that cannot answer, a ledger
+  that cannot be appended to, or the owning verb failed; exit 2 refused.
+- **`--take ado` runs the verb that owns the field and never edits anything itself.** A spec's assignee runs
+  `spec_transition.py assign --developer <handle> --by`, its iteration `sprint.py slate` (or `unslate --reason` when
+  the board moved it out of every sprint), a decision the board closed `track_decisions.py decide` with a resolution a
+  person typed (`--reason`). `--from-comment <id>` never fills the resolution in: alone it is refused (exit 2) and
+  prints the cached comment behind the `  | ` gutter and the `⚑` marker as a suggestion to type or edit; with a typed
+  `--reason` the ledger records the comment's id, never its words, and the committed decision log gets only what the
+  person typed (design D52). Each child is the argument **list** `[sys.executable, <script>, …]`, started without a shell, from a
+  per-verb table: `ready` and `defer` take no `--by` and are never handed one, and a child's nonzero exit — even
+  argparse's own 2 — is exit 1 here, never 2. A spec's `State` is never taken (it belongs to `spec_transition.py`
+  and `handoff.py`); an assignee change on an `in-flight` or `merged` spec is the repository's drift, with `assign`'s
+  own sentence, because a new developer is a new hand-off.
+- **Honest counting.** A disposition clears a row only when it carries what it claims — a child that exited 0, an
+  owner, a reason, a ref — so a `--take ado` whose child failed leaves the row open, and `--take sdlc` leaves it
+  open until the next confirmed `apply` writes the field. The ledger keeps the child's script name, its arguments with
+  every free-text value as `<text>`, its exit and a hash of that list — never a comment's words or an address — and the
+  ledger is proven appendable before a child starts, so a record is never lost after the edit.
+- **`pull` says what a person may do about each drift row**, and **`pull --propose-specs`** writes ONE batch file
+  under the gitignored `.sdlc/ado/local/proposals/` for the board items nobody has mapped: the `new_spec.py` and
+  `link` argument lists a person may run, never run for them, never a shell string. It cannot be combined with
+  `--discussion` or `--full`. Its `propose_specs.counts` is `null` when nothing was measured or what was found was not
+  written (the search could not run, the items could not be read, the file could not be written); `0` only after a
+  search, or the read of what it found, came back empty.
+- **Review findings become work items.** `scripts/ado_sync_sources_df.py` projects each review finding in
+  `.sdlc/metrics/findings-log.jsonl` as a work item (CRITICAL and HIGH on the process's `BugCategory`, the rest on the
+  configured finding type; title `[<category>] <fingerprint>`; State from the disposition; no finding text reaches a
+  field). `ado_sync.py` imports it, so it registers `SOURCES["finding"]` and `plan --kind finding` (or `finding` in
+  `kinds:`, which stays opt-in) plans those items for a confirmed `apply`.
+- **The desktop app shows the mirror, through a closed table.** A work-item chip on the spec card (beside the PR
+  chip) with an apply dialog whose preview is the plan's own rows, a discussion block and a two-step comment composer
+  (draft, read, confirm; hidden while steering), and two Today rows. The renderer hands main an `AdoVerbRequest` from
+  a closed union of seven verbs; `studio/shared/adoVerbArgv.ts` (pure, golden-tested) builds the argument list,
+  `--json` on every verb and `--by <actor>` last on the four writes (main's resolved actor, never the renderer's),
+  and a comment's text travels as one `--message=<text>` element. `adoWrites.ts` starts `ado_sync.py` once per verb
+  (never `az`, never a shell) and invalidates the command center on every exit; the Boards block reads
+  `ado_sync.py status --json`. The renderer never reads `.sdlc/ado/**` and no timer mutates a ledger. No allowlist
+  row changed and `NeedsYouItem.kind` is unchanged. The table already holds `reconcile`, `link` and `pull`, which no
+  screen sends yet (the reconcile dialog and a Pull-now button are a later Fold), and the discussion block is built
+  and tested but mounted on no screen yet.
+- **One new capability, six names Studio gates on.** `ado-reconcile` is declared in `scripts/capabilities.py` and
+  proven against `reconcile --help`; Studio's `CAPABILITIES` name it with `ado-status-json`, `ado-apply`, `ado-show`,
+  `ado-pull-discussion` and `ado-comment` (the other five were declared in earlier Folds) and gain four digit-free
+  no-data sentences ("Not pulled yet", "Schema not discovered yet", "Work items are not set up for this project",
+  "Could not reach Azure Boards"). A plugin that lacks a name disables its control with `arrives with a newer plugin:
+  lacks <name>`.
+- **One existing test edited, by design.** `studio/test/reasons.test.ts` asserts the exact list of capability names;
+  its list now holds the six Boards ids (`ado-apply`, `ado-comment`, `ado-pull-discussion`, `ado-reconcile`,
+  `ado-show`, `ado-status-json`), because `CAPABILITIES` had to name them for the closed table to gate on them. No other
+  assertion in it changed.
+- **`/sprd-ado` and `references/ado-boards.md`** gain the reconcile section (the four takes, each with a human gate,
+  the exit codes and the honest-counting rule), `pull --propose-specs`, the disposition state machine and the desktop
+  surfaces.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed
+  before the mirror except the one pin above, and the version.
+
+### Fold B5 — breadth
+
+The rest of the Phase-0, Phase-1 and Build record can now ride the board, each kind opt-in, and text a person changes
+on the board can come back as a draft a named person lands. Nothing in this Fold adds a way to write to the board:
+`apply` and `link-pr` are still the only two verbs that do.
+
+- **Five breadth kinds, all opt-in** (`scripts/ado_sync_sources_p1.py`, registered into `ado_sync_sources.SOURCES` at
+  import, extend-only): `nfr` (an `NFR-xxx` row of `non-functional-requirements.md`, parented to the Domain whose heading
+  it sits under, else `no parent` and why), `rule` (a `BR-NN` row of `business-rules.md`, parented to the one Feature
+  whose brief names it; a `(pending DL-NN)` outcome names that decision as its predecessor), `question` (a `Q-NN` entry of
+  `question-list.md`; answered is read, the answer's words are not), `lifecycle` (one item for `.sdlc/state.yaml`: the
+  phase, gate and sign-off table; a phase with no gate reads `no gate recorded`, never a zero) and `measurement` (a
+  threshold row of a `success-criteria.md` dimension, parented to its Outcome, only on a type `types.measurement` pins).
+  None is in the starter `kinds:`; `plan --kind nfr` (or the kind in `kinds:`) plans them for the same confirmed `apply`
+  as every other kind. Their tags are the refs: `sdlc:nfr:<id>` (`sdlc:nfr:P01`), `sdlc:rule:<NN>`, `sdlc:question:<NN>`,
+  `sdlc:lifecycle:project`, `sdlc:measurement:<n>-<slug>`. Priority and AcceptanceCriteria are set only when the resolved
+  type carries them; no roster is read, no AssignedTo is set, an activity-metric column is never pushed, and a rule's
+  text rides its C-owned Description, never AcceptanceCriteria.
+- **The contracts grow append-only** (`scripts/boards_contract.py`, `scripts/ado_sync_model.py`): `KINDS` has 15 members
+  ending `nfr` (`TREE_ORDER` unchanged: an NFR is a leaf), `KIND_OWNERSHIP["nfr"]` makes State the board's and the
+  Description and AcceptanceCriteria C, and `BREADTH_KINDS` names the five. An NFR's Priority is seeded at create and is
+  the board's afterwards (the default `A`), unlike a requirement's, which the repository owns.
+- **The watermark feed** (`scripts/ado_wit_feed.py`, new, read-only): `revisions_since(repo, watermark)` pages the
+  `reporting/workItemRevisions` feed through `ado_transport.invoke_body` at the new `WIT_ROUTES["workitemrevisions"]`
+  row (`verified: False` until the B0 capture). A watermark names its kind in the string — `token:<continuation token>`
+  or `since:<whole UTC time>` — and is never inferred from its shape; the first call names `startDateTime`, every later
+  call only the previous page's `continuationToken`, never both. `isLastBatch` ends the read, a page that promises more
+  but sends no token (or repeats one) is a failed read, and `MAX_FEED_PAGES` stops a runaway read with `truncated` set.
+  The module stores nothing: the caller saves the next watermark in `.sdlc/ado/local/watermark` with `save_watermark`
+  once it has used the rows, and a watermark never saved reads `None`, never 0. Identities are redacted through the
+  roster and `System.History` is dropped. `pull` does not read through it yet.
+- **`reconcile --take ado` on a co-owned text field writes `<artifact>.proposed`** (design D32;
+  `ado_sync_reconcile.propose`): the board's words — or, with `--from-comment <id>`, that cached comment's — are spliced
+  into the field's own byte span through `document_shape.write_document` and written beside the artifact, which is never
+  written; line endings and a BOM survive, and a person lands the draft through `/sprd-revise`. It writes a draft only
+  where a shape can place text (`ado_sync_reconcile.TEXT_TARGETS`): a requirement's Description and AcceptanceCriteria
+  and an epic's AcceptanceCriteria. Any other text field — a title, an outcome's, domain's or feature's text, an epic's
+  Description, an NFR's or a rule's text — is refused by name (exit 2, `no place`) until a later package adds its target.
+  A second, different proposal while one waits is exit 1 and nothing changes; a symlinked proposal, a path that leaves
+  the repository, a table field and text holding an address or an id are refused; a line that reads as an instruction
+  is counted and shown with `⚑`, never refused. No process starts: the ledger line records `child_argv ["propose",
+  <field>]`, `child_exit 0`, the proposal's path as `proposed` and `proposed_sha` (12 hex), never the words, and the
+  `--json` result carries the same `proposed` and `proposed_sha` (present only when a proposal was written), which the
+  desktop app's reconcile dialog reads. A `.proposed` file can hold a board comment's words: it belongs in the project's
+  `.gitignore`, never in a commit.
+- **A typed `--reason` on an `ado` or `sdlc` take is ledgered as `<text>` plus a 12-hex `reason_sha`**
+  (`ado_sync_reconcile.ledger_reason`), because a resolution or an unslate reason may be a board comment's words;
+  `not-drift` and `ack`, which require the words, keep them as typed. An address or an id in any reason is refused.
+- **`/sprd-retro` gains an Azure Boards section** (`scripts/retro_report.py`, additive): board comments with a line that
+  reads as an instruction, per work item, against the comments read; refused comment drafts by reason; and the drift
+  disposition rollup (`ado_sync_model.summarize`'s own numbers, and each disposition against how many of its lines carry
+  what it claims). The `boards` key and its text block appear only when `.sdlc/metrics/ado-sync-log.jsonl` holds an event
+  the mirror wrote, so a repository that never mirrored prints exactly what it printed before; inside it a block nobody
+  measured reads `no data` / `null`, and nothing is keyed by a person.
+- **The desktop app settles drift and pulls on a click.** `AdoReconcileDialog` gives each drifted field one choice
+  (leave open, take the board's, keep the repository's, acknowledge, not drift) beside its diff, previews the exact
+  `reconcile` argument line per field, and runs one `reconcile` per chosen field on one Confirm, stopping at the first
+  the plugin did not settle; a result carrying `proposed` names that file and says the artifact was not changed.
+  `PullNow` draws **Pull now** (`pull`) and **Pull discussion** (`pull --discussion`), neither on a timer; an exit 0
+  that carries an `unavailable` board or a switched-off discussion says so, with the plugin's reason, never "Done". The spec card gains a Boards row
+  (Pull now, **Plan changes**, and **Settle drift** once a pull read drift for that spec) and mounts the Discussion block
+  below its facts rail. **Plan changes** runs nothing: it shows the `ado_sync.py plan --kind spec --id <NNNN>` and
+  `apply --confirm <hash> --by <your handle>` lines, because the closed `AdoVerbRequest` table stays the seven verbs the
+  build kit pins (a plan request is refused before any spawn). Nothing under `studio/electron/**` changed; steering mode
+  draws none of these controls.
+- **One hand-written fixture** (`wit/workitemrevisions.json`, one feed page; 31 hand-written in all, each `hand-written
+  (unverified)` until a person captures them) and spec `0038-ado-boards-breadth.md` (MEDIUM).
+- **Not in this release:** mention markup (B5-P5) waits for the B0 `mention_probe` capture, so `comment --mention @h`
+  stays text only and notifies nobody; the harness pack's deny-list change waits for the upstream kit (D-OWNER-4) and
+  reaches `harness/` only through `sync_kit.py`.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed before the
+  mirror except Fold B4's one pin, and every `scripts/capabilities.py` row (the breadth kinds ride `plan --kind`, the
+  draft rides `reconcile`).
+
+### Fold B6 — sync, catch-up, plan from the desktop
+
+A person can now catch up with the board in one step, and only when they say yes, and the desktop app can draw up a
+plan, so the apply dialog Fold B4 built is finally reachable. Nothing in this Fold adds a way to write to the board:
+`apply` and `link-pr` are still the only two verbs that do, and nothing reads the board when a project, a session or a
+spec card opens. Spec `0040-ado-boards-sync-and-catch-up.md` (MEDIUM).
+
+- **`ado_sync.py sync` — the catch-up in one read.** Four stages, always in `ado_sync_model.SYNC_STAGES` order:
+  **pull** reads the board's copy of the ledgered fields and records `observed` and `drift_seen` exactly as `pull`
+  does; **drift** is classified from that pull's own rows, and the board is not read a second time — `sync`'s `az`
+  calls equal `pull`'s then `plan`'s over the same board (pinned in `test_boards_sync_cli_b6.py`), and the search for
+  board items nobody tagged stays `drift`'s own, so here `unmapped` is `null` and reads "not searched"; **discussion**
+  runs only on `--discussion` and is `null` otherwise (`sync` has no `--full` and no `--by`); **plan** is `plan` for the
+  same `--kind`, `--id`, `--sprint`, `--all` and `--no-comments`, so its rows and 12-hex hash are the ones `plan` alone
+  prints. A stage that cannot read says `unavailable` with its reason and the next one still runs; when neither the pull
+  nor the plan could read, the document is `ado_sync_model.SYNC_NODATA` (golden
+  `scripts/tests/golden/ado_sync_unavailable.json`: `counts` and `next` are `null`, no integer zero) with the reasons
+  filled. Exit 0 on every path, 1 only on a pull-stage ledger `DRIFT:` (the plan stage still runs). It writes only what
+  `pull` and `plan` write, and the hook line twice — the pull stage's, then the plan stage's — so line 1 of
+  `hook-status.txt` is the plan's (K11). The capability `ado-sync` is declared in `scripts/capabilities.py`.
+- **One footer, and two new keys.** `comment`, `plan` and `sync` end their text with
+  `ado_sync_model.apply_next_line(<hash>)` — ``Next: `ado_sync.py apply --confirm <hash> --by <you>` sends it, as
+  whoever az is signed in as`` — wherever an apply is offered: posture `assisted`, and for `plan` and `sync` a plan that
+  holds a create, an update or a drafted comment. `plan --json` gains `apply_offered` and `next` (`null` when no apply
+  is offered), beside the `apply_offered` that `comment --json` already carried. Under `plan-only` the plan text stays byte-equal to the B2
+  golden `ado_plan_spec_0004.txt`, with no `Next:` line; `apply_next_line` raises on anything that is not a 12-hex hash.
+- **The catch-up is ask-first** in `/sprd-refine` (step 3, the agenda) and `/sprd-sprint` (step 5, `status`). Each first
+  prints the ledger's last measurement (`ado_sync.py status`: `Board as of <as_of>`, or `Board: no data (never
+  pulled)`), which costs the board nothing, then asks one question — `yes` / `yes, with the discussion` / `no` — and runs
+  `sync --sprint SNN` only on a yes. `--discussion` is added only on the second yes, never by the prose on its own. The
+  `next` line is printed verbatim for a named person to run through `/sprd-ado apply`'s gate, never by the agent.
+  `/sprd-ado` gains the `sync` section (step 7b) and its rows in the verb tables. `test_boards_prose_b6.py` pins the
+  question, the ledger-only read before it, the words "only on" beside `--discussion`, and that no fenced line applies,
+  runs `az` or pulls the discussion; `test_command_contracts.py` proves every `sync` flag the prose names.
+- **After a write, the board's count.** `/sprd-sprint` step 11 plans the slate after `slate`, `unslate` or `close`, and
+  the one spec after a `handoff`; `/sprd-handoff` step 5b plans the spec it handed off, before `--open` hands the
+  terminal over. Each prints `Board: N to create · M to update · K comments to send` (`unavailable (<reason>)`, or `no
+  data` for a null count) and the `next` line verbatim, and never runs `apply`: the hash and `--by` come only from the
+  named person.
+- **A decision closed from the board is confirmed.** In `/sprd-ado reconcile` (step 16), once `--take ado` on a decision
+  exits 0, a `plan --kind decision --id DL-NN` reads whether the board agrees: `in_sync` is the confirmation, a create or
+  update count says the two still differ, and an `unavailable` plan is reported as such, never "in sync".
+- **The desktop app draws up a plan on a click.** The closed `AdoVerbRequest` gains its eighth and last member, `plan`
+  — a read with no `--by`, scoped to `--sprint SNN` alone or to `--kind K` with `--id ID` (an unscoped plan is refused
+  before any spawn) — gated on `ado-plan` (`ADO_VERB_CAPABILITY.plan`); `studio/shared/reasons.ts` and its exact-list
+  test keep their 19 ids. On the spec card, **Plan changes** (`PlanChanges`) sends one `plan` request on the person's
+  click and never otherwise, says what the plugin found in one line (`N to create · M to update · K comments`; a count
+  the plugin did not print reads "no data"), and hands the plan to the work-item chip, whose **Review plan** opens the
+  existing `AdoApplyDialog` on exactly those rows; its Confirm, sending `apply --confirm <hash>`, stays the one way a
+  plan reaches the board. The card itself holds no request: every Boards spawn lies under `studio/src/components/ado/`.
+- **Catch up, and the Boards nudge.** The Today column and the lifecycle home gain `CatchUp`: how old the mirror is
+  (`Board as of <stamp>`, `Not pulled yet`, `Work items are not set up for this project`, or `no data`) and two
+  separate clicks — **Catch up** (`pull`, the fields) and **Pull discussion** (the comments, never implied by the first).
+  After a person changes something the board mirrors — a spec verb from the omnibar, a hand-off that landed, a decision
+  recorded from Today — `BoardsNudge` says once "Boards: spec NNNN changed here — the board has not heard" and spawns
+  nothing until clicked: **Plan board changes** runs `plan` for that item, **Review plan** appears only when the plan
+  has rows an apply would send, and the apply dialog's Confirm is the one write. It never pulls, and it is not drawn in
+  steering mode, off Azure DevOps, or when the Boards block was not read. Nothing under `studio/electron/**` changed.
+- **Gate G18 — nothing reads the board on open.** `studio/test/unit/noOpenAdoSpawn.test.ts` drives main's real
+  `studio:openProject` handler, the command-center read and a day of the open-project timer over a fake plugin that
+  declares every Boards capability, and holds every `ado_sync.py` spawn to `status <source> --json`; its source half
+  holds every `runAdo(` / `runAdoVerb(` call site under `studio/src/components/ado/` and every `useEffect` free of a
+  Boards request. Neither session-start hook names `ado_sync.py`: they print the cached hook line, as before.
+- **One binding decision amended (K28, owner decision 2026-10-15).** Fold B4 pinned the closed table at seven verbs;
+  it is now eight, the eighth (`plan`) a read, and no later Fold widens it without a kit amendment.
+- **How this Fold was measured.** (A) `$BASE` for gates G2 and G3 is `29a77a2`, PR #106's merge commit (merged
+  2026-10-13), as the build kit's §0 step 1 prescribes once #106 has merged; the branch merged master at `434d0e2`,
+  which brought #106's post-`325ac2b` changes to three desktop test files — upstream's own, not this Fold's. (B) G3
+  exempts, beside B4's `studio/test/reasons.test.ts`, exactly `scripts/tests/fixtures/code_host/azure_devops/redact.py`
+  and its `README.md`, which the B0 capture extended (new `--project`, `--team`, `--rename`, `--mask-free-text` and
+  `--indent` options; the default output is byte-identical): the human's capture tooling, not a test. (C) The B3 pin
+  `test_a_plan_with_no_comment_row_reads_as_it_did_before_comments_were_planned` now expects the `Next:` footer under
+  `assisted` with a pending row, because spec 0040's sixth acceptance check requires it; the plan-only golden is
+  unchanged.
+- **Unchanged, deliberately:** the protected core, the harness payload, every test and fixture that existed before the
+  mirror except Fold B4's one pin and the capture tooling in (B), and the version: the four version files stay at
+  2.1.0, which has not shipped.
+
+### Live-test fixes
+
+What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) found, each pinned by
+`scripts/tests/test_boards_live_fixes.py`. Only `scripts/ado_*.py`, tests, docs and this file change.
+
+- **Tags are compared the way Azure Boards compares them — without case.** An organisation keeps the first-seen
+  casing of a tag, so a plan that wanted `risk:HIGH` against an organisation that already owned `risk:high` got the item
+  back holding `risk:high`, and `plan` and `sync` offered the same `System.Tags + risk:HIGH - risk:high` row on every
+  run. A tag the board holds in any casing now satisfies the projection's tag (`ado_sync_model.tag_key`, the one
+  comparison), the mirror never issues a Tags op whose only difference is case, a write it must make for another
+  reason keeps the board's own casing for every tag it keeps and the repository's only for a genuinely new one
+  (`merge_tags`), a plugin prefix the board holds in any casing (`Risk:High`) is the repository's family rather than
+  a person's tag (so a person's capitalised `Type:Bug` or `Severity:High` is now the mirror's too: a plan shows a Tags
+  row removing it and the next write strips it), the by-tag ref match (`_tag_map`, `_other_refs`) is
+  case-insensitive, and a case-only tag change on the board is `ADO_OWNED_CHANGE` (owner `C`), never
+  `SDLC_OWNED_DRIFT`. A plan row for a real tag change no longer
+  names a tag only to re-spell it; no verb, flag, exit code or ledger line changed, and the plan-only golden is
+  byte-identical.
+- **A create whose State the process does not allow at creation is created in the initial state, then moved.** A
+  decided decision projects `System.State: Closed`, and an Issue is created Active: the live run's create of DL-02 was
+  refused as a `rule` row although the discovered process already knew `Active -> Closed`. The creation check now runs
+  for every create row (it only ran under `plan --validate`, and not at all for a type whose field list was unread):
+  where the process allows `initial -> State`, the State op carries `via` and the text reads `(created Active, then
+  moved)`, the plan hash covers it, and `cost` counts the extra write; apply creates the item, ledgers it, then sends
+  one `test /rev` PATCH. A refused move leaves the item created and linked (a `failed` update row, `created #N; moving
+  it to Closed failed`), the next `plan` offers the State as an update (also for a kind whose State the board owns,
+  through `state_pending` on the create's ledger line, and only while the item's revision is still the one the create
+  returned: once anyone has touched it the State is the board's again and is never pushed back) and never a second
+  create, and applying the same plan again retries the move. A State reachable in neither hop is a `validation`
+  finding on a row that stays a create; a type whose transitions were never read behaves as before. Existing pins
+  changed because the hand-written process creates a User Story in New, so spec 0004 (Ready) and 0005 are now
+  two-step creates there: eight tests in `test_boards_sync_apply.py`, `test_boards_sync_cli_b2.py`,
+  `test_boards_sync_cli_b3.py` and `test_boards_write_fixes.py` (each named in the commit) expect the extra write; a
+  plan with a move now needs the Entra sign-in an update needs.
+- **Review follow-up to the two fixes above.** `state_pending` used to outlive the board's own change of State: a
+  person who closed the item by hand left the flag on the create's ledger line, so a later reopen was pushed back to
+  Closed. The exception for an owed move now holds only while the item's revision is still the one the create
+  returned (`ado_sync_model.ownership_for_link` takes the board's item), the same revision the move tests. The
+  one-hop creation finding (`Issue does not allow creation -> Closed`, said under `plan --validate` when the second
+  hop is not known) has its pin back.
+- **Two-step creates told truthfully where a count or a dialog repeats them.** The `writes_per_run` note called a
+  row what is a write: one two-step create at a cap of 1 read `2 rows is over limits.writes_per_run (1)`. When a move
+  is among the writes it now reads `2 writes (1 row, 1 of them a create then a move) is over limits.writes_per_run
+  (1)`; with no two-step row the note is word for word what it was. Shepherd's apply dialog dropped `via`, so a
+  create in Active then moved to Closed was drawn as one write in Closed; it now keeps `via` and ends that op's line
+  with the plugin's words, `(created Active, then moved)`. The dialog shows a row count (`pendingRowCount`, a row is a
+  row however many writes it sends) and never a write count, so it has none to correct; the plan's `cost` block is
+  where writes are counted.
 
 ## 2.0.0 — 2026-10-12
 

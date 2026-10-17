@@ -3,3 +3,8 @@
 # broken hooks and rails scripts — and broke the Windows CI leg running the hook tests.
 # pwsh is CRLF-tolerant, so .ps1 files are left to the platform default.
 *.sh text eol=lf
+
+# The Boards mirror's mini repositories are byte-exact test inputs: the `.proposed` writer's tests splice spans into
+# them and compare against LF text, and the plan golden pins a hash over what they hold. An autocrlf checkout (Git for
+# Windows' default) rewrote them CRLF, and the Windows leg alone failed. `eol=lf` wins over any core.autocrlf.
+scripts/tests/fixtures/boards_repo*/** text eol=lf

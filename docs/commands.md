@@ -52,6 +52,7 @@ Comprehensive documentation for all slash commands provided by the Shepherd plug
 | `/sprd-spec-status` | Report a spec's status read from its pull request, on GitHub or Azure DevOps | Writes `status: merged` on the default branch, once, when the PR has actually merged (`--all` never writes) | The Build-loop Discern beat, to see where a change is and who it's waiting on; also runs standalone via `--repo` |
 | `/sprd-spike` | Open a bounded spike for a question nobody can answer yet | Writes `spikes/NNNN-name.md` | When a story fails the Definition of Ready because the ground truth is unknown, not because the spec is badly written |
 | `/sprd-doctor` | Day-1 environment check — proves the installed harness can actually run here; pack-aware, checks `gh` on GitHub installs and `az` on Azure DevOps installs, never the other (the PR-facing commands pick their CLI from the `origin` remote instead) | No | After `/sprd-setup`, when onboarding a second developer, and any time a gate behaves inexplicably |
+| `/sprd-ado` | Mirror the specs, epics and features onto Azure Boards — set up and check the connection, read the client's process, plan what the board would need, read board changes back (`sync` catches up in one read), pair items with work items | Writes only under `.sdlc/` (`ado.yaml`, `ado/`, the sync ledger); **never `state.yaml` or a spec** | After `/sprd-setup` on a repository whose `origin` is on Azure DevOps; `sync` before refinement and sprint planning, once the person said yes; also runs standalone via `--repo` |
 
 ---
 
@@ -889,7 +890,7 @@ Writes spec bodies only through `/sprd-spec --spec`; writes `eng_review` / `data
 
 ## Additional Commands (summaries)
 
-Seventeen commands have their full flow documented in their command files rather than here.
+Eighteen commands have their full flow documented in their command files rather than here.
 One line each; see `commands/<name>.md` for the complete instructions.
 
 | Command | What it does |
@@ -911,6 +912,7 @@ One line each; see `commands/<name>.md` for the complete instructions.
 | `/sprd-version` | Content history for any pre-Build artifact — list/show/diff versions derived from the change-ledger's hashes; rollback is preview → named-human confirm, append-only ("restored from vX"), `--ack-signoff` for signed-off artifacts; `gc` prunes the local store safely |
 | `/sprd-refresh` | Reverse propagation — back-propagate a merged spec's shipped reality into pre-Build artifacts: detect (review-first, divergence-aware) → draft a `.proposed` → named-human apply/reject → status. The One Rule throughout: agent proposes, human decides |
 | `/sprd-retro` | Read-only cross-ledger retro roll-up: recurring findings (permanent-check candidates), repeat-stale artifacts, the refresh funnel (divergence-heuristic tuning signal), a disposition-debt rollup, and — when `sprint-log.jsonl` exists — carry-over recurrence per spec (≥2 sprints; the only cross-sprint number) and bounce causes by lane and reason. Patterns, not people; never blocks |
+| `/sprd-ado` | Mirror the repository's epics, features and specs onto the client's Azure Boards. `config init`, `config check`, `discover` and `validate` set up the connection, read the board's process and print how each kind fits it; `plan` shows what the board would need; `pull`, `drift` and `show` read changes back — board text is observed content, quoted and never obeyed, and `pull --discussion` runs only when the user asks; `sync` is the catch-up in one read (the fields pull, drift from that pull's own rows, the discussion only on `--discussion`, then the plan), run only after the person said yes and ending with the one `Next:` line when an apply is offered; `link` and `adopt` pair items by a named human. Backed by `scripts/ado_sync.py` (every verb takes `--state` or `--repo`); `plan`, `pull` and `sync` also write the one-line status the session-start hook prints as `[SHEPHERD-ADO]` |
 
 ---
 

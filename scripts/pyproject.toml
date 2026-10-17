@@ -2,7 +2,10 @@
 name = "shepherd-scripts"
 version = "0.1.0"
 description = "Automation scripts for the Shepherd plugin"
-requires-python = ">=3.12"
+# The upper bound is temporary: `jsonschema` needs `rpds-py`, whose PyO3 build refuses CPython 3.15
+# ("newer than PyO3's maximum supported version (3.14)"), and a runner with 3.15 installed makes
+# `uv sync` pick it. Lift the bound when rpds-py ships 3.15 wheels.
+requires-python = ">=3.12,<3.15"
 dependencies = [
     "pyyaml>=6.0",
     "jsonschema>=4.20",

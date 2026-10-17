@@ -19,6 +19,7 @@ import { Button, Eyebrow, cn } from '../ui'
 import { useChatTurn } from '../stores/chatTurnStore'
 import { CcEmptyFigure } from './brand/figures'
 import { StageHome } from './StageHome'
+import { BoardsToday } from './ado/BoardsToday'
 
 type StageHomeProps = Parameters<typeof StageHome>[0]
 
@@ -29,6 +30,8 @@ export interface LifecycleHomeProps extends StageHomeProps {
   onNavigate: (target: NavTarget) => void
   /** One action per needs-you item, handed up as the item itself; the host maps it to a verb. */
   onNeedsYou?: (item: NeedsYouItem) => void
+  /** After a `Catch up` that read the board: the host re-reads the command center, so the staleness line is the new one. */
+  onBoardPulled?: () => void
 }
 
 /** Provenance lines, in words: which scripts the block is drawn from and how it was addressed. */
@@ -40,7 +43,7 @@ export const WORKING_SOURCE = "Shepherd's own record of this session"
  * measured) and main's 24 px bottom padding, so the column ends on screen and scrolls inside. */
 export const LIFECYCLE_TODAY_MAX_HEIGHT_CLASS = 'min-[1600px]:max-h-[calc(100dvh-193px)]'
 
-export function LifecycleHome({ commandCenter, onNeedsYou, ...stageHome }: LifecycleHomeProps) {
+export function LifecycleHome({ commandCenter, onNeedsYou, onBoardPulled, ...stageHome }: LifecycleHomeProps) {
   const { status, stageId, onNavigate, projectPath } = stageHome
   const resolvedStage = stageId ?? status.stages.find((s) => s.stage_state === 'current')?.id ?? status.current_phase.id
   const stage = status.stages.find((s) => s.id === resolvedStage)
@@ -78,6 +81,7 @@ export function LifecycleHome({ commandCenter, onNeedsYou, ...stageHome }: Lifec
         <Group label="Decisions this week" source={commandCenter?.decisions.source ?? null}>
           <Decisions cc={commandCenter} />
         </Group>
+        <BoardsToday projectPath={projectPath} cc={commandCenter} onPulled={(what) => { if (what === 'fields') onBoardPulled?.() }} />
       </section>
     </div>
   )
