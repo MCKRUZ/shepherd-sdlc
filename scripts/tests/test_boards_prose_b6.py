@@ -21,7 +21,7 @@ The rules these tests pin, so a later edit cannot loosen them quietly:
   * the two invariant sentences (never run `apply` from here; the hash and `--by` are never taken from anywhere but the
     person) appear verbatim in the sprint and hand-off files;
   * the three pieces this Fold promised not to touch are unchanged: `phases/activities.yaml` (by hash) and the
-    protected lifecycle scripts `sprint.py`, `handoff.py`, `track_decisions.py` (byte for byte against `325ac2b`).
+    protected lifecycle scripts `sprint.py`, `handoff.py` (byte for byte against `325ac2b`).
 
 Nothing here runs `az` or a script: the prose is read as text, and the `boards_env` fixture (imported like every
 `test_boards_*.py`) would stop a real `az` at the seam if anything did.
@@ -44,10 +44,13 @@ FILES = {
     "handoff": COMMANDS / "sprd-handoff.md",
 }
 BASE = "325ac2b"  # Shepherd 2.0.0 (#106): the protected scripts are byte-identical to it
-PROTECTED_SCRIPTS = ("scripts/sprint.py", "scripts/handoff.py", "scripts/track_decisions.py")
+# track_decisions.py left this list when spec 0039 added `--all-branches` to it on purpose (additive; the
+# default behaviour is pinned by its own golden tests), so it is no longer byte-identical to 2.0.0
+PROTECTED_SCRIPTS = ("scripts/sprint.py", "scripts/handoff.py")
 
-# sha256 of phases/activities.yaml at the start of Fold B6 (identical at 325ac2b): the pin the activities suites read
-ACTIVITIES_SHA256 = "83c6bcd961b418f849e860e62f211dc398fa1e4a646f4ae96bf192ac89d16392"
+# sha256 of phases/activities.yaml: Fold B6 changed nothing in it (it was 83c6bcd9... at 325ac2b); the only later change is
+# spec 0039's `data-spec` activity (+5 lines), so the pin moved with it
+ACTIVITIES_SHA256 = "4e7bafba0bceed3c81362f740626d161777064e49ad114c02d7c17cce8cd20a0"
 
 CANON = "uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py"
 QUESTION = "Catch up with Azure Boards now? It reads the board (pull → drift → plan) and sends nothing."
