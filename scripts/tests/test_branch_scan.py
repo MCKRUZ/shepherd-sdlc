@@ -8,6 +8,7 @@ against real `git` repositories built under `tmp_path`, so a change to the actua
 behind a mock that quietly drifted from real git behaviour.
 """
 
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -278,7 +279,9 @@ def test_scan_file_names_a_ref_it_could_not_read_and_keeps_going(two_branches, m
 def test_scan_file_names_a_ref_whose_object_is_damaged(two_branches):
     """A real unreadable ref, no monkeypatching: `feature`'s log blob is gone from the object store."""
     sha = git(two_branches, "rev-parse", f"refs/heads/feature:{LOG}")
-    (two_branches / ".git" / "objects" / sha[:2] / sha[2:]).unlink()
+    obj = two_branches / ".git" / "objects" / sha[:2] / sha[2:]
+    obj.chmod(stat.S_IWRITE)             # git writes objects read-only; Windows refuses to unlink them otherwise
+    obj.unlink()
     result = bs.scan_file(two_branches, LOG)
     assert [u["ref"] for u in result.unread] == ["refs/heads/feature"]
     assert result.unread[0]["reason"]

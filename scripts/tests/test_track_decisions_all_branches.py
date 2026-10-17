@@ -10,6 +10,7 @@ goldens are pinned by earlier specs. Everything runs the real script against rea
 
 import json
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -196,7 +197,9 @@ def test_the_text_output_warns_on_stderr_about_an_unreadable_branch(repo):
 def test_a_ref_git_cannot_read_is_named_in_unread(repo):
     """Not monkeypatched: `feature`'s log blob is gone from the object store."""
     sha = git(repo, "rev-parse", f"refs/heads/feature:{LOG}")
-    (repo / ".git" / "objects" / sha[:2] / sha[2:]).unlink()
+    obj = repo / ".git" / "objects" / sha[:2] / sha[2:]
+    obj.chmod(stat.S_IWRITE)             # git writes objects read-only; Windows refuses to unlink them otherwise
+    obj.unlink()
     doc = open_json(repo, "--all-branches")
     assert [u["ref"] for u in doc["unread"]] == ["refs/heads/feature"]
     assert doc["unread"][0]["reason"]

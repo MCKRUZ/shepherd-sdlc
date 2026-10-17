@@ -509,7 +509,7 @@ class TestTarget:
         target = build_spec(repo, "target")
         before = read(target)
         data(repo, "target", "--spec", "0002", "--serves", "0001")
-        after = read(target)
+        after = read(target).replace("\r\n", "\n")   # the section is written in the document's own line ending
         # the frontmatter edits aside, nothing already in the body moved: the section is appended
         assert after.endswith("\n") and "\n## Context\n" in after
         assert after.index("\n## Context\n") > after.index("\n## Decision List\n")

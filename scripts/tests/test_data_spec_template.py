@@ -7,6 +7,7 @@ vague-line lint — a template that ships a wish ("the data is clean") would tea
 to fail the DoR. Spec 0039 itself must be READY.
 """
 
+import os
 import re
 import subprocess
 import sys
@@ -105,6 +106,7 @@ class TestSeededAcceptanceChecks:
 class TestSpec0039:
     def test_is_ready(self):
         proc = subprocess.run([sys.executable, str(REPO_ROOT / "scripts" / "check_spec.py"), "--spec", str(SPEC_0039)],
-                              capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT))
+                              capture_output=True, text=True, encoding="utf-8", cwd=str(REPO_ROOT),
+                              env={**os.environ, "PYTHONIOENCODING": "utf-8"})
         assert proc.returncode == 0, proc.stdout + proc.stderr
         assert proc.stdout.strip().splitlines()[-1] == "READY — this spec clears the Definition of Ready."
