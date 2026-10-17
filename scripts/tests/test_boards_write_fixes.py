@@ -76,8 +76,10 @@ def test_every_create_apply_sends_carries_the_area_and_the_ledger_names_the_fiel
     assert len(bodies) == 7
     for body in bodies:
         assert [op["value"] for op in body if op["path"] == AREA_OP] == [AREA], title_of(body)
-    assert all("System.AreaPath" in e["fields"] for e in events_of(repo, "applied"))
-    assert not any(is_identity_rest_read(c) for c in board.calls)   # creates only: no sign-in check is needed
+    assert all("System.AreaPath" in e["fields"] for e in events_of(repo, "applied") if e["action"] == "create")
+    # the moves of 0004 and 0005 are `az rest` PATCHes, which need the Entra sign-in an update needs: it is read once,
+    # first (a plan of creates that need no move has no such read: test_boards_live_fixes.py)
+    assert [is_identity_rest_read(c) for c in board.calls].count(True) == 1 and is_identity_rest_read(board.calls[0])
 
 
 def test_with_no_area_configured_a_create_sets_none(repo, board, capsys):

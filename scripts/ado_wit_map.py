@@ -29,7 +29,9 @@ What it does, and the rules it keeps:
     are the repository's; every other tag and every byte outside the markers is a person's and survives.
   * `build_create_patch` — the patch a create would send: the projection's fields, the configured `area_path`
     (`with_create_fields`; create-time only), the merged tags, the History line, a hyperlink back to the source file
-    and (when known) the parent link. No `test` op: there is no revision yet.
+    and (when known) the parent link. No `test` op: there is no revision yet. A create whose State the process does
+    not allow at creation is born in the type's initial state (`initial_state`) and moved by one PATCH
+    (`build_state_move_patch`, guarded by the revision the create returned).
   * `wiql_ref_lookup` / `wiql_untagged` / `project_clause` — the WIQL the mirror runs, scoped by the project's NAME
     as a literal (never the current-project macro, which `az boards query` answered with zero bytes). Every value
     that reaches the query text is whitelisted first and a quote is doubled, so a path, a ref or a project name can
@@ -63,6 +65,7 @@ ERROR_CLASSES = ("conflict", "rule", "permission", "throttled", "not_found", "un
 _TAGS = "System.Tags"
 _DESCRIPTION = "System.Description"
 _TITLE = "System.Title"
+_STATE = "System.State"
 _FIELDS = "/fields/"
 _WORK_ITEM_TAIL = re.compile(r"/workItems/(\d+)$")
 _ITEM_URL = re.compile(r"https://\S+/_apis/wit/workItems/\d+")
@@ -253,20 +256,21 @@ def has_changes(patch: list[dict]) -> bool:
     return any(op.get("op") != "test" for op in patch)
 
 
-def build_update_patch(remote: dict, projection: dict) -> list[dict]:
+def build_update_patch(remote: dict, projection: dict, *, ownership: dict | None = None) -> list[dict]:
     """`[{"op": "test", "path": "/rev", "value": <rev>}, *field ops]` for an item `remote_item` read.
 
     The field ops are exactly `ado_sync_model.diff(projection, remote, ownership_for(kind))`, sorted by path; Tags
     and Description are re-expressed as the merge of the board's current value and the repository's (a person's
     tags and the text outside the markers survive). A patch of the test op alone changes nothing — see
     `has_changes`. Raises `AdoImportError` for a remote with no integer `rev`, `ValueError` for an effort or a
-    read-only field in the projection."""
+    read-only field in the projection. `ownership` is the kind's own unless the caller passes one
+    (`ado_sync_model.ownership_for_link`: the State a two-step create's move still owes)."""
     rev = _integer(_require(remote, "rev", "remote item"), "remote item.rev")
     fields = projection.get("fields") or {}
     _check_fields(fields, frozenset())
     held = remote.get("fields") if isinstance(remote.get("fields"), dict) else {}
     patch = [{"op": "test", "path": "/rev", "value": rev}]
-    for op in diff(projection, remote, ownership_for(projection.get("kind"))):
+    for op in diff(projection, remote, ownership or ownership_for(projection.get("kind"))):
         ref, new = op["path"][len(_FIELDS):], op["new"]
         if ref == _TAGS:
             value = merge_tags("; ".join(sorted(remote.get("tags") or ())), _plugin_tags(projection.get("tags")))
@@ -333,14 +337,36 @@ def with_create_fields(projection: dict, area_path: str | None) -> dict:
     return {**projection, "fields": {**fields, AREA_PATH: area_path}}
 
 
+def _state_name(value, what: str) -> str:
+    if not isinstance(value, str) or not value.strip() or value != value.strip() or _control(value):
+        raise ValueError(f"{what} {value!r} is not a state name (one line of text, no surrounding spaces)")
+    return value
+
+
+def build_state_move_patch(rev: int, state: str) -> list[dict]:
+    """The one PATCH that follows a two-step create: `[test /rev <rev the create returned>, replace System.State]`.
+    The guard is the create's own revision, so a board edit between the two writes makes the move a conflict instead
+    of an overwrite. `ValueError` for a `rev` that is not a positive integer or a `state` that is not one line."""
+    if isinstance(rev, bool) or not isinstance(rev, int) or rev < 1:
+        raise ValueError(f"rev {rev!r} is not a revision (a positive integer)")
+    return [{"op": "test", "path": "/rev", "value": rev},
+            {"op": "replace", "path": f"{_FIELDS}{_STATE}", "value": _state_name(state, "the state")}]
+
+
 def build_create_patch(projection: dict, schema: dict, hyperlink: str, history_line: str,
-                       parent_url: str | None, *, area_path: str | None = None) -> list[dict]:
+                       parent_url: str | None, *, area_path: str | None = None,
+                       initial_state: str | None = None) -> list[dict]:
     """The JSON patch a create sends: an `add` per projection field (what `ado_sync_model.diff` calls a push to an
     item that does not exist yet), `System.AreaPath` when `area_path` is configured (`with_create_fields`), the
     plugin tags only, the description inside the markers, then the History line, the source `hyperlink` and the
     parent link when `parent_url` is known. `schema` names the effort fields to refuse; whether a field exists on the
     type is `plan --validate`'s question, not this one. Raises `ValueError` for an effort or read-only field, a
-    projection with no title, or a line, link, URL or area that is not what its name says."""
+    projection with no title, or a line, link, URL or area that is not what its name says.
+
+    `initial_state` is the two-step create (live test, 2026-10-17): the process does not allow the projection's State
+    at creation, so the item is created in this state instead (the type's initial one, named by the plan row's `via`)
+    and `build_state_move_patch` moves it afterwards. It replaces the projection's `System.State` value in the patch;
+    a projection with no State, or a state that is not one line of text, is a `ValueError`."""
     projection = with_create_fields(projection, area_path)
     fields = projection.get("fields") or {}
     _check_fields(fields, refused_fields(schema))
@@ -348,17 +374,24 @@ def build_create_patch(projection: dict, schema: dict, hyperlink: str, history_l
     if not isinstance(title, str) or not title.strip():
         raise ValueError(f"the projection has no {_TITLE}; a work item cannot be created without one")
     history, link, parent = _history(history_line), _hyperlink(hyperlink), _parent(parent_url)
-    ops = []
+    if initial_state is not None:
+        initial_state = _state_name(initial_state, "the initial state")
+    ops, born = [], False
     for op in diff(projection, None):
         ref, value = op["path"][len(_FIELDS):], op["new"]
         if ref == _TAGS or value is None:
             continue  # tags come from the projection's tag set below; no value is not a value
+        if ref == _STATE and initial_state is not None:
+            value, born = initial_state, True
         if ref == _DESCRIPTION:
             if not str(value).strip():
                 continue
             _inner(value)  # unpaired markers raise
             value = str(value) if MARKER_BEGIN in str(value) else merge_description(None, value)
         ops.append({"op": "add", "path": op["path"], "value": value})
+    if initial_state is not None and not born:
+        raise ValueError(f"the projection has no {_STATE}, so there is no state to create in {initial_state!r} and "
+                         "move away from")
     tags = _plugin_tags(projection.get("tags"))
     if tags:
         ops.append({"op": "add", "path": f"{_FIELDS}{_TAGS}", "value": merge_tags(None, tags)})

@@ -394,7 +394,7 @@ def test_plan_create_row_when_the_board_has_nothing(repo, az, capsys):
     assert ops["/fields/System.State"]["new"] == "Ready" and ops["/fields/Custom.RiskTier"]["new"] == "HIGH"
     assert ops["/fields/System.AssignedTo"]["new"] == "@dev-one"      # a handle, never the address
     assert set(ops["/fields/System.Tags"]["add"]) == PROJECTION_TAGS
-    assert out["cost"] == {"writes": 0, "creates": 1, "links": 0, "az_spawns": 1}
+    assert out["cost"] == {"writes": 1, "creates": 1, "links": 0, "az_spawns": 2}   # Ready is reached by a move: 2 writes
     assert az.count("boards", "query") == 1 and az.written() == []
     assert_no_identity(json.dumps(out))
     code, text = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
@@ -546,9 +546,11 @@ def test_plan_validate_checks_the_process_locally_and_still_never_writes(repo, a
     assert code == 0 and out["validated"] is True and out["rows"][0]["action"] == "create"
     assert out["rows"][0]["validation"] == []                     # a draft is created in New, which the process allows
     code, out = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--validate", "--repo", repo)
-    assert out["rows"][0]["validation"] == ["User Story does not allow creation -> Ready"]   # ready is not a first state
+    # ready is not a first state, but New -> Ready is allowed: the create is planned as created New, then moved, so
+    # there is nothing for `--validate` to flag (a State reachable in neither hop is flagged: test_boards_live_fixes.py)
+    assert out["rows"][0]["validation"] == []
     code, text = run(capsys, "plan", "--kind", "spec", "--id", "0004", "--validate", "--repo", repo)
-    assert "validate: User Story does not allow creation -> Ready" in text and "the board was not asked" in text
+    assert "(created New, then moved)" in text and "the board was not asked" in text
     assert az.written() == []
     code, out = run_json(capsys, "plan", "--kind", "spec", "--id", "0004", "--repo", repo)
     assert "validation" not in out["rows"][0] and out["validated"] is False

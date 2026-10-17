@@ -893,12 +893,14 @@ def test_apply_limit_counts_every_write_and_defers_the_rest_without_failing(repo
     plan = plan_doc(capsys, repo, "--all", "--kind", "spec")
     az_calls.clear()
     code, doc = run_json(capsys, *apply_args(plan["plan"], "--limit", "1"), "--repo", repo)
-    assert code == 0 and doc["counts"] == {"applied": 1, "failed": 0, "deferred": 2}
+    # three: spec 0004's move (Ready is not a creation state: created New, then moved) and the two other creates
+    assert code == 0 and doc["counts"] == {"applied": 1, "failed": 0, "deferred": 3}
     assert {d["why"] for d in doc["deferred"]} == {"limit"} and len(writes(board, "POST wit/workItems")) == 1
     code, doc = run_json(capsys, *apply_args(plan["plan"], "--limit", "0"), "--repo", repo)
     assert code == 1 and doc["ok"] is False                           # a limit that is not a positive integer
     code, doc = run_json(capsys, *apply_args(plan["plan"]), "--repo", repo)      # the second chunk: the rest, never twice
-    assert code == 0 and doc["counts"]["applied"] == 2 and len(writes(board, "POST wit/workItems")) == 3
+    # 0004's deferred move, 0005 and its move, 0007: the creates are never sent twice
+    assert code == 0 and doc["counts"]["applied"] == 4 and len(writes(board, "POST wit/workItems")) == 3
 
 
 def test_apply_the_first_seed_over_the_cap_is_refused_whole_until_a_limit_names_a_chunk(repo, board, capsys):
@@ -1040,7 +1042,7 @@ def test_plan_counts_a_skipped_comment_without_planning_it(repo, board, capsys):
     assert out["file"]["rows"] == out["rows"]
     code, text = run(capsys, "plan", "--kind", "spec", "--id", "0005", "--repo", repo)
     assert "comments: 0 to send, 2 skipped (not_on_board 2), 0 refused" in text
-    assert "cost: 0 writes, 1 create, 0 links  (az spawns on apply: 1)" in text
+    assert "cost: 1 write, 1 create, 0 links  (az spawns on apply: 2)" in text   # 0005 is created, then moved
 
 
 def test_a_plan_with_no_comment_row_reads_as_it_did_before_comments_were_planned(repo, board, capsys):

@@ -595,6 +595,44 @@ def transition_allowed(schema: dict, type_name: str, frm: str, to: str) -> bool 
     return None if targets is None else to.lower() in {t.lower() for t in targets}
 
 
+def creation_states(schema: dict, type_name: str) -> list[str] | None:
+    """The states the process lets an item of this type be created in (the `""` row of its transitions), in the order
+    the process lists them -- the first is the type's initial state -- or None when the type's transitions were never
+    read or hold no creation row. An empty list means the process lists no state to create in."""
+    _, info = _type_info(schema, type_name)
+    transitions = info.get("transitions") if info else None
+    if not isinstance(transitions, dict):
+        return None
+    targets = {k.lower(): v for k, v in transitions.items()}.get("")
+    return [str(t) for t in targets] if isinstance(targets, list) else None
+
+
+CREATE_ROUTES = ("direct", "two_step", "unreachable", "unknown")
+
+
+def creation_route(schema: dict, type_name: str, state: str) -> tuple[str, str | None]:
+    """`(route, via)`: how a create leaves an item in `state`, read from the discovered transitions only.
+
+      * `direct`      the process lets an item be created in `state`; `via` is None.
+      * `two_step`    it does not, but it allows `initial -> state` from the type's initial state (the first state
+                      of its creation row): create in `via` (that initial state), then move. A process whose
+                      creation targets are exactly its initial state needs this for every other state.
+      * `unreachable` neither creation -> `state` nor `initial -> state` is allowed; `via` is the initial state.
+      * `unknown`     the transitions were never read, hold no creation row, or do not list the initial state as a
+                      state to move from: nothing is said either way (None is unknown, never "disallowed")."""
+    if transition_allowed(schema, type_name, "", state) is None:
+        return "unknown", None
+    if transition_allowed(schema, type_name, "", state):
+        return "direct", None
+    initial = next(iter(creation_states(schema, type_name) or []), None)
+    if initial is None:
+        return "unknown", None
+    second = transition_allowed(schema, type_name, initial, state)
+    if second is None:
+        return "unknown", initial
+    return ("two_step" if second else "unreachable"), initial
+
+
 def refused_fields(schema: dict) -> frozenset[str]:
     """Fields the mirror never writes: every `Microsoft.VSTS.Scheduling.*` field (points, estimates,
     hours, dates) the process has, the well-known ones whether or not the process lists them, and the

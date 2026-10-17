@@ -27,6 +27,19 @@ else. It writes to the board AS the person whose `az` login is active, so every 
     Every create sets the config's `area_path` (`System.AreaPath`, create-time only). `--limit` and
     `limits.writes_per_run` count every write, comments included. A comment moves its item's `rev`, so an item this
     run commented on is re-read before anything here PATCHes it again.
+  * A create whose State the process does not allow at creation, but allows from the type's initial state, is a
+    TWO-STEP create (live test, 2026-10-17; the plan row's State op carries `via`, see `ado_sync_model.creation_move`):
+    the create is sent with the initial state, its `applied` line is written (the item is linked from that moment),
+    and then ONE guarded PATCH `[test /rev <the create's rev>, replace System.State]` moves it, through the path an
+    update takes (so the plan needs the Entra sign-in an update needs: `needs_rest_writes`). The move is a write like
+    any other: it counts against `--limit` and `limits.writes_per_run`, has its own `applied` result entry and ledger
+    line (action `update`, fields `["System.State"]`), and is deferred when the run has no room for it. A move the
+    board refuses (`rule`, `conflict`, a transport failure) leaves the created item standing and linked: a `failed`
+    row of action `update` whose detail begins `created #N; moving it to <State> failed`. The create's `applied` line
+    carries `state_pending: <State>` until the move lands, so applying the same plan again tries the move (never a
+    second create) and the next `plan` offers an `update` row for the State (the one State the mirror pushes that it
+    does not otherwise own: `ado_sync_model.ownership_for_link`). A plan written before this change has no `via`
+    and is sent as it showed, one write.
   * A comment POST whose outcome is unknown (a timeout, an unreadable answer) is never retried: the item's newest 20
     comments are re-listed and the one carrying the row's `text_sha`, by the same identity, within 10 minutes is
     ledgered `commented{recovered: true}`; no match stops the run.
@@ -131,14 +144,24 @@ RULE_DETAIL: Final[dict[str | None, str]] = {
 
 
 def needs_rest_writes(rows: list[dict], cfg: dict) -> bool:
-    """True when sending these plan rows would PATCH a work item through `az rest` — an update row, or a drafted comment
-    under the History transport — which needs an Entra sign-in (a personal access token alone cannot mint the token;
-    B0 write fixes, 2026-10-15). Creates and comments-API posts go through `az devops invoke` and need none."""
+    """True when sending these plan rows would PATCH a work item through `az rest` — an update row, a create planned as
+    a two-step create (its move is a PATCH), or a drafted comment under the History transport — which needs an Entra
+    sign-in (a personal access token alone cannot mint the token; B0 write fixes, 2026-10-15). Other creates and
+    comments-API posts go through `az devops invoke` and need none."""
     block = cfg.get("comments") if isinstance(cfg, dict) and isinstance(cfg.get("comments"), dict) else {}
     history = block.get("transport") == "history"
-    return any(isinstance(r, dict) and (r.get("action") == "update"
+    return any(isinstance(r, dict) and (r.get("action") == "update" or _moves(r)
                                         or (history and r.get("action") == "comment" and r.get("status") == "draft"))
                for r in rows or [])
+
+
+def _moves(row: dict) -> bool:
+    """True for a create row planned as a two-step create: after the create it sends one `az rest` PATCH, so it needs
+    the same Entra sign-in an update does. A malformed mark is not asked about here (`_check_field_row` refuses it)."""
+    try:
+        return row.get("action") == "create" and model.creation_move(row) is not None
+    except ValueError:
+        return False
 
 
 # --- the plan, the ledger, the clock ------------------------------------------------------------------------------
@@ -307,6 +330,7 @@ def _check_field_row(row: dict) -> None:
         raise ValueError(f"{ref}: the row has no projection_hash")
     if row["action"] == "update" and not (_is_count(row.get("work_item")) and _is_count(row.get("rev"))):
         raise ValueError(f"{ref}: an update row needs the work item and the revision the plan showed")
+    model.creation_move(row)   # a malformed two-step mark is a ValueError, nothing sent
 
 
 def _check_comment_row(row: dict) -> None:
@@ -474,10 +498,12 @@ class _Run:
         return out
 
     def fail(self, row: dict, action: str, cls: str, *, wid=None, reason: str | None = None,
-             field: str | None = None) -> None:
+             field: str | None = None, lead: str | None = None) -> None:
         detail = DETAIL[cls]
         if cls == "rule" and (reason or field):   # say which field, in fixed words (B0 write fixes, 2026-10-15)
             detail = RULE_DETAIL.get(reason, RULE_DETAIL[None]).format(field=field or "a field")
+        if lead:   # the move of a two-step create: the item exists, and the row says so before it says why
+            detail = f"{lead}: {detail}"
         out = {"ref": row.get("ref"), "action": action, "work_item": wid, "class": cls, "detail": detail}
         if reason:
             out["reason"] = reason
@@ -488,18 +514,19 @@ class _Run:
     def defer(self, row: dict, action: str, why: str) -> None:
         self.deferred.append(self._ref_fields(row, action, why=why))
 
-    def conflict(self, row: dict, action: str, wid, why: str, **extra) -> None:
+    def conflict(self, row: dict, action: str, wid, why: str, *, lead: str | None = None, **extra) -> None:
         self.record("conflict", ref=row.get("ref"), kind=row.get("kind"), work_item=wid, rev_before=row.get("rev"),
                     why=why, **extra)
-        self.fail(row, action, "conflict", wid=wid, reason=why)
+        self.fail(row, action, "conflict", wid=wid, reason=why, lead=lead)
 
-    def write_failed(self, row: dict, action: str, wid, exc: AdoImportError, patch: list[dict] | None = None) -> None:
+    def write_failed(self, row: dict, action: str, wid, exc: AdoImportError, patch: list[dict] | None = None,
+                     lead: str | None = None) -> None:
         cls = getattr(exc, "error_class", None)
         cls = cls if cls in model.WRITE_ERROR_CLASSES else "unknown"
         if cls == "conflict":
-            return self.conflict(row, action, wid, "write_conflict")
+            return self.conflict(row, action, wid, "write_conflict", lead=lead)
         said = wm.describe_write_error(str(exc), _field_refs(patch)) if cls == "rule" and patch else {}
-        self.fail(row, action, cls, wid=wid, reason=said.get("reason"), field=said.get("field"))
+        self.fail(row, action, cls, wid=wid, reason=said.get("reason"), field=said.get("field"), lead=lead)
         if cls in model.STOP_CLASSES or cls in model.RECOVER_CLASSES:
             self.stopped = True
 
@@ -609,6 +636,8 @@ class _Run:
         if ref in self.links:
             if not self.done_under_this_plan(ref):
                 self.conflict(row, "create", None, "already_linked")
+            else:
+                self.resume(row)
             return
         if not self.gate(row, "create"):
             return
@@ -620,9 +649,11 @@ class _Run:
             return self.defer(row, "create", "parent_failed")
         history = (f"{bc.HISTORY_TOKEN} · created · by {self.by} · executed as {self.executed_as} · "
                    f"plan {self.plan} · {row.get('source_path')}")
+        move = model.creation_move(row)   # (initial, final) of a two-step create, else None; the mark was checked
         try:
             patch = wm.build_create_patch(proj, self.schema, self.hyperlink(row), history, parent_url,
-                                          area_path=wm.configured_area(self.cfg))
+                                          area_path=wm.configured_area(self.cfg),
+                                          initial_state=move[0] if move else None)
         except ValueError:
             return self.conflict(row, "create", None, "unbuildable")
         self.writes += 1
@@ -638,10 +669,56 @@ class _Run:
         self.revs[wid] = rev
         if not self.record("applied", ref=ref, kind=row["kind"], action="create", work_item=wid, rev_before=None,
                            rev_after=rev, fields=_field_refs(patch), type=row["type"],
-                           projection_hash=row["projection_hash"], argv_sha=_sha(patch)):
+                           projection_hash=row["projection_hash"], argv_sha=_sha(patch),
+                           **({"state_pending": move[1]} if move else {})):
             return self.fail(row, "create", "drift", wid=wid)
         self.links[ref] = self.ledger[-1]
         self.applied.append({"ref": ref, "action": "create", "work_item": wid, "rev_after": rev})
+        if move:   # the item exists and is linked: the move is its own write, ledgered and reported on its own
+            self.move(row, wid, rev, move[1])
+
+    def resume(self, row: dict) -> None:
+        """A create this plan already did (never a second one): when its move is still owed -- the run deferred it
+        (`--limit`, `limits.writes_per_run`) or the board refused it -- applying the same plan again tries the move,
+        tested against the revision the create returned, so a board edit since is a conflict, not an overwrite."""
+        link, move = self.links[row["ref"]], model.creation_move(row)
+        if move is not None and model.pending_state(link) == move[1] and _is_count(link.get("work_item")) \
+                and _is_count(link.get("rev_after")):
+            self.move(row, link["work_item"], link["rev_after"], move[1])
+
+    def move(self, row: dict, wid: int, rev: int, final: str) -> None:
+        """The second write of a two-step create: ONE PATCH `[test /rev <rev the create returned>, replace
+        System.State <final>]` through the path an update takes (`ado_wit.update`, `az rest`), after the create's own
+        `applied` line is written, so the item is already linked whatever happens here. It counts against `--limit` and
+        `limits.writes_per_run` like every write (a run that has no room for it defers it, `deferred` row `update`); its
+        own `applied update` line (`fields: ["System.State"]`, `rev_before` the create's revision) replaces the create's
+        as the ref's link and so ends `state_pending`. A refused move (`rule`, `conflict`, a transport failure) leaves
+        the created item standing and linked, and is a `failed` row of action `update` that says the item exists; the
+        next `plan` shows the update, never a second create."""
+        if not self.gate(row, "update"):
+            return
+        ref, lead = row["ref"], f"created #{wid}; moving it to {final} failed"
+        step = {**row, "rev": rev}   # a conflict row names the revision the move tested
+        try:
+            patch = wm.build_state_move_patch(rev, final)
+        except ValueError:
+            return self.conflict(step, "update", wid, "unbuildable", lead=lead)
+        self.writes += 1
+        try:
+            out = ado_wit.update(self.root, wid, patch)
+        except AdoImportError as exc:
+            return self.write_failed(step, "update", wid, exc, patch, lead=lead)
+        except ValueError:
+            self.writes -= 1
+            return self.conflict(step, "update", wid, "unbuildable", lead=lead)
+        rev_after = out["rev"]
+        self.revs[wid] = rev_after
+        if not self.record("applied", ref=ref, kind=row["kind"], action="update", work_item=wid, rev_before=rev,
+                           rev_after=rev_after, fields=_field_refs(patch), type=row["type"],
+                           projection_hash=row["projection_hash"], argv_sha=_sha(patch)):
+            return self.fail(row, "update", "drift", wid=wid)
+        self.links[ref] = self.ledger[-1]
+        self.applied.append({"ref": ref, "action": "update", "work_item": wid, "rev_after": rev_after})
 
     def update(self, row: dict) -> None:
         ref, wid = row["ref"], row["work_item"]
@@ -659,8 +736,9 @@ class _Run:
             return self.conflict(row, "update", wid, "type_changed")
         if remote["rev"] != row["rev"]:
             return self.conflict(row, "update", wid, "rev_moved", rev_now=remote["rev"])
-        try:
-            patch = wm.build_update_patch(remote, proj)
+        try:   # the ownership the plan used: a State a two-step create's move still owes is the repository's to push
+            patch = wm.build_update_patch(remote, proj, ownership=model.ownership_for_link(proj.get("kind"),
+                                                                                         self.links.get(ref)))
         except ValueError:
             return self.conflict(row, "update", wid, "unbuildable")
         if not wm.has_changes(patch):

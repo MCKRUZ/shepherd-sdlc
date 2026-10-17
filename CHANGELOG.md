@@ -383,6 +383,21 @@ What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) f
   the board is `ADO_OWNED_CHANGE` (owner `C`), never `SDLC_OWNED_DRIFT`. A plan row for a real tag change no longer
   names a tag only to re-spell it; no verb, flag, exit code or ledger line changed, and the plan-only golden is
   byte-identical.
+- **A create whose State the process does not allow at creation is created in the initial state, then moved.** A
+  decided decision projects `System.State: Closed`, and an Issue is created Active: the live run's create of DL-02 was
+  refused as a `rule` row although the discovered process already knew `Active -> Closed`. The creation check now runs
+  for every create row (it only ran under `plan --validate`, and not at all for a type whose field list was unread):
+  where the process allows `initial -> State`, the State op carries `via` and the text reads `(created Active, then
+  moved)`, the plan hash covers it, and `cost` counts the extra write; apply creates the item, ledgers it, then sends
+  one `test /rev` PATCH. A refused move leaves the item created and linked (a `failed` update row, `created #N; moving
+  it to Closed failed`), the next `plan` offers the State as an update (also for a kind whose State the board owns,
+  through `state_pending` on the create's ledger line) and never a second create, and applying the same plan again
+  retries the move. A State reachable in neither hop is a `validation` finding on a row that stays a create; a type
+  whose transitions were never read behaves as before. Existing pins changed because the hand-written process creates
+  a User Story in New, so spec 0004 (Ready) and 0005 are now two-step creates there: eight tests in
+  `test_boards_sync_apply.py`, `test_boards_sync_cli_b2.py`, `test_boards_sync_cli_b3.py` and
+  `test_boards_write_fixes.py` (each named in the commit) expect the extra write; a plan with a move now needs the
+  Entra sign-in an update needs.
 
 ## 2.0.0 — 2026-10-12
 

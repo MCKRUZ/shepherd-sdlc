@@ -313,15 +313,16 @@ def test_creates_run_in_tree_order_with_the_parent_in_the_childs_own_patch(repo,
     res = apply(repo, doc)
     assert (res["exit"], res["refused_reason"], res["failed"], res["deferred"]) == (0, None, [], [])
     assert set(res) == set(model.APPLY_RESULT_KEYS)
-    assert [a["ref"].split(":")[1] for a in res["applied"]] == ["epic"] * 3 + ["feature"] + ["spec"] * 3
-    ids = {a["ref"]: a["work_item"] for a in res["applied"]}
+    creates = [a for a in res["applied"] if a["action"] == "create"]   # 0004 and 0005 also each have a move: an update
+    assert [a["ref"].split(":")[1] for a in creates] == ["epic"] * 3 + ["feature"] + ["spec"] * 3
+    ids = {a["ref"]: a["work_item"] for a in creates}
     posts = [s for s in written(board) if s[0] == "POST wit/workItems"]
     # bare type names: the extension's template is `{project}/_apis/wit/workItems/${type}`, so a leading `$` reached
     # the board as `$$Epic` and 404ed (B0 capture, 2026-10-14)
     assert [route_params(argv)["type"] for _, argv, _ in posts] == ["Epic"] * 3 + ["Feature"] + ["User Story"] * 3
 
     def parent(ref):
-        body = posts[[a["ref"] for a in res["applied"]].index(ref)][2]
+        body = posts[[a["ref"] for a in creates].index(ref)][2]
         links = [op["value"] for op in body if op["path"] == "/relations/-" and op["value"]["rel"] == model.PARENT_REL]
         return [int(link["url"].rsplit("/", 1)[1]) for link in links]
     assert parent("sdlc:feature:03") == [ids["sdlc:epic:001"]]
@@ -855,7 +856,7 @@ def test_a_repeated_apply_of_the_same_plan_does_not_double_anything(repo, board,
     sent = len(written(board))
     again = apply(repo, doc)
     assert (again["exit"], again["applied"], again["failed"], again["deferred"]) == (0, [], [], [])
-    assert len(written(board)) == sent == 7
+    assert len(written(board)) == sent == 9      # seven creates, and the moves of 0004 and 0005 (not creation states)
 
 
 def test_a_second_chunk_of_the_same_plan_finds_the_parents_the_first_chunk_made(repo, board, capsys):
@@ -864,7 +865,8 @@ def test_a_second_chunk_of_the_same_plan_finds_the_parents_the_first_chunk_made(
     assert [a["ref"].split(":")[1] for a in first["applied"]] == ["epic"] * 3 + ["feature"]
     board.sent.clear()
     second = apply(repo, doc)
-    assert [a["ref"] for a in second["applied"]] == [SPEC4, SPEC5, "sdlc:spec:0007"] and second["exit"] == 0
+    assert [a["ref"] for a in second["applied"] if a["action"] == "create"] == [SPEC4, SPEC5, "sdlc:spec:0007"]
+    assert second["exit"] == 0
     feature_id = next(a["work_item"] for a in first["applied"] if a["ref"] == "sdlc:feature:03")
     (body,) = [b for _, _, b in written(board) if title_of(b).startswith("0004")]
     (url,) = [op["value"]["url"] for op in body if op["path"] == "/relations/-" and op["value"]["rel"] == model.PARENT_REL]

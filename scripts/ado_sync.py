@@ -17,7 +17,8 @@ starts the verb that owns the field (through `ado_sync_reconcile`). A write verb
                           process additions an administrator would make for what does not fit as an item
   plan [--kind K] [--id ID] [--sprint SNN] [--all] [--validate] [--no-comments]
                           the dry run: what each item of the repository would do on the board (create, update,
-                          link, or why it would not), the hash a person echoes to `apply`
+                          link, or why it would not; a create whose State is reached by a move after it says
+                          `(created <state>, then moved)`), the hash a person echoes to `apply`
   status                  what the ledger says, offline: linked, pending, drifted, as of when -- `no data`
                           where nothing was ever measured, never a zero
   pull [--id ID] [--all] [--discussion] [--full] [--propose-specs]
@@ -927,6 +928,7 @@ PLACEHOLDER_HISTORY = f"{bc.HISTORY_TOKEN} · created"
 NOT_WRITTEN_WORDS = ("effort fields", "read-only field")  # a ValueError that says "never written", not "fix it by hand"
 SYSTEM_FILLED = "System."  # a required System.* field is the board's or the mirror's to fill, not a config gap
 TAGS_PATH = "/fields/System.Tags"
+STATE_PATH = model.STATE_PATH
 DESCRIPTION_PATH = "/fields/System.Description"
 FIELDS_PREFIX = "/fields/"
 
@@ -991,10 +993,13 @@ def _tags_op(op: str, have: set, want: set) -> dict:
             "remove": sorted(t for k, t in held.items() if k not in wanted), "kept": kept}
 
 
-def _update_ops(patch: list[dict], remote: dict, projection: dict, emails: dict[str, str]) -> list[dict]:
+def _update_ops(patch: list[dict], remote: dict, projection: dict, emails: dict[str, str],
+                ownership: dict | None = None) -> list[dict]:
     """The ops of `wm.build_update_patch` (less its `test /rev` guard) as the screen shows them: `old` from the model's
-    diff, a tag change as an add/remove list, a description as the block it replaces."""
-    by_path = {o["path"]: o for o in model.diff(projection, remote, model.ownership_for(projection.get("kind")))}
+    diff, a tag change as an add/remove list, a description as the block it replaces. `ownership` is the one the patch
+    was built with (the kind's own unless a two-step create's move is still owed)."""
+    own = ownership or model.ownership_for(projection.get("kind"))
+    by_path = {o["path"]: o for o in model.diff(projection, remote, own)}
     ops = []
     for op in patch[1:]:
         path = op["path"]
@@ -1009,14 +1014,23 @@ def _update_ops(patch: list[dict], remote: dict, projection: dict, emails: dict[
     return ops
 
 
-def _create_ops(projection: dict, emails: dict[str, str]) -> list[dict]:
-    """What a create sets: the model's `diff(projection, None)`, the tags as an add list, an identity as a handle."""
+def _create_ops(projection: dict, emails: dict[str, str], via: str | None = None) -> list[dict]:
+    """What a create sets: the model's `diff(projection, None)`, the tags as an add list, an identity as a handle.
+
+    A two-step create (`via` is the state the item is created in; `ado_schema_map.creation_route` says `two_step`)
+    marks its State op: `{"op": "add", "path": "/fields/System.State", "old": None, "new": <final State>, "via":
+    <initial state>}`. `new` is where the item ends and `via` where it is born; apply creates it in `via`, then sends
+    one guarded PATCH to `new` (`ado_sync_model.creation_move`). The mark is part of the row, so the plan hash covers
+    it; the text shows it as `(created <via>, then moved)`, and a plan with no marked row is byte-identical to before."""
     ops = []
     for op in model.diff(projection, None):
         if op["path"] == TAGS_PATH:
             ops.append(_tags_op("add", set(), set(_split_tags(op["new"]))))
         else:
-            ops.append({"op": "add", "path": op["path"], "old": None, "new": _shown(op["new"], emails)})
+            shown = {"op": "add", "path": op["path"], "old": None, "new": _shown(op["new"], emails)}
+            if via is not None and op["path"] == STATE_PATH:
+                shown["via"] = via
+            ops.append(shown)
     return ops
 
 
@@ -1054,23 +1068,51 @@ def _validation(schema: dict, type_name: str, ops: list[dict], creating: bool) -
             continue
         ref = op["path"][len(FIELDS_PREFIX):]
         facts = sm.field_on_type(schema, type_name, ref)
+        new = op.get("new")
         if facts is None:
             if read_fields:
                 found.append(f"{ref} is not a field of {type_name} on this process")
-            continue
-        new = op.get("new")
-        allowed = facts.get("allowed_values")
-        # as text: an integer field's allowed values are answered "1", "2", ... (the captured Priority), its value 1
-        if isinstance(allowed, list) and new is not None and str(new) not in {str(a) for a in allowed}:
-            found.append(f"{ref}: {new!r} is not one of the allowed values ({', '.join(str(a) for a in allowed)})")
+        else:
+            allowed = facts.get("allowed_values")
+            # as text: an integer field's allowed values are answered "1", "2", ... (the captured Priority), its value 1
+            if isinstance(allowed, list) and new is not None and str(new) not in {str(a) for a in allowed}:
+                found.append(f"{ref}: {new!r} is not one of the allowed values ({', '.join(str(a) for a in allowed)})")
+        # the transition is a fact of the type's own transitions, not of its field list: a type whose fields were never
+        # read (or do not list System.State) is still checked (live test, 2026-10-17: the check was skipped for it)
         if ref == "System.State" and isinstance(new, str):
-            frm = "" if creating else str(op.get("old") or "")
-            if sm.transition_allowed(schema, type_name, frm, new) is False:
-                found.append(f"{type_name} does not allow {frm or 'creation'} -> {new}")
+            found += _state_findings(schema, type_name, op, creating)
     return found
 
 
+def _state_findings(schema: dict, type_name: str, op: dict, creating: bool) -> list[str]:
+    """What the process says about a State op, from its discovered transitions alone (None is unknown, never a
+    finding). An update: `old -> new` must be allowed. A create: allowed at creation, or -- a two-step create, the op's
+    `via` -- `via -> new` from the state it is created in; a State that is reachable in neither one nor two hops is
+    named with the states that were tried. Said without `--validate` too, for the create rows that have it
+    (`_plan_row`): such a row stays a create the person can see, and the board stays the authority."""
+    new = op["new"]
+    if not creating:
+        frm = str(op.get("old") or "")
+        return [f"{type_name} does not allow {frm or 'creation'} -> {new}"] \
+            if sm.transition_allowed(schema, type_name, frm, new) is False else []
+    via = op.get("via")
+    if isinstance(via, str):   # planned as created in `via`, then moved
+        return [f"{type_name} does not allow {via} -> {new}"] \
+            if sm.transition_allowed(schema, type_name, via, new) is False else []
+    route, initial = sm.creation_route(schema, type_name, new)
+    if route == "unreachable":
+        return [f"{type_name} does not allow creation -> {new}, nor {initial} -> {new}"]
+    if route == "unknown" and sm.transition_allowed(schema, type_name, "", new) is False:
+        return [f"{type_name} does not allow creation -> {new}"]   # the second hop is not known: only the first is said
+    return []
+
+
 def _row(p: dict, action: str, type_name, *, reason=None, work_item=None, rev=None, ops=None, notes=None) -> dict:
+    """One plan row. `ops` are what apply would send: `{"op", "path", "old", "new"}` (a Tags op `{"op", "path", "add",
+    "remove", "kept"}`). On a create row the State op may also carry `via`, the state the item is created in when the
+    process does not allow the State at creation but allows it from there (a two-step create, `_create_ops`); `new` is
+    then where it ends. A create row may carry `validation` (a list of sentences) where the process allows its State
+    in neither hop; `plan --validate` adds the key to every pending row. Every key here is in the plan hash."""
     notes = list(notes or []) + list(p.get("notes") or [])
     return {"ref": p["ref"], "kind": p["kind"], "id": p["id"], "action": action, "reason": reason,
             "work_item": work_item, "rev": rev, "type": type_name, "ops": list(ops or []), "notes": notes,
@@ -1128,11 +1170,12 @@ def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | Non
         if remote["type"] != type_name:
             return _row(p, "held", type_name, work_item=wid, rev=remote["rev"],
                         reason=f"#{wid} is a {remote['type']} on the board but {p['kind']} maps to {type_name}")
+        own = model.ownership_for_link(p.get("kind"), link)   # a move a two-step create still owes is pushed again
         try:
-            patch = wm.build_update_patch(remote, p)
+            patch = wm.build_update_patch(remote, p, ownership=own)
         except ValueError as exc:
             return _row(p, _unwritable(exc), type_name, work_item=wid, rev=remote["rev"], reason=_tidy(exc))
-        ops = _update_ops(patch, remote, p, board.emails) if wm.has_changes(patch) else []
+        ops = _update_ops(patch, remote, p, board.emails, own) if wm.has_changes(patch) else []
         return _row(p, "update" if ops else "in_sync", type_name, work_item=wid, rev=remote["rev"], ops=ops)
     ids = board.found.get(p["ref"], [])
     if len(ids) > 1:
@@ -1149,8 +1192,13 @@ def _plan_row(p: dict, type_name, why: str, schema: dict, cfg_refusal: str | Non
         shown = wm.with_create_fields(p, board.area_path)   # the area a create sets is shown, as it is sent
     except ValueError as exc:
         return _row(p, _unwritable(exc), type_name, reason=_tidy(exc))
-    return _row(p, "create", type_name, ops=_create_ops(shown, board.emails),
-                notes=_required_notes(schema, type_name, p))
+    state = (shown.get("fields") or {}).get("System.State")
+    route, via = sm.creation_route(schema, type_name, state) if isinstance(state, str) else ("unknown", None)
+    row = _row(p, "create", type_name, ops=_create_ops(shown, board.emails, via if route == "two_step" else None),
+               notes=_required_notes(schema, type_name, p))
+    if route == "unreachable":   # said without --validate: the create is still offered, and the board will answer it
+        row["validation"] = _validation(schema, type_name, row["ops"], True)
+    return row
 
 
 def _kind_order(kind: str) -> int:
@@ -1167,7 +1215,8 @@ def _op_line(op: dict, width: int) -> str:
         change = "  ".join([*(f"+ {t}" for t in op["add"]), *(f"- {t}" for t in op["remove"])]) or "(no change)"
         kept = f"   ({_plural(op['kept'], 'human tag')} kept)" if op["op"] != "add" else ""
         return f"  {label.ljust(width)}{change}{kept}"
-    return f"  {label.ljust(width)}{_val(op['old'])} -> {_val(op['new'])}"
+    moved = f"  (created {op['via']}, then moved)" if op.get("via") else ""   # a two-step create (`_create_ops`)
+    return f"  {label.ljust(width)}{_val(op['old'])} -> {_val(op['new'])}{moved}"
 
 
 def _row_head(r: dict) -> str:
@@ -1282,7 +1331,8 @@ def _plan_text(out: dict, in_sync: int, fit_lines: list[str]) -> str:
     return "\n".join(lines)
 
 
-def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, comments: int = 0) -> list[str]:
+def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, comments: int = 0,
+                moves: int = 0) -> list[str]:
     limits = cfg.get("limits") if isinstance(cfg.get("limits"), dict) else {}
     first_seed, per_run = limits.get("first_seed"), limits.get("writes_per_run")
     notes = []
@@ -1292,7 +1342,7 @@ def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, co
     if scope_all and never_applied and _is_id(first_seed) and counts["create"] > first_seed:
         notes.append(f"first seed: {_plural(counts['create'], 'create')} is over limits.first_seed ({first_seed}); "
                      "an apply of this plan will need --limit")
-    pending = counts["create"] + counts["update"] + comments   # a comment is a write too (field ops go first)
+    pending = counts["create"] + counts["update"] + comments + moves   # a comment, a create's move: writes too
     if _is_id(per_run) and pending > per_run:
         notes.append(f"{_plural(pending, 'row')} is over limits.writes_per_run ({per_run}); an apply stops at "
                      f"{per_run}, and the next plan covers the rest")
@@ -1423,8 +1473,10 @@ def _plan_outcome(args, repo_root: Path) -> tuple[dict, str, int]:
     counts = {a: sum(1 for r in rows if r["action"] == a) for a in ACTION_ORDER}   # field ops only: "comment" is not one
     counts["in_sync"] = in_sync
     drafts = sum(1 for r in comment_rows if r["status"] == "draft")
-    cost = {"writes": counts["update"], "creates": counts["create"], "links": 0,
-            "az_spawns": counts["update"] + counts["create"] + (1 + drafts if drafts else 0)}   # + connectionData, one POST each
+    moves = sum(1 for r in rows if r["action"] == "create" and model.creation_move(r) is not None)   # a create's PATCH
+    cost = {"writes": counts["update"] + moves, "creates": counts["create"], "links": 0,
+            # + connectionData, one POST each
+            "az_spawns": counts["update"] + counts["create"] + moves + (1 + drafts if drafts else 0)}
     plan = model.plan_hash(rows)
     stamp = _stamp()
     posture = cfg.get("posture") if cfg.get("posture") in ("plan-only", "assisted") else "plan-only"
@@ -1461,7 +1513,7 @@ def _plan_outcome(args, repo_root: Path) -> tuple[dict, str, int]:
     out = {"ok": True, "unavailable": False, "reason": None, "plan": plan, "path": path, "scope": scope,
            "schema": _schema_facts(schema), "posture": posture, "executed_as": executed_as, "rows": rows,
            "counts": counts, "fit": fit, "skipped": skipped, "unmatched_ids": unmatched, "cost": cost,
-           "notes": _plan_notes(cfg, ledger, scope["all"], counts, drafts)
+           "notes": _plan_notes(cfg, ledger, scope["all"], counts, drafts, moves)
            + ([comment_why] if comment_why else []) + ([hook_note] if hook_note else []),
            "validated": bool(args.validate), "comments": comments,
            "comments_skipped": [{k: r[k] for k in ("ref", "event", "reason", "detail")} for r in comment_skipped],

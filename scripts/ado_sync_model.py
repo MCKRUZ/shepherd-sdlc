@@ -1190,3 +1190,59 @@ SYNC_NODATA: Final[dict] = {
     "hook_line": None,
     "drift_error": None,
 }
+
+
+# === Live-test fixes (RheemDevOps, 2026-10-15..17): the two-step create. Appended; nothing above this line changed. ==
+#
+# Finding 2 (born Closed). Decision DL-02 is `decided`, so its projection carried `System.State: Closed`; a create of an
+# Issue with State Closed was refused by the board (`rule`, `value_not_allowed`), although the discovered process KNEW
+# that an Issue is created Active and moves Active -> Closed. A create whose State the process does not allow at
+# creation, but allows from the type's initial state, is therefore two writes: the create (born in the initial state)
+# and one guarded PATCH that moves it. The plan row says so on the State op itself:
+#
+#     {"op": "add", "path": "/fields/System.State", "old": null, "new": "Closed", "via": "Active"}
+#
+# `new` is the State the item ends in and `via` the state it is created in. The marker is part of the row, so the plan
+# hash covers it: a plan file edited to drop it no longer hashes to its own id, and one written before this change has
+# no marker and is a one-step create exactly as it showed.
+
+STATE_PATH: Final = "/fields/System.State"
+
+
+def creation_move(row) -> tuple[str, str] | None:
+    """`(initial, final)` of a create row planned as a two-step create (its State op carries `via`), else None.
+    ValueError when the marker is malformed: it must be on the State op of a create row, a one-line state name that
+    differs from the State the item ends in."""
+    if not isinstance(row, dict):
+        return None
+    found = None
+    for op in row.get("ops") or []:
+        if not isinstance(op, dict) or "via" not in op:
+            continue
+        via, final = op["via"], op.get("new")
+        if (row.get("action") != "create" or op.get("path") != STATE_PATH or found is not None
+                or not (isinstance(via, str) and isinstance(final, str) and via.strip() and final.strip())
+                or via != via.strip() or any(ord(c) < 32 or ord(c) == 127 for c in via + final)
+                or via.lower() == final.lower()):
+            raise ValueError(f"{row.get('ref')}: a `via` mark belongs on the System.State op of a create row, naming "
+                             "the state it is created in (one line, not the state it ends in)")
+        found = (via, final)
+    return found
+
+
+def pending_state(link) -> str | None:
+    """The State a two-step create's move has not reached yet: `state_pending` on the ref's linking line, which only
+    the create's own `applied` line carries (the move's `applied update` line is a later link and does not, so a move
+    that landed ends it; a `link` or `adopt` line never has it). None when nothing is owed."""
+    value = link.get("state_pending") if isinstance(link, dict) else None
+    return value if isinstance(value, str) and value.strip() else None
+
+
+def ownership_for_link(kind: str | None, link) -> dict[str, str]:
+    """`ownership_for(kind)`, except that while a two-step create's move is still owed (`pending_state(link)`) the
+    repository owns `System.State`: it is the one State the mirror pushes that it does not otherwise own (a decision's
+    or an epic's State is the board's once the item exists, `A`), because the create never got it there and the
+    person was told so. A State op appears only while the board's State still differs from the projection's, and the
+    move's own `applied` line ends the exception."""
+    own = ownership_for(kind)
+    return {**own, "System.State": "S"} if pending_state(link) else own
