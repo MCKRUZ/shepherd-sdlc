@@ -32,6 +32,9 @@ export interface AdoPlanOp {
   add?: string[] | null
   remove?: string[] | null
   kept?: number | null
+  /** A two-step create: the State the item is born in, where `new` is the State it is then moved to. The plugin
+   * prints it as `(created Active, then moved)`, and apply sends two writes for the row. Absent otherwise. */
+  via?: string | null
 }
 
 /** One plan row: a field row (`create` / `update` / `link` / `held` / …) or a comment row (`action: 'comment'`,
@@ -77,6 +80,7 @@ function readOp(raw: unknown): AdoPlanOp | null {
   return {
     op: text(raw.op), path: text(raw.path), old: raw.old ?? null, new: raw.new ?? null,
     add: Array.isArray(raw.add) ? words(raw.add) : null, remove: Array.isArray(raw.remove) ? words(raw.remove) : null, kept: count(raw.kept),
+    via: text(raw.via),
   }
 }
 
@@ -132,7 +136,9 @@ export function rowTitle(row: AdoPlanRow): string {
 
 const shown = (value: unknown): string => (value === null || value === undefined ? '(none)' : typeof value === 'string' ? value : JSON.stringify(value))
 
-/** One op the way `ado_sync.py plan` prints it: `field  old → new`, a tag change as `+ tag  - tag`. */
+/** One op the way `ado_sync.py plan` prints it: `field  old → new`, a tag change as `+ tag  - tag`; a two-step
+ * create's State op carries the plugin's own words after it, `(created Active, then moved)`, so the line does not
+ * read as one write in the final State. */
 export function opLine(op: AdoPlanOp): string {
   const path = op.path ?? ''
   const label = path.startsWith('/fields/') ? path.slice('/fields/'.length) : path
@@ -140,7 +146,8 @@ export function opLine(op: AdoPlanOp): string {
     const change = [...(op.add ?? []).map((t) => `+ ${t}`), ...(op.remove ?? []).map((t) => `- ${t}`)].join('  ')
     return `${label}  ${change || '(no change)'}`
   }
-  return `${label}  ${shown(op.old)} → ${shown(op.new)}`
+  const moved = op.via ? `  (created ${op.via}, then moved)` : ''
+  return `${label}  ${shown(op.old)} → ${shown(op.new)}${moved}`
 }
 
 const rowLabel = (row: AdoPlanRow): string => (row.action === 'comment' && row.status ? `comment · ${row.status}` : row.action)

@@ -541,9 +541,28 @@ def test_the_plan_notes_the_move_when_the_writes_would_pass_the_cap(apply_repo, 
     # old: 1 create <= writes_per_run 1, so the plan said nothing; the create and its move are 2 writes
     ap.set_config(apply_repo, limits={"writes_per_run": 1, "first_seed": 50})
     out = run_plan_json(apply_repo, capsys, "decision", "DL-02")
-    assert any("2 rows is over limits.writes_per_run (1)" in n for n in out["notes"]), out["notes"]
+    # reworded (was "2 rows is over ..."): it is 1 row and 2 writes, and the cap counts writes
+    assert any("2 writes (1 row, 1 of them a create then a move) is over limits.writes_per_run (1)" in n
+               for n in out["notes"]), out["notes"]
     out = run_plan_json(apply_repo, capsys, "decision", "DL-01")
     assert not any("writes_per_run" in n for n in out["notes"])
+
+
+def test_the_writes_per_run_note_counts_rows_exactly_as_before_when_no_row_is_two_step():
+    cfg = {"limits": {"writes_per_run": 2, "first_seed": 50}}
+    notes = ado_sync._plan_notes(cfg, [], False, {"create": 2, "update": 1})
+    assert notes == ["3 rows is over limits.writes_per_run (2); an apply stops at 2, and the next plan covers the rest"]
+    notes = ado_sync._plan_notes(cfg, [], False, {"create": 1, "update": 0}, comments=2)
+    assert notes == ["3 rows is over limits.writes_per_run (2); an apply stops at 2, and the next plan covers the rest"]
+    assert ado_sync._plan_notes(cfg, [], False, {"create": 1, "update": 1}) == []             # at the cap: nothing said
+    # a move is the one thing that turns the count into writes: 3 rows, 2 of them a create then a move, are 5 writes
+    notes = ado_sync._plan_notes(cfg, [], False, {"create": 2, "update": 1}, moves=2)
+    assert notes == ["5 writes (3 rows, 2 of them a create then a move) is over limits.writes_per_run (2); "
+                     "an apply stops at 2, and the next plan covers the rest"]
+    # and it can pass the cap by the move alone: 1 row at a cap of 1 is fine until its move is counted
+    one = {"limits": {"writes_per_run": 1, "first_seed": 50}}
+    assert ado_sync._plan_notes(one, [], False, {"create": 1, "update": 0}) == []
+    assert len(ado_sync._plan_notes(one, [], False, {"create": 1, "update": 0}, moves=1)) == 1
 
 
 # --- finding 2: a move the board refuses ----------------------------------------------------------------------------

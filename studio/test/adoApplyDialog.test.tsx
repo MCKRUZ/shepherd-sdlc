@@ -43,6 +43,17 @@ const PLAN_JSON = {
   counts: { create: 1, update: 1 },
 }
 
+/** A create the process does not allow in its final State at creation: `ado_sync.py plan --json` marks the State op
+ * `via` (the State the item is born in), and apply sends the create and then one move. Hand-written (unverified):
+ * the shape is read from `ado_sync._create_ops`. */
+const TWO_STEP_ROW = {
+  ref: 'sdlc:decision:DL-02', kind: 'decision', id: 'DL-02', action: 'create', reason: null, work_item: null, rev: null, type: 'Issue', notes: [],
+  ops: [
+    { op: 'add', path: '/fields/System.State', old: null, new: 'Closed', via: 'Active' },
+    { op: 'add', path: '/fields/System.Title', old: null, new: 'Fail open or closed?' },
+  ],
+}
+
 function plan(): AdoPlanDoc {
   const read = readAdoPlan(PLAN_JSON)
   if (!read) throw new Error('fixture plan did not read')
@@ -145,6 +156,21 @@ describe('readAdoPlan — the plan document as the plugin printed it', () => {
     expect(opLine({ op: 'add', path: '/fields/System.Title', old: null, new: 'Claims' })).toBe('System.Title  (none) → Claims')
     expect(opLine({ op: 'replace', path: '/fields/System.Tags', add: ['risk:HIGH'], remove: ['risk:MEDIUM'], kept: 0 })).toBe('System.Tags  + risk:HIGH  - risk:MEDIUM')
   })
+
+  it('a two-step create\'s State op keeps `via` and says it the way the plugin does: `(created Active, then moved)`', () => {
+    const doc = readAdoPlan({ plan: HASH, rows: [TWO_STEP_ROW] })!
+    const [state, title] = doc.rows[0]!.ops
+    expect(state!.via).toBe('Active')
+    expect(opLine(state!)).toBe('System.State  (none) → Closed  (created Active, then moved)')
+    // an op without `via` — every other op, and every plan from before the mark existed — reads exactly as it did
+    expect(title!.via).toBeNull()
+    expect(opLine(title!)).toBe('System.Title  (none) → Fail open or closed?')
+    expect(opLine({ op: 'add', path: '/fields/System.State', old: null, new: 'Closed' })).toBe('System.State  (none) → Closed')
+    expect(opLine({ op: 'add', path: '/fields/System.State', old: null, new: 'Closed', via: null })).toBe('System.State  (none) → Closed')
+    expect(opLine({ op: 'add', path: '/fields/System.State', old: null, new: 'Closed', via: '' })).toBe('System.State  (none) → Closed')
+    // a `via` that is not a word is not read as one: the line says nothing it was not told
+    expect(readAdoPlan({ plan: HASH, rows: [{ ...TWO_STEP_ROW, ops: [{ ...TWO_STEP_ROW.ops[0], via: 7 }] }] })!.rows[0]!.ops[0]!.via).toBeNull()
+  })
 })
 
 describe('AdoApplyDialog — the preview is the plan', () => {
@@ -163,6 +189,28 @@ describe('AdoApplyDialog — the preview is the plan', () => {
     expect(rows[1]!.textContent).toContain('required field Custom.Area has no value')
     expect(rows[2]!.textContent).toContain('#4522 is gone from the board')
     expect(rows[2]!.querySelectorAll('[data-plan-op]')).toHaveLength(0)
+  })
+
+  it('a two-step create is drawn as a create in one state then a move, not as one write in the final state', () => {
+    mount({ plan: readAdoPlan({ ...PLAN_JSON, rows: [TWO_STEP_ROW, ...PLAN_JSON.rows] })! })
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('[data-plan-row]'))
+    const twoStep = rows[0]!
+    expect(twoStep.getAttribute('data-action')).toBe('create')
+    expect(Array.from(twoStep.querySelectorAll('[data-plan-op]')).map((o) => o.textContent)).toEqual([
+      'System.State  (none) → Closed  (created Active, then moved)', 'System.Title  (none) → Fail open or closed?',
+    ])
+    expect(screen.getByText(/\(created Active, then moved\)/)).toBeTruthy()
+    // only that op carries the words; the rows with no `via` render exactly as before
+    expect(document.querySelectorAll('[data-plan-op]')).toHaveLength(2 + 3 + 1)
+    expect(Array.from(document.querySelectorAll('[data-plan-op]')).filter((o) => /created .*, then moved/.test(o.textContent ?? ''))).toHaveLength(1)
+    expect(Array.from(rows[1]!.querySelectorAll('[data-plan-op]')).map((o) => o.textContent)).toEqual([
+      'Custom.RiskTier  MEDIUM → HIGH', 'System.State  Active → Ready', 'System.Tags  + risk:HIGH  + sdlc:status:ready  - risk:MEDIUM',
+    ])
+  })
+
+  it('a plan with no two-step row never says "then moved"', () => {
+    mount()
+    expect(screen.getByTestId('ado-apply-dialog').textContent).not.toContain('then moved')
   })
 
   it('a comment row shows the exact text the board will carry — as text, never as markup', () => {

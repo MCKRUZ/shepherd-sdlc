@@ -407,6 +407,14 @@ What the first run against a real organisation (RheemDevOps, 2026-10-15 to 17) f
   returned (`ado_sync_model.ownership_for_link` takes the board's item), the same revision the move tests. The
   one-hop creation finding (`Issue does not allow creation -> Closed`, said under `plan --validate` when the second
   hop is not known) has its pin back.
+- **Two-step creates told truthfully where a count or a dialog repeats them.** The `writes_per_run` note called a
+  row what is a write: one two-step create at a cap of 1 read `2 rows is over limits.writes_per_run (1)`. When a move
+  is among the writes it now reads `2 writes (1 row, 1 of them a create then a move) is over limits.writes_per_run
+  (1)`; with no two-step row the note is word for word what it was. Shepherd's apply dialog dropped `via`, so a
+  create in Active then moved to Closed was drawn as one write in Closed; it now keeps `via` and ends that op's line
+  with the plugin's words, `(created Active, then moved)`. The dialog shows a row count (`pendingRowCount`, a row is a
+  row however many writes it sends) and never a write count, so it has none to correct; the plan's `cost` block is
+  where writes are counted.
 
 ## 2.0.0 — 2026-10-12
 

@@ -1343,9 +1343,14 @@ def _plan_notes(cfg: dict, ledger: list[dict], scope_all: bool, counts: dict, co
     if scope_all and never_applied and _is_id(first_seed) and counts["create"] > first_seed:
         notes.append(f"first seed: {_plural(counts['create'], 'create')} is over limits.first_seed ({first_seed}); "
                      "an apply of this plan will need --limit")
-    pending = counts["create"] + counts["update"] + comments + moves   # a comment, a create's move: writes too
-    if _is_id(per_run) and pending > per_run:
-        notes.append(f"{_plural(pending, 'row')} is over limits.writes_per_run ({per_run}); an apply stops at "
+    pending = counts["create"] + counts["update"] + comments     # rows an apply would send; a comment is a write too
+    writes = pending + moves                                      # a two-step create is ONE row and TWO writes
+    if _is_id(per_run) and writes > per_run:
+        # the cap counts writes, so the note says writes when a move is among them; with no move it is the row count
+        # it always was, word for word
+        what = (f"{_plural(writes, 'write')} ({_plural(pending, 'row')}, {moves} of them a create then a move)"
+                if moves else _plural(pending, "row"))
+        notes.append(f"{what} is over limits.writes_per_run ({per_run}); an apply stops at "
                      f"{per_run}, and the next plan covers the rest")
     return notes
 
