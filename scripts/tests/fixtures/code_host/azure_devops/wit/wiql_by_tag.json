@@ -1,0 +1,46 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "boards",
+  "query",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--project",
+  "Claims",
+  "--wiql",
+  "SELECT [System.Id],[System.WorkItemType],[System.Title],[System.State],[System.Tags],[System.AssignedTo] FROM WorkItems WHERE [System.TeamProject] = 'Claims' AND [System.Tags] CONTAINS 'sdlc:spec:0004'",
+  "--only-show-errors",
+  "-o",
+  "json"
+ ],
+ "value": [
+  {
+   "id": 4521,
+   "rev": 7,
+   "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521",
+   "fields": {
+    "System.Id": 4521,
+    "System.WorkItemType": "User Story",
+    "System.Title": "0004 · duplicate claim 409",
+    "System.State": "Active",
+    "System.Tags": "risk:MEDIUM; sdlc-repo:claims-api; sdlc:spec:0004; sdlc:status:in-flight",
+    "System.AssignedTo": {
+     "displayName": "Person 2",
+     "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000003",
+     "_links": {
+      "avatar": {
+       "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2"
+      }
+     },
+     "id": "00000000-0000-0000-0000-000000000003",
+     "uniqueName": "person2@example.com",
+     "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-2",
+     "descriptor": "aad.anonymised-2"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,139 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "work",
+  "--resource",
+  "backlogconfiguration",
+  "--route-parameters",
+  "project=TwoLevelDemo",
+  "team=TwoLevelDemo Team",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "backlogFields": {
+   "typeFields": {
+    "Order": "Microsoft.VSTS.Common.StackRank",
+    "Effort": "Microsoft.VSTS.Scheduling.StoryPoints",
+    "RemainingWork": "Microsoft.VSTS.Scheduling.RemainingWork"
+   }
+  },
+  "bugsBehavior": "asRequirements",
+  "hiddenBacklogs": [],
+  "isBugsBehaviorConfigured": true,
+  "portfolioBacklogs": [
+   {
+    "id": "Microsoft.FeatureCategory",
+    "name": "Features",
+    "rank": 3,
+    "workItemTypes": [
+     {
+      "name": "Feature"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Feature"
+    },
+    "isHidden": false,
+    "type": "portfolio"
+   },
+   {
+    "id": "Custom.InitiativeCategory",
+    "name": "Initiatives",
+    "rank": 5,
+    "workItemTypes": [
+     {
+      "name": "Initiative"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Initiative"
+    },
+    "isHidden": false,
+    "type": "portfolio"
+   },
+   {
+    "id": "Custom.ThemeCategory",
+    "name": "Themes",
+    "rank": 6,
+    "workItemTypes": [
+     {
+      "name": "Theme"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Theme"
+    },
+    "isHidden": false,
+    "type": "portfolio"
+   },
+   {
+    "id": "Microsoft.EpicCategory",
+    "name": "Epics",
+    "rank": 4,
+    "workItemTypes": [
+     {
+      "name": "Epic"
+     }
+    ],
+    "defaultWorkItemType": {
+     "name": "Epic"
+    },
+    "isHidden": false,
+    "type": "portfolio"
+   }
+  ],
+  "requirementBacklog": {
+   "id": "Microsoft.RequirementCategory",
+   "name": "Stories",
+   "rank": 2,
+   "workItemTypes": [
+    {
+     "name": "User Story"
+    }
+   ],
+   "defaultWorkItemType": {
+    "name": "User Story"
+   },
+   "isHidden": false,
+   "type": "requirement"
+  },
+  "taskBacklog": {
+   "id": "Microsoft.TaskCategory",
+   "name": "Tasks",
+   "rank": 1,
+   "workItemTypes": [
+    {
+     "name": "Task"
+    }
+   ],
+   "defaultWorkItemType": {
+    "name": "Task"
+   },
+   "isHidden": false,
+   "type": "task"
+  },
+  "workItemTypeMappedStates": [
+   {
+    "workItemTypeName": "User Story",
+    "states": {
+     "New": "Proposed",
+     "Ready": "Proposed",
+     "Active": "InProgress",
+     "Resolved": "Resolved",
+     "Closed": "Completed",
+     "Removed": "Removed"
+    }
+   }
+  ],
+  "continuation_token": null
+ }
+}

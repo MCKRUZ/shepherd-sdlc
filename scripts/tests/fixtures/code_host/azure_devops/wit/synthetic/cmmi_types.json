@@ -1,0 +1,378 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypes",
+  "--route-parameters",
+  "project=CmmiDemo",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 6,
+  "value": [
+   {
+    "name": "Epic",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Epic",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ]
+   },
+   {
+    "name": "Feature",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Feature",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     },
+     {
+      "name": "Removed",
+      "color": "ffffff",
+      "category": "Removed"
+     }
+    ]
+   },
+   {
+    "name": "Requirement",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Requirement",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   },
+   {
+    "name": "Task",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Task",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   },
+   {
+    "name": "Bug",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Bug",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   },
+   {
+    "name": "Issue",
+    "referenceName": "Microsoft.VSTS.WorkItemTypes.Issue",
+    "isDisabled": false,
+    "fieldInstances": [
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Id",
+      "name": "ID"
+     },
+     {
+      "alwaysRequired": true,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Title",
+      "name": "Title"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.State",
+      "name": "State"
+     },
+     {
+      "alwaysRequired": false,
+      "defaultValue": null,
+      "helpText": null,
+      "referenceName": "System.Description",
+      "name": "Description"
+     }
+    ],
+    "states": [
+     {
+      "name": "Proposed",
+      "color": "b2b2b2",
+      "category": "Proposed"
+     },
+     {
+      "name": "Active",
+      "color": "007acc",
+      "category": "InProgress"
+     },
+     {
+      "name": "Resolved",
+      "color": "ff9d00",
+      "category": "Resolved"
+     },
+     {
+      "name": "Closed",
+      "color": "339933",
+      "category": "Completed"
+     }
+    ]
+   }
+  ],
+  "continuation_token": null
+ }
+}

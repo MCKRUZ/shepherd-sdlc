@@ -1,0 +1,2 @@
+# hand-written (unverified)
+ERROR: TF401027: You need the Edit work items in this node permission to perform this action. Details: identity 'person2@example.com', scope 'Claims\SDLC\Intake'. VS403403: the identity has read access only. (HTTP 403 Forbidden)

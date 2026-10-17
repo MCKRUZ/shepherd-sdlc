@@ -1,0 +1,19 @@
+# The mini repository's state file: just enough for `--state .sdlc/state.yaml` to find the repository root.
+version: "1.0"
+profile_id: "mini-repo"
+project_name: "Mini repo"
+created_at: "2026-10-01T00:00:00Z"
+project_type: service
+
+current_phase: "build"
+phase_name: "build"
+
+phases:
+  "build":
+    name: build
+    status: active
+    entered_at: "2026-10-01T00:00:00Z"
+    completed_at: null
+    gate_results: {}
+    artifacts: []
+    artifact_checksums: {}

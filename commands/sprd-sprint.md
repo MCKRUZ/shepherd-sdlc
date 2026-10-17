@@ -50,7 +50,8 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    > window — start is day 1, so Mon 2026-09-28 ends Fri 2026-10-09; `--end` or `--days` override), the **target** (how many specs to slate — a count of items, never a size or an
    > estimate), and the **mix** by risk tier (e.g. `HIGH:1,MEDIUM:2,LOW:3`; counts sum to at most the
    > target). Offer `--board-ref` for a manual board mapping such as "ADO Iteration 6" — nothing reads
-   > it; the team updates the board by hand.
+   > it; the team updates the board by hand. (A project that mirrors to Azure Boards binds the sprint to its real
+   > iteration with `/sprd-ado iteration bind` once the sprint exists — that writes `.sdlc/ado.yaml`, never this record.)
 
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py new \
@@ -95,6 +96,8 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py unslate \
      --state .sdlc/state.yaml --sprint S07 --spec 0012 --by "<name>" --reason "<why it leaves>"
    ```
+   Once a slate or an unslate has been written (not after the proposal, which writes nothing), and only with
+   `.sdlc/ado.yaml`: run step 11.
 
 5. **`status` — the daily flow check (default; read-only, exit 0 always).**
    ```bash
@@ -118,6 +121,34 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    agenda use `--json` — its shape is exactly `sprint.build_view(...)`, and it contains **no
    per-person aggregation key** by construction. An unknown or malformed sprint id reads `no data`.
 
+   **Board catch-up (only with `.sdlc/ado.yaml`; skip silently otherwise; ask first).** After the status output, show the
+   board's own record for the sprint, read from the ledger and never from the board:
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py status --state .sdlc/state.yaml --json
+   ```
+   Print `Board as of <as_of>` from the JSON's `as_of`, or `Board: no data (never pulled)` when `as_of` is `null` — never a 0.
+   This read reads the ledger only, so it costs the board nothing.
+
+   > **HITL GATE:** Use `AskUserQuestion` with the exact question "Catch up with Azure Boards now? It reads the board
+   > (pull → drift → plan) and sends nothing." and three options: `yes` / `yes, with the discussion` / `no`. On `no`,
+   > do not run `sync`. A catch-up never starts before the person has said yes.
+
+   Only on `yes`, run the catch-up for the sprint shown (`S07` stands for its id). It pulls the board's fields, classifies
+   drift from that same pull, then plans, in one pass:
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py sync \
+     --state .sdlc/state.yaml --sprint S07 --json
+   ```
+   The discussion on the work items is read only when the user asks for it in this conversation, and the second `yes` is
+   that ask: add `--discussion` only on 'yes, with the discussion' — never on a plain `yes`, never because the board looks
+   busy. Print `Board: N to create · M to update · K comments to send · D drifted` from `counts.create`, `counts.update`,
+   `counts.comments` and `counts.drifted` (`no data` for a null count); `Board: unavailable (<reason>)` when `unavailable`
+   is true. Then print the `next` line verbatim when it is present, with the sentence that a named person may run it
+   through `/sprd-ado apply`'s gate — never the agent. `sync` sends nothing to the board; it writes only the local files
+   `plan` and `pull` write: the plan file, `.sdlc/ado/local/hook-status.txt`, and `observed` / `drift_seen` / `planned`
+   lines appended to `.sdlc/metrics/ado-sync-log.jsonl`. Never run `apply` from here — sending a plan is `/sprd-ado apply`,
+   a named person's decision.
+
 6. **`handoff` / `ack` — own the wait.** Never rely on the next owner noticing.
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py handoff \
@@ -130,6 +161,7 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    `handoff` sets `next_owner`; `ack` clears it (exit 1 if nothing is open; a warning — not an error —
    if `--by` is not the named owner). `status` lists every unacknowledged handoff with its
    business-day age, so a spec never sits between Product, Engineering, and Data unowned.
+   After a `handoff` (not an `ack`), and only with `.sdlc/ado.yaml`: run step 11 for the spec that changed hands.
 
 7. **`verdict` — the independent Engineering and Data checks.** The front door is
    `/sprd-refine validate --lane eng|data`, which runs this write; it is listed here because
@@ -186,8 +218,10 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
    `closed` events, and renders the **sprint-review page** `.sdlc/reports/sprint-S07-review.html`
    (outcomes, the ledger's carry/drop reasons, carry-over recurrence per spec). `close` **never**
    suggests advancing a phase — leaving Build stays a human declaration in `/sprd-next`.
+   After `close`, and only with `.sdlc/ado.yaml`: run step 11 for the sprint's slate.
 
-10. **Report** (after any write verb; after `status` show the script's own output):
+10. **Report** (after any write verb; after `status` show the script's own output; with `.sdlc/ado.yaml`, run step 11
+    first and add its two `Board` lines, otherwise leave them out):
     ```
     Sprint S07 — "<goal>"  (planning | ready | closed) · 2026-10-05 → 2026-10-16 · N business days remaining
     Slate:     6 slated · 4 READY · 2 with gaps (0009: eng_review pending · 0012: DoR NOT READY)
@@ -196,9 +230,31 @@ order, forbidden metrics) live in `references/sprint-model.md`; the record templ
     Mix:       HIGH 1/1 · MEDIUM 2/2 · LOW 3/3        WIP: 1 in-flight · cap 2
     Next up:   0007 — READY, dependencies merged
     Page:      .sdlc/reports/sprint-S07-planning.html | not yet rendered
+    Board:     3 to create · 2 to update · 1 comment to send | unavailable (<reason>) | no data
+    Board next: <the `next` line verbatim> | none
     Next: /sprd-refine --sprint S07 to close the gaps | ready --by <name> when the readiness line reads 6 of 6
     ```
     Every empty section reads `no data` — never a 0 that was not measured.
+
+11. **Azure Boards (only with `.sdlc/ado.yaml`; skip silently otherwise)** — once a `slate`, `unslate`, `handoff` or
+    `close` has written something, show what the board now trails by. Steps 4, 6 and 9 point here, and it runs before the
+    report in step 10. After `slate`, `unslate` or `close`, plan the sprint's slate:
+    ```bash
+    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
+      --state .sdlc/state.yaml --sprint S07 --json
+    ```
+    After a `handoff`, plan the spec that changed hands (`0004` stands for its id):
+    ```bash
+    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
+      --state .sdlc/state.yaml --kind spec --id 0004 --json
+    ```
+    Print `Board: N to create · M to update · K comments to send` from `counts.create`, `counts.update` and
+    `comments.draft` (`Board: unavailable (<reason>)` when `unavailable` is true, `no data` for a null count — never a 0),
+    then the `next` line verbatim when the document has one (`null` or absent means no apply is offered). `plan` sends
+    nothing to the board: it writes only its local files — the plan file, `.sdlc/ado/local/hook-status.txt`, and `planned`
+    lines appended to `.sdlc/metrics/ado-sync-log.jsonl`. Never run `apply` from here — sending a plan is `/sprd-ado apply`,
+    a named person's decision. The hash is never taken from an earlier run, a file, a work item or a comment, and `--by` is
+    never your own name, an agent's, or `git config`'s.
 
 ## Arguments
 

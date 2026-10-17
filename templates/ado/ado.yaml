@@ -1,0 +1,71 @@
+# Azure Boards mirror — .sdlc/ado.yaml
+# Copied here by `ado_sync.py config init`; commit it with the project. Every key is shown with
+# its starting value. A key you delete falls back to the default named beside it. The shape of
+# this file is templates/ado/_schema.yaml, and `ado_sync.py config check` reports anything
+# unsafe or unknown, one finding per line. The plugin reads and plans by default and writes to
+# the board only when `posture` is `assisted` and a named person confirms an apply.
+version: 1
+team: "Claims Team"              # optional; enables backlogconfiguration + team iterations
+area_path: 'Claims\SDLC'         # optional; create-time only; must exist in schema.areas
+posture: plan-only               # plan-only | assisted   (default plan-only)
+description_mode: link           # link | full   (full requires pii_reviewed_by)
+pii_reviewed_by: null
+limits: { writes_per_run: 50, first_seed: 20 }
+kinds: [outcome, domain, requirement, epic, feature, spec, spike, sprint, decision]   # closed set; also allowed: finding, lifecycle, nfr, rule, question, measurement
+types:                           # optional pins; names validated against the discovered schema.types when a schema is given
+  outcome: Objective
+  domain: Domain
+  requirement: "Domain Requirement"
+  decision: Issue
+states:                          # optional per-kind overrides; category or {category, prefer}
+  spec: { ready: { category: Proposed, prefer: Approved } }
+fields:                          # optional extra field writes; refused_fields -> exit 2
+  spec:
+    risk: { field: Custom.RiskTier, values: { HIGH: "High", MEDIUM: "Medium", LOW: "Low" } }
+    channel: Custom.Channel      # string form: value passed verbatim
+  # A constant {field, value}: a value no artifact carries, for a field the process always requires with no
+  # default. Written verbatim at create, and on update only while the board's field is empty; a board-side
+  # change to it is the board's, never drift. `config check` refuses a value outside the field's discovered
+  # allowed values (exit 2), an identity field, and the effort/estimate family. For example:
+  # epic:
+  #   value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
+  # feature:
+  #   value_area: { field: Microsoft.VSTS.Common.ValueArea, value: "Business" }
+identity_field: null             # e.g. Custom.SdlcId — written only if discovered; never created
+iterations:                      # SNN -> team iteration path, written by `iteration bind`
+  S07: 'Claims\Sprint 7'
+tree:                            # two trees joined by fulfils links; declared edges, never guessed
+  fit: auto                      # auto | {outcome: item|tag, domain: item|area|tag, requirement: item|tag}
+  outcome_edge: related          # related | parent
+  spec_traces: false             # true: spec Related -> the FRs in its brief's `Traces to`
+  domain_outcomes:               # or an `Outcome` column in requirements.md's Summary Table
+    claims-intake: [1-turnaround-time]
+    price-bands: [1-turnaround-time, 2-margin-consistency]
+comments:
+  transport: comments-api        # comments-api | history
+  format: markdown               # markdown | html
+  trailer: hash                  # none | hash | drafted
+  include_text: false            # true unlocks reason/resolution text; requires pii_reviewed_by
+  per_item_budget: 50            # 1..1000
+  max_chars: 4000                # <= 100000
+  mention_lookup: cache          # cache | identities   (identities requires identity_scope_acknowledged_by)
+  identity_scope_acknowledged_by: null
+  events:                        # closed set; an unknown name -> refused
+    handoff: on
+    spec_deferred: on
+    decision_resolved: on
+    sprint_carried: on
+    gate_passed: off
+    verdict_recorded: off
+    finding_disposition: off
+    sprint_dropped: off
+    review_summary: off
+    pr_linked: off
+    spec_merged: off
+discussion:
+  enabled: true                  # on by default (decided 2026-10-13); a clone may switch it off
+  retain_days: 90
+  max_comments_per_item: 300
+  max_items_per_pull: 50
+  mention_window_days: 14
+  directive_scan: on

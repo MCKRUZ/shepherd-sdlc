@@ -1,0 +1,2 @@
+# captured 2026-10-14 (org anonymised); stderr of `--resource states`, as recorded in the failed discover run (the raw file was overwritten)
+ERROR: --resource and --api-version combination is not correct

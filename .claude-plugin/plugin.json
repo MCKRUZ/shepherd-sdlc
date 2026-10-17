@@ -1,6 +1,6 @@
 {
   "name": "shepherd",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "SDLC orchestration for Claude Code + one-command install of the full delivery harness (governance CLAUDE.md, CI rail gates + eval workflows, Stop/review hooks, build-loop agents & skills, IaC starters), on GitHub or Azure DevOps.",
   "author": {
     "name": "Matt Kruczek",

@@ -1,0 +1,22 @@
+Azure Boards mirror: sync  (as of 2026-10-13T09:30Z; reads the board, sends nothing)
+== pull ==
+spec 0004  #4521  rev 7  IN_SYNC
+recorded: 1 observed line, 0 drift_seen lines
+hook line: no plan yet · 0 drifted · as of 2026-10-13T09:30Z
+== drift ==  (from the pull's rows; the board is not read again)
+classes: IN_SYNC 1
+note: untagged board items not searched: sync reads the board only for the pull and the plan; `drift` searches for them
+== plan ==
+plan 1d0617c03373  (schema 2026-10-13, 0 days old; posture plan-only; az executed as not read yet)
+spec 0004  update  #4521 rev 7
+  Custom.RiskTier  MEDIUM -> HIGH
+  System.State     Active -> Ready
+  System.Tags      + data-review:n-a  + eng-review:accepted  + risk:HIGH  + sdlc:status:ready  - risk:MEDIUM  - sdlc:status:in-flight   (0 human tags kept)
+
+How each kind lands on this process
+  kind  mode  type        level  why
+  spec  item  User Story  -      default type of RequirementCategory
+
+cost: 1 write, 0 creates, 0 links  (az spawns on apply: 1)
+Plan file: .sdlc/ado/local/plans/1d0617c03373.json
+hook line: 1 row pending · 0 drifted · as of 2026-10-13T09:30Z

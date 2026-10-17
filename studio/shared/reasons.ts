@@ -10,8 +10,10 @@ export function newerPlugin(capability: string): string {
   return `arrives with a newer plugin: lacks ${capability}`
 }
 
-/** The ten capabilities the command center reads (§2.6). A missing one disables its control
- * with `newerPlugin(cap)`; `sprint-write` is what lets an older plugin disable the omnibar verbs. */
+/** The ten capabilities the command center reads (§2.6), the three it already read, and the six of the
+ * Azure Boards mirror (ado-boards-mirror.md §12: `ado_sync.py`'s status read, apply, reconcile, show,
+ * discussion pull and comment). A missing one disables its control with `newerPlugin(cap)`;
+ * `sprint-write` is what lets an older plugin disable the omnibar verbs. */
 export const CAPABILITIES = {
   sprintStatus: 'sprint-status',
   sprintList: 'sprint-list',
@@ -26,6 +28,12 @@ export const CAPABILITIES = {
   readinessAll: 'readiness-all',
   decisionOpen: 'decision-open',
   decisionDecide: 'decision-decide',
+  adoStatus: 'ado-status-json',
+  adoApply: 'ado-apply',
+  adoReconcile: 'ado-reconcile',
+  adoShow: 'ado-show',
+  adoDiscussion: 'ado-pull-discussion',
+  adoComment: 'ado-comment',
 } as const
 
 export type CapabilityName = (typeof CAPABILITIES)[keyof typeof CAPABILITIES]
@@ -72,6 +80,13 @@ export const WINDOW_IS_A_LABEL = 'window is a label only'
 export const NEXT_UP = 'next up · deps merged · pull →'
 export const ONE_SPEC_ONE_BRANCH = 'one spec · one branch · one PR'
 export const TIER_RULE = 'Raising a tier adds rungs for free; lowering is recorded against whoever decided'
+
+// The Azure Boards mirror's four no-data states (ado-boards-mirror.md §12 item 1), each digit-free: a board
+// that was never configured, discovered, pulled or reachable says so in words, never as a 0.
+export const WORK_ITEMS_NOT_SET_UP = 'Work items are not set up for this project'
+export const SCHEMA_NOT_DISCOVERED = 'Schema not discovered yet'
+export const NOT_PULLED_YET = 'Not pulled yet'
+export const BOARDS_UNREACHABLE = 'Could not reach Azure Boards'
 
 /** The hand-off dialog's Confirm while `--to` names nobody yet (the `h` key on a card). */
 export const PICK_RECIPIENT = 'pick a person on the roster — --to needs a roster handle'
@@ -120,6 +135,7 @@ export const REASON_SENTENCES: readonly string[] = [
   TWO_LEDGER_LINES, NO_DATA, CAP_NOT_SET, DATES_UNREADABLE, NOTHING_NEEDS_YOU, NO_PR_YET, NO_CHANNEL_BOUND,
   GATED_PATH_NOT_DECLARED, ORDER_NOT_GIVEN, ORDER_ARRIVES_ON_COMMIT, UNDATED, DEFERRED_REASON_RECORDED,
   NO_NAME_RECORDED, WINDOW_IS_A_LABEL, NEXT_UP, ONE_SPEC_ONE_BRANCH, TIER_RULE, PICK_RECIPIENT,
+  WORK_ITEMS_NOT_SET_UP, SCHEMA_NOT_DISCOVERED, NOT_PULLED_YET, BOARDS_UNREACHABLE,
 ]
 
 /** True for a fixed sentence, a `newerPlugin(cap)` line or a `createSprintFirst(id)` line. */

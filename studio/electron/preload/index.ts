@@ -172,6 +172,7 @@ const studio: StudioApi & CommandCenterApi = {
   getReadinessAll: (projectPath) => ipcRenderer.invoke('studio:getReadinessAll', projectPath),
   getDecisions: (projectPath) => ipcRenderer.invoke('studio:getDecisions', projectPath),
   runSprintVerb: (projectPath, request) => ipcRenderer.invoke('studio:runSprintVerb', projectPath, request),
+  runAdoVerb: (projectPath, request) => ipcRenderer.invoke('studio:runAdoVerb', projectPath, request),
   openDecision: (projectPath, decision, owner) => ipcRenderer.invoke('studio:openDecision', projectPath, decision, owner),
   decideDecision: (projectPath, id, resolution) => ipcRenderer.invoke('studio:decideDecision', projectPath, id, resolution),
   confirmTier: (projectPath, specPath) => ipcRenderer.invoke('studio:confirmTier', projectPath, specPath),

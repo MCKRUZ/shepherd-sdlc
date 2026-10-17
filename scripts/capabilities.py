@@ -67,6 +67,49 @@ CAPABILITIES: dict[str, dict] = {
     "findings-json": {"script": "record_findings.py", "argv": ["report"], "flags": ["--json", "--spec"]},
     # Its presence also means `--spec --json` carries `ladder{}`: both landed in the same change.
     "readiness-all": {"script": "spec_readiness.py", "flags": ["--all", "--json"]},
+    # The Azure Boards mirror's setup verbs (docs/proposals/ado-boards-mirror.md). None of them touches a
+    # work item: `config` starts and checks `.sdlc/ado.yaml` (`config init` carries `--force`), `discover`
+    # reads the project's process into `.sdlc/ado/schema.json`, `validate` says whether the config fits it.
+    "ado-config": {"script": "ado_sync.py", "argv": ["config", "init"],
+                   "flags": ["--repo", "--state", "--json", "--force"]},
+    "ado-discover": {"script": "ado_sync.py", "argv": ["discover"],
+                     "flags": ["--repo", "--state", "--json", "--team", "--refresh"]},
+    "ado-validate": {"script": "ado_sync.py", "argv": ["validate"], "flags": ["--repo", "--state", "--json"]},
+    # Its read-only mirror (Fold B2): nothing here writes to the board. `plan` shows what an apply would send,
+    # `status` counts the ledger (writes nothing), `pull` reads the board back (`--discussion` caches the comments
+    # locally), `link` pairs a ref with a work item in the ledger by a named human, `show` prints one item and its
+    # cached discussion as observed content (`--for-agent` withholds lines that read as instructions).
+    "ado-plan": {"script": "ado_sync.py", "argv": ["plan"],
+                 "flags": ["--repo", "--state", "--json", "--kind", "--id", "--sprint", "--all", "--validate",
+                           "--no-comments"]},
+    "ado-status-json": {"script": "ado_sync.py", "argv": ["status"], "flags": ["--repo", "--state", "--json"]},
+    "ado-pull": {"script": "ado_sync.py", "argv": ["pull"], "flags": ["--repo", "--state", "--json", "--id", "--all"]},
+    "ado-link": {"script": "ado_sync.py", "argv": ["link"],
+                 "flags": ["--repo", "--state", "--json", "--work-item", "--by"]},
+    "ado-show": {"script": "ado_sync.py", "argv": ["show"],
+                 "flags": ["--repo", "--state", "--json", "--fetch", "--versions", "--expand", "--for-agent"]},
+    "ado-pull-discussion": {"script": "ado_sync.py", "argv": ["pull"],
+                            "flags": ["--repo", "--state", "--json", "--discussion", "--full"]},
+    # The catch-up (Fold B6): `sync` runs pull, drift, (the discussion pull, only on `--discussion`) and plan in one
+    # read and ends with the same `Next:` line `plan` and `comment` print where an apply is offered. It sends nothing.
+    "ado-sync": {"script": "ado_sync.py", "argv": ["sync"],
+                 "flags": ["--repo", "--state", "--json", "--kind", "--id", "--sprint", "--all", "--discussion",
+                           "--no-comments"]},
+    # Its write verbs (Fold B3). `apply` is the one verb that sends a plan to the board, and only a named person
+    # (`--by`) who typed the plan's 12-hex hash (`--confirm`) on a clone whose posture is `assisted`; `--limit` caps a
+    # first seed. `comment` only DRAFTS one comment into a plan file, so it is safe on a `plan-only` clone: nothing
+    # is sent until `apply --confirm`. Studio hides the control and says why when a plugin lacks the name.
+    "ado-apply": {"script": "ado_sync.py", "argv": ["apply"],
+                  "flags": ["--repo", "--state", "--json", "--confirm", "--by", "--limit"]},
+    "ado-comment": {"script": "ado_sync.py", "argv": ["comment"],
+                    "flags": ["--repo", "--state", "--json", "--message", "--by", "--mention", "--event"]},
+    # Its disposition verb (Fold B4). `reconcile` settles one drift row `pull` recorded, through the design's
+    # disposition machine: `--take ado` starts the verb that owns the field (never edits a spec itself), `--take sdlc`
+    # keeps the repository's value, `ack` needs `--owner`, `not-drift` a `--reason`. Writes nothing to the board.
+    # The desktop app hides its control and says why when a plugin lacks the name.
+    "ado-reconcile": {"script": "ado_sync.py", "argv": ["reconcile"],
+                      "flags": ["--repo", "--state", "--json", "--field", "--take", "--by", "--owner", "--reason",
+                                "--from-comment"]},
 }
 
 

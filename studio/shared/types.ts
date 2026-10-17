@@ -4,6 +4,9 @@
 // otherwise separate TypeScript projects with no built .d.ts output to reference each
 // other through.
 
+import type { AdoSyncView } from './adoTypes'
+import type { AdoVerb, AdoVerbRequest } from './adoVerbArgv'
+
 export interface ConsoleEntry {
   id: string
   command: string
@@ -2044,6 +2047,9 @@ export interface CommandCenter {
   scorecard: SourcedBlock<Scorecard>
   roster: SourcedBlock<ProjectSettings['roster']>
   log: SourcedBlock<SprintLogView>
+  /** `ado_sync.py status --json` (the Azure Boards mirror's read side), one more local block. Optional: the
+   * no-plugin answer main builds by hand has none, and a renderer treats an absent block as "no data". */
+  ado?: SourcedBlock<AdoSyncView>
   needsYou: NeedsYouItem[]
   /** Why `needsYou` is empty when it is for a reason other than "nothing": `reasons.NO_ACTOR`. */
   needsYouReason: string | null
@@ -2156,6 +2162,23 @@ export interface SprintVerbResult {
   verb: SprintVerb
 }
 
+/** The Azure Boards write path's answer (`ado_sync.py`, via the closed table in `shared/adoVerbArgv.ts`): the same
+ * envelope as `SprintVerbResult` — the exit code is the truth, 0 "Done", 1 "Not done", 2 "Refused by the
+ * plugin", and `exitCode: null` is "Shepherd did not ask" (no actor, a bad request, a plugin without the
+ * capability) — plus `json`, the one document `--json` printed (a plan's `plan` hash, a `show` item), or null
+ * when stdout was prose or not a single JSON object. `stdout`/`stderr` are the masked copies for display. */
+export interface AdoVerbResult {
+  ok: boolean
+  exitCode: number | null
+  refused: boolean
+  stdout: string
+  stderr: string
+  /** The exact argv that ran (without the interpreter), for the console and the dialog. */
+  argv: string[]
+  verb: AdoVerb
+  json: Record<string, unknown> | null
+}
+
 /** `track_decisions.py open|decide … --json`; a refusal is exit 1 with the message on stderr. */
 export type OpenDecisionResult =
   | { ok: true; id: string; opened: string; due: string; owner: string; path?: string }
@@ -2183,6 +2206,8 @@ export interface CommandCenterApi {
   getDecisions(projectPath: string): Promise<DecisionsView>
   // writes — every one through the closed argv table with the resolved actor as --by
   runSprintVerb(projectPath: string, request: SprintVerbRequest): Promise<SprintVerbResult>
+  /** One Azure Boards verb, one spawn; main resolves the actor and appends `--by` last on a write. */
+  runAdoVerb(projectPath: string, request: AdoVerbRequest): Promise<AdoVerbResult>
   openDecision(projectPath: string, decision: string, owner?: string): Promise<OpenDecisionResult>
   decideDecision(projectPath: string, id: string, resolution: string): Promise<DecideDecisionResult>
   confirmTier(projectPath: string, specPath: string): Promise<ConfirmTierResult>

@@ -58,6 +58,7 @@ no output, no error.
 | `.sdlc/profile.yaml` | Convention reminders (`immutability`, `no_console_log`) and the opt-in `session_health_check` |
 | `.sdlc/constitution.md`, `.sdlc/context/layers/`, `.sdlc/context/intake/index.md` | The 3-tier context: Foundation, the three most recent frozen layers, the document-intake index |
 | `.sdlc/sprints/*.md` | Sprint Team Layer — one `[SHEPHERD-SPRINT]` line per sprint record whose `state:` is not `closed` (any phase; silent when the directory is absent) |
+| `.sdlc/ado/local/hook-status.txt` | Azure Boards mirror — one `[SHEPHERD-ADO]` line echoing the file's first line (CR and NUL stripped), e.g. `3 rows pending · 1 drifted · as of 2026-10-12T09:02Z`. Written by `/sprd-ado plan` and `pull`; silent when the file is absent or its first line is empty; never calls `az`, never touches the network |
 
 ### State Parsing
 

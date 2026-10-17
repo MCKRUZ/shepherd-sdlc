@@ -1,0 +1,67 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "comments",
+  "--route-parameters",
+  "project=Claims",
+  "workItemId=4521",
+  "--http-method",
+  "POST",
+  "--in-file",
+  "/tmp/m.json",
+  "--media-type",
+  "application/json",
+  "--query-parameters",
+  "format=markdown",
+  "--api-version",
+  "7.1-preview",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "workItemId": 4521,
+  "id": 504,
+  "version": 1,
+  "text": "probe from sdlc · sprd 000000000000",
+  "renderedText": "<p>probe from sdlc · sprd 000000000000</p>",
+  "format": "markdown",
+  "createdBy": {
+   "displayName": "Person 1",
+   "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+   "_links": {
+    "avatar": {
+     "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+    }
+   },
+   "id": "00000000-0000-0000-0000-000000000002",
+   "uniqueName": "person1@example.com",
+   "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+   "descriptor": "aad.anonymised-1"
+  },
+  "createdDate": "2026-10-12T09:05:00Z",
+  "modifiedBy": {
+   "displayName": "Person 1",
+   "url": "https://dev.azure.com/contoso/_apis/Identities/00000000-0000-0000-0000-000000000002",
+   "_links": {
+    "avatar": {
+     "href": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1"
+    }
+   },
+   "id": "00000000-0000-0000-0000-000000000002",
+   "uniqueName": "person1@example.com",
+   "imageUrl": "https://dev.azure.com/contoso/_apis/GraphProfile/MemberAvatars/aad.anonymised-1",
+   "descriptor": "aad.anonymised-1"
+  },
+  "modifiedDate": "2026-10-12T09:05:00Z",
+  "isDeleted": false,
+  "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItems/4521/comments/504"
+ }
+}

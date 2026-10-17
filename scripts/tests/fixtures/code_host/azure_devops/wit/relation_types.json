@@ -1,0 +1,126 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemRelationTypes",
+  "--route-parameters",
+  "project=Claims",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 8,
+  "value": [
+   {
+    "attributes": {
+     "usage": "workItemLink",
+     "editable": false,
+     "enabled": true,
+     "acyclic": true,
+     "directional": true,
+     "singleTarget": false,
+     "topology": "tree"
+    },
+    "name": "Child",
+    "referenceName": "System.LinkTypes.Hierarchy-Forward",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/System.LinkTypes.Hierarchy-Forward"
+   },
+   {
+    "attributes": {
+     "usage": "workItemLink",
+     "editable": false,
+     "enabled": true,
+     "acyclic": true,
+     "directional": true,
+     "singleTarget": true,
+     "topology": "tree"
+    },
+    "name": "Parent",
+    "referenceName": "System.LinkTypes.Hierarchy-Reverse",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/System.LinkTypes.Hierarchy-Reverse"
+   },
+   {
+    "attributes": {
+     "usage": "workItemLink",
+     "editable": false,
+     "enabled": true,
+     "acyclic": false,
+     "directional": false,
+     "singleTarget": false,
+     "topology": "network"
+    },
+    "name": "Related",
+    "referenceName": "System.LinkTypes.Related",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/System.LinkTypes.Related"
+   },
+   {
+    "attributes": {
+     "usage": "workItemLink",
+     "editable": false,
+     "enabled": true,
+     "acyclic": true,
+     "directional": true,
+     "singleTarget": false,
+     "topology": "dependency"
+    },
+    "name": "Successor",
+    "referenceName": "System.LinkTypes.Dependency-Forward",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/System.LinkTypes.Dependency-Forward"
+   },
+   {
+    "attributes": {
+     "usage": "workItemLink",
+     "editable": false,
+     "enabled": true,
+     "acyclic": true,
+     "directional": true,
+     "singleTarget": false,
+     "topology": "dependency"
+    },
+    "name": "Predecessor",
+    "referenceName": "System.LinkTypes.Dependency-Reverse",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/System.LinkTypes.Dependency-Reverse"
+   },
+   {
+    "attributes": {
+     "usage": "resourceLink",
+     "editable": false,
+     "enabled": true
+    },
+    "name": "Artifact Link",
+    "referenceName": "ArtifactLink",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/ArtifactLink"
+   },
+   {
+    "attributes": {
+     "usage": "resourceLink",
+     "editable": false,
+     "enabled": true
+    },
+    "name": "Hyperlink",
+    "referenceName": "Hyperlink",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/Hyperlink"
+   },
+   {
+    "attributes": {
+     "usage": "resourceLink",
+     "editable": false,
+     "enabled": true
+    },
+    "name": "Attached File",
+    "referenceName": "AttachedFile",
+    "url": "https://dev.azure.com/contoso/_apis/wit/workItemRelationTypes/AttachedFile"
+   }
+  ],
+  "continuation_token": null
+ }
+}

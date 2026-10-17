@@ -55,6 +55,7 @@ import { checkHandOff, handOff } from './handoff'
 import { getCommandCenter, invalidateCommandCenter, prefetchCommandCenter } from './commandCenter'
 import { resolveActor } from './actor'
 import { runSprintVerb } from './sprintWrites'
+import { registerAdoIpc } from './adoIpc'
 import { decideDecision, getDecisions, openDecision } from './decisions'
 import { assignRoles, confirmTier, getReadinessAll, getSpecCard } from './specCard'
 import { getSlateProposal } from './sprint'
@@ -344,6 +345,7 @@ function registerIpcHandlers() {
   registerActivityHandlers(ipcMain, resolvePluginScriptsDir)
   registerActivityRunHandlers(ipcMain, resolvePluginScriptsDir)
   registerSprintHandlers(ipcMain, resolvePluginScriptsDir)
+  registerAdoIpc(ipcMain, resolvePluginScriptsDir)
   registerBriefHandlers(ipcMain, resolvePluginScriptsDir)
   registerDraftHandlers(ipcMain, resolvePluginScriptsDir, sendToWindow, () => loadSettings().claudePathOverride)
   registerBatchHandlers(ipcMain, resolvePluginScriptsDir, sendToWindow, () => loadSettings().claudePathOverride)

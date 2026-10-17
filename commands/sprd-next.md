@@ -53,6 +53,16 @@ Run exit gate checks for the current phase and advance to the next phase if all 
      (`open sprint S08: N slated · M ready`). Skip silently when `.sdlc/sprints/` is absent or the
      JSON's `sprint` is `null`. This line informs the declaration; it never gates it — leaving Build
      stays a human call, and a sprint is never a phase gate.
+   - **Board pending (advisory, only with `.sdlc/ado.yaml`):** one more line beside the sign-off, so the human
+     advances knowing how far Azure Boards trails the repository:
+     ```bash
+     uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan --state .sdlc/state.yaml --json
+     ```
+     Print `Board: N to create · M to update · K comments to send` from `counts.create`, `counts.update` and
+     `comments.draft`; `Board: unavailable (<reason>)` when `unavailable` is true, `no data` for a null count. `plan`
+     sends nothing to the board (it writes only local files: its plan file, `.sdlc/ado/local/hook-status.txt`, and
+     `planned` lines appended to `.sdlc/metrics/ado-sync-log.jsonl`) and this line never gates the advance. **Never run `apply`
+     from here** — sending a plan is `/sprd-ado apply`, a named person's decision. Skip silently when the config is absent.
    - **HITL GATE — Ask for explicit sign-off before advancing:** Present the phase summary (what was produced, key decisions made) and ask: "Does this look correct? Shall I advance to Phase N?" Do NOT call `advance_phase.py` until the human explicitly confirms.
    - **Optional — capture discipline sign-off(s):** After the human confirms the advance, use
      `AskUserQuestion` to offer (optionally) recording per-discipline sign-off on this phase's work:

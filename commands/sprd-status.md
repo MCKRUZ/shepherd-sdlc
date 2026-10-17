@@ -70,6 +70,15 @@ Display the current SDLC progress for this project.
      `readiness.ready`, `len(verdicts_pending)`, and `len(handoffs_open)`. Read-only (exit 0) and
      advisory — a sprint never gates a phase. See `/sprd-sprint` for the full board.
 
+   - **Azure Boards pending** — one offline read of the mirror, only when `.sdlc/ado.yaml` exists:
+     ```bash
+     uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py status --state .sdlc/state.yaml --json
+     ```
+     Render one line from `hook_line` — `Azure Boards: 3 rows pending · 1 drifted · as of 2026-10-12T09:02Z`, or
+     `Azure Boards: no data (never pulled)` when nothing was measured, never a 0. It reads the ledger and writes
+     nothing; skip silently when the config or the script is absent. Advisory — and it never applies: sending a
+     plan is `/sprd-ado apply`, a named person's decision (`/sprd-ado plan` for fresh counts).
+
 6. **Suggest next action:** Based on current phase status:
    - If phase is `active`: suggest running `/sprd` for phase guidance
    - If all gates would pass: suggest running `/sprd-next` to advance

@@ -9,7 +9,7 @@
     {
       "name": "shepherd",
       "source": ".",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "description": "Shepherd: SDLC orchestration + one-command install of the full delivery harness (governance CLAUDE.md, CI rail gates + eval workflows, Stop/review hooks, build-loop agents & skills, IaC starters) — GitHub or Azure DevOps, with the optional Shepherd desktop app.",
       "category": "sdlc",
       "keywords": [

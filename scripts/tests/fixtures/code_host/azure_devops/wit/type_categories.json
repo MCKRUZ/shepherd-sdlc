@@ -1,0 +1,101 @@
+{
+ "_provenance": "hand-written (unverified)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeCategories",
+  "--route-parameters",
+  "project=Claims",
+  "--api-version",
+  "7.1",
+  "--detect",
+  "false",
+  "--org",
+  "https://dev.azure.com/contoso"
+ ],
+ "value": {
+  "count": 5,
+  "value": [
+   {
+    "name": "Epic Category",
+    "referenceName": "Microsoft.EpicCategory",
+    "defaultWorkItemType": {
+     "name": "Epic",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Epic"
+    },
+    "workItemTypes": [
+     {
+      "name": "Epic",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Epic"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypeCategories/Microsoft.EpicCategory"
+   },
+   {
+    "name": "Feature Category",
+    "referenceName": "Microsoft.FeatureCategory",
+    "defaultWorkItemType": {
+     "name": "Feature",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Feature"
+    },
+    "workItemTypes": [
+     {
+      "name": "Feature",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Feature"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypeCategories/Microsoft.FeatureCategory"
+   },
+   {
+    "name": "Requirement Category",
+    "referenceName": "Microsoft.RequirementCategory",
+    "defaultWorkItemType": {
+     "name": "User Story",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/User%20Story"
+    },
+    "workItemTypes": [
+     {
+      "name": "User Story",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/User%20Story"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypeCategories/Microsoft.RequirementCategory"
+   },
+   {
+    "name": "Task Category",
+    "referenceName": "Microsoft.TaskCategory",
+    "defaultWorkItemType": {
+     "name": "Task",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+    },
+    "workItemTypes": [
+     {
+      "name": "Task",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Task"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypeCategories/Microsoft.TaskCategory"
+   },
+   {
+    "name": "Bug Category",
+    "referenceName": "Microsoft.BugCategory",
+    "defaultWorkItemType": {
+     "name": "Bug",
+     "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Bug"
+    },
+    "workItemTypes": [
+     {
+      "name": "Bug",
+      "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypes/Bug"
+     }
+    ],
+    "url": "https://dev.azure.com/contoso/00000000-0000-0000-0000-000000000020/_apis/wit/workItemTypeCategories/Microsoft.BugCategory"
+   }
+  ],
+  "continuation_token": null
+ }
+}

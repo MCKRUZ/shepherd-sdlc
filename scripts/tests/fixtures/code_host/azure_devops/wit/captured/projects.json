@@ -1,0 +1,50 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "core",
+  "--resource",
+  "projects",
+  "--route-parameters",
+  "projectId=Claims",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "_links": {
+   "collection": {
+    "href": "https://dev.azure.com/contoso/_apis/projectCollections/00000000-0000-0000-0000-000000000001"
+   },
+   "self": {
+    "href": "https://dev.azure.com/contoso/_apis/projects/00000000-0000-0000-0000-000000000002"
+   },
+   "web": {
+    "href": "https://dev.azure.com/contoso/Claims"
+   }
+  },
+  "continuation_token": null,
+  "defaultTeam": {
+   "id": "00000000-0000-0000-0000-000000000003",
+   "name": "Claims Team",
+   "url": "https://dev.azure.com/contoso/_apis/projects/00000000-0000-0000-0000-000000000002/teams/00000000-0000-0000-0000-000000000003"
+  },
+  "description": "[redacted: free text]",
+  "id": "00000000-0000-0000-0000-000000000002",
+  "lastUpdateTime": "2026-07-13T18:46:49.4Z",
+  "name": "Claims",
+  "revision": 1533,
+  "state": "wellFormed",
+  "url": "https://dev.azure.com/contoso/_apis/projects/00000000-0000-0000-0000-000000000002",
+  "visibility": "private"
+ }
+}

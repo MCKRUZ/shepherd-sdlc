@@ -1,0 +1,2 @@
+# captured 2026-10-14 (org anonymised); stderr of `--area core --resource connectionData`; the run reported this az text for it (the raw file was overwritten by a later run)
+ERROR: --resource and --api-version combination is not correct

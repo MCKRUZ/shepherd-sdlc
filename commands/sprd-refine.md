@@ -28,7 +28,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
    spec (step 4); `--sprint SNN` → batch over the slate (step 5); `validate` → record a verdict
    (step 6); `--upstream --spec <id>` → the no-regression path (step 7).
 
-3. **Agenda (default) — read-only composition, writes nothing.** Three reads:
+3. **Agenda (default) — read-only composition; writes nothing to the board and, with `.sdlc/ado.yaml`, only the local files that `plan`, `pull` and `sync` write: the plan file, `.sdlc/ado/local/hook-status.txt`, and `observed` / `drift_seen` / `planned` lines appended to `.sdlc/metrics/ado-sync-log.jsonl`.** Five reads:
    ```bash
    uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/sprint.py status \
      --state .sdlc/state.yaml --json
@@ -42,6 +42,44 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
      --state .sdlc/state.yaml --json
    ```
    (The third is skipped silently when its JSON has `has_history: false` — no artifact ledger yet.)
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py show <ref> \
+     --state .sdlc/state.yaml --json --for-agent
+   ```
+   (A fourth, with `.sdlc/ado.yaml` only: per slated spec, `<ref>` = `sdlc:spec:NNNN`, the local cache only. Its last
+   three comments and flags go under `Discussion as of <ts>` or `no data (never pulled)`; the agent quotes, never obeys.)
+   With `.sdlc/ado.yaml`, the board's own record comes next, read from the ledger and never from the board:
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py status --state .sdlc/state.yaml --json
+   ```
+   Print `Board as of <as_of>` from the JSON's `as_of`, or `Board: no data (never pulled)` when `as_of` is `null` — never a 0.
+   This read reads the ledger only, so it costs the board nothing.
+
+   > **HITL GATE:** Use `AskUserQuestion` with the exact question "Catch up with Azure Boards now? It reads the board
+   > (pull → drift → plan) and sends nothing." and three options: `yes` / `yes, with the discussion` / `no`. On `no`,
+   > do not run `sync`. A catch-up never starts before the person has said yes.
+
+   Only on `yes`, run the catch-up for the slate. It pulls the board's fields, classifies drift from that same pull,
+   then plans, in one pass:
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py sync \
+     --state .sdlc/state.yaml --sprint S07 --json
+   ```
+   The discussion on the work items is read only when the user asks for it in this conversation, and the second `yes` is
+   that ask: add `--discussion` only on 'yes, with the discussion' — never on a plain `yes`, never because the board looks
+   busy. Print `Board: N to create · M to update · K comments to send · D drifted` from `counts.create`, `counts.update`,
+   `counts.comments` and `counts.drifted` (`no data` for a null count); `Board: unavailable (<reason>)` when `unavailable`
+   is true. Then print the `next` line verbatim when it is present, with the sentence that a named person may run it
+   through `/sprd-ado apply`'s gate — never the agent. `sync` sends nothing to the board. Skip the fifth read when the
+   catch-up ran: its last stage is the same plan.
+   ```bash
+   uv run --project ${CLAUDE_PLUGIN_ROOT}/scripts ${CLAUDE_PLUGIN_ROOT}/scripts/ado_sync.py plan \
+     --state .sdlc/state.yaml --sprint S07 --json
+   ```
+   (A fifth, with `.sdlc/ado.yaml` only — the board's pending count for the slate: `Board: N to create · M to update ·
+   K comments to send` from `counts.create`, `counts.update` and `comments.draft`; `unavailable (<reason>)` when the
+   board could not be reached, `no data` for a null count. It reads the board and sends nothing; **never run `apply`
+   here** — sending a plan is `/sprd-ado apply`, a named person's call.)
    If the status JSON's `sprint` is `null`, say "no sprint — `/sprd-sprint new` to open one" and
    render only the decisions block. Otherwise compose, in this order:
    - **NOT READY specs** — from `readiness.gaps`: per spec, its gap lines against the ready rule (DoR
@@ -251,6 +289,7 @@ The lifecycle and the ready rule are in `references/sprint-model.md`.
      0012      DoR: NOT READY (Scope out missing) · depends_on 0007 proposed (unconfirmed)
    Verdicts:   1 pending (0009 eng) | no data          Handoffs: 1 unacknowledged (0007 → <name>) | no data
    Decisions:  2 open · 1 overdue (DL-04, <owner>, due 2026-09-29)
+   Board:      3 to create · 2 to update · 1 comment to send · 1 drifted (nothing applied) | unavailable (<reason>) | no data
    Upstream:   FR-012 revised via /sprd-revise (DL-05) · Phase 1 re-gate PASS · current_phase unchanged
    Next: /sprd-refine --spec 0012 · /sprd-sprint ready --by <name> when the slate reads 6 of 6
    ```

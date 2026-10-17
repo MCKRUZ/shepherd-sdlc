@@ -1,0 +1,45 @@
+{
+ "_provenance": "captured 2026-10-14 (org anonymised)",
+ "_command": [
+  "az",
+  "devops",
+  "invoke",
+  "--org",
+  "https://dev.azure.com/contoso",
+  "--only-show-errors",
+  "-o",
+  "json",
+  "--detect",
+  "false",
+  "--area",
+  "wit",
+  "--resource",
+  "workItemTypeStates",
+  "--route-parameters",
+  "project=Claims",
+  "type=RAID",
+  "--api-version",
+  "7.1"
+ ],
+ "value": {
+  "continuation_token": null,
+  "count": 3,
+  "value": [
+   {
+    "category": "Proposed",
+    "color": "b2b2b2",
+    "name": "New"
+   },
+   {
+    "category": "InProgress",
+    "color": "007acc",
+    "name": "Active"
+   },
+   {
+    "category": "Completed",
+    "color": "339933",
+    "name": "Closed"
+   }
+  ]
+ }
+}
